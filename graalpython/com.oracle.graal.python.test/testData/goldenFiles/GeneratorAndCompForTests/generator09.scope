@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: merge
         Kind: Generator
-        FrameDescriptor: [h, value, <return_val>]
+        FrameDescriptor: [__annotations__, h, value, <return_val>]
         CellVars: Empty
         FreeVars: Empty

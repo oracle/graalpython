@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
         CallDispatchNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [8,26]`for x in range(10)`
         Name: [].<locals>.<genexp>:argument01:1
-        FrameDescriptor: 2 slots [x, <return_val>]
+        FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 2
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 2 slots [x, <return_val>]
+          FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __add__
                       ReadGeneratorFrameVariableNode SourceSection: [4,5]`x`
-                        Frame: [0,x,Illegal]
+                        Frame: [1,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [6,7]`2`
                         Value: 2
@@ -47,7 +47,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [0,x,Illegal]
+                    Frame: [1,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
-                Frame: [1,<return_val>,Illegal]
+                Frame: [2,<return_val>,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None

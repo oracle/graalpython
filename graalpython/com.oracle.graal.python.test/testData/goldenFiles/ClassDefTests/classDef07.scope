@@ -10,6 +10,6 @@ Scope: []
         FreeVars: Empty
         Scope: setup
             Kind: Function
-            FrameDescriptor: [dict_setitem, <return_val>, __class__]
+            FrameDescriptor: [__annotations__, dict_setitem, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]

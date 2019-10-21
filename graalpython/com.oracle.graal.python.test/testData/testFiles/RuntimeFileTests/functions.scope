@@ -5,17 +5,17 @@ Scope: []
     FreeVars: Empty
     Scope: sorted
         Kind: Function
-        FrameDescriptor: [result, iterable, reverse, <return_val>, key]
+        FrameDescriptor: [result, __annotations__, iterable, reverse, <return_val>, key]
         CellVars: Empty
         FreeVars: Empty
     Scope: format
         Kind: Function
-        FrameDescriptor: [format_spec, value, <return_val>]
+        FrameDescriptor: [__annotations__, format_spec, value, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: vars
         Kind: Function
-        FrameDescriptor: [obj, <return_val>]
+        FrameDescriptor: [__annotations__, obj, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: map
@@ -25,51 +25,51 @@ Scope: []
         FreeVars: Empty
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [x, self, i, <return_val>, __class__]
+            FrameDescriptor: [__annotations__, x, self, i, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [args, self, it, <return_val>, __class__]
+            FrameDescriptor: [args, __annotations__, self, it, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [args, iterators, func, self, iterable, i, <return_val>, __class__]
+            FrameDescriptor: [args, iterators, __annotations__, func, self, iterable, i, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: __build_class__
         Kind: Function
-        FrameDescriptor: [bases, func, ns, name, kwargs, metaclass, <return_val>, _posix]
+        FrameDescriptor: [bases, __annotations__, func, ns, name, kwargs, metaclass, <return_val>, _posix]
         CellVars: Empty
         FreeVars: Empty
     Scope: filter
         Kind: Function
-        FrameDescriptor: [result, predicate, func, iterable, i, <return_val>]
+        FrameDescriptor: [result, __annotations__, predicate, func, iterable, i, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: lambda
             Kind: Function
-            FrameDescriptor: [a, <return_val>]
+            FrameDescriptor: [__annotations__, a, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: all
         Kind: Function
-        FrameDescriptor: [iterable, i, <return_val>]
+        FrameDescriptor: [__annotations__, iterable, i, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: any
         Kind: Function
-        FrameDescriptor: [iterable, i, <return_val>]
+        FrameDescriptor: [__annotations__, iterable, i, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: hasattr
         Kind: Function
-        FrameDescriptor: [default, obj, <return_val>, key]
+        FrameDescriptor: [__annotations__, default, obj, <return_val>, key]
         CellVars: Empty
         FreeVars: Empty

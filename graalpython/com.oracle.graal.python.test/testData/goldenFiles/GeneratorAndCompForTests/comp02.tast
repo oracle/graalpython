@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
               CelVars: abcs, base
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+              FrameDescriptor: 6 slots [__annotations__, cls, abcs, base, other, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: abcs, , base, 
@@ -38,14 +38,14 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: cls
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,cls,Illegal]
+                          Frame: [1,cls,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: abcs
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [1,abcs,Illegal]
+                          Frame: [2,abcs,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                               WriteLocalCellNodeGen SourceSection: None
                                 Identifier: base
                                 ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,base,Illegal]
+                                  Frame: [3,base,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [55,155]`if not any(issubclas...`
                               NotNodeGen SourceSection: [58,109]`not any(issubclass(b...`
@@ -68,9 +68,9 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     CallDispatchNodeGen SourceSection: None
                                   GeneratorExpressionNode SourceSection: [86,108]`for b in cls.__bases...`
                                     Name: mro.<locals>.<genexp>:comp02:3
-                                    FrameDescriptor: 3 slots [b, base, <return_val>]
+                                    FrameDescriptor: 4 slots [__annotations__, b, base, <return_val>]
                                     Enclosing
-                                      FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                                      FrameDescriptor: 6 slots [__annotations__, cls, abcs, base, other, <return_val>]
                                     Active Flags: 2
                                     For Nodes: 1
                                     Block Nodes: 0
@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       CelVars: None
                                       FreeVars: base
                                       NeedsCellFrame: False
-                                      FrameDescriptor: 3 slots [b, base, <return_val>]
+                                      FrameDescriptor: 4 slots [__annotations__, b, base, <return_val>]
                                       ExecutionSlots:
                                         FreeVarsSlots: base, 
                                         CellVarsSlots: None
@@ -97,11 +97,11 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                                     CreateArgumentsNodeGen SourceSection: None
                                                     CallDispatchNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: [77,78]`b`
-                                                    Frame: [0,b,Illegal]
+                                                    Frame: [1,b,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [80,84]`base`
                                                     ReadGeneratorFrameVariableNode SourceSection: None
-                                                      Frame: [1,base,Illegal]
+                                                      Frame: [2,base,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadFromCellNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -111,7 +111,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                             WriteGeneratorFrameVariableNodeGen SourceSection: None
                                               Identifier: b
                                               WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [0,b,Illegal]
+                                                Frame: [1,b,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
@@ -120,7 +120,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                                 Op: __next__
                                             GeneratorAccessNode SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
@@ -133,7 +133,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNode SourceSection: [95,98]`cls`
-                                          Frame: [0,cls,Illegal]
+                                          Frame: [1,cls,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -146,7 +146,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     CallDispatchNodeGen SourceSection: None
                                   ReadLocalCellNodeGen SourceSection: [145,149]`base`
                                     ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,base,Illegal]
+                                      Frame: [3,base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadFromCellNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
@@ -158,23 +158,23 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [41,45]`abcs`
                               ReadLocalVariableNode SourceSection: None
-                                Frame: [1,abcs,Illegal]
+                                Frame: [2,abcs,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadFromCellNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [155,203]`other = [mro(base, a...`
                         Identifier: other
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,other,Illegal]
+                          Frame: [4,other,Illegal]
                         PythonCallNodeGen SourceSection: [164,202]`mro(base, abcs=abcs)...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [185,202]`for base in other`
                             Name: mro.<locals>.<genexp>:comp02:5
-                            FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                            FrameDescriptor: 4 slots [__annotations__, base, abcs, <return_val>]
                             Enclosing
-                              FrameDescriptor: 5 slots [cls, abcs, base, other, <return_val>]
+                              FrameDescriptor: 6 slots [__annotations__, cls, abcs, base, other, <return_val>]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -185,7 +185,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                               CelVars: None
                               FreeVars: abcs
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [base, abcs, <return_val>]
+                              FrameDescriptor: 4 slots [__annotations__, base, abcs, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: abcs, 
                                 CellVarsSlots: None
@@ -201,13 +201,13 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [168,172]`base`
-                                            Frame: [0,base,Illegal]
+                                            Frame: [1,base,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
                                             KeywordLiteralNode SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [179,183]`abcs`
                                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                                  Frame: [1,abcs,Illegal]
+                                                  Frame: [2,abcs,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                             CompactKeywordsNodeGen SourceSection: None
@@ -220,7 +220,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: base
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,base,Illegal]
+                                        Frame: [1,base,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -229,7 +229,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
@@ -237,12 +237,12 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             GetIteratorExpressionNodeGen SourceSection: [197,202]`other`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [197,202]`other`
-                                Frame: [3,other,Illegal]
+                                Frame: [4,other,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

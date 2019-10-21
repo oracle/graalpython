@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'functionDoc01'> SourceSection: [0,65]`↵def test 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 1 slots [<return_val>]
+              FrameDescriptor: 2 slots [__annotations__, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'functionDoc01'> SourceSection: [0,65]`↵def test 
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,<return_val>,Illegal]
+                          Frame: [1,<return_val>,Illegal]
                         StringLiteralNode SourceSection: [60,65]`"bla"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

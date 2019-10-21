@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,61]`def fn():â†µ  try:â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [va, <return_val>]
+              FrameDescriptor: 3 slots [__annotations__, va, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -43,12 +43,12 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,61]`def fn():â†µ  try:â†
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: va
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [0,va,Illegal]
+                              Frame: [1,va,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [35,45]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

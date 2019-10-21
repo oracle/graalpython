@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [_cls, hits, misses, maxsize, currsize, <return_val>]
+              FrameDescriptor: 7 slots [__annotations__, _cls, hits, misses, maxsize, currsize, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -37,35 +37,35 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: _cls
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,_cls,Illegal]
+                          Frame: [1,_cls,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: hits
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,hits,Illegal]
+                          Frame: [2,hits,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: misses
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,misses,Illegal]
+                          Frame: [3,misses,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: maxsize
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,maxsize,Illegal]
+                          Frame: [4,maxsize,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: currsize
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,currsize,Illegal]
+                          Frame: [5,currsize,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 4
@@ -73,31 +73,31 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [5,<return_val>,Illegal]
+                          Frame: [6,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [72,76]`_cls`
-                            Frame: [0,_cls,Illegal]
+                            Frame: [1,_cls,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
                             PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [79,83]`hits`
-                              Frame: [1,hits,Illegal]
+                              Frame: [2,hits,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [85,91]`misses`
-                              Frame: [2,misses,Illegal]
+                              Frame: [3,misses,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [93,100]`maxsize`
-                              Frame: [3,maxsize,Illegal]
+                              Frame: [4,maxsize,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [102,110]`currsize`
-                              Frame: [4,currsize,Illegal]
+                              Frame: [5,currsize,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: _tuple_new
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [6,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

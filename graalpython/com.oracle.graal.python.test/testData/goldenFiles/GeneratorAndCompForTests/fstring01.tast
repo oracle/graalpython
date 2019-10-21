@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [someset, <return_val>]
+              FrameDescriptor: 3 slots [__annotations__, someset, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: someset
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,someset,Illegal]
+                        Frame: [1,someset,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -44,16 +44,16 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
+                          Frame: [2,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [24,64]`', '.join(f'{name}' ...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [44,63]`for name in someset`
                             Name: fn.<locals>.<genexp>:fstring01:1
-                            FrameDescriptor: 2 slots [name, <return_val>]
+                            FrameDescriptor: 3 slots [__annotations__, name, <return_val>]
                             Enclosing
-                              FrameDescriptor: 2 slots [someset, <return_val>]
+                              FrameDescriptor: 3 slots [__annotations__, someset, <return_val>]
                             Active Flags: 2
                             For Nodes: 1
                             Block Nodes: 0
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [name, <return_val>]
+                              FrameDescriptor: 3 slots [__annotations__, name, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
@@ -80,7 +80,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: name
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,name,Illegal]
+                                        Frame: [1,name,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
@@ -97,11 +97,11 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                             GetIteratorExpressionNodeGen SourceSection: [56,63]`someset`
                               GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [56,63]`someset`
-                                Frame: [0,someset,Illegal]
+                                Frame: [1,someset,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [24,28]`', '`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

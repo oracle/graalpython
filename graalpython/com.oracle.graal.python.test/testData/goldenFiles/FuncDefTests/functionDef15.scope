@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: install
         Kind: Function
-        FrameDescriptor: [<return_val>]
+        FrameDescriptor: [__annotations__, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: setup
         Kind: Function
-        FrameDescriptor: [<return_val>]
+        FrameDescriptor: [__annotations__, <return_val>]
         CellVars: Empty
         FreeVars: Empty

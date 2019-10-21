@@ -5,12 +5,12 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [a_local_var, f, <return_val>]
+        FrameDescriptor: [__annotations__, a_local_var, f, <return_val>]
         CellVars: [a_local_var]
         FreeVars: Empty
         Scope: f
             Kind: Function
-            FrameDescriptor: [a_local_var, C, <>temp2, <return_val>]
+            FrameDescriptor: [__annotations__, a_local_var, C, <>temp3, <return_val>]
             CellVars: Empty
             FreeVars: [a_local_var]
             Scope: C
@@ -20,6 +20,6 @@ Scope: []
                 FreeVars: [a_local_var]
                 Scope: method01
                     Kind: Function
-                    FrameDescriptor: [a_local_var, <return_val>, __class__]
+                    FrameDescriptor: [__annotations__, a_local_var, <return_val>, __class__]
                     CellVars: Empty
                     FreeVars: [__class__, a_local_var]

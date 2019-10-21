@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: lambda
         Kind: Function
-        FrameDescriptor: [spaz, foo, <return_val>]
+        FrameDescriptor: [__annotations__, spaz, foo, <return_val>]
         CellVars: Empty
         FreeVars: Empty

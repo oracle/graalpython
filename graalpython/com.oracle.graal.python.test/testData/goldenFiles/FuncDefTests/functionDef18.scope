@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: __new__
         Kind: Function
-        FrameDescriptor: [hits, currsize, _cls, misses, maxsize, <return_val>]
+        FrameDescriptor: [hits, __annotations__, currsize, _cls, misses, maxsize, <return_val>]
         CellVars: Empty
         FreeVars: Empty

@@ -84,7 +84,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: self
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
@@ -102,10 +102,10 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                           StringLiteralNode SourceSection: [95,108]`'hello world'`
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
+                                      Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None

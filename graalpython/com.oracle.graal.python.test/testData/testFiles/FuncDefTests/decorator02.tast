@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
             CelVars: delta
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [delta, wrap, <return_val>]
+            FrameDescriptor: 4 slots [__annotations__, delta, wrap, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: delta, 
@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                   WriteLocalCellNodeGen SourceSection: None
                     Identifier: delta
                     ReadLocalVariableNode SourceSection: None
-                      Frame: [0,delta,Illegal]
+                      Frame: [1,delta,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                     WriteLocalVariableNodeGen SourceSection: [28,138]`def wrap(fn):↵      ...`
                       Identifier: wrap
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,wrap,Illegal]
+                        Frame: [2,wrap,Illegal]
                       FunctionDefinitionNode Name: wrap SourceSection: None
                         Arguments: None
                         KwArguments: None
@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                           CelVars: fn
                           FreeVars: delta
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [fn, wrapped_f, delta, <return_val>]
+                          FrameDescriptor: 5 slots [__annotations__, fn, wrapped_f, delta, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: delta, 
                             CellVarsSlots: fn, 
@@ -68,7 +68,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                 WriteLocalCellNodeGen SourceSection: None
                                   Identifier: fn
                                   ReadLocalVariableNode SourceSection: None
-                                    Frame: [0,fn,Illegal]
+                                    Frame: [1,fn,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
@@ -77,7 +77,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                   WriteLocalVariableNodeGen SourceSection: [50,117]`def wrapped_f(*args)...`
                                     Identifier: wrapped_f
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,wrapped_f,Illegal]
+                                      Frame: [2,wrapped_f,Illegal]
                                     FunctionDefinitionNode Name: wrapped_f SourceSection: None
                                       Arguments: None
                                       KwArguments: None
@@ -92,7 +92,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                         CelVars: None
                                         FreeVars: delta, fn
                                         NeedsCellFrame: False
-                                        FrameDescriptor: 4 slots [args, fn, delta, <return_val>]
+                                        FrameDescriptor: 5 slots [__annotations__, args, fn, delta, <return_val>]
                                         ExecutionSlots:
                                           FreeVarsSlots: delta, , fn, 
                                           CellVarsSlots: None
@@ -102,7 +102,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: args
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
-                                                  Frame: [0,args,Illegal]
+                                                  Frame: [1,args,Illegal]
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadVarArgsNodeGen SourceSection: None
                                                     PythonObjectFactoryNodeGen SourceSection: None
@@ -110,7 +110,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <return_val>
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [3,<return_val>,Illegal]
+                                                    Frame: [4,<return_val>,Illegal]
                                                   BinaryArithmeticExpression SourceSection: [91,108]`fn(*args) + delta`
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __add__
@@ -120,43 +120,43 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                         CallDispatchNodeGen SourceSection: None
                                                       PositionalArgumentsNode SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [95,99]`args`
-                                                          Frame: [0,args,Illegal]
+                                                          Frame: [1,args,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ExecutePositionalStarargsNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: None
-                                                          Frame: [1,fn,Illegal]
+                                                          Frame: [2,fn,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadFromCellNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [103,108]`delta`
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [2,delta,Illegal]
+                                                        Frame: [3,delta,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
+                                              Frame: [4,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                   FrameReturnNode SourceSection: [117,133]`return wrapped_f`
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
+                                        Frame: [4,<return_val>,Illegal]
                                       ReadLocalVariableNode SourceSection: [124,133]`wrapped_f`
-                                        Frame: [1,wrapped_f,Illegal]
+                                        Frame: [2,wrapped_f,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [3,<return_val>,Illegal]
+                                Frame: [4,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [138,149]`return wrap`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
+                          Frame: [3,<return_val>,Illegal]
                         ReadLocalVariableNode SourceSection: [145,149]`wrap`
-                          Frame: [1,wrap,Illegal]
+                          Frame: [2,wrap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [151,198]`@mydecorator(3)↵def ...`
         Identifier: getNumber
@@ -178,7 +178,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 1 slots [<return_val>]
+              FrameDescriptor: 2 slots [__annotations__, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -190,11 +190,11 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,<return_val>,Illegal]
+                          Frame: [1,<return_val>,Illegal]
                         IntegerLiteralNode SourceSection: [195,196]`1`
                           Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
             CachedCallNodeGen SourceSection: None

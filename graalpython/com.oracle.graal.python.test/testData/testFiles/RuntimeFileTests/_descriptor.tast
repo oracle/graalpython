@@ -22,7 +22,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 1 slots [<return_val>]
+            FrameDescriptor: 2 slots [__annotations__, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -33,7 +33,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                   ExpressionStatementNode SourceSection: [2003,2007]`pass`
                     EmptyNode SourceSection: [2003,2007]`pass`
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2008,2031]`FunctionType = type(...`
         Identifier: FunctionType
@@ -77,7 +77,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
             CelVars: fields, name, named_tuple
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [name, fields, named_tuple, _define_named_tuple_methods, <>temp4, <return_val>]
+            FrameDescriptor: 7 slots [__annotations__, name, fields, named_tuple, _define_named_tuple_methods, <>temp5, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: fields, , name, , named_tuple, 
@@ -88,7 +88,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: name
                       ReadLocalVariableNode SourceSection: None
-                        Frame: [0,name,Illegal]
+                        Frame: [1,name,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -96,7 +96,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                     WriteLocalCellNodeGen SourceSection: None
                       Identifier: fields
                       ReadLocalVariableNode SourceSection: None
-                        Frame: [1,fields,Illegal]
+                        Frame: [2,fields,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -105,13 +105,13 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                     WriteLocalCellNodeGen SourceSection: [2121,2611]`class named_tuple(tu...`
                       Identifier: named_tuple
                       ReadLocalVariableNode SourceSection: None
-                        Frame: [2,named_tuple,Illegal]
+                        Frame: [3,named_tuple,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionWithSideEffects SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <>temp4
+                          Identifier: <>temp5
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [4,<>temp4,Illegal]
+                            Frame: [5,<>temp5,Illegal]
                           PythonCallNodeGen SourceSection: [2121,2611]`class named_tuple(tu...`
                             CachedCallNodeGen SourceSection: None
                               CreateArgumentsNodeGen SourceSection: None
@@ -237,7 +237,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                             CelVars: None
                                             FreeVars: __class__
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                            FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
                                             ExecutionSlots:
                                               FreeVarsSlots: __class__, 
                                               CellVarsSlots: None
@@ -247,7 +247,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: self
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [0,self,Illegal]
+                                                      Frame: [1,self,Illegal]
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
@@ -255,17 +255,17 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [2,<return_val>,Illegal]
+                                                        Frame: [3,<return_val>,Illegal]
                                                       PythonCallNodeGen SourceSection: [2282,2297]`self.__repr__()`
                                                         CachedCallNodeGen SourceSection: None
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [2282,2286]`self`
-                                                            Frame: [0,self,Illegal]
+                                                            Frame: [1,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                  Frame: [2,<return_val>,Illegal]
+                                                  Frame: [3,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                       SetItemNodeGen SourceSection: [2307,2611]`def __repr__(self):↵...`
                                         ArgumentExpressionNode SourceSection: None
@@ -287,7 +287,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                             CelVars: None
                                             FreeVars: __class__, fields, name
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 7 slots [self, sb, f, name, fields, __class__, <return_val>]
+                                            FrameDescriptor: 8 slots [__annotations__, self, sb, f, name, fields, __class__, <return_val>]
                                             ExecutionSlots:
                                               FreeVarsSlots: __class__, , fields, , name, 
                                               CellVarsSlots: None
@@ -297,7 +297,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: self
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [0,self,Illegal]
+                                                      Frame: [1,self,Illegal]
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
@@ -305,12 +305,12 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     WriteLocalVariableNodeGen SourceSection: [2339,2355]`sb = [name, "("]`
                                                       Identifier: sb
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [1,sb,Illegal]
+                                                        Frame: [2,sb,Illegal]
                                                       ListLiteralNode SourceSection: [2344,2355]`[name, "("]`
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [2345,2349]`name`
                                                           ReadLocalVariableNode SourceSection: None
-                                                            Frame: [3,name,Illegal]
+                                                            Frame: [4,name,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
                                                         StringLiteralNode SourceSection: [2351,2354]`"("`
@@ -321,7 +321,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                             WriteLocalVariableNodeGen SourceSection: None
                                                               Identifier: f
                                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                Frame: [2,f,Illegal]
+                                                                Frame: [3,f,Illegal]
                                                           BlockNode SourceSection: None
                                                             ExpressionStatementNode SourceSection: [2401,2413]`sb.append(f)`
                                                               PythonCallNodeGen SourceSection: [2401,2413]`sb.append(f)`
@@ -329,11 +329,11 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                   CreateArgumentsNodeGen SourceSection: None
                                                                   CallDispatchNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [2411,2412]`f`
-                                                                  Frame: [2,f,Illegal]
+                                                                  Frame: [3,f,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [2401,2403]`sb`
-                                                                    Frame: [1,sb,Illegal]
+                                                                    Frame: [2,sb,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                             ExpressionStatementNode SourceSection: [2430,2444]`sb.append("=")`
                                                               PythonCallNodeGen SourceSection: [2430,2444]`sb.append("=")`
@@ -343,7 +343,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                 StringLiteralNode SourceSection: [2440,2443]`"="`
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [2430,2432]`sb`
-                                                                    Frame: [1,sb,Illegal]
+                                                                    Frame: [2,sb,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                             ExpressionStatementNode SourceSection: [2461,2494]`sb.append(repr(getat...`
                                                               PythonCallNodeGen SourceSection: [2461,2494]`sb.append(repr(getat...`
@@ -359,10 +359,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                       CreateArgumentsNodeGen SourceSection: None
                                                                       CallDispatchNodeGen SourceSection: None
                                                                     ReadLocalVariableNode SourceSection: [2484,2488]`self`
-                                                                      Frame: [0,self,Illegal]
+                                                                      Frame: [1,self,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     ReadLocalVariableNode SourceSection: [2490,2491]`f`
-                                                                      Frame: [2,f,Illegal]
+                                                                      Frame: [3,f,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                       Identifier: getattr
@@ -372,7 +372,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [2461,2463]`sb`
-                                                                    Frame: [1,sb,Illegal]
+                                                                    Frame: [2,sb,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                             ExpressionStatementNode SourceSection: [2511,2526]`sb.append(", ")`
                                                               PythonCallNodeGen SourceSection: [2511,2526]`sb.append(", ")`
@@ -382,13 +382,13 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                 StringLiteralNode SourceSection: [2521,2525]`", "`
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [2511,2513]`sb`
-                                                                    Frame: [1,sb,Illegal]
+                                                                    Frame: [2,sb,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                         GetIteratorExpressionNodeGen SourceSection: [2377,2383]`fields`
                                                           GetIteratorNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [2377,2383]`fields`
                                                             ReadLocalVariableNode SourceSection: None
-                                                              Frame: [4,fields,Illegal]
+                                                              Frame: [5,fields,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
@@ -399,7 +399,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                           CallDispatchNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [2539,2541]`sb`
-                                                            Frame: [1,sb,Illegal]
+                                                            Frame: [2,sb,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                     ExpressionStatementNode SourceSection: [2560,2574]`sb.append(")")`
                                                       PythonCallNodeGen SourceSection: [2560,2574]`sb.append(")")`
@@ -409,24 +409,24 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                         StringLiteralNode SourceSection: [2570,2573]`")"`
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [2560,2562]`sb`
-                                                            Frame: [1,sb,Illegal]
+                                                            Frame: [2,sb,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                     FrameReturnNode SourceSection: [2587,2605]`return "".join(sb)`
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [6,<return_val>,Illegal]
+                                                          Frame: [7,<return_val>,Illegal]
                                                         PythonCallNodeGen SourceSection: [2594,2605]`"".join(sb)`
                                                           CachedCallNodeGen SourceSection: None
                                                             CreateArgumentsNodeGen SourceSection: None
                                                             CallDispatchNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [2602,2604]`sb`
-                                                            Frame: [1,sb,Illegal]
+                                                            Frame: [2,sb,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           GetCallAttributeNodeGen SourceSection: None
                                                             StringLiteralNode SourceSection: [2594,2596]`""`
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                  Frame: [6,<return_val>,Illegal]
+                                                  Frame: [7,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ObjectLiteralNode SourceSection: None
                             StringLiteralNode SourceSection: None
@@ -437,15 +437,15 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                               BuiltinsLiteralNode SourceSection: None
                         WriteCellVarNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
-                            Frame: [4,<>temp4,Illegal]
+                            Frame: [5,<>temp5,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [4,<>temp4,Illegal]
+                          Frame: [5,<>temp5,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2611,2919]`def _define_named_tu...`
                       Identifier: _define_named_tuple_methods
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,_define_named_tuple_methods,Illegal]
+                        Frame: [4,_define_named_tuple_methods,Illegal]
                       FunctionDefinitionNode Name: _define_named_tuple_methods SourceSection: None
                         Arguments: None
                         KwArguments: None
@@ -460,7 +460,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                           CelVars: None
                           FreeVars: fields, named_tuple
                           NeedsCellFrame: False
-                          FrameDescriptor: 8 slots [make_func, i, name, fields, named_tuple, <>temp5, <>temp6, <return_val>]
+                          FrameDescriptor: 9 slots [__annotations__, make_func, i, name, fields, named_tuple, <>temp6, <>temp7, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: fields, , named_tuple, 
                             CellVarsSlots: None
@@ -474,32 +474,32 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                       ForNextElementNodeGen SourceSection: None
                                         DestructuringAssignmentNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: None
-                                            Identifier: <>temp5
-                                            WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [5,<>temp5,Illegal]
-                                          WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <>temp6
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [6,<>temp6,Illegal]
                                           WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: <>temp7
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [7,<>temp7,Illegal]
+                                          WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: i
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,i,Illegal]
+                                              Frame: [2,i,Illegal]
                                             ReadLocalVariableNode SourceSection: None
-                                              Frame: [5,<>temp5,Illegal]
+                                              Frame: [6,<>temp6,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: name
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,name,Illegal]
+                                              Frame: [3,name,Illegal]
                                             ReadLocalVariableNode SourceSection: None
-                                              Frame: [6,<>temp6,Illegal]
+                                              Frame: [7,<>temp7,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [2700,2825]`def make_func(i):↵  ...`
                                           Identifier: make_func
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [0,make_func,Illegal]
+                                            Frame: [1,make_func,Illegal]
                                           FunctionDefinitionNode Name: make_func SourceSection: None
                                             Arguments: None
                                             KwArguments: None
@@ -515,7 +515,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               CelVars: i
                                               FreeVars: None
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 3 slots [i, func, <return_val>]
+                                              FrameDescriptor: 4 slots [__annotations__, i, func, <return_val>]
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: i, 
@@ -525,7 +525,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     WriteLocalCellNodeGen SourceSection: None
                                                       Identifier: i
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [0,i,Illegal]
+                                                        Frame: [1,i,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -534,7 +534,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       WriteLocalVariableNodeGen SourceSection: [2734,2801]`def func(self):↵    ...`
                                                         Identifier: func
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [1,func,Illegal]
+                                                          Frame: [2,func,Illegal]
                                                         FunctionDefinitionNode Name: func SourceSection: None
                                                           Arguments: None
                                                           KwArguments: None
@@ -550,7 +550,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                             CelVars: None
                                                             FreeVars: i
                                                             NeedsCellFrame: False
-                                                            FrameDescriptor: 3 slots [self, i, <return_val>]
+                                                            FrameDescriptor: 4 slots [__annotations__, self, i, <return_val>]
                                                             ExecutionSlots:
                                                               FreeVarsSlots: i, 
                                                               CellVarsSlots: None
@@ -560,7 +560,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                   WriteLocalVariableNodeGen SourceSection: None
                                                                     Identifier: self
                                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                      Frame: [0,self,Illegal]
+                                                                      Frame: [1,self,Illegal]
                                                                     ArgumentExpressionNode SourceSection: None
                                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                                         Index: 0
@@ -568,29 +568,29 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [2,<return_val>,Illegal]
+                                                                        Frame: [3,<return_val>,Illegal]
                                                                       GetItemNodeGen SourceSection: [2777,2784]`self[i]`
                                                                         ReadLocalVariableNode SourceSection: None
-                                                                          Frame: [0,self,Illegal]
+                                                                          Frame: [1,self,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                         ReadLocalCellNodeGen SourceSection: [2782,2783]`i`
                                                                           ReadLocalVariableNode SourceSection: None
-                                                                            Frame: [1,i,Illegal]
+                                                                            Frame: [2,i,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           ReadFromCellNodeGen SourceSection: None
                                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                                  Frame: [2,<return_val>,Illegal]
+                                                                  Frame: [3,<return_val>,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                       FrameReturnNode SourceSection: [2801,2812]`return func`
                                                         WriteLocalVariableNodeGen SourceSection: None
                                                           Identifier: <return_val>
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                                            Frame: [2,<return_val>,Illegal]
+                                                            Frame: [3,<return_val>,Illegal]
                                                           ReadLocalVariableNode SourceSection: [2808,2812]`func`
-                                                            Frame: [1,func,Illegal]
+                                                            Frame: [2,func,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                    Frame: [2,<return_val>,Illegal]
+                                                    Frame: [3,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [2825,2912]`setattr(named_tuple,...`
                                           PythonCallNodeGen SourceSection: [2825,2912]`setattr(named_tuple,...`
@@ -599,11 +599,11 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               CallDispatchNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [2833,2844]`named_tuple`
                                               ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,named_tuple,Illegal]
+                                                Frame: [5,named_tuple,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [2846,2850]`name`
-                                              Frame: [2,name,Illegal]
+                                              Frame: [3,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [2852,2911]`descriptor(fget=make...`
                                               CachedCallNodeGen SourceSection: None
@@ -616,19 +616,19 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       CreateArgumentsNodeGen SourceSection: None
                                                       CallDispatchNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [2878,2879]`i`
-                                                      Frame: [1,i,Illegal]
+                                                      Frame: [2,i,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: None
-                                                      Frame: [0,make_func,Illegal]
+                                                      Frame: [1,make_func,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [2887,2891]`name`
-                                                    Frame: [2,name,Illegal]
+                                                    Frame: [3,name,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [2899,2910]`named_tuple`
                                                     ReadLocalVariableNode SourceSection: None
-                                                      Frame: [4,named_tuple,Illegal]
+                                                      Frame: [5,named_tuple,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadFromCellNodeGen SourceSection: None
                                                 CompactKeywordsNodeGen SourceSection: None
@@ -648,7 +648,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           CallDispatchNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [2679,2685]`fields`
                                           ReadLocalVariableNode SourceSection: None
-                                            Frame: [3,fields,Illegal]
+                                            Frame: [4,fields,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -656,7 +656,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [7,<return_val>,Illegal]
+                                Frame: [8,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2919,2948]`_define_named_tuple_...`
                       PythonCallNodeGen SourceSection: [2919,2948]`_define_named_tuple_...`
@@ -664,20 +664,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [3,_define_named_tuple_methods,Illegal]
+                          Frame: [4,_define_named_tuple_methods,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2953,2971]`return named_tuple`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [5,<return_val>,Illegal]
+                          Frame: [6,<return_val>,Illegal]
                         ReadLocalCellNodeGen SourceSection: [2960,2971]`named_tuple`
                           ReadLocalVariableNode SourceSection: None
-                            Frame: [2,named_tuple,Illegal]
+                            Frame: [3,named_tuple,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadFromCellNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [5,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
@@ -746,7 +746,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 4 slots [self, kwargs, __class__, <return_val>]
+                                  FrameDescriptor: 5 slots [__annotations__, self, kwargs, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -757,14 +757,14 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: kwargs
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,kwargs,Illegal]
+                                              Frame: [2,kwargs,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadVarKeywordsNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -774,18 +774,18 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3066,3070]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [3072,3080]`"__ns__"`
                                             ReadLocalVariableNode SourceSection: [3082,3088]`kwargs`
-                                              Frame: [1,kwargs,Illegal]
+                                              Frame: [2,kwargs,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3047,3053]`object`
                                                 Identifier: object
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
+                                        Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [3095,3195]`def __delattr__(self...`
                               ArgumentExpressionNode SourceSection: None
@@ -807,7 +807,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 4 slots [self, name, __class__, <return_val>]
+                                  FrameDescriptor: 5 slots [__annotations__, self, name, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -818,14 +818,14 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: name
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,name,Illegal]
+                                              Frame: [2,name,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
@@ -835,7 +835,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3184,3188]`name`
-                                              Frame: [1,name,Illegal]
+                                              Frame: [2,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [3132,3171]`object.__getattribut...`
@@ -843,7 +843,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   CreateArgumentsNodeGen SourceSection: None
                                                   CallDispatchNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3156,3160]`self`
-                                                  Frame: [0,self,Illegal]
+                                                  Frame: [1,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [3162,3170]`"__ns__"`
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -851,7 +851,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     Identifier: object
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
+                                        Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [3195,3290]`def __getattr__(self...`
                               ArgumentExpressionNode SourceSection: None
@@ -873,7 +873,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 4 slots [self, name, __class__, <return_val>]
+                                  FrameDescriptor: 5 slots [__annotations__, self, name, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -884,14 +884,14 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: name
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,name,Illegal]
+                                              Frame: [2,name,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
@@ -899,14 +899,14 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
+                                              Frame: [4,<return_val>,Illegal]
                                             GetItemNodeGen SourceSection: [3239,3284]`object.__getattribut...`
                                               PythonCallNodeGen SourceSection: [3239,3278]`object.__getattribut...`
                                                 CachedCallNodeGen SourceSection: None
                                                   CreateArgumentsNodeGen SourceSection: None
                                                   CallDispatchNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3263,3267]`self`
-                                                  Frame: [0,self,Illegal]
+                                                  Frame: [1,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [3269,3277]`"__ns__"`
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -914,10 +914,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     Identifier: object
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [3279,3283]`name`
-                                                Frame: [1,name,Illegal]
+                                                Frame: [2,name,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
+                                        Frame: [4,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [3290,3393]`def __setattr__(self...`
                               ArgumentExpressionNode SourceSection: None
@@ -939,7 +939,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 5 slots [self, name, value, __class__, <return_val>]
+                                  FrameDescriptor: 6 slots [__annotations__, self, name, value, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -950,21 +950,21 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: name
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,name,Illegal]
+                                              Frame: [2,name,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: value
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,value,Illegal]
+                                              Frame: [3,value,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 2
@@ -974,7 +974,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [3358,3362]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [3364,3372]`"__ns__"`
                                             GetCallAttributeNodeGen SourceSection: None
@@ -982,13 +982,13 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 Identifier: object
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [3374,3378]`name`
-                                            Frame: [1,name,Illegal]
+                                            Frame: [2,name,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [3382,3387]`value`
-                                            Frame: [2,value,Illegal]
+                                            Frame: [3,value,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [4,<return_val>,Illegal]
+                                        Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [3393,3601]`def __repr__(self):↵...`
                               ArgumentExpressionNode SourceSection: None
@@ -1010,7 +1010,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 9 slots [self, sb, ns, k, v, __class__, <>temp6, <>temp7, <return_val>]
+                                  FrameDescriptor: 10 slots [__annotations__, self, sb, ns, k, v, __class__, <>temp7, <>temp8, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -1020,7 +1020,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: self
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [0,self,Illegal]
+                                            Frame: [1,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
@@ -1028,19 +1028,19 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: [3421,3428]`sb = []`
                                             Identifier: sb
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,sb,Illegal]
+                                              Frame: [2,sb,Illegal]
                                             ListLiteralNode SourceSection: [3426,3428]`[]`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [3437,3481]`ns = object.__getatt...`
                                             Identifier: ns
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,ns,Illegal]
+                                              Frame: [3,ns,Illegal]
                                             PythonCallNodeGen SourceSection: [3442,3481]`object.__getattribut...`
                                               CachedCallNodeGen SourceSection: None
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [3466,3470]`self`
-                                                Frame: [0,self,Illegal]
+                                                Frame: [1,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [3472,3480]`"__ns__"`
                                               GetCallAttributeNodeGen SourceSection: None
@@ -1053,26 +1053,26 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 ForNextElementNodeGen SourceSection: None
                                                   DestructuringAssignmentNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
-                                                      Identifier: <>temp6
-                                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [6,<>temp6,Illegal]
-                                                    WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <>temp7
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [7,<>temp7,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <>temp8
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [8,<>temp8,Illegal]
+                                                    WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: k
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [3,k,Illegal]
+                                                        Frame: [4,k,Illegal]
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [6,<>temp6,Illegal]
+                                                        Frame: [7,<>temp7,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: v
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,v,Illegal]
+                                                        Frame: [5,v,Illegal]
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [7,<>temp7,Illegal]
+                                                        Frame: [8,<>temp8,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                   PythonCallNodeGen SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
@@ -1086,14 +1086,14 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       TupleLiteralNode SourceSection: [3547,3552]`(k,v)`
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [3548,3549]`k`
-                                                          Frame: [3,k,Illegal]
+                                                          Frame: [4,k,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [3550,3551]`v`
-                                                          Frame: [4,v,Illegal]
+                                                          Frame: [5,v,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [3525,3527]`sb`
-                                                        Frame: [1,sb,Illegal]
+                                                        Frame: [2,sb,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [3501,3511]`ns.items()`
                                                 GetIteratorNodeGen SourceSection: None
@@ -1103,14 +1103,14 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     CallDispatchNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [3501,3503]`ns`
-                                                      Frame: [2,ns,Illegal]
+                                                      Frame: [3,ns,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                           FrameReturnNode SourceSection: [3562,3600]`return "namespace(%s...`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [8,<return_val>,Illegal]
+                                                Frame: [9,<return_val>,Illegal]
                                               BinaryArithmeticExpression SourceSection: [3569,3600]`"namespace(%s)" % ",...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __mod__
@@ -1120,12 +1120,12 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     CreateArgumentsNodeGen SourceSection: None
                                                     CallDispatchNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [3597,3599]`sb`
-                                                    Frame: [1,sb,Illegal]
+                                                    Frame: [2,sb,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [3587,3591]`", "`
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [8,<return_val>,Illegal]
+                                        Frame: [9,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
                   StringLiteralNode SourceSection: None

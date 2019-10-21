@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'functionDefCPT16'> SourceSection: [0,17]`def f(*, 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [*, a, <return_val>]
+              FrameDescriptor: 4 slots [__annotations__, *, a, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,12 +36,12 @@ ModuleRootNode Name: <module 'functionDefCPT16'> SourceSection: [0,17]`def f(*, 
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: a
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,a,Illegal]
+                        Frame: [2,a,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     ExpressionStatementNode SourceSection: [13,17]`pass`
                       EmptyNode SourceSection: [13,17]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
               CelVars: fields, name
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [name, fields, named_tuple, <>temp3, <return_val>]
+              FrameDescriptor: 6 slots [__annotations__, name, fields, named_tuple, <>temp4, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: fields, , name, 
@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: name
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [0,name,Illegal]
+                          Frame: [1,name,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -45,7 +45,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: fields
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [1,fields,Illegal]
+                          Frame: [2,fields,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -54,12 +54,12 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                       WriteLocalVariableNodeGen SourceSection: [46,264]`class named_tuple(tu...`
                         Identifier: named_tuple
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,named_tuple,Illegal]
+                          Frame: [3,named_tuple,Illegal]
                         ExpressionWithSideEffects SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <>temp3
+                            Identifier: <>temp4
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [3,<>temp3,Illegal]
+                              Frame: [4,<>temp4,Illegal]
                             PythonCallNodeGen SourceSection: [46,264]`class named_tuple(tu...`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -185,7 +185,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                               CelVars: None
                                               FreeVars: __class__, fields, name
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 7 slots [self, sb, f, name, fields, __class__, <return_val>]
+                                              FrameDescriptor: 8 slots [__annotations__, self, sb, f, name, fields, __class__, <return_val>]
                                               ExecutionSlots:
                                                 FreeVarsSlots: __class__, , fields, , name, 
                                                 CellVarsSlots: None
@@ -195,7 +195,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: self
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [0,self,Illegal]
+                                                        Frame: [1,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
@@ -203,10 +203,10 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                       WriteLocalVariableNodeGen SourceSection: [200,209]`sb = name`
                                                         Identifier: sb
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [1,sb,Illegal]
+                                                          Frame: [2,sb,Illegal]
                                                         ReadLocalCellNodeGen SourceSection: [205,209]`name`
                                                           ReadLocalVariableNode SourceSection: None
-                                                            Frame: [3,name,Illegal]
+                                                            Frame: [4,name,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
                                                       ElseNode SourceSection: [222,264]`for f in fields:↵   ...`
@@ -216,19 +216,19 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                               WriteLocalVariableNodeGen SourceSection: None
                                                                 Identifier: f
                                                                 WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                  Frame: [2,f,Illegal]
+                                                                  Frame: [3,f,Illegal]
                                                             ExpressionStatementNode SourceSection: [255,259]`pass`
                                                               EmptyNode SourceSection: [255,259]`pass`
                                                           GetIteratorExpressionNodeGen SourceSection: [231,237]`fields`
                                                             GetIteratorNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [231,237]`fields`
                                                               ReadLocalVariableNode SourceSection: None
-                                                                Frame: [4,fields,Illegal]
+                                                                Frame: [5,fields,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadFromCellNodeGen SourceSection: None
                                                         BlockNode SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                    Frame: [6,<return_val>,Illegal]
+                                                    Frame: [7,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
                               StringLiteralNode SourceSection: None
@@ -239,19 +239,19 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                 BuiltinsLiteralNode SourceSection: None
                           WriteCellVarNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
-                              Frame: [3,<>temp3,Illegal]
+                              Frame: [4,<>temp4,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
-                            Frame: [3,<>temp3,Illegal]
+                            Frame: [4,<>temp4,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [264,282]`return named_tuple`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [4,<return_val>,Illegal]
+                            Frame: [5,<return_val>,Illegal]
                           ReadLocalVariableNode SourceSection: [271,282]`named_tuple`
-                            Frame: [2,named_tuple,Illegal]
+                            Frame: [3,named_tuple,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

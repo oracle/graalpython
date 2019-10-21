@@ -75,7 +75,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, name, eof, __class__, <return_val>]
+                              FrameDescriptor: 6 slots [__annotations__, self, name, eof, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -86,21 +86,21 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: self
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: name
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,name,Illegal]
+                                          Frame: [2,name,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: eof
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,eof,Illegal]
+                                          Frame: [3,eof,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 2
@@ -108,21 +108,21 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       SetAttributeNodeGen SourceSection: [395,411]`self.name = name`
                                         Attribute: name
                                         ReadLocalVariableNode SourceSection: [395,399]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [407,411]`name`
-                                          Frame: [1,name,Illegal]
+                                          Frame: [2,name,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [420,434]`self.eof = eof`
                                         Attribute: eof
                                         ReadLocalVariableNode SourceSection: [420,424]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [431,434]`eof`
-                                          Frame: [2,eof,Illegal]
+                                          Frame: [3,eof,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [4,<return_val>,Illegal]
+                                    Frame: [5,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [439,527]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
@@ -144,7 +144,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -154,7 +154,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                        Frame: [1,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -162,7 +162,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         BinaryArithmeticExpression SourceSection: [474,522]`'Use %s() or %s to e...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mod__
@@ -175,7 +175,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNode SourceSection: [502,506]`self`
-                                                Frame: [0,self,Illegal]
+                                                Frame: [1,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [513,521]`self.eof`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -183,10 +183,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNode SourceSection: [513,517]`self`
-                                                Frame: [0,self,Illegal]
+                                                Frame: [1,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [527,773]`def __call__(self, c...`
                           ArgumentExpressionNode SourceSection: None
@@ -209,7 +209,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [self, code, __class__, <return_val>]
+                              FrameDescriptor: 5 slots [__annotations__, self, code, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -220,14 +220,14 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: self
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: code
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,code,Illegal]
+                                          Frame: [2,code,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 1
@@ -259,14 +259,14 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [765,769]`code`
-                                            Frame: [1,code,Illegal]
+                                            Frame: [2,code,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: SystemExit
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         EmptyNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
@@ -360,7 +360,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: files, os
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 8 slots [self, name, data, files, dirs, os, __class__, <return_val>]
+                              FrameDescriptor: 9 slots [__annotations__, self, name, data, files, dirs, os, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: files, , os, 
@@ -371,28 +371,28 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: self
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: name
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,name,Illegal]
+                                          Frame: [2,name,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 1
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: data
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,data,Illegal]
+                                          Frame: [3,data,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 2
                                       WriteLocalCellNodeGen SourceSection: None
                                         Identifier: files
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [3,files,Illegal]
+                                          Frame: [4,files,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -400,7 +400,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: dirs
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,dirs,Illegal]
+                                          Frame: [5,dirs,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 4
@@ -408,7 +408,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalCellNodeGen SourceSection: [1008,1010]`os`
                                         Identifier: os
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [5,os,Illegal]
+                                          Frame: [6,os,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ImportExpression SourceSection: None
                                           ImportNode SourceSection: None
@@ -416,29 +416,29 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       SetAttributeNodeGen SourceSection: [1019,1037]`self.__name = name`
                                         Attribute: __name
                                         ReadLocalVariableNode SourceSection: [1019,1023]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1033,1037]`name`
-                                          Frame: [1,name,Illegal]
+                                          Frame: [2,name,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [1046,1064]`self.__data = data`
                                         Attribute: __data
                                         ReadLocalVariableNode SourceSection: [1046,1050]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [1060,1064]`data`
-                                          Frame: [2,data,Illegal]
+                                          Frame: [3,data,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [1073,1092]`self.__lines = None`
                                         Attribute: __lines
                                         ReadLocalVariableNode SourceSection: [1073,1077]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ObjectLiteralNode SourceSection: [1088,1092]`None`
                                       SetAttributeNodeGen SourceSection: [1101,1243]`self.__filenames = [...`
                                         Attribute: __filenames
                                         ReadLocalVariableNode SourceSection: [1101,1105]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                           CachedCallNodeGen SourceSection: None
@@ -446,9 +446,9 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             CallDispatchNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
                                             Name: __init__.<locals>.<genexp>:_sitebuiltins:41
-                                            FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
+                                            FrameDescriptor: 6 slots [__annotations__, filename, dir, files, os, <return_val>]
                                             Enclosing
-                                              FrameDescriptor: 8 slots [self, name, data, files, dirs, os, __class__, <return_val>]
+                                              FrameDescriptor: 9 slots [__annotations__, self, name, data, files, dirs, os, __class__, <return_val>]
                                             Active Flags: 2
                                             For Nodes: 2
                                             Block Nodes: 0
@@ -459,7 +459,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               CelVars: None
                                               FreeVars: files, os
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
+                                              FrameDescriptor: 6 slots [__annotations__, filename, dir, files, os, <return_val>]
                                               ExecutionSlots:
                                                 FreeVarsSlots: files, , os, 
                                                 CellVarsSlots: None
@@ -476,10 +476,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               CreateArgumentsNodeGen SourceSection: None
                                                               CallDispatchNodeGen SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [1134,1137]`dir`
-                                                              Frame: [1,dir,Illegal]
+                                                              Frame: [2,dir,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [1139,1147]`filename`
-                                                              Frame: [0,filename,Illegal]
+                                                              Frame: [1,filename,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               GetAttributeNodeGen SourceSection: [1121,1128]`os.path`
@@ -489,19 +489,19 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                     Op: __getattribute__
                                                                 ReadLocalCellNodeGen SourceSection: [1121,1123]`os`
                                                                   ReadGeneratorFrameVariableNode SourceSection: None
-                                                                    Frame: [3,os,Illegal]
+                                                                    Frame: [4,os,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   ReadFromCellNodeGen SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: filename
                                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                          Frame: [0,filename,Illegal]
+                                                          Frame: [1,filename,Illegal]
                                                       GetIteratorExpressionNodeGen SourceSection: [1237,1242]`files`
                                                         GetIteratorNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [1237,1242]`files`
                                                           ReadGeneratorFrameVariableNode SourceSection: None
-                                                            Frame: [2,files,Illegal]
+                                                            Frame: [3,files,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
                                                       GetNextNode SourceSection: None
@@ -511,7 +511,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                       Identifier: dir
                                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                        Frame: [1,dir,Illegal]
+                                                        Frame: [2,dir,Illegal]
                                                     ArgumentExpressionNode SourceSection: None
                                                       ReadIndexedArgumentNodeGen SourceSection: None
                                                         Index: 0
@@ -520,7 +520,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: None
-                                                    Frame: [4,<return_val>,Illegal]
+                                                    Frame: [5,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
@@ -528,14 +528,14 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             GetIteratorExpressionNodeGen SourceSection: [1188,1192]`dirs`
                                               GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [1188,1192]`dirs`
-                                                Frame: [4,dirs,Illegal]
+                                                Frame: [5,dirs,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [7,<return_val>,Illegal]
+                                    Frame: [8,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [1249,1687]`def __setup(self):↵ ...`
                           ArgumentExpressionNode SourceSection: None
@@ -557,7 +557,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [self, data, fp, filename, __class__, <return_val>]
+                              FrameDescriptor: 7 slots [__annotations__, self, data, fp, filename, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -567,7 +567,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                        Frame: [1,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -580,14 +580,14 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNode SourceSection: [1279,1283]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         ReturnNode SourceSection: [1305,1311]`return`
                                         BlockNode SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [1320,1331]`data = None`
                                         Identifier: data
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,data,Illegal]
+                                          Frame: [2,data,Illegal]
                                         ObjectLiteralNode SourceSection: [1327,1331]`None`
                                       BreakTargetNode SourceSection: [1340,1555]`for filename in self...`
                                         ForNode SourceSection: None
@@ -596,7 +596,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: filename
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
-                                                  Frame: [3,filename,Illegal]
+                                                  Frame: [4,filename,Illegal]
                                             TryFinallyNode SourceSection: [1386,1555]`try:↵               ...`
                                               TryExceptNode SourceSection: None
                                                 BlockNode SourceSection: None
@@ -604,25 +604,25 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     WriteLocalVariableNodeGen SourceSection: [1459,1475]`data = fp.read()`
                                                       Identifier: data
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [1,data,Illegal]
+                                                        Frame: [2,data,Illegal]
                                                       PythonCallNodeGen SourceSection: [1466,1475]`fp.read()`
                                                         CachedCallNodeGen SourceSection: None
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [1466,1468]`fp`
-                                                            Frame: [2,fp,Illegal]
+                                                            Frame: [3,fp,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: fp
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [2,fp,Illegal]
+                                                        Frame: [3,fp,Illegal]
                                                     PythonCallNodeGen SourceSection: [1412,1431]`open(filename, "r")`
                                                       CachedCallNodeGen SourceSection: None
                                                         CreateArgumentsNodeGen SourceSection: None
                                                         CallDispatchNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [1417,1425]`filename`
-                                                        Frame: [3,filename,Illegal]
+                                                        Frame: [4,filename,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [1427,1430]`"r"`
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -662,31 +662,31 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNode SourceSection: [1356,1360]`self`
-                                                Frame: [0,self,Illegal]
+                                                Frame: [1,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [1555,1607]`if not data:↵       ...`
                                         NotNodeGen SourceSection: [1558,1566]`not data`
                                           ReadLocalVariableNode SourceSection: [1562,1566]`data`
-                                            Frame: [1,data,Illegal]
+                                            Frame: [2,data,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [1580,1598]`data = self.__data`
                                           Identifier: data
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,data,Illegal]
+                                            Frame: [2,data,Illegal]
                                           GetAttributeNodeGen SourceSection: [1587,1598]`self.__data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __data
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNode SourceSection: [1587,1591]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       SetAttributeNodeGen SourceSection: [1607,1638]`self.__lines = data....`
                                         Attribute: __lines
                                         ReadLocalVariableNode SourceSection: [1607,1611]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [1622,1638]`data.split('\n')`
                                           CachedCallNodeGen SourceSection: None
@@ -695,12 +695,12 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           StringLiteralNode SourceSection: [1633,1637]`'\n'`
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1622,1626]`data`
-                                              Frame: [1,data,Illegal]
+                                              Frame: [2,data,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [1647,1681]`self.__linecnt = len...`
                                         Attribute: __linecnt
                                         ReadLocalVariableNode SourceSection: [1647,1651]`self`
-                                          Frame: [0,self,Illegal]
+                                          Frame: [1,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [1664,1681]`len(self.__lines)`
                                           CachedCallNodeGen SourceSection: None
@@ -712,13 +712,13 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNode SourceSection: [1668,1672]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [5,<return_val>,Illegal]
+                                    Frame: [6,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [1687,1915]`def __repr__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
@@ -740,7 +740,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -750,7 +750,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                        Frame: [1,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -762,7 +762,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             CallDispatchNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1715,1719]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       IfNode SourceSection: [1738,1915]`if len(self.__lines)...`
                                         YesNodeGen SourceSection: None
@@ -779,7 +779,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNode SourceSection: [1745,1749]`self`
-                                                  Frame: [0,self,Illegal]
+                                                  Frame: [1,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: len
@@ -790,13 +790,13 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNode SourceSection: [1762,1766]`self`
-                                                Frame: [0,self,Illegal]
+                                                Frame: [1,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [1789,1819]`return "\n".join(sel...`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,<return_val>,Illegal]
+                                              Frame: [3,<return_val>,Illegal]
                                             PythonCallNodeGen SourceSection: [1796,1819]`"\n".join(self.__lin...`
                                               CachedCallNodeGen SourceSection: None
                                                 CreateArgumentsNodeGen SourceSection: None
@@ -807,7 +807,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNode SourceSection: [1806,1810]`self`
-                                                  Frame: [0,self,Illegal]
+                                                  Frame: [1,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [1796,1800]`"\n"`
@@ -815,7 +815,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,<return_val>,Illegal]
+                                              Frame: [3,<return_val>,Illegal]
                                             BinaryArithmeticExpression SourceSection: [1853,1909]`"Type %s() to see th...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __mod__
@@ -831,12 +831,12 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNode SourceSection: [1893,1897]`self`
-                                                      Frame: [0,self,Illegal]
+                                                      Frame: [1,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [1907,1908]`2`
                                                   Value: 2
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [1915,2538]`def __call__(self):↵...`
                           ArgumentExpressionNode SourceSection: None
@@ -858,7 +858,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                               CelVars: None
                               FreeVars: __class__
                               NeedsCellFrame: False
-                              FrameDescriptor: 7 slots [self, prompt, lineno, i, key, __class__, <return_val>]
+                              FrameDescriptor: 8 slots [__annotations__, self, prompt, lineno, i, key, __class__, <return_val>]
                               ExecutionSlots:
                                 FreeVarsSlots: __class__, 
                                 CellVarsSlots: None
@@ -868,7 +868,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: self
                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
+                                        Frame: [1,self,Illegal]
                                       ArgumentExpressionNode SourceSection: None
                                         ReadIndexedArgumentNodeGen SourceSection: None
                                           Index: 0
@@ -880,17 +880,17 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             CallDispatchNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1943,1947]`self`
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [1966,2025]`prompt = 'Hit Return...`
                                         Identifier: prompt
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,prompt,Illegal]
+                                          Frame: [2,prompt,Illegal]
                                         StringLiteralNode SourceSection: [1975,2025]`'Hit Return for more...`
                                       WriteLocalVariableNodeGen SourceSection: [2034,2044]`lineno = 0`
                                         Identifier: lineno
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,lineno,Illegal]
+                                          Frame: [3,lineno,Illegal]
                                         IntegerLiteralNode SourceSection: [2043,2044]`0`
                                           Value: 0
                                       BreakTargetNode SourceSection: [2053,2538]`while 1:↵           ...`
@@ -908,7 +908,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         WriteLocalVariableNodeGen SourceSection: None
                                                           Identifier: i
                                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                                            Frame: [3,i,Illegal]
+                                                            Frame: [4,i,Illegal]
                                                       ExpressionStatementNode SourceSection: [2163,2185]`print(self.__lines[i...`
                                                         PythonCallNodeGen SourceSection: [2163,2185]`print(self.__lines[i...`
                                                           CachedCallNodeGen SourceSection: None
@@ -921,10 +921,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                               ReadLocalVariableNode SourceSection: [2169,2173]`self`
-                                                                Frame: [0,self,Illegal]
+                                                                Frame: [1,self,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [2182,2183]`i`
-                                                              Frame: [3,i,Illegal]
+                                                              Frame: [4,i,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                             Identifier: print
@@ -936,13 +936,13 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [2110,2116]`lineno`
-                                                          Frame: [2,lineno,Illegal]
+                                                          Frame: [3,lineno,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         BinaryArithmeticExpression SourceSection: [2118,2140]`lineno + self.MAXLIN...`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __add__
                                                           ReadLocalVariableNode SourceSection: [2118,2124]`lineno`
-                                                            Frame: [2,lineno,Illegal]
+                                                            Frame: [3,lineno,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           GetAttributeNodeGen SourceSection: [2127,2140]`self.MAXLINES`
                                                             GetFixedAttributeNodeGen SourceSection: None
@@ -950,7 +950,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                             ReadLocalVariableNode SourceSection: [2127,2131]`self`
-                                                              Frame: [0,self,Illegal]
+                                                              Frame: [1,self,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                           Identifier: range
@@ -965,10 +965,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   WriteLocalVariableNodeGen SourceSection: [2273,2296]`lineno += self.MAXLI...`
                                                     Identifier: lineno
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [2,lineno,Illegal]
+                                                      Frame: [3,lineno,Illegal]
                                                     LookupAndCallInplaceNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [2273,2279]`lineno`
-                                                        Frame: [2,lineno,Illegal]
+                                                        Frame: [3,lineno,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [2283,2296]`self.MAXLINES`
                                                         GetFixedAttributeNodeGen SourceSection: None
@@ -976,12 +976,12 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNode SourceSection: [2283,2287]`self`
-                                                          Frame: [0,self,Illegal]
+                                                          Frame: [1,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [2313,2323]`key = None`
                                                     Identifier: key
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [4,key,Illegal]
+                                                      Frame: [5,key,Illegal]
                                                     ObjectLiteralNode SourceSection: [2319,2323]`None`
                                                   ElseNode SourceSection: [2340,2495]`while key is None:↵ ...`
                                                     WhileNode SourceSection: None
@@ -989,20 +989,20 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         YesNodeGen SourceSection: None
                                                           IsExpressionNodeGen SourceSection: [2346,2357]`key is None`
                                                             ReadLocalVariableNode SourceSection: [2346,2349]`key`
-                                                              Frame: [4,key,Illegal]
+                                                              Frame: [5,key,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ObjectLiteralNode SourceSection: [2353,2357]`None`
                                                         BlockNode SourceSection: None
                                                           WriteLocalVariableNodeGen SourceSection: [2379,2398]`key = input(prompt)`
                                                             Identifier: key
                                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                                              Frame: [4,key,Illegal]
+                                                              Frame: [5,key,Illegal]
                                                             PythonCallNodeGen SourceSection: [2385,2398]`input(prompt)`
                                                               CachedCallNodeGen SourceSection: None
                                                                 CreateArgumentsNodeGen SourceSection: None
                                                                 CallDispatchNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [2391,2397]`prompt`
-                                                                Frame: [1,prompt,Illegal]
+                                                                Frame: [2,prompt,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                 Identifier: input
@@ -1018,12 +1018,12 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                   StringLiteralNode SourceSection: [2434,2436]`''`
                                                                   StringLiteralNode SourceSection: [2438,2441]`'q'`
                                                                 ReadLocalVariableNode SourceSection: [2422,2425]`key`
-                                                                  Frame: [4,key,Illegal]
+                                                                  Frame: [5,key,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                             WriteLocalVariableNodeGen SourceSection: [2468,2478]`key = None`
                                                               Identifier: key
                                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                Frame: [4,key,Illegal]
+                                                                Frame: [5,key,Illegal]
                                                               ObjectLiteralNode SourceSection: [2474,2478]`None`
                                                             BlockNode SourceSection: None
                                                     BlockNode SourceSection: None
@@ -1033,7 +1033,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __eq__
                                                         ReadLocalVariableNode SourceSection: [2498,2501]`key`
-                                                          Frame: [4,key,Illegal]
+                                                          Frame: [5,key,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         StringLiteralNode SourceSection: [2505,2508]`'q'`
                                                     BreakNode SourceSection: [2530,2535]`break`
@@ -1041,7 +1041,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 SaveExceptionStateNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [6,<return_val>,Illegal]
+                                    Frame: [7,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
@@ -1128,7 +1128,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                  FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -1138,7 +1138,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: self
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [0,self,Illegal]
+                                            Frame: [1,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
@@ -1146,10 +1146,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,<return_val>,Illegal]
+                                              Frame: [3,<return_val>,Illegal]
                                             StringLiteralNode SourceSection: [2919,3013]`"Type help() for int...`
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [2,<return_val>,Illegal]
+                                        Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [3018,3115]`def __call__(self, *...`
                               ArgumentExpressionNode SourceSection: None
@@ -1172,7 +1172,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 6 slots [self, args, kwds, pydoc, __class__, <return_val>]
+                                  FrameDescriptor: 7 slots [__annotations__, self, args, kwds, pydoc, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -1183,21 +1183,21 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [0,self,Illegal]
+                                              Frame: [1,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: args
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,args,Illegal]
+                                              Frame: [2,args,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadVarArgsNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: kwds
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,kwds,Illegal]
+                                              Frame: [3,kwds,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadVarKeywordsNodeGen SourceSection: None
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -1205,7 +1205,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           WriteLocalVariableNodeGen SourceSection: [3068,3073]`pydoc`
                                             Identifier: pydoc
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,pydoc,Illegal]
+                                              Frame: [4,pydoc,Illegal]
                                             ImportExpression SourceSection: None
                                               ImportNode SourceSection: None
                                                 Module: pydoc
@@ -1213,28 +1213,28 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [5,<return_val>,Illegal]
+                                                Frame: [6,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [3089,3114]`pydoc.help(*args, **...`
                                                 CachedCallNodeGen SourceSection: None
                                                   CreateArgumentsNodeGen SourceSection: None
                                                   CallDispatchNodeGen SourceSection: None
                                                 PositionalArgumentsNode SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [3101,3105]`args`
-                                                    Frame: [1,args,Illegal]
+                                                    Frame: [2,args,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   CompactKeywordsNodeGen SourceSection: None
                                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [3109,3113]`kwds`
-                                                      Frame: [2,kwds,Illegal]
+                                                      Frame: [3,kwds,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [3089,3094]`pydoc`
-                                                    Frame: [3,pydoc,Illegal]
+                                                    Frame: [4,pydoc,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [5,<return_val>,Illegal]
+                                        Frame: [6,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
                   StringLiteralNode SourceSection: None

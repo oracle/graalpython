@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
         WriteNameNodeGen SourceSection: [0,104]`def merge(h):↵    fo...`
           Identifier: merge
           GeneratorFunctionDefinitionNode Name: merge SourceSection: None
-            FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+            FrameDescriptor: 8 slots [__annotations__, h, value, order, it, <>temp5, <>temp6, <return_val>]
             Active Flags: 3
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 7 slots [h, value, order, it, <>temp4, <>temp5, <return_val>]
+              FrameDescriptor: 8 slots [__annotations__, h, value, order, it, <>temp5, <>temp6, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -44,31 +44,31 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                           ForNextElementNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: None
                               WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <>temp4
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [4,<>temp4,Illegal]
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
                                 Identifier: <>temp5
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
                                   Frame: [5,<>temp5,Illegal]
                               WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                Identifier: <>temp6
+                                WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                  Frame: [6,<>temp6,Illegal]
+                              WriteGeneratorFrameVariableNodeGen SourceSection: None
                                 Identifier: order
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [2,order,Illegal]
+                                  Frame: [3,order,Illegal]
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [4,<>temp4,Illegal]
+                                  Frame: [5,<>temp5,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               WriteGeneratorFrameVariableNodeGen SourceSection: None
                                 Identifier: it
                                 WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [3,it,Illegal]
+                                  Frame: [4,it,Illegal]
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
+                                  Frame: [6,<>temp6,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
                             Identifier: value
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,value,Illegal]
+                              Frame: [2,value,Illegal]
                             PythonCallNodeGen SourceSection: [56,62]`next()`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -92,7 +92,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                           YieldNode SourceSection: [93,104]`yield value`
                             flagSlot: 0
                             ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
-                              Frame: [1,value,Illegal]
+                              Frame: [2,value,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         YesNodeGen SourceSection: None
@@ -104,7 +104,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
-                                Frame: [0,h,Illegal]
+                                Frame: [1,h,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: len
@@ -115,12 +115,12 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                       BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [6,<return_val>,Illegal]
+                    Frame: [7,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: h
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,h,Illegal]
+                      Frame: [1,h,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

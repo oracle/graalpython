@@ -5,12 +5,12 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [t, <return_val>, get_nested_class]
+        FrameDescriptor: [__annotations__, t, <return_val>, get_nested_class]
         CellVars: Empty
         FreeVars: Empty
         Scope: get_nested_class
             Kind: Function
-            FrameDescriptor: [Test, <>temp2, method_and_var, <return_val>]
+            FrameDescriptor: [__annotations__, Test, <>temp3, method_and_var, <return_val>]
             CellVars: [method_and_var]
             FreeVars: Empty
             Scope: Test
@@ -20,21 +20,21 @@ Scope: []
                 FreeVars: [method_and_var]
                 Scope: str
                     Kind: Function
-                    FrameDescriptor: [self, <return_val>, __class__]
+                    FrameDescriptor: [__annotations__, self, <return_val>, __class__]
                     CellVars: Empty
                     FreeVars: [__class__]
                 Scope: actual_global
                     Kind: Function
-                    FrameDescriptor: [self, <return_val>, __class__]
+                    FrameDescriptor: [__annotations__, self, <return_val>, __class__]
                     CellVars: Empty
                     FreeVars: [__class__]
                 Scope: test
                     Kind: Function
-                    FrameDescriptor: [self, method_and_var, <return_val>, __class__]
+                    FrameDescriptor: [__annotations__, self, method_and_var, <return_val>, __class__]
                     CellVars: Empty
                     FreeVars: [__class__, method_and_var]
                 Scope: method_and_var
                     Kind: Function
-                    FrameDescriptor: [self, <return_val>, __class__]
+                    FrameDescriptor: [__annotations__, self, <return_val>, __class__]
                     CellVars: Empty
                     FreeVars: [__class__]

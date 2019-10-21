@@ -76,7 +76,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [__class__, <return_val>]
+                                FrameDescriptor: 3 slots [__annotations__, __class__, <return_val>]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                                       BlockNode SourceSection: None
                                       BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [1,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None

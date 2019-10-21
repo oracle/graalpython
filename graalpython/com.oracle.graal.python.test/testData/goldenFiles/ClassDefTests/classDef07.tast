@@ -85,7 +85,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 3 slots [dict_setitem, __class__, <return_val>]
+                                FrameDescriptor: 4 slots [__annotations__, dict_setitem, __class__, <return_val>]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -95,7 +95,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: dict_setitem
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,dict_setitem,Illegal]
+                                          Frame: [1,dict_setitem,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
@@ -106,7 +106,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: None
-                                              Frame: [0,dict_setitem,Illegal]
+                                              Frame: [1,dict_setitem,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [94,106]`dict.clear()`
                                           PythonCallNodeGen SourceSection: [94,106]`dict.clear()`
@@ -118,7 +118,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                                 Identifier: dict
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
+                                      Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None

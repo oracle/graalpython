@@ -5,16 +5,16 @@ Scope: []
     FreeVars: Empty
     Scope: mro
         Kind: Function
-        FrameDescriptor: [other, cls, abcs, <return_val>, base]
+        FrameDescriptor: [__annotations__, other, cls, abcs, <return_val>, base]
         CellVars: [abcs, base]
         FreeVars: Empty
         Scope: generator164
             Kind: Generator
-            FrameDescriptor: [abcs, <return_val>, base]
+            FrameDescriptor: [__annotations__, abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator66
             Kind: Generator
-            FrameDescriptor: [b, <return_val>, base]
+            FrameDescriptor: [__annotations__, b, <return_val>, base]
             CellVars: Empty
             FreeVars: [base]

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 1 slots [<return_val>]
+              FrameDescriptor: 2 slots [__annotations__, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -53,7 +53,7 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 3 slots [foo, z, <return_val>]
+                          FrameDescriptor: 4 slots [__annotations__, foo, z, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -64,14 +64,14 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: foo
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,foo,Illegal]
+                                      Frame: [1,foo,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: z
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,z,Illegal]
+                                      Frame: [2,z,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadVarKeywordsNodeGen SourceSection: None
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -79,12 +79,12 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
+                                      Frame: [3,<return_val>,Illegal]
                                     IntegerLiteralNode SourceSection: [33,34]`0`
                                       Value: 0
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [2,<return_val>,Illegal]
+                                Frame: [3,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'await04'> SourceSection: [0,30]`async def f():↵ 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 1 slots [<return_val>]
+              FrameDescriptor: 2 slots [__annotations__, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -42,5 +42,5 @@ ModuleRootNode Name: <module 'await04'> SourceSection: [0,30]`async def f():↵ 
                           Identifier: smth
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

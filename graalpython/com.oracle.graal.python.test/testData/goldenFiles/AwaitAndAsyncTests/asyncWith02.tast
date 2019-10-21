@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [d, b, <return_val>]
+              FrameDescriptor: 4 slots [__annotations__, d, b, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: d
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,d,Illegal]
+                            Frame: [1,d,Illegal]
                         ReadGlobalOrBuiltinNodeGen SourceSection: [35,36]`c`
                           Identifier: c
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,b,Illegal]
+                          Frame: [2,b,Illegal]
                       ReadGlobalOrBuiltinNodeGen SourceSection: [27,28]`a`
                         Identifier: a
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -86,5 +86,5 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                       GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

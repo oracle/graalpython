@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [i, <return_val>]
+              FrameDescriptor: 3 slots [__annotations__, i, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: i
                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                Frame: [0,i,Illegal]
+                                Frame: [1,i,Illegal]
                           ExpressionStatementNode SourceSection: [35,39]`pass`
                             EmptyNode SourceSection: [35,39]`pass`
                         GetIteratorExpressionNodeGen SourceSection: [31,33]`()`
@@ -49,5 +49,5 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
                             PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

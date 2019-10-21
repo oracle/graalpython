@@ -5,161 +5,161 @@ Scope: []
     FreeVars: Empty
     Scope: _print_locale
         Kind: Function
-        FrameDescriptor: [<>temp18, <>temp17, _init_categories, <>temp19, <>temp14, <>temp13, <>temp16, <>temp15, <>temp10, <>temp12, <>temp11, <>temp6, <>temp7, <>temp8, <>temp9, name, categories, enc, lang, category, <return_val>]
+        FrameDescriptor: [<>temp18, <>temp17, _init_categories, <>temp19, <>temp14, <>temp13, <>temp16, <>temp15, <>temp10, <>temp20, <>temp12, <>temp11, __annotations__, <>temp7, <>temp8, <>temp9, name, categories, enc, lang, category, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: _init_categories
             Kind: Function
-            FrameDescriptor: [v, <>temp3, <>temp4, categories, k, <return_val>]
+            FrameDescriptor: [__annotations__, v, <>temp4, categories, k, <>temp5, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: getpreferredencoding
         Kind: Function
-        FrameDescriptor: [result, oldloc, do_setlocale, _bootlocale, <return_val>]
+        FrameDescriptor: [result, __annotations__, oldloc, do_setlocale, _bootlocale, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getpreferredencoding
         Kind: Function
-        FrameDescriptor: [res, do_setlocale, <return_val>]
+        FrameDescriptor: [__annotations__, res, do_setlocale, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getpreferredencoding
         Kind: Function
-        FrameDescriptor: [do_setlocale, <return_val>]
+        FrameDescriptor: [__annotations__, do_setlocale, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getpreferredencoding
         Kind: Function
-        FrameDescriptor: [do_setlocale, _bootlocale, <return_val>]
+        FrameDescriptor: [__annotations__, do_setlocale, _bootlocale, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: resetlocale
         Kind: Function
-        FrameDescriptor: [category, <return_val>]
+        FrameDescriptor: [__annotations__, category, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: setlocale
         Kind: Function
-        FrameDescriptor: [category, locale, <return_val>]
+        FrameDescriptor: [__annotations__, category, locale, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getlocale
         Kind: Function
-        FrameDescriptor: [localename, category, <return_val>]
+        FrameDescriptor: [__annotations__, localename, category, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getdefaultlocale
         Kind: Function
-        FrameDescriptor: [lookup, code, localename, os, <>temp8, <>temp9, variable, envvars, encoding, <return_val>, _locale]
+        FrameDescriptor: [__annotations__, lookup, code, localename, os, <>temp9, variable, <>temp10, envvars, encoding, <return_val>, _locale]
         CellVars: Empty
         FreeVars: Empty
     Scope: _build_localename
         Kind: Function
-        FrameDescriptor: [<>temp3, language, <>temp4, encoding, <return_val>, localetuple]
+        FrameDescriptor: [__annotations__, language, <>temp4, <>temp5, encoding, <return_val>, localetuple]
         CellVars: Empty
         FreeVars: Empty
     Scope: _parse_localename
         Kind: Function
-        FrameDescriptor: [localename, code, modifier, <>temp3, <>temp4, <return_val>]
+        FrameDescriptor: [__annotations__, localename, code, modifier, <>temp4, <>temp5, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: normalize
         Kind: Function
-        FrameDescriptor: [lang_enc, <>temp17, norm_encoding, localename, code, <>temp14, <>temp16, modifier, <>temp15, <>temp10, <>temp12, <>temp11, encoding, lookup_name, langname, <>temp9, <return_val>, defmod]
+        FrameDescriptor: [<>temp18, lang_enc, <>temp17, norm_encoding, localename, code, <>temp13, <>temp16, modifier, <>temp15, <>temp10, <>temp12, <>temp11, encoding, __annotations__, lookup_name, langname, <return_val>, defmod]
         CellVars: Empty
         FreeVars: Empty
     Scope: _append_modifier
         Kind: Function
-        FrameDescriptor: [code, <>temp6, <>temp7, modifier, <>temp5, encoding, <return_val>, _]
+        FrameDescriptor: [__annotations__, code, <>temp6, <>temp7, <>temp8, modifier, encoding, <return_val>, _]
         CellVars: Empty
         FreeVars: Empty
     Scope: _replace_encoding
         Kind: Function
-        FrameDescriptor: [norm_encoding, code, langname, encoding, <return_val>]
+        FrameDescriptor: [__annotations__, norm_encoding, code, langname, encoding, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _test
         Kind: Function
-        FrameDescriptor: [<return_val>, s1]
+        FrameDescriptor: [__annotations__, <return_val>, s1]
         CellVars: Empty
         FreeVars: Empty
     Scope: atoi
         Kind: Function
-        FrameDescriptor: [string, <return_val>]
+        FrameDescriptor: [__annotations__, string, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: atof
         Kind: Function
-        FrameDescriptor: [string, func, <return_val>]
+        FrameDescriptor: [__annotations__, string, func, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: delocalize
         Kind: Function
-        FrameDescriptor: [dd, string, conv, <return_val>, ts]
+        FrameDescriptor: [dd, __annotations__, string, conv, <return_val>, ts]
         CellVars: Empty
         FreeVars: Empty
     Scope: str
         Kind: Function
-        FrameDescriptor: [val, <return_val>]
+        FrameDescriptor: [val, __annotations__, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: currency
         Kind: Function
-        FrameDescriptor: [val, symbol, sign_pos, precedes, sign, smb, separated, grouping, s, conv, digits, international, <return_val>]
+        FrameDescriptor: [val, symbol, sign_pos, precedes, sign, smb, separated, grouping, __annotations__, s, conv, digits, international, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: format
         Kind: Function
-        FrameDescriptor: [monetary, additional, warnings, match, percent, value, grouping, <return_val>]
+        FrameDescriptor: [__annotations__, monetary, additional, warnings, match, percent, value, grouping, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: format_string
         Kind: Function
-        FrameDescriptor: [val, new_val, perc, monetary, f, i, percents, new_f, grouping, <return_val>, starcount]
+        FrameDescriptor: [val, __annotations__, new_val, perc, monetary, f, i, percents, new_f, grouping, <return_val>, starcount]
         CellVars: Empty
         FreeVars: Empty
     Scope: _format
         Kind: Function
-        FrameDescriptor: [seps, monetary, decimal_point, formatted, additional, <>temp10, <>temp12, <>temp11, percent, grouping, <>temp9, parts, value, <return_val>]
+        FrameDescriptor: [seps, monetary, decimal_point, <>temp13, formatted, additional, <>temp10, <>temp12, <>temp11, percent, grouping, __annotations__, parts, value, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _strip_padding
         Kind: Function
-        FrameDescriptor: [amount, s, rpos, lpos, <return_val>]
+        FrameDescriptor: [__annotations__, amount, s, rpos, lpos, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _group
         Kind: Function
-        FrameDescriptor: [right_spaces, s, monetary, thousands_sep, left_spaces, stripped, groups, conv, interval, grouping, <return_val>]
+        FrameDescriptor: [right_spaces, __annotations__, s, monetary, thousands_sep, left_spaces, stripped, groups, conv, interval, grouping, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _grouping_intervals
         Kind: Generator
-        FrameDescriptor: [last_interval, interval, grouping, <return_val>]
+        FrameDescriptor: [__annotations__, last_interval, interval, grouping, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: localeconv
         Kind: Function
-        FrameDescriptor: [d, <return_val>]
+        FrameDescriptor: [__annotations__, d, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: setlocale
         Kind: Function
-        FrameDescriptor: [category, value, <return_val>]
+        FrameDescriptor: [__annotations__, category, value, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: localeconv
         Kind: Function
-        FrameDescriptor: [<return_val>]
+        FrameDescriptor: [__annotations__, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _strxfrm
         Kind: Function
-        FrameDescriptor: [s, <return_val>]
+        FrameDescriptor: [__annotations__, s, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _strcoll
         Kind: Function
-        FrameDescriptor: [a, b, <return_val>]
+        FrameDescriptor: [__annotations__, a, b, <return_val>]
         CellVars: Empty
         FreeVars: Empty

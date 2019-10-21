@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'functionDefCPT04'> SourceSection: [0,17]`def f(**k
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [kw, <return_val>]
+              FrameDescriptor: 3 slots [__annotations__, kw, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,12 +36,12 @@ ModuleRootNode Name: <module 'functionDefCPT04'> SourceSection: [0,17]`def f(**k
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: kw
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,kw,Illegal]
+                        Frame: [1,kw,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadVarKeywordsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [13,17]`pass`
                       EmptyNode SourceSection: [13,17]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

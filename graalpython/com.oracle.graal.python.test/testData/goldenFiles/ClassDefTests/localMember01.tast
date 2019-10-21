@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [a_local_var, f, <return_val>]
+              FrameDescriptor: 4 slots [__annotations__, a_local_var, f, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -37,12 +37,12 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                       WriteLocalVariableNodeGen SourceSection: [14,41]`a_local_var = "a loc...`
                         Identifier: a_local_var
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,a_local_var,Illegal]
+                          Frame: [1,a_local_var,Illegal]
                         StringLiteralNode SourceSection: [28,41]`"a local var"`
                       WriteLocalVariableNodeGen SourceSection: [47,148]`def f():â†µ        cla...`
                         Identifier: f
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,f,Illegal]
+                          Frame: [2,f,Illegal]
                         FunctionDefinitionNode Name: f SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                             CelVars: None
                             FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [C, <>temp1, <return_val>]
+                            FrameDescriptor: 4 slots [__annotations__, C, <>temp2, <return_val>]
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
@@ -69,12 +69,12 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                     WriteLocalVariableNodeGen SourceSection: [64,128]`class C(object):â†µ   ...`
                                       Identifier: C
                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,C,Illegal]
+                                        Frame: [1,C,Illegal]
                                       ExpressionWithSideEffects SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <>temp1
+                                          Identifier: <>temp2
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,<>temp1,Illegal]
+                                            Frame: [2,<>temp2,Illegal]
                                           PythonCallNodeGen SourceSection: [64,128]`class C(object):â†µ   ...`
                                             CachedCallNodeGen SourceSection: None
                                               CreateArgumentsNodeGen SourceSection: None
@@ -133,27 +133,27 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                               BuiltinsLiteralNode SourceSection: None
                                         WriteCellVarNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
-                                            Frame: [1,<>temp1,Illegal]
+                                            Frame: [2,<>temp2,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [1,<>temp1,Illegal]
+                                          Frame: [2,<>temp2,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [128,148]`return C.a_local_var...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         GetAttributeNodeGen SourceSection: [135,148]`C.a_local_var`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: a_local_var
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNode SourceSection: [135,136]`C`
-                                            Frame: [0,C,Illegal]
+                                            Frame: [1,C,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

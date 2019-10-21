@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 1 slots [<return_val>]
+                FrameDescriptor: 2 slots [__annotations__, <return_val>]
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None
@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                       ExpressionStatementNode SourceSection: [23,27]`pass`
                         EmptyNode SourceSection: [23,27]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
+                      Frame: [1,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [0,13]`@staticmethod`
               Identifier: staticmethod

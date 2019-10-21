@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 2 slots [extra_opts, <return_val>]
+                  FrameDescriptor: 3 slots [__annotations__, extra_opts, <return_val>]
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
@@ -40,14 +40,14 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: extra_opts
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,extra_opts,Illegal]
+                            Frame: [1,extra_opts,Illegal]
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
                         ExpressionStatementNode SourceSection: [67,71]`pass`
                           EmptyNode SourceSection: [67,71]`pass`
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                        Frame: [1,<return_val>,Illegal]
+                        Frame: [2,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,37]`def bla():â†µ  install...`
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 1 slots [<return_val>]
+              FrameDescriptor: 2 slots [__annotations__, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -92,5 +92,5 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                           Identifier: install
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

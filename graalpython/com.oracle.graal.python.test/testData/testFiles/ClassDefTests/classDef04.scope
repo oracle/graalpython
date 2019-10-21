@@ -10,6 +10,6 @@ Scope: []
         FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [imagpart, realpart, self, <return_val>, __class__]
+            FrameDescriptor: [__annotations__, imagpart, realpart, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]

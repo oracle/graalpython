@@ -2,14 +2,18 @@ ModuleRootNode Name: <module 'annAssign01'> SourceSection: [0,10]`a: int = 1`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor:  Empty
+  FrameDescriptor: 1 slots [__annotations__]
   Documentation: None
   InnerRootNode SourceSection: [0,10]`a: int = 1`
-    ExpressionWithSideEffect SourceSection: [0,10]`a: int = 1`
-      Expression:
-        EmptyNode SourceSection: None
-      SideEffect:
-        WriteNameNodeGen SourceSection: [0,10]`a: int = 1`
-          Identifier: a
-          IntegerLiteralNode SourceSection: [9,10]`1`
-            Value: 1
+    ExpressionWithSideEffects SourceSection: [0,10]`a: int = 1`
+      WriteNameNodeGen SourceSection: [0,10]`a: int = 1`
+        Identifier: a
+        IntegerLiteralNode SourceSection: [9,10]`1`
+          Value: 1
+      SetItemNodeGen SourceSection: [0,0]Empty
+        ReadNameNodeGen SourceSection: None
+          Identifier: __annotations__
+        StringLiteralNode SourceSection: [0,0]Empty
+        ReadNameNodeGen SourceSection: [3,6]`int`
+          Identifier: int
+      EmptyNode SourceSection: None

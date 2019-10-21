@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [x, y, result, <return_val>]
+              FrameDescriptor: 5 slots [__annotations__, x, y, result, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -37,14 +37,14 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: x
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,x,Illegal]
+                          Frame: [1,x,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: y
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,y,Illegal]
+                          Frame: [2,y,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -53,15 +53,15 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                         WriteLocalVariableNodeGen SourceSection: [35,49]`result = x / y`
                           Identifier: result
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [2,result,Illegal]
+                            Frame: [3,result,Illegal]
                           BinaryArithmeticExpression SourceSection: [44,49]`x / y`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __truediv__
                             ReadLocalVariableNode SourceSection: [44,45]`x`
-                              Frame: [0,x,Illegal]
+                              Frame: [1,x,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [48,49]`y`
-                              Frame: [1,y,Illegal]
+                              Frame: [2,y,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [88,114]`print("division by z...`
@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               CallDispatchNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [139,150]`"result is"`
                             ReadLocalVariableNode SourceSection: [152,158]`result`
-                              Frame: [2,result,Illegal]
+                              Frame: [3,result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: print
@@ -99,5 +99,5 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

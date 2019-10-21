@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'functionDef07'> SourceSection: [0,56]`↵def foo(p
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [par1, par2, <return_val>]
+              FrameDescriptor: 4 slots [__annotations__, par1, par2, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -40,14 +40,14 @@ ModuleRootNode Name: <module 'functionDef07'> SourceSection: [0,56]`↵def foo(p
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: par1
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,par1,Illegal]
+                          Frame: [1,par1,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: par2
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,par2,Illegal]
+                          Frame: [2,par2,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -55,16 +55,16 @@ ModuleRootNode Name: <module 'functionDef07'> SourceSection: [0,56]`↵def foo(p
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
+                          Frame: [3,<return_val>,Illegal]
                         BinaryArithmeticExpression SourceSection: [45,56]`par1 * par2`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __mul__
                           ReadLocalVariableNode SourceSection: [45,49]`par1`
-                            Frame: [0,par1,Illegal]
+                            Frame: [1,par1,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [52,56]`par2`
-                            Frame: [1,par2,Illegal]
+                            Frame: [2,par2,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
