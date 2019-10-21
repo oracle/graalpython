@@ -169,9 +169,6 @@ public final class PythonParserImpl implements PythonParser {
             }
 
         } catch (Exception e) {
-            System.out.println("----------------------------");
-            e.printStackTrace();
-            System.out.println("----------------------------");
             if ((mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement) && e instanceof PIncompleteSourceException) {
                 ((PIncompleteSourceException) e).setSource(source);
                 throw e;
