@@ -54,7 +54,7 @@ public abstract class PClosureFunctionRootNode extends PClosureRootNode {
     private final Signature signature;
 
     protected PClosureFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots, Signature signature) {
-        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
+        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots(), true);
         this.cellVarSlots = executionCellSlots.getCellVarSlots();
         this.cellEffectivelyFinalAssumptions = executionCellSlots.getCellVarAssumptions();
         this.signature = signature;

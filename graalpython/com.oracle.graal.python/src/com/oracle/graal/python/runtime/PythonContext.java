@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -359,6 +360,7 @@ public final class PythonContext {
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        mainModule.setAttribute(__ANNOTATIONS__, core.factory().createDict());
         try {
             PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
         } catch (UnsupportedMessageException e) {

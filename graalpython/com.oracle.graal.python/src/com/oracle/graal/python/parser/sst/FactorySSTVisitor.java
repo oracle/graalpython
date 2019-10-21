@@ -53,6 +53,7 @@ import com.oracle.graal.python.parser.*;
 import com.oracle.graal.python.nodes.PNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
@@ -111,6 +112,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
@@ -200,8 +202,21 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
-        // TODO should be done type checking here?
-        return visit((AssignmentSSTNode) node);
+        PNode assignmentNode = visit((AssignmentSSTNode) node);
+        if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
+            // annotations in a function we ignore at all. Even there are not evalueated, whether
+            // the type is wrong
+            // create simple SST tree for : __annotations__['var_name'] = type
+            VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs[0];
+            SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(__ANNOTATIONS__, -1, -1), new StringLiteralSSTNode(new String[]{"'" + varLookupNode.name + "'"}, -1, -1), -1,
+                            -1);
+            AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, node.type, -1, -1);
+            PNode assignAnnotationNode = visit(assignAnnotationSST);
+            // return block with statements[the assignment, add variable name, type to
+            // __annotations__]
+            return BlockNode.create(new StatementNode[]{(StatementNode) assignmentNode, (StatementNode) assignAnnotationNode});
+        }
+        return assignmentNode;
     }
 
     @Override
@@ -342,15 +357,25 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
         SSTNode[] bodyNodes = ((BlockSSTNode) node.body).statements;
 
-        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + 1];
+        int delta = 1 + (classScope.hasAnnotations() ? 1 : 0);
+        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + delta];
         bodyStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
         for (int i = 0; i < bodyNodes.length; i++) {
-            bodyStatements[i + 1] = (StatementNode) bodyNodes[i].accept(this);
+            bodyStatements[i + delta] = (StatementNode) bodyNodes[i].accept(this);
         }
         ExpressionNode doc = StringUtils.extractDoc(bodyStatements[1]);
         if (doc != null) {
             scopeEnvironment.createLocal(__DOC__);
             bodyStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
+            if (classScope.hasAnnotations()) {
+                // create __annotation__ dictionery for the class
+                bodyStatements[2] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
+            }
+        } else {
+            if (classScope.hasAnnotations()) {
+                // create __annotation__ dictionery for the class
+                bodyStatements[1] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
+            }
         }
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
@@ -505,11 +530,19 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         PNode decorated = node.decorated.accept(this);
         ExpressionNode definition = null;
+        BlockNode annotationBlock = null;
         if (decorated instanceof WriteNode) {
             // TODO: should we split creating FunctionDefinitionNode and WriteNode for the function?
             definition = ((WriteNode) decorated).getRhs();
         } else if (decorated instanceof ExpressionNode) {
             definition = (ExpressionNode) decorated;
+        } else if (decorated instanceof BlockNode) {
+            // there is block with statements [function, annotation assignment, annotation
+            // assignment .....]
+            annotationBlock = (BlockNode) decorated;
+            if (annotationBlock.getStatements()[0] instanceof WriteNode) {
+                definition = ((WriteNode) annotationBlock.getStatements()[0]).getRhs();
+            }
         }
 
         for (PNode decorator : decorators) {
@@ -518,6 +551,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         PNode result = scopeEnvironment.findVariable(definitionName).makeWriteNode(definition);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
+        if (annotationBlock != null) {
+            // if there are annotations -> return block [decorated function, annotation assignment,
+            // annotation assignment ...]
+            StatementNode[] annotationStatements = annotationBlock.getStatements();
+            annotationStatements[0] = (StatementNode) result;
+            result = BlockNode.create(annotationStatements);
+        }
         return result;
     }
 
@@ -747,6 +787,26 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         StatementNode writeNode = funcVar.makeWriteNode(funcDef);
         // TODO I'm not sure, whether this assingning of sourcesection is right.
         writeNode.assignSourceSection(((FunctionDefinitionNode) funcDef).getFunctionRoot().getSourceSection());
+        Map<String, SSTNode> annParams = node.argBuilder.getAnnotatedArgs();
+        if (annParams != null) {
+            // if the function has annotated attributes
+            StatementNode[] functionWithAnnotation = new StatementNode[1 + annParams.size()];
+            functionWithAnnotation[0] = writeNode;
+            int i = 1;
+            for (String paramName : annParams.keySet()) {
+                SSTNode paramType = annParams.get(paramName);
+                // for every annotated attribute create simple tree:
+                // fn_name.__annotations__['attr_name'] = type
+                SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new GetAttributeSSTNode(new VarLookupSSTNode(node.name, -1, -1), __ANNOTATIONS__, -1, -1),
+                                new StringLiteralSSTNode(new String[]{"'" + paramName + "'"}, -1, -1), -1, -1);
+                AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, paramType, -1, -1);
+                PNode assignAnnotationNode = assignAnnotationSST.accept(this);
+                functionWithAnnotation[i++] = (StatementNode) assignAnnotationNode;
+            }
+            // return block with statements [function write node, add annotated arg1 to
+            // _annotations, ... ]
+            writeNode = BlockNode.create(functionWithAnnotation);
+        }
         scopeEnvironment.setCurrentScope(oldScope);
         return writeNode;
     }
@@ -1167,7 +1227,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     protected SourceSection createSourceSection(int start, int stop) {
-        if (source.getLength() > start && source.getLength() >= stop) {
+        if (start < stop && source.getLength() > start && source.getLength() >= stop) {
             return source.createSection(start, stop - start);
         } else {
             return source.createUnavailableSection();

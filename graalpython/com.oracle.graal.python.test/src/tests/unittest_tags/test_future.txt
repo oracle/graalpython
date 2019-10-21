@@ -1,6 +1,5 @@
-test_future1
-test_future2
-test_future3
-test_multiple_features
-test_parserhack
-test_unicode_literals_exec
+*FutureTest.test_future1
+*FutureTest.test_future2
+*FutureTest.test_future3
+*FutureTest.test_multiple_features
+*FutureTest.test_unicode_literals_exec

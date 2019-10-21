@@ -213,4 +213,14 @@ public class AssignmentTests extends ParserTestBase {
     public void annotationType01() throws Exception {
         checkTreeResult("j: int");
     }
+
+    @Test
+    public void annotationType02() throws Exception {
+        checkScopeAndTree("def fn():\n" + "  index : int = 0\n");
+    }
+
+    @Test
+    public void annotationType03() throws Exception {
+        checkTreeResult("j = 1\n" + "ahoj.__annotations__['j'] = float");
+    }
 }

@@ -1,0 +1,6 @@
+*OpcodeTest.test_compare_function_objects
+*OpcodeTest.test_do_not_recreate_annotations
+*OpcodeTest.test_modulo_of_string_subclasses
+*OpcodeTest.test_no_annotations_if_not_needed
+*OpcodeTest.test_raise_class_exceptions
+*OpcodeTest.test_try_inside_for_loop

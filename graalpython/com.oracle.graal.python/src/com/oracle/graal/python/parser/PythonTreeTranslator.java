@@ -231,7 +231,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode file = asExpression(super.visitFile_input(ctx));
         deriveSourceSection(ctx, file);
         environment.popScope();
-        return factory.createModuleRoot(name, getModuleDoc(ctx), file, ctx.scope.getFrameDescriptor());
+        return factory.createModuleRoot(name, getModuleDoc(ctx), file, ctx.scope.getFrameDescriptor(), false);
     }
 
     @Override
@@ -258,9 +258,9 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else if (mode == ParserMode.Statement) {
             body = factory.createPrintExpression(body);
             deriveSourceSection(ctx, body);
-            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
+            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor(), false);
         } else {
-            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor());
+            return factory.createModuleRoot("<expression>", getModuleDoc(ctx), body, ctx.scope.getFrameDescriptor(), false);
         }
     }
 
