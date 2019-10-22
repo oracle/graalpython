@@ -111,6 +111,7 @@ import com.oracle.truffle.api.source.SourceSection;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -383,7 +384,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode bodyAsExpr = new ReturnTargetNode(body, nodeFactory.createNullLiteral());
         ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots());
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
         scopeEnvironment.setCurrentScope(node.classScope.getParent());
 
         ExpressionNode[] args;
@@ -530,19 +531,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         PNode decorated = node.decorated.accept(this);
         ExpressionNode definition = null;
-        BlockNode annotationBlock = null;
         if (decorated instanceof WriteNode) {
             // TODO: should we split creating FunctionDefinitionNode and WriteNode for the function?
             definition = ((WriteNode) decorated).getRhs();
         } else if (decorated instanceof ExpressionNode) {
             definition = (ExpressionNode) decorated;
-        } else if (decorated instanceof BlockNode) {
-            // there is block with statements [function, annotation assignment, annotation
-            // assignment .....]
-            annotationBlock = (BlockNode) decorated;
-            if (annotationBlock.getStatements()[0] instanceof WriteNode) {
-                definition = ((WriteNode) annotationBlock.getStatements()[0]).getRhs();
-            }
         }
 
         for (PNode decorator : decorators) {
@@ -551,13 +544,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         PNode result = scopeEnvironment.findVariable(definitionName).makeWriteNode(definition);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-        if (annotationBlock != null) {
-            // if there are annotations -> return block [decorated function, annotation assignment,
-            // annotation assignment ...]
-            StatementNode[] annotationStatements = annotationBlock.getStatements();
-            annotationStatements[0] = (StatementNode) result;
-            result = BlockNode.create(annotationStatements);
-        }
         return result;
     }
 
@@ -759,6 +745,15 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         }
 
+        Map<String, SSTNode> sstAnnotations = node.argBuilder.getAnnotatedArgs();
+        Map<String, ExpressionNode> annotations = null;
+        if (sstAnnotations != null && !sstAnnotations.isEmpty()) {
+            annotations = new HashMap<>(sstAnnotations.size());
+            for (String argName : sstAnnotations.keySet()) {
+                SSTNode sstType = sstAnnotations.get(argName);
+                annotations.put(argName, (ExpressionNode) sstType.accept(this));
+            }
+        }
         SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
         returnTarget.assignSourceSection(sourceSection);
 
@@ -777,36 +772,16 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode());
+                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(), annotations);
         } else {
             funcDef = new FunctionDefinitionNode(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
-                            scopeEnvironment.getExecutionCellSlots());
+                            scopeEnvironment.getExecutionCellSlots(), annotations);
         }
         scopeEnvironment.setCurrentScope(node.functionScope.getParent());
         ReadNode funcVar = scopeEnvironment.findVariable(node.name);
         StatementNode writeNode = funcVar.makeWriteNode(funcDef);
         // TODO I'm not sure, whether this assingning of sourcesection is right.
         writeNode.assignSourceSection(((FunctionDefinitionNode) funcDef).getFunctionRoot().getSourceSection());
-        Map<String, SSTNode> annParams = node.argBuilder.getAnnotatedArgs();
-        if (annParams != null) {
-            // if the function has annotated attributes
-            StatementNode[] functionWithAnnotation = new StatementNode[1 + annParams.size()];
-            functionWithAnnotation[0] = writeNode;
-            int i = 1;
-            for (String paramName : annParams.keySet()) {
-                SSTNode paramType = annParams.get(paramName);
-                // for every annotated attribute create simple tree:
-                // fn_name.__annotations__['attr_name'] = type
-                SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new GetAttributeSSTNode(new VarLookupSSTNode(node.name, -1, -1), __ANNOTATIONS__, -1, -1),
-                                new StringLiteralSSTNode(new String[]{"'" + paramName + "'"}, -1, -1), -1, -1);
-                AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, paramType, -1, -1);
-                PNode assignAnnotationNode = assignAnnotationSST.accept(this);
-                functionWithAnnotation[i++] = (StatementNode) assignAnnotationNode;
-            }
-            // return block with statements [function write node, add annotated arg1 to
-            // _annotations, ... ]
-            writeNode = BlockNode.create(functionWithAnnotation);
-        }
         scopeEnvironment.setCurrentScope(oldScope);
         return writeNode;
     }
@@ -936,10 +911,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             RootCallTarget ct = gtran.translate();
             funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
+                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode(), null);
         } else {
             RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
-            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }
         scopeEnvironment.setCurrentScope(oldScope);

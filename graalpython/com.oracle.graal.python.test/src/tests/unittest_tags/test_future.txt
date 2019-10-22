@@ -2,4 +2,5 @@
 *FutureTest.test_future2
 *FutureTest.test_future3
 *FutureTest.test_multiple_features
+*FutureTest.test_parserhack
 *FutureTest.test_unicode_literals_exec

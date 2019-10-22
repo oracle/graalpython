@@ -51,3 +51,9 @@ class DecoratedMethodClass:
     @abstractmethod
     def method(self, index: int = 1):
         pass
+
+class ClsWithClassMethod:
+
+    @classmethod
+    def method(self, string: str):
+        return str

@@ -111,3 +111,11 @@ def test_decoratedMethod():
 
     assert len(m.DecoratedMethodClass.method.__annotations__) == 1, "__annotations__ attribute was not found"
     assert int == m.DecoratedMethodClass.method.__annotations__['index']
+
+def test_decoratedClassMethod():
+    import annotations.annotatedClasses as m
+
+    assert hasattr(m.ClsWithClassMethod, '__annotations__') == False
+
+    assert len(m.ClsWithClassMethod.method.__annotations__) == 1, "__annotations__ attribute was not found"
+    assert str == m.ClsWithClassMethod.method.__annotations__['string']

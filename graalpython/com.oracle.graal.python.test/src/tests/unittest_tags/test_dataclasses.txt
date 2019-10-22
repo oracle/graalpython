@@ -5,13 +5,11 @@
 *TestCase.test_eq_order
 *TestCase.test_helper_fields_exception
 *TestCase.test_init_var_default_factory
-*TestCase.test_init_var_with_default
 *TestCase.test_missing_repr
 *TestCase.test_no_fields
 *TestCase.test_no_fields_but_member_variable
 *TestCase.test_post_init_super
 *TestDocString.test_docstring_no_fields
 *TestInit.test_no_init
-*TestEq.test_no_eq
 *TestHash.test_0_field_hash
 *TestHash.test_hash_rules

@@ -1,6 +1,9 @@
 *TokenTests.test_backslash
+*TokenTests.test_ellipsis
+*TokenTests.test_float_exponent_tokenization
 *TokenTests.test_floats
 *TokenTests.test_long_integers
+*TokenTests.test_plain_integers
 *TokenTests.test_string_literals
 *GrammarTests.test_additive_ops
 *GrammarTests.test_assert
@@ -20,6 +23,7 @@
 *GrammarTests.test_if
 *GrammarTests.test_if_else_expr
 *GrammarTests.test_import
+*GrammarTests.test_lambdef
 *GrammarTests.test_matrix_mul
 *GrammarTests.test_multiplicative_ops
 *GrammarTests.test_nonlocal
@@ -40,3 +44,4 @@
 *GrammarTests.test_var_annot_refleak
 *GrammarTests.test_while
 *GrammarTests.test_with_statement
+*GrammarTests.test_yield
