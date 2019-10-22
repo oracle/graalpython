@@ -34,16 +34,23 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -57,12 +64,14 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -75,10 +84,33 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionValues;
-
 public final class PythonContext {
+
+    private static final class PythonThreadState {
+
+        private WeakReference<Thread> owner;
+
+        /*
+         * The reference to the last top frame on the Python stack during interop calls. Initially,
+         * this is EMPTY representing the top frame.
+         */
+        private PFrame.Reference topframeref = Reference.EMPTY;
+
+        private WeakReference<PLock> sentinelLock;
+
+        /* corresponds to 'PyThreadState.curexc_*' */
+        private PException currentException;
+
+        /* corresponds to 'PyThreadState.exc_*' */
+        private PException caughtException;
+
+        PythonThreadState() {
+        }
+
+        PythonThreadState(Thread owner) {
+            this.owner = new WeakReference<>(owner);
+        }
+    }
 
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
@@ -105,19 +137,20 @@ public final class PythonContext {
 
     @CompilationFinal private TruffleLanguage.Env env;
 
-    // TODO: frame: make these three ThreadLocal
+    /* this will be the single thread state if running single-threaded */
+    private final PythonThreadState singleThreadState = new PythonThreadState();
 
-    /*
-     * The reference to the last top frame on the Python stack during interop calls. Initially, this
-     * is EMPTY representing the top frame.
-     */
-    private PFrame.Reference topframeref = Reference.EMPTY;
+    /* for fast access to the PythonThreadState object by the owning thread */
+    private ThreadLocal<PythonThreadState> threadState;
 
-    /* corresponds to 'PyThreadState.curexc_*' */
-    private PException currentException;
+    /* array of thread states */
+    private volatile PythonThreadState[] threadStates;
 
-    /* corresponds to 'PyThreadState.exc_*' */
-    private PException caughtException;
+    /* map of thread IDs to indices for array 'threadStates' */
+    private volatile Map<Long, Integer> threadStateMapping;
+
+    /* number of threads attached to this context */
+    private volatile int attachedThreads = 0;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -260,33 +293,34 @@ public final class PythonContext {
     }
 
     public void setCurrentException(PException e) {
-        currentException = e;
+        getThreadState().currentException = e;
     }
 
     public PException getCurrentException() {
-        return currentException;
+        return getThreadState().currentException;
     }
 
     public void setCaughtException(PException e) {
-        caughtException = e;
+        getThreadState().caughtException = e;
     }
 
     public PException getCaughtException() {
-        return caughtException;
+        return getThreadState().caughtException;
     }
 
     public void setTopFrameInfo(PFrame.Reference topframeref) {
-        this.topframeref = topframeref;
+        getThreadState().topframeref = topframeref;
     }
 
     public PFrame.Reference popTopFrameInfo() {
-        PFrame.Reference ref = topframeref;
-        topframeref = null;
+        PythonThreadState threadState = getThreadState();
+        PFrame.Reference ref = threadState.topframeref;
+        threadState.topframeref = null;
         return ref;
     }
 
     public PFrame.Reference peekTopFrameInfo() {
-        return topframeref;
+        return getThreadState().topframeref;
     }
 
     public boolean isInitialized() {
@@ -378,7 +412,7 @@ public final class PythonContext {
             patchPackagePaths(stdLibPlaceholder, getStdlibHome());
         }
 
-        currentException = null;
+        applyToAllThreadStates(threadState -> threadState.currentException = null);
         isInitialized = true;
     }
 
@@ -655,11 +689,6 @@ public final class PythonContext {
         }
     }
 
-    @TruffleBoundary
-    public void createInteropLock() {
-        interopLock = new ReentrantLock();
-    }
-
     /**
      * This is like {@code Env#getPublicTruffleFile(String)} but also allows access to files in the
      * language home directory matching one of the given file extensions. This is mostly useful to
@@ -734,5 +763,97 @@ public final class PythonContext {
     public void popCurrentImport() {
         assert currentImport.get() != null && currentImport.get().peek() != null : "invalid popCurrentImport without push";
         currentImport.get().pop();
+    }
+
+    private PythonThreadState getThreadState() {
+        if (singleThreaded.isValid()) {
+            return singleThreadState;
+        }
+        return getThreadStateMultiThreaded();
+    }
+
+    @TruffleBoundary
+    private PythonThreadState getThreadStateMultiThreaded() {
+        PythonThreadState curThreadState = threadState.get();
+        if (curThreadState == null) {
+            // this should happen just the first time the current thread accesses the thread state
+            curThreadState = getThreadStateFullLookup();
+            threadState.set(curThreadState);
+        }
+        assert Thread.currentThread() == curThreadState.owner.get();
+        return curThreadState;
+    }
+
+    private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
+        if (singleThreaded.isValid()) {
+            action.accept(singleThreadState);
+        } else {
+            for (int i = 0; i < attachedThreads; i++) {
+                action.accept(threadStates[i]);
+            }
+        }
+    }
+
+    @TruffleBoundary
+    private PythonThreadState getThreadStateFullLookup() {
+        int idx = threadStateMapping.get(Thread.currentThread().getId());
+        return threadStates[idx];
+    }
+
+    public void setSentinelLockWeakref(WeakReference<PLock> sentinelLock) {
+        getThreadState().sentinelLock = sentinelLock;
+    }
+
+    @TruffleBoundary
+    public void initializeMultiThreading() {
+        interopLock = new ReentrantLock();
+        singleThreaded.invalidate();
+        threadStates = new PythonThreadState[]{singleThreadState};
+        threadState = new ThreadLocal<>();
+    }
+
+    public void attachThread(Thread thread) {
+        CompilerAsserts.neverPartOfCompilation();
+        // The first attached thread will be the 'main' thread (or similar).
+        if (threadStateMapping == null) {
+            assert attachedThreads == 0;
+            assert singleThreaded.isValid();
+            threadStateMapping = new HashMap<>();
+            threadStateMapping.put(thread.getId(), 0);
+            singleThreadState.owner = new WeakReference<>(thread);
+        } else {
+            assert threadStates[0] == singleThreadState;
+            assert attachedThreads > 0;
+            threadStateMapping.put(thread.getId(), attachedThreads);
+            if (attachedThreads >= threadStates.length) {
+                threadStates = Arrays.copyOf(threadStates, threadStates.length * 2);
+            }
+            threadStates[attachedThreads] = new PythonThreadState(thread);
+        }
+        attachedThreads++;
+    }
+
+    public void disposeThread(Thread thread) {
+        CompilerAsserts.neverPartOfCompilation();
+        long threadId = thread.getId();
+        assert threadStateMapping.containsKey(threadId) : "thread was not attached to this context";
+        // check if there is a live sentinel lock
+        if (threadStates == null) {
+            releaseSentinelLock(singleThreadState.sentinelLock);
+        } else {
+            int idx = threadStateMapping.get(threadId);
+            releaseSentinelLock(threadStates[idx].sentinelLock);
+        }
+        threadStateMapping.remove(threadId);
+    }
+
+    private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {
+        if (sentinelLockWeakref != null) {
+            PLock sentinelLock = sentinelLockWeakref.get();
+            if (sentinelLock != null) {
+                // release the sentinel lock
+                sentinelLock.release();
+            }
+        }
     }
 }
