@@ -1152,7 +1152,12 @@ index 14451fa..85e64cc 100644
          cxx.linker_so = [cxx.linker_so[0], cxx.compiler_cxx[0]] \
 
 '''
-        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"}, **kwargs)
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        numpy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                numpy_build_env[key] = os.environ[key]
+        install_from_pypi("numpy==1.16.4", patch=patch, env=numpy_build_env, **kwargs)
 
     @pip_package()
     def dateutil(**kwargs):
@@ -1348,7 +1353,12 @@ index 2c7508f..f3352ec 100755
      test = PytestTester(__name__)
      del PytestTester
 '''
-        install_from_pypi("scipy==1.3.1", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"}, **kwargs)
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                scipy_build_env[key] = os.environ[key]
+        install_from_pypi("scipy==1.3.1", patch=patch, env=scipy_build_env, **kwargs)
 
     return locals()
 
