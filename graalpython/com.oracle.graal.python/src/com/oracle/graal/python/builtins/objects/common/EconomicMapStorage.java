@@ -234,12 +234,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             return true;
         }
         if (strategy != null) {
-            // both need to be called in order to capture the side-effects of implemented __hash__
-            // and __eq__ methods
-            // see: test_dict.py: test_errors_in_view_containment_check for more details
-            boolean sameHash = strategy.hashCode(key) == strategy.hashCode(entryKey);
-            boolean areEqual = strategy.equals(key, entryKey);
-            return sameHash && areEqual;
+            return strategy.equals(key, entryKey);
         }
         return key.equals(entryKey);
     }
