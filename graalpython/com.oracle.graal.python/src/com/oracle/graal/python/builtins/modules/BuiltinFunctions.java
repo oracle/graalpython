@@ -137,6 +137,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -144,6 +145,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -485,9 +487,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hash([object])
-    @Builtin(name = HASH, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = HASH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization  // tfel: TODO: this shouldn't be needed!
         Object hash(PException exception) {
             return exception.hashCode();
@@ -500,11 +502,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "!isPException(object)")
         Object hash(VirtualFrame frame, Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
+                        @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHash,
+                        @Cached IsCallableNode isCallable,
+                        @Cached CallUnaryMethodNode callUnary,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
                         @Cached IsInstanceNode isInstanceNode) {
             if (trueNode.executeBoolean(frame, lookupDirNode.execute(object))) {
-                Object hashValue = dispatchHash.executeObject(frame, object);
+                Object hashAttr = lookupHash.execute(object);
+                if (!isCallable.execute(hashAttr)) {
+                    throw raise(PythonErrorType.TypeError, "unhashable type: '%p'", object);
+                }
+                Object hashValue = callUnary.executeObject(frame, hashAttr, object);
                 if (isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
                     return hashValue;
                 }
