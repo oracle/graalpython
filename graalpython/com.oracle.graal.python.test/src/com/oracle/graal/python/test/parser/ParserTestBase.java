@@ -82,7 +82,7 @@ public class ParserTestBase {
     protected boolean printFormatStringLiteralValues = false;
 
     protected int printOnlyDiffIfLenIsBigger = 1000;
-    
+
     private static final boolean goldenFileFromNewParser = true;
 
     @Rule public TestName name = new TestName();
@@ -253,7 +253,7 @@ public class ParserTestBase {
                         : getGoldenFile(SCOPE_FILE_EXT);
         if (!goldenScopeFile.exists()) {
             String goldenString = scopes.toString();
-            if(!goldenFileFromNewParser) {
+            if (!goldenFileFromNewParser) {
                 parseOld(source, PythonParser.ParserMode.File);
                 StringBuilder oldScope = new StringBuilder();
                 getLastGlobalScope().debugPrint(oldScope, 0);
