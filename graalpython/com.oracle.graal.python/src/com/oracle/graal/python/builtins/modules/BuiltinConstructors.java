@@ -172,6 +172,7 @@ import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -2180,7 +2181,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Make slots into a tuple
                 }
                 PythonContext context = getContextRef().get();
-                PException caughtException = IndirectCallContext.enter(frame, context, this);
+                PException caughtException = ForeignCallContext.enter(frame, context, this);
                 try {
                     PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
@@ -2194,7 +2195,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    IndirectCallContext.exit(context, caughtException);
+                    ForeignCallContext.exit(context, caughtException);
                 }
             }
 
