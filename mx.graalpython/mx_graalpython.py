@@ -1058,13 +1058,12 @@ def _register_vms(namespace):
         '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        "--llvm.managed=false"
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context', '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--llvm.managed=false',
+        '--experimental-options', '-multi-context',
     ]), SUITE, 10)
 
 
