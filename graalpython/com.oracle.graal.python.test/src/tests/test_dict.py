@@ -581,10 +581,19 @@ def test_calling_hash_and_eq():
 
     d = {}
     a = MyClass(10)
+
+    try:
+        d[a] # we must not omit the call to __hash__, even when the dict is
+             # empty
+    except KeyError:
+        assert count_hash == 1
+    else:
+        assert False
+
     d[a] = 20
     b = MyClass(10)
 
     assert a in d
     assert b in d
-    assert count_hash == 3, count_hash
+    assert count_hash == 4, count_hash
     assert count_eq == 1, count_eq

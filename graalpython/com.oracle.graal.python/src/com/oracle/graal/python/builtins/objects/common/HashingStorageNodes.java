@@ -1151,6 +1151,7 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    @ImportStatic(SpecialMethodNames.class)
     public abstract static class GetItemNode extends DictStorageBaseNode {
         protected static final int MAX_DYNAMIC_STORAGES = 3;
 
@@ -1162,7 +1163,11 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("unused")
-        Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key) {
+        Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key,
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode hashNode) {
+            // n.b.: we need to call the __hash__ function here for the
+            // side-effect to comply with Python semantics.
+            hashNode.executeObject(frame, key);
             return null;
         }
 
