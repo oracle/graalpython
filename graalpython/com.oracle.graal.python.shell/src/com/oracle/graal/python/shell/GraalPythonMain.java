@@ -38,6 +38,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
@@ -202,6 +203,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     } else {
                         unrecognized.add(arg);
                     }
+                    break;
+                case "-llvm-path":
+                    print(new Driver("llvm-ar").getLLVMBinDir().toString());
+                    System.exit(0);
                     break;
                 case "-u":
                     unbufferedIO = true;

@@ -1297,7 +1297,12 @@ index 14451fa..85e64cc 100644
          cxx.linker_so = [cxx.linker_so[0], cxx.compiler_cxx[0]] \
 
 '''
-        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"}, **kwargs)
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        numpy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                numpy_build_env[key] = os.environ[key]
+        install_from_pypi("numpy==1.16.4", patch=patch, env=numpy_build_env, **kwargs)
 
     @pip_package()
     def dateutil(**kwargs):
@@ -1437,6 +1442,68 @@ index 8657420..f7b3f08 100644
         # workaround until Sulong toolchain fixes this
         cflags = "-stdlib=libc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
+
+    @pip_package()
+    def scipy(**kwargs):
+        if sys.implementation.name == "graalpython":
+            venv_path = os.environ.get("VIRTUAL_ENV", None)
+            if not venv_path:
+                xit("SciPy can only be installed within a virtual env.")
+    
+            r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
+            llvm_bin_dir = r.splitlines()[-1].strip()
+            if not os.path.isdir(llvm_bin_dir):
+                xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
+    
+            # currently we need 'ar', 'ranlib', and 'ld.lld'
+            llvm_bins = {"llvm-ar": "ar", "llvm-ranlib": "ranlib", "ld.lld": "ld.lld"}
+            for binary in llvm_bins.keys():
+                llvm_bin = os.path.join(llvm_bin_dir, binary)
+                if not os.path.isfile(llvm_bin):
+                    xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
+                else:
+                    dest = os.path.join(venv_path, "bin", llvm_bins[binary])
+                    if os.path.exists(dest):
+                        os.unlink(dest)
+                    os.symlink(llvm_bin, dest)
+    
+            # locate system's gfortran
+            path_without_venv = os.pathsep.join([x for x in os.environ["PATH"].split(os.pathsep) if venv_path not in x])
+            system_gfortran = shutil.which("gfortran", path=path_without_venv)
+            if not system_gfortran:
+                xit("Could not locate gfortran binary.")
+                
+            # create gfortran wrapper script into venv's bin directory
+            gfortran_wrapper = os.path.join(venv_path, "bin", "gfortran")
+            assert system_gfortran != gfortran_wrapper
+            with open(gfortran_wrapper, "w") as f:
+                f.write('#!/bin/bash\nexec "{}" -fuse-ld=lld $@\n'.format(system_gfortran))
+            # make it executable
+            os.chmod(gfortran_wrapper , 0o775)
+
+        # install dependencies
+        numpy(**kwargs)
+
+        patch = '''diff --git a/scipy/__init__.py b/scipy/__init__.py
+index 2c7508f..f3352ec 100755
+--- a/scipy/__init__.py
++++ b/scipy/__init__.py
+@@ -116,8 +116,6 @@ else:
+ 
+     del _NumpyVersion
+ 
+-    from scipy._lib._ccallback import LowLevelCallable
+-
+     from scipy._lib._testutils import PytestTester
+     test = PytestTester(__name__)
+     del PytestTester
+'''
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                scipy_build_env[key] = os.environ[key]
+        install_from_pypi("scipy==1.3.1", patch=patch, env=scipy_build_env, **kwargs)
 
     return locals()
 
