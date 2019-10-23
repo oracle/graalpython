@@ -576,7 +576,7 @@ public class TupleBuiltins extends PythonBuiltins {
         protected static long HASH_UNSET = -1;
 
         @Specialization(guards = {"self.getHash() != HASH_UNSET"})
-        public long getHash(VirtualFrame frame, PTuple self) {
+        public long getHash(PTuple self) {
             return self.getHash();
         }
 
@@ -584,8 +584,7 @@ public class TupleBuiltins extends PythonBuiltins {
         public long computeHash(VirtualFrame frame, PTuple self,
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
-                        @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode,
+                        @Cached("create()") BuiltinFunctions.HashNode hashNode,
                         @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
@@ -595,10 +594,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long tmp;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(tupleStore, i);
-                Object hashValue = lookupHashAttributeNode.executeObject(frame, item);
-                if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
-                    throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
-                }
+                Object hashValue = hashNode.execute(frame, item);
                 tmp = castToLongNode.execute(hashValue);
                 if (tmp == -1) {
                     return -1;
