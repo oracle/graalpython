@@ -82,6 +82,8 @@ public class ParserTestBase {
     protected boolean printFormatStringLiteralValues = false;
 
     protected int printOnlyDiffIfLenIsBigger = 1000;
+    
+    private static final boolean goldenFileFromNewParser = true;
 
     @Rule public TestName name = new TestName();
 
@@ -203,13 +205,17 @@ public class ParserTestBase {
         if (!goldenFile.exists()) {
             // parse it with old parser and create golden file with this result
             // TODO, when the new parser will work, it has to be removed
-            RootNode resultOld = parseOld(source, PythonParser.ParserMode.File);
-            String oldTree = printTreeToString(resultOld);
-            if (correctIssues) {
-                oldTree = correctKnownIssues(tree, oldTree);
+            String goldenString = tree;
+            if (!goldenFileFromNewParser) {
+                RootNode resultOld = parseOld(source, PythonParser.ParserMode.File);
+                String oldTree = printTreeToString(resultOld);
+                if (correctIssues) {
+                    oldTree = correctKnownIssues(tree, oldTree);
+                }
+                goldenString = oldTree;
             }
             try (FileWriter fw = new FileWriter(goldenFile)) {
-                fw.write(oldTree);
+                fw.write(goldenString);
             }
 
         }
@@ -246,11 +252,15 @@ public class ParserTestBase {
                         ? new File(testFile.getParentFile(), getFileName(testFile) + SCOPE_FILE_EXT)
                         : getGoldenFile(SCOPE_FILE_EXT);
         if (!goldenScopeFile.exists()) {
-            parseOld(source, PythonParser.ParserMode.File);
-            StringBuilder oldScope = new StringBuilder();
-            getLastGlobalScope().debugPrint(oldScope, 0);
+            String goldenString = scopes.toString();
+            if(!goldenFileFromNewParser) {
+                parseOld(source, PythonParser.ParserMode.File);
+                StringBuilder oldScope = new StringBuilder();
+                getLastGlobalScope().debugPrint(oldScope, 0);
+                goldenString = oldScope.toString();
+            }
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
-                fw.write(oldScope.toString());
+                fw.write(goldenString);
             }
 
         }
@@ -262,21 +272,25 @@ public class ParserTestBase {
         String tree = printTreeToString(resultNew);
         File goldenFile = getGoldenFile(GOLDEN_FILE_EXT);
         if (!goldenFile.exists()) {
-            // parse it with old parser and create golden file with this result
-            // TODO, when the new parser will work, it has to be removed
-            String oldTree;
-            try {
-                RootNode resultOld = parseOld(source, name.getMethodName(), mode, frame);
-                oldTree = printTreeToString(resultOld);
-            } catch (RuntimeException e) {
-                oldTree = tree;
-            }
+            String goldenString = tree;
+            if (!goldenFileFromNewParser) {
+                // parse it with old parser and create golden file with this result
+                // TODO, when the new parser will work, it has to be removed
+                String oldTree;
+                try {
+                    RootNode resultOld = parseOld(source, name.getMethodName(), mode, frame);
+                    oldTree = printTreeToString(resultOld);
+                } catch (RuntimeException e) {
+                    oldTree = tree;
+                }
 
-            if (correctIssues) {
-                oldTree = correctKnownIssues(tree, oldTree);
+                if (correctIssues) {
+                    oldTree = correctKnownIssues(tree, oldTree);
+                }
+                goldenString = oldTree;
             }
             try (FileWriter fw = new FileWriter(goldenFile)) {
-                fw.write(oldTree);
+                fw.write(goldenString);
             }
 
         }
@@ -294,11 +308,15 @@ public class ParserTestBase {
         scopeNew.debugPrint(scopes, 0);
         File goldenScopeFile = getGoldenFile(SCOPE_FILE_EXT);
         if (!goldenScopeFile.exists()) {
-            parseOld(source, name.getMethodName(), mode);
-            StringBuilder oldScope = new StringBuilder();
-            getLastGlobalScope().debugPrint(oldScope, 0);
+            String goldenString = scopes.toString();
+            if (!goldenFileFromNewParser) {
+                parseOld(source, name.getMethodName(), mode);
+                StringBuilder oldScope = new StringBuilder();
+                getLastGlobalScope().debugPrint(oldScope, 0);
+                goldenString = oldScope.toString();
+            }
             try (FileWriter fw = new FileWriter(goldenScopeFile)) {
-                fw.write(oldScope.toString());
+                fw.write(goldenString);
             }
 
         }

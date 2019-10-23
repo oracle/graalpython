@@ -63,3 +63,6 @@ def withAnnotation3(j:int, k : str, o:object = None):
 def wrongTypeInside():
     index:thisTypeIsIgnored = 0
     return index;
+
+def addAnnotation(key: str, value):
+    addAnnotation.__annotations__[key] = value

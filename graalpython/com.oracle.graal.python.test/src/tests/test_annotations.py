@@ -119,3 +119,13 @@ def test_decoratedClassMethod():
 
     assert len(m.ClsWithClassMethod.method.__annotations__) == 1, "__annotations__ attribute was not found"
     assert str == m.ClsWithClassMethod.method.__annotations__['string']
+
+def test_addAnnotation():
+    import annotations.annotatedFunctions as m
+
+    assert hasattr(m.addAnnotation, '__annotations__') == True
+    assert len(m.addAnnotation.__annotations__) == 1
+    assert str == m.addAnnotation.__annotations__['key']
+    m.addAnnotation('myKey', 10)
+    assert len(m.addAnnotation.__annotations__) == 2
+    assert 10 == m.addAnnotation.__annotations__['myKey']

@@ -140,10 +140,6 @@ public final class ScopeInfo {
     }
 
     public void setHasAnnotations(boolean hasAnnotations) {
-        if (hasAnnotations) {
-            //
-            createSlotIfNotPresent(SpecialAttributeNames.__ANNOTATIONS__);
-        }
         this.annotationsField = hasAnnotations;
     }
 
