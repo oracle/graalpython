@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -73,6 +74,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuffer)
 public class BufferBuiltins extends PythonBuiltins {
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put(__HASH__, PNone.NONE);
+    }
 
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -157,15 +164,6 @@ public class BufferBuiltins extends PythonBuiltins {
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
-        @Specialization
-        Object doGeneric(Object self) {
-            throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
 }
