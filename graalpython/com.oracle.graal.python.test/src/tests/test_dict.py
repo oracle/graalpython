@@ -559,3 +559,32 @@ def test_custom_ob_with_eq_and_hash():
     assert b not in d
     assert d.get(a, -1) == 20
     assert d.get(b, -1) == -1
+
+
+def test_calling_hash_and_eq():
+    count_hash = 0
+    count_eq = 0
+
+    class MyClass(object):
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return 12
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, MyClass) and self.x == other.x
+
+    d = {}
+    a = MyClass(10)
+    d[a] = 20
+    b = MyClass(10)
+
+    assert a in d
+    assert b in d
+    assert count_hash == 3, count_hash
+    assert count_eq == 1, count_eq
