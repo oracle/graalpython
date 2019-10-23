@@ -10,12 +10,12 @@ Scope: []
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, self, kwds, pydoc, <return_val>, __class__]
+            FrameDescriptor: [args, self, kwds, pydoc, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: _Printer
@@ -25,27 +25,27 @@ Scope: []
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [__annotations__, lineno, self, i, prompt, <return_val>, key, __class__]
+            FrameDescriptor: [lineno, self, i, prompt, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __setup
             Kind: Function
-            FrameDescriptor: [__annotations__, filename, data, self, fp, <return_val>, __class__]
+            FrameDescriptor: [filename, data, self, fp, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [__annotations__, data, os, name, self, files, dirs, <return_val>, __class__]
+            FrameDescriptor: [data, os, name, self, files, dirs, <return_val>, __class__]
             CellVars: [files, os]
             FreeVars: [__class__]
             Scope: generator1121
                 Kind: Generator
-                FrameDescriptor: [__annotations__, filename, os, files, dir, <return_val>]
+                FrameDescriptor: [filename, os, files, dir, <return_val>]
                 CellVars: Empty
                 FreeVars: [files, os]
     Scope: Quitter
@@ -55,16 +55,16 @@ Scope: []
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [__annotations__, code, self, <return_val>, __class__]
+            FrameDescriptor: [code, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [__annotations__, name, self, eof, <return_val>, __class__]
+            FrameDescriptor: [name, self, eof, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]

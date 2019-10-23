@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 6 slots [__annotations__, self, realpart, imagpart, __class__, <return_val>]
+                                FrameDescriptor: 5 slots [self, realpart, imagpart, __class__, <return_val>]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -82,21 +82,21 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: self
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,self,Illegal]
+                                            Frame: [0,self,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 0
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: realpart
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,realpart,Illegal]
+                                            Frame: [1,realpart,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 1
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: imagpart
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [3,imagpart,Illegal]
+                                            Frame: [2,imagpart,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
                                               Index: 2
@@ -104,21 +104,21 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                         SetAttributeNodeGen SourceSection: [67,84]`self.r = realpart`
                                           Attribute: r
                                           ReadLocalVariableNode SourceSection: [67,71]`self`
-                                            Frame: [1,self,Illegal]
+                                            Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [76,84]`realpart`
-                                            Frame: [2,realpart,Illegal]
+                                            Frame: [1,realpart,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [93,110]`self.i = imagpart`
                                           Attribute: i
                                           ReadLocalVariableNode SourceSection: [93,97]`self`
-                                            Frame: [1,self,Illegal]
+                                            Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [102,110]`imagpart`
-                                            Frame: [3,imagpart,Illegal]
+                                            Frame: [2,imagpart,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [5,<return_val>,Illegal]
+                                      Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None

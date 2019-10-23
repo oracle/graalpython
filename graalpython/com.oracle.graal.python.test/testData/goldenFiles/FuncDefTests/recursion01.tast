@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [__annotations__, self, msg, offset, <return_val>]
+              FrameDescriptor: 4 slots [self, msg, offset, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -39,21 +39,21 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: self
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,self,Illegal]
+                          Frame: [0,self,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: msg
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,msg,Illegal]
+                          Frame: [1,msg,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: offset
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,offset,Illegal]
+                          Frame: [2,offset,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
@@ -61,13 +61,13 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,<return_val>,Illegal]
+                          Frame: [3,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [42,67]`test(msg, self.strin...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [47,50]`msg`
-                            Frame: [2,msg,Illegal]
+                            Frame: [1,msg,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [52,63]`self.string`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadLocalVariableNode SourceSection: [52,56]`self`
-                              Frame: [1,self,Illegal]
+                              Frame: [0,self,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [65,66]`1`
                             Value: 1
@@ -83,5 +83,5 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                             Identifier: test
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

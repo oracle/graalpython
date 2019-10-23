@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, foo, <return_val>]
+              FrameDescriptor: 2 slots [foo, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                     WriteLocalVariableNodeGen SourceSection: [16,34]`foo = await smth()`
                       Identifier: foo
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,foo,Illegal]
+                        Frame: [0,foo,Illegal]
                       PythonCallNodeGen SourceSection: [22,34]`await smth()`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
@@ -45,5 +45,5 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                           Identifier: smth
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

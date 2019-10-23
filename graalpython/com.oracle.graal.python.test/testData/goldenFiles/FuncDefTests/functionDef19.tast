@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 7 slots [__annotations__, func, name, bases, metaclass, kwargs, <return_val>]
+              FrameDescriptor: 6 slots [func, name, bases, metaclass, kwargs, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -41,40 +41,40 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: func
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,func,Illegal]
+                          Frame: [0,func,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: name
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,name,Illegal]
+                          Frame: [1,name,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: bases
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,bases,Illegal]
+                          Frame: [2,bases,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: metaclass
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,metaclass,Illegal]
+                          Frame: [3,metaclass,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kwargs
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [5,kwargs,Illegal]
+                          Frame: [4,kwargs,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [67,71]`pass`
                       EmptyNode SourceSection: [67,71]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [6,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
         WriteNameNodeGen SourceSection: [0,302]`def format_exception...`
           Identifier: format_exception_only
           GeneratorFunctionDefinitionNode Name: format_exception_only SourceSection: None
-            FrameDescriptor: 4 slots [__annotations__, self, caretspace, <return_val>]
+            FrameDescriptor: 3 slots [self, caretspace, <return_val>]
             Active Flags: 11
             For Nodes: 0
             Block Nodes: 4
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, self, caretspace, <return_val>]
+              FrameDescriptor: 3 slots [self, caretspace, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -83,12 +83,12 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                             WriteGeneratorFrameVariableNodeGen SourceSection: [199,245]`caretspace = (c.issp...`
                               Identifier: caretspace
                               WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                Frame: [2,caretspace,Illegal]
+                                Frame: [1,caretspace,Illegal]
                               GeneratorExpressionNode SourceSection: [225,244]`for c in caretspace`
                                 Name: format_exception_only.<locals>.<genexp>:generator06:8
-                                FrameDescriptor: 3 slots [__annotations__, c, <return_val>]
+                                FrameDescriptor: 2 slots [c, <return_val>]
                                 Enclosing
-                                  FrameDescriptor: 4 slots [__annotations__, self, caretspace, <return_val>]
+                                  FrameDescriptor: 3 slots [self, caretspace, <return_val>]
                                 Active Flags: 2
                                 For Nodes: 1
                                 Block Nodes: 0
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                   CelVars: None
                                   FreeVars: None
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 3 slots [__annotations__, c, <return_val>]
+                                  FrameDescriptor: 2 slots [c, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
@@ -116,13 +116,13 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                                 CallDispatchNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [213,214]`c`
-                                                  Frame: [1,c,Illegal]
+                                                  Frame: [0,c,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                                           Identifier: c
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,c,Illegal]
+                                            Frame: [0,c,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
@@ -131,7 +131,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
                                       ReadGeneratorFrameVariableNode SourceSection: None
-                                        Frame: [2,<return_val>,Illegal]
+                                        Frame: [1,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -139,14 +139,14 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                 GetIteratorExpressionNodeGen SourceSection: [234,244]`caretspace`
                                   GetIteratorNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: [234,244]`caretspace`
-                                    Frame: [2,caretspace,Illegal]
+                                    Frame: [1,caretspace,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [262,278]`yield caretspace`
                               YieldNode SourceSection: [262,278]`yield caretspace`
                                 flagSlot: 4
                                 ReadGeneratorFrameVariableNode SourceSection: [268,278]`caretspace`
-                                  Frame: [2,caretspace,Illegal]
+                                  Frame: [1,caretspace,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                             GeneratorAccessNode SourceSection: None
@@ -160,12 +160,12 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                         GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: self
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [1,self,Illegal]
+                      Frame: [0,self,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

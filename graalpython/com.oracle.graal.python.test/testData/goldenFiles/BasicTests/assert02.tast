@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, marks, <return_val>]
+              FrameDescriptor: 2 slots [marks, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: marks
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,marks,Illegal]
+                        Frame: [0,marks,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [31,36]`marks`
-                              Frame: [1,marks,Illegal]
+                              Frame: [0,marks,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: len
@@ -59,5 +59,5 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                             Value: 0
                       StringLiteralNode SourceSection: [43,59]`"List is empty."`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

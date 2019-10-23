@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, name, <return_val>]
+              FrameDescriptor: 2 slots [name, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: name
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,name,Illegal]
+                        Frame: [0,name,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
@@ -48,7 +48,7 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             ReadLocalVariableNode SourceSection: [31,35]`name`
-                              Frame: [1,name,Illegal]
+                              Frame: [0,name,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
@@ -56,5 +56,5 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                         GetCallAttributeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [14,18]`"in"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

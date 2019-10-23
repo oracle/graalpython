@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDefCPT20'> SourceSection: [0,32]`def f(*, 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__annotations__, *, a, b, kwds, <return_val>]
+              FrameDescriptor: 5 slots [*, a, b, kwds, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -41,26 +41,26 @@ ModuleRootNode Name: <module 'functionDefCPT20'> SourceSection: [0,32]`def f(*, 
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,a,Illegal]
+                          Frame: [1,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: b
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,b,Illegal]
+                          Frame: [2,b,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: kwds
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,kwds,Illegal]
+                          Frame: [3,kwds,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [28,32]`pass`
                       EmptyNode SourceSection: [28,32]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

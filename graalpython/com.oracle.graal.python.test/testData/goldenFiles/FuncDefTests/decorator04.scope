@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: outer
         Kind: Function
-        FrameDescriptor: [__annotations__, inner, <return_val>]
+        FrameDescriptor: [inner, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: inner
             Kind: Function
-            FrameDescriptor: [__annotations__, <return_val>]
+            FrameDescriptor: [<return_val>]
             CellVars: Empty
             FreeVars: Empty

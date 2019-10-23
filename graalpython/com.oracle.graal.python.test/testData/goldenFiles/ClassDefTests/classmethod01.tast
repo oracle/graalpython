@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 5 slots [__annotations__, self, string, __class__, <return_val>]
+                                  FrameDescriptor: 4 slots [self, string, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -86,21 +86,21 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,self,Illegal]
+                                              Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: string
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,string,Illegal]
+                                              Frame: [1,string,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
                                         ExpressionStatementNode SourceSection: [68,72]`pass`
                                           EmptyNode SourceSection: [68,72]`pass`
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [4,<return_val>,Illegal]
+                                        Frame: [3,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
                                 GetItemNodeGen SourceSection: None

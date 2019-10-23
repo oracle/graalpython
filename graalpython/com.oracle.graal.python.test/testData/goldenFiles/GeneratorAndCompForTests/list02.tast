@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,36]`[x**y for x in rang
         CallDispatchNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,35]`for x in range(20) i...`
         Name: [].<locals>.<genexp>:list02:1
-        FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
+        FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
           FrameDescriptor:  Empty
         Active Flags: 4
@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,36]`[x**y for x in rang
           CelVars: None
           FreeVars: None
           NeedsCellFrame: False
-          FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
+          FrameDescriptor: 2 slots [x, <return_val>]
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,36]`[x**y for x in rang
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mul__
                         ReadGeneratorFrameVariableNode SourceSection: [28,29]`x`
-                          Frame: [1,x,Illegal]
+                          Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [30,31]`y`
                           Identifier: y
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,36]`[x**y for x in rang
                         LookupAndCallTernaryNodeGen SourceSection: None
                           CallTernaryMethodNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
-                          Frame: [1,x,Illegal]
+                          Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
                           Identifier: y
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,36]`[x**y for x in rang
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
                   WriteGeneraterFrameSlotNodeGen SourceSection: None
-                    Frame: [1,x,Illegal]
+                    Frame: [0,x,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadIndexedArgumentNodeGen SourceSection: None
                     Index: 0
@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'list02'> SourceSection: [0,36]`[x**y for x in rang
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
               ReadGeneratorFrameVariableNode SourceSection: None
-                Frame: [2,<return_val>,Illegal]
+                Frame: [1,<return_val>,Illegal]
                 ReadVariableFromFrameNodeGen SourceSection: None
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None

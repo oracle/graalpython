@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [__annotations__, <return_val>]
+              FrameDescriptor: 1 slots [<return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
+                          FrameDescriptor: 2 slots [x, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -59,7 +59,7 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: x
                                   WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [1,x,Illegal]
+                                    Frame: [0,x,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -67,12 +67,12 @@ ModuleRootNode Name: <module 'lambda02'> SourceSection: [0,23]`def fn():↵  lam
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
+                                      Frame: [1,<return_val>,Illegal]
                                     IntegerLiteralNode SourceSection: [22,23]`0`
                                       Value: 0
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [2,<return_val>,Illegal]
+                                Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: outer
         Kind: Function
-        FrameDescriptor: [__annotations__, recursionInner, <return_val>]
+        FrameDescriptor: [recursionInner, <return_val>]
         CellVars: [recursionInner]
         FreeVars: Empty
         Scope: recursionInner
             Kind: Function
-            FrameDescriptor: [__annotations__, arg, recursionInner, <return_val>]
+            FrameDescriptor: [arg, recursionInner, <return_val>]
             CellVars: Empty
             FreeVars: [recursionInner]

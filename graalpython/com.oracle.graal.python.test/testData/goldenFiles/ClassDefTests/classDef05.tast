@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, DerivedClassName, <>temp2, <return_val>]
+              FrameDescriptor: 3 slots [DerivedClassName, <>temp1, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -36,12 +36,12 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                     WriteLocalVariableNodeGen SourceSection: [12,63]`class DerivedClassNa...`
                       Identifier: DerivedClassName
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,DerivedClassName,Illegal]
+                        Frame: [0,DerivedClassName,Illegal]
                       ExpressionWithSideEffects SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <>temp2
+                          Identifier: <>temp1
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [2,<>temp2,Illegal]
+                            Frame: [1,<>temp1,Illegal]
                           PythonCallNodeGen SourceSection: [12,63]`class DerivedClassNa...`
                             CachedCallNodeGen SourceSection: None
                               CreateArgumentsNodeGen SourceSection: None
@@ -93,11 +93,11 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                               BuiltinsLiteralNode SourceSection: None
                         WriteCellVarNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
-                            Frame: [2,<>temp2,Illegal]
+                            Frame: [1,<>temp1,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [2,<>temp2,Illegal]
+                          Frame: [1,<>temp1,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

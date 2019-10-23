@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Generator
-        FrameDescriptor: [__annotations__, caretspace, self, <return_val>]
+        FrameDescriptor: [caretspace, self, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: generator32
             Kind: Generator
-            FrameDescriptor: [__annotations__, c, <return_val>]
+            FrameDescriptor: [c, <return_val>]
             CellVars: Empty
             FreeVars: Empty

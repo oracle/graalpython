@@ -5,12 +5,12 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [__annotations__, f, <return_val>, a_local_var_out]
+        FrameDescriptor: [f, <return_val>, a_local_var_out]
         CellVars: [a_local_var_out]
         FreeVars: Empty
         Scope: f
             Kind: Function
-            FrameDescriptor: [__annotations__, C, <>temp3, <return_val>, a_local_var_out]
+            FrameDescriptor: [C, <>temp2, <return_val>, a_local_var_out]
             CellVars: Empty
             FreeVars: [a_local_var_out]
             Scope: C

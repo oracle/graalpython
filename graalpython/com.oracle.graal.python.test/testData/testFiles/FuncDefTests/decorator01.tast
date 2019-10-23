@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
             CelVars: fn
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [__annotations__, fn, wrap, <return_val>]
+            FrameDescriptor: 3 slots [fn, wrap, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: fn, 
@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                   WriteLocalCellNodeGen SourceSection: None
                     Identifier: fn
                     ReadLocalVariableNode SourceSection: None
-                      Frame: [1,fn,Illegal]
+                      Frame: [0,fn,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                     WriteLocalVariableNodeGen SourceSection: [25,65]`def wrap():↵        ...`
                       Identifier: wrap
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,wrap,Illegal]
+                        Frame: [1,wrap,Illegal]
                       FunctionDefinitionNode Name: wrap SourceSection: None
                         Arguments: None
                         KwArguments: None
@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                           CelVars: None
                           FreeVars: fn
                           NeedsCellFrame: False
-                          FrameDescriptor: 3 slots [__annotations__, fn, <return_val>]
+                          FrameDescriptor: 2 slots [fn, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: fn, 
                             CellVarsSlots: None
@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
+                                      Frame: [1,<return_val>,Illegal]
                                     BinaryArithmeticExpression SourceSection: [52,60]`fn() + 1`
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __add__
@@ -79,24 +79,24 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                           CallDispatchNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
-                                            Frame: [1,fn,Illegal]
+                                            Frame: [0,fn,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [59,60]`1`
                                         Value: 1
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [2,<return_val>,Illegal]
+                                Frame: [1,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [65,76]`return wrap`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,<return_val>,Illegal]
+                          Frame: [2,<return_val>,Illegal]
                         ReadLocalVariableNode SourceSection: [72,76]`wrap`
-                          Frame: [2,wrap,Illegal]
+                          Frame: [1,wrap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [78,122]`@mydecorator↵def get...`
         Identifier: getNumber
@@ -118,7 +118,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [__annotations__, <return_val>]
+              FrameDescriptor: 1 slots [<return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -130,11 +130,11 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
+                          Frame: [0,<return_val>,Illegal]
                         IntegerLiteralNode SourceSection: [119,120]`1`
                           Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [78,90]`@mydecorator`
             Identifier: mydecorator

@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [__annotations__, <>temp2, <return_val>, DerivedClassName]
+        FrameDescriptor: [<return_val>, DerivedClassName, <>temp1]
         CellVars: Empty
         FreeVars: Empty
         Scope: DerivedClassName

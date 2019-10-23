@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, err, <return_val>]
+              FrameDescriptor: 2 slots [err, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [75,78]`err`
-                                Frame: [1,err,Illegal]
+                                Frame: [0,err,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: print
@@ -52,12 +52,12 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: err
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [1,err,Illegal]
+                              Frame: [0,err,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
                             Identifier: Exception
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

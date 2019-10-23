@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: add
         Kind: Function
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty

@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
         WriteNameNodeGen SourceSection: [0,60]`def gen(x):↵  try:↵ ...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-            FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
+            FrameDescriptor: 2 slots [x, <return_val>]
             Active Flags: 5
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
+              FrameDescriptor: 2 slots [x, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -59,12 +59,12 @@ ModuleRootNode Name: <module 'try02'> SourceSection: [0,60]`def gen(x):↵  try:
                     GeneratorAccessNode SourceSection: None
                     SaveExceptionStateNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [1,x,Illegal]
+                      Frame: [0,x,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0

@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,12]`lambda *y: 0`
         CelVars: None
         FreeVars: None
         NeedsCellFrame: False
-        FrameDescriptor: 3 slots [__annotations__, y, <return_val>]
+        FrameDescriptor: 2 slots [y, <return_val>]
         ExecutionSlots:
           FreeVarsSlots: None
           CellVarsSlots: None
@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,12]`lambda *y: 0`
               WriteLocalVariableNodeGen SourceSection: None
                 Identifier: y
                 WriteLocalFrameSlotNodeGen SourceSection: None
-                  Frame: [1,y,Illegal]
+                  Frame: [0,y,Illegal]
                 ArgumentExpressionNode SourceSection: None
                   ReadVarArgsNodeGen SourceSection: None
                     PythonObjectFactoryNodeGen SourceSection: None
@@ -37,9 +37,9 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,12]`lambda *y: 0`
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: <return_val>
                   WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                   IntegerLiteralNode SourceSection: [11,12]`0`
                     Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
-              Frame: [2,<return_val>,Illegal]
+              Frame: [1,<return_val>,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None

@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, args, a, <return_val>]
+              FrameDescriptor: 3 slots [args, a, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -41,19 +41,19 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: args
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,args,Illegal]
+                          Frame: [0,args,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadVarArgsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,a,Illegal]
+                          Frame: [1,a,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                     ExpressionStatementNode SourceSection: [21,25]`pass`
                       EmptyNode SourceSection: [21,25]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

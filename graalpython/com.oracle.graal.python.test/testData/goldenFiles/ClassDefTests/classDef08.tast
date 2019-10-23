@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [__annotations__, format, __class__, <return_val>]
+                                FrameDescriptor: 3 slots [format, __class__, <return_val>]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: format
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,format,Illegal]
+                                          Frame: [0,format,Illegal]
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
                                             Index: 0
@@ -89,18 +89,18 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [3,<return_val>,Illegal]
+                                            Frame: [2,<return_val>,Illegal]
                                           BinaryArithmeticExpression SourceSection: [51,64]`format % args`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mod__
                                             ReadLocalVariableNode SourceSection: [51,57]`format`
-                                              Frame: [1,format,Illegal]
+                                              Frame: [0,format,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [60,64]`args`
                                               Identifier: args
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [3,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
                             ArgumentExpressionNode SourceSection: None
@@ -122,7 +122,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                 CelVars: None
                                 FreeVars: __class__
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [__annotations__, args, kwds, __class__, <return_val>]
+                                FrameDescriptor: 4 slots [args, kwds, __class__, <return_val>]
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
@@ -133,14 +133,14 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: args
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [1,args,Illegal]
+                                            Frame: [0,args,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadVarArgsNodeGen SourceSection: None
                                               PythonObjectFactoryNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: kwds
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,kwds,Illegal]
+                                            Frame: [1,kwds,Illegal]
                                           ArgumentExpressionNode SourceSection: None
                                             ReadVarKeywordsNodeGen SourceSection: None
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -148,27 +148,27 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [4,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                           PythonCallNodeGen SourceSection: [109,128]`self(*args, **kwds)`
                                             CachedCallNodeGen SourceSection: None
                                               CreateArgumentsNodeGen SourceSection: None
                                               CallDispatchNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
                                               ReadLocalVariableNode SourceSection: [115,119]`args`
-                                                Frame: [1,args,Illegal]
+                                                Frame: [0,args,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ExecutePositionalStarargsNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
                                               CompactKeywordsNodeGen SourceSection: None
                                               ExecuteKeywordStarargsNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [123,127]`kwds`
-                                                  Frame: [2,kwds,Illegal]
+                                                  Frame: [1,kwds,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: self
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [4,<return_val>,Illegal]
+                                      Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None

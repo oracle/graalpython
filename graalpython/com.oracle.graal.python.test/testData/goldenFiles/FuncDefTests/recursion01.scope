@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: test
         Kind: Function
-        FrameDescriptor: [msg, __annotations__, offset, self, <return_val>]
+        FrameDescriptor: [msg, offset, self, <return_val>]
         CellVars: Empty
         FreeVars: Empty

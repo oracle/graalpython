@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
         WriteNameNodeGen SourceSection: [0,42]`def fn(**arg):↵  for...`
           Identifier: fn
           GeneratorFunctionDefinitionNode Name: fn SourceSection: None
-            FrameDescriptor: 4 slots [__annotations__, arg, p, <return_val>]
+            FrameDescriptor: 3 slots [arg, p, <return_val>]
             Active Flags: 2
             For Nodes: 1
             Block Nodes: 0
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, arg, p, <return_val>]
+              FrameDescriptor: 3 slots [arg, p, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -43,17 +43,17 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                         YieldNode SourceSection: [35,42]`yield p`
                           flagSlot: 0
                           ReadGeneratorFrameVariableNode SourceSection: [41,42]`p`
-                            Frame: [2,p,Illegal]
+                            Frame: [1,p,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: p
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [2,p,Illegal]
+                          Frame: [1,p,Illegal]
                       GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
                         GetIteratorNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [26,29]`arg`
-                          Frame: [1,arg,Illegal]
+                          Frame: [0,arg,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                       GetNextNode SourceSection: None
                         LookupAndCallUnaryNodeGen SourceSection: None
@@ -61,12 +61,12 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                       GeneratorAccessNode SourceSection: None
                     BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: arg
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [1,arg,Illegal]
+                      Frame: [0,arg,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadVarKeywordsNodeGen SourceSection: None
                         PythonObjectFactoryNodeGen SourceSection: None

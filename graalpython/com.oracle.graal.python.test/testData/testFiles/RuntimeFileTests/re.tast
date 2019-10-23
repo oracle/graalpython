@@ -469,7 +469,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -480,21 +480,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,string,Illegal]
+                        Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,flags,Illegal]
+                        Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -502,13 +502,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,<return_val>,Illegal]
+                        Frame: [3,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [8156,8194]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [8187,8193]`string`
-                          Frame: [2,string,Illegal]
+                          Frame: [1,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [8156,8180]`_compile(pattern, fl...`
@@ -516,16 +516,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8165,8172]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8174,8179]`flags`
-                              Frame: [3,flags,Illegal]
+                              Frame: [2,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [8196,8410]`def fullmatch(patter...`
         Identifier: fullmatch
@@ -546,7 +546,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -557,21 +557,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,string,Illegal]
+                        Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,flags,Illegal]
+                        Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -579,13 +579,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,<return_val>,Illegal]
+                        Frame: [3,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [8366,8408]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [8401,8407]`string`
-                          Frame: [2,string,Illegal]
+                          Frame: [1,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [8366,8390]`_compile(pattern, fl...`
@@ -593,16 +593,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8375,8382]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8384,8389]`flags`
-                              Frame: [3,flags,Illegal]
+                              Frame: [2,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [8410,8627]`def search(pattern, ...`
         Identifier: search
@@ -623,7 +623,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -634,21 +634,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,string,Illegal]
+                        Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,flags,Illegal]
+                        Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -656,13 +656,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,<return_val>,Illegal]
+                        Frame: [3,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [8586,8625]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [8618,8624]`string`
-                          Frame: [2,string,Illegal]
+                          Frame: [1,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [8586,8610]`_compile(pattern, fl...`
@@ -670,16 +670,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8595,8602]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [8604,8609]`flags`
-                              Frame: [3,flags,Illegal]
+                              Frame: [2,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [8627,9096]`def sub(pattern, rep...`
         Identifier: sub
@@ -702,7 +702,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [__annotations__, pattern, repl, string, count, flags, <return_val>]
+            FrameDescriptor: 6 slots [pattern, repl, string, count, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -713,35 +713,35 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: repl
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,repl,Illegal]
+                        Frame: [1,repl,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,string,Illegal]
+                        Frame: [2,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: count
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,count,Illegal]
+                        Frame: [3,count,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [5,flags,Illegal]
+                        Frame: [4,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 4
@@ -749,19 +749,19 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [6,<return_val>,Illegal]
+                        Frame: [5,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [9045,9094]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [9074,9078]`repl`
-                          Frame: [2,repl,Illegal]
+                          Frame: [1,repl,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [9080,9086]`string`
-                          Frame: [3,string,Illegal]
+                          Frame: [2,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [9088,9093]`count`
-                          Frame: [4,count,Illegal]
+                          Frame: [3,count,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [9045,9069]`_compile(pattern, fl...`
@@ -769,16 +769,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [9054,9061]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [9063,9068]`flags`
-                              Frame: [5,flags,Illegal]
+                              Frame: [4,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [9096,9696]`def subn(pattern, re...`
         Identifier: subn
@@ -801,7 +801,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 7 slots [__annotations__, pattern, repl, string, count, flags, <return_val>]
+            FrameDescriptor: 6 slots [pattern, repl, string, count, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -812,35 +812,35 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: repl
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,repl,Illegal]
+                        Frame: [1,repl,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,string,Illegal]
+                        Frame: [2,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: count
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,count,Illegal]
+                        Frame: [3,count,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 3
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [5,flags,Illegal]
+                        Frame: [4,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 4
@@ -848,19 +848,19 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [6,<return_val>,Illegal]
+                        Frame: [5,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [9644,9694]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [9674,9678]`repl`
-                          Frame: [2,repl,Illegal]
+                          Frame: [1,repl,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [9680,9686]`string`
-                          Frame: [3,string,Illegal]
+                          Frame: [2,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [9688,9693]`count`
-                          Frame: [4,count,Illegal]
+                          Frame: [3,count,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [9644,9668]`_compile(pattern, fl...`
@@ -868,16 +868,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [9653,9660]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [9662,9667]`flags`
-                              Frame: [5,flags,Illegal]
+                              Frame: [4,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [9696,10226]`def split(pattern, s...`
         Identifier: split
@@ -900,7 +900,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 6 slots [__annotations__, pattern, string, maxsplit, flags, <return_val>]
+            FrameDescriptor: 5 slots [pattern, string, maxsplit, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -911,28 +911,28 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,string,Illegal]
+                        Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: maxsplit
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,maxsplit,Illegal]
+                        Frame: [2,maxsplit,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,flags,Illegal]
+                        Frame: [3,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 3
@@ -940,16 +940,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [5,<return_val>,Illegal]
+                        Frame: [4,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [10176,10224]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [10207,10213]`string`
-                          Frame: [2,string,Illegal]
+                          Frame: [1,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [10215,10223]`maxsplit`
-                          Frame: [3,maxsplit,Illegal]
+                          Frame: [2,maxsplit,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [10176,10200]`_compile(pattern, fl...`
@@ -957,16 +957,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10185,10192]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10194,10199]`flags`
-                              Frame: [4,flags,Illegal]
+                              Frame: [3,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [5,<return_val>,Illegal]
+                  Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10226,10603]`def findall(pattern,...`
         Identifier: findall
@@ -987,7 +987,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -998,21 +998,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,string,Illegal]
+                        Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,flags,Illegal]
+                        Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -1020,13 +1020,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,<return_val>,Illegal]
+                        Frame: [3,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [10561,10601]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [10594,10600]`string`
-                          Frame: [2,string,Illegal]
+                          Frame: [1,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [10561,10585]`_compile(pattern, fl...`
@@ -1034,16 +1034,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10570,10577]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10579,10584]`flags`
-                              Frame: [3,flags,Illegal]
+                              Frame: [2,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10603,10879]`def finditer(pattern...`
         Identifier: finditer
@@ -1064,7 +1064,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, string, flags, <return_val>]
+            FrameDescriptor: 4 slots [pattern, string, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1075,21 +1075,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: string
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,string,Illegal]
+                        Frame: [1,string,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,flags,Illegal]
+                        Frame: [2,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -1097,13 +1097,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [4,<return_val>,Illegal]
+                        Frame: [3,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [10836,10877]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [10870,10876]`string`
-                          Frame: [2,string,Illegal]
+                          Frame: [1,string,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [10836,10860]`_compile(pattern, fl...`
@@ -1111,16 +1111,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10845,10852]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [10854,10859]`flags`
-                              Frame: [3,flags,Illegal]
+                              Frame: [2,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _compile
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10879,11019]`def compile(pattern,...`
         Identifier: compile
@@ -1141,7 +1141,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [__annotations__, pattern, flags, <return_val>]
+            FrameDescriptor: 3 slots [pattern, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1152,14 +1152,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,flags,Illegal]
+                        Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -1167,22 +1167,22 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,<return_val>,Illegal]
+                        Frame: [2,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [10993,11017]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [11002,11009]`pattern`
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [11011,11016]`flags`
-                          Frame: [2,flags,Illegal]
+                          Frame: [1,flags,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: _compile
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11019,11126]`def purge():↵    "Cl...`
         Identifier: purge
@@ -1200,7 +1200,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 2 slots [__annotations__, <return_val>]
+            FrameDescriptor: 1 slots [<return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1228,7 +1228,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Identifier: _compile_repl
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11126,11439]`def template(pattern...`
         Identifier: template
@@ -1249,7 +1249,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 4 slots [__annotations__, pattern, flags, <return_val>]
+            FrameDescriptor: 3 slots [pattern, flags, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1260,14 +1260,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,flags,Illegal]
+                        Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -1275,19 +1275,19 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,<return_val>,Illegal]
+                        Frame: [2,<return_val>,Illegal]
                       PythonCallNodeGen SourceSection: [11230,11256]`_compile(pattern, fl...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [11239,11246]`pattern`
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         BinaryArithmeticExpression SourceSection: [11248,11255]`flags|T`
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __or__
                           ReadLocalVariableNode SourceSection: [11248,11253]`flags`
-                            Frame: [2,flags,Illegal]
+                            Frame: [1,flags,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11254,11255]`T`
                             Identifier: T
@@ -1296,7 +1296,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           Identifier: _compile
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11439,11521]`_special_chars_map =...`
         Identifier: _special_chars_map
@@ -1306,7 +1306,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CallDispatchNodeGen SourceSection: None
           GeneratorExpressionNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
             Name: [].<locals>.<genexp>:re:250
-            FrameDescriptor: 3 slots [__annotations__, i, <return_val>]
+            FrameDescriptor: 2 slots [i, <return_val>]
             Enclosing
               FrameDescriptor: 2 slots [<>temp0, <>temp1]
             Active Flags: 2
@@ -1319,7 +1319,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, i, <return_val>]
+              FrameDescriptor: 2 slots [i, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1333,7 +1333,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         TupleLiteralNode SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [11461,11462]`i`
-                            Frame: [1,i,Illegal]
+                            Frame: [0,i,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           BinaryArithmeticExpression SourceSection: [11464,11477]`'\\' + chr(i)`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -1344,7 +1344,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [11475,11476]`i`
-                                Frame: [1,i,Illegal]
+                                Frame: [0,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: chr
@@ -1353,7 +1353,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: i
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,i,Illegal]
+                        Frame: [0,i,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
@@ -1362,7 +1362,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         Op: __next__
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
@@ -1392,7 +1392,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [__annotations__, pattern, <return_val>]
+            FrameDescriptor: 2 slots [pattern, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1402,7 +1402,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: pattern
                     WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [1,pattern,Illegal]
+                      Frame: [0,pattern,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
@@ -1413,7 +1413,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [11621,11628]`pattern`
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [11630,11633]`str`
                           Identifier: str
@@ -1425,7 +1425,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
+                          Frame: [1,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [11651,11688]`pattern.translate(_s...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
@@ -1435,19 +1435,19 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [11651,11658]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                     BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [11707,11739]`pattern = str(patter...`
                         Identifier: pattern
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                         PythonCallNodeGen SourceSection: [11717,11739]`str(pattern, 'latin1...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [11721,11728]`pattern`
-                            Frame: [1,pattern,Illegal]
+                            Frame: [0,pattern,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [11730,11738]`'latin1'`
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -1457,7 +1457,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [2,<return_val>,Illegal]
+                            Frame: [1,<return_val>,Illegal]
                           PythonCallNodeGen SourceSection: [11755,11809]`pattern.translate(_s...`
                             CachedCallNodeGen SourceSection: None
                               CreateArgumentsNodeGen SourceSection: None
@@ -1473,10 +1473,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [11755,11762]`pattern`
-                                    Frame: [1,pattern,Illegal]
+                                    Frame: [0,pattern,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11811,11853]`Pattern = type(sre_c...`
         Identifier: Pattern
@@ -1545,7 +1545,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, flags, p, <return_val>]
+            FrameDescriptor: 4 slots [pattern, flags, p, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1556,14 +1556,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: flags
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,flags,Illegal]
+                        Frame: [1,flags,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -1575,7 +1575,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [12111,12116]`flags`
-                            Frame: [2,flags,Illegal]
+                            Frame: [1,flags,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12118,12127]`RegexFlag`
                             Identifier: RegexFlag
@@ -1586,14 +1586,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       WriteLocalVariableNodeGen SourceSection: [12138,12157]`flags = flags.value`
                         Identifier: flags
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,flags,Illegal]
+                          Frame: [1,flags,Illegal]
                         GetAttributeNodeGen SourceSection: [12146,12157]`flags.value`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: value
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalVariableNode SourceSection: [12146,12151]`flags`
-                            Frame: [2,flags,Illegal]
+                            Frame: [1,flags,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [12162,12258]`try:↵        return ...`
@@ -1602,7 +1602,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [4,<return_val>,Illegal]
+                              Frame: [3,<return_val>,Illegal]
                             GetItemNodeGen SourceSection: [12182,12219]`_cache[type(pattern)...`
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: _cache
@@ -1614,16 +1614,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                     CreateArgumentsNodeGen SourceSection: None
                                     CallDispatchNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [12194,12201]`pattern`
-                                    Frame: [1,pattern,Illegal]
+                                    Frame: [0,pattern,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: type
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [12204,12211]`pattern`
-                                  Frame: [1,pattern,Illegal]
+                                  Frame: [0,pattern,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [12213,12218]`flags`
-                                  Frame: [2,flags,Illegal]
+                                  Frame: [1,flags,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [12249,12253]`pass`
@@ -1640,7 +1640,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [12272,12279]`pattern`
-                            Frame: [1,pattern,Illegal]
+                            Frame: [0,pattern,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12281,12288]`Pattern`
                             Identifier: Pattern
@@ -1652,7 +1652,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         IfNode SourceSection: [12299,12420]`if flags:↵          ...`
                           YesNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12302,12307]`flags`
-                              Frame: [2,flags,Illegal]
+                              Frame: [1,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           RaiseNodeGen SourceSection: [12321,12411]`raise ValueError(↵  ...`
                             PythonCallNodeGen SourceSection: [12327,12411]`ValueError(↵        ...`
@@ -1669,9 +1669,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [4,<return_val>,Illegal]
+                              Frame: [3,<return_val>,Illegal]
                             ReadLocalVariableNode SourceSection: [12427,12434]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [12439,12558]`if not sre_compile.i...`
@@ -1681,7 +1681,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [12467,12474]`pattern`
-                            Frame: [1,pattern,Illegal]
+                            Frame: [0,pattern,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [12446,12457]`sre_compile`
@@ -1701,16 +1701,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: [12558,12597]`p = sre_compile.comp...`
                       Identifier: p
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,p,Illegal]
+                        Frame: [2,p,Illegal]
                       PythonCallNodeGen SourceSection: [12562,12597]`sre_compile.compile(...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [12582,12589]`pattern`
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [12591,12596]`flags`
-                          Frame: [2,flags,Illegal]
+                          Frame: [1,flags,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12562,12573]`sre_compile`
@@ -1722,7 +1722,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __and__
                           ReadLocalVariableNode SourceSection: [12610,12615]`flags`
-                            Frame: [2,flags,Illegal]
+                            Frame: [1,flags,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12618,12623]`DEBUG`
                             Identifier: DEBUG
@@ -1797,31 +1797,31 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CreateArgumentsNodeGen SourceSection: None
                                 CallDispatchNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12863,12870]`pattern`
-                                Frame: [1,pattern,Illegal]
+                                Frame: [0,pattern,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: type
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12873,12880]`pattern`
-                              Frame: [1,pattern,Illegal]
+                              Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12882,12887]`flags`
-                              Frame: [2,flags,Illegal]
+                              Frame: [1,flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [12891,12892]`p`
-                            Frame: [3,p,Illegal]
+                            Frame: [2,p,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [12897,12905]`return p`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,<return_val>,Illegal]
+                          Frame: [3,<return_val>,Illegal]
                         ReadLocalVariableNode SourceSection: [12904,12905]`p`
-                          Frame: [3,p,Illegal]
+                          Frame: [2,p,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [12907,13069]`@functools.lru_cache...`
         Identifier: _compile_repl
@@ -1844,7 +1844,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, repl, pattern, <return_val>]
+              FrameDescriptor: 3 slots [repl, pattern, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -1855,14 +1855,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: repl
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,repl,Illegal]
+                          Frame: [0,repl,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: pattern
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,pattern,Illegal]
+                          Frame: [1,pattern,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
@@ -1870,23 +1870,23 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,<return_val>,Illegal]
+                          Frame: [2,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [13028,13067]`sre_parse.parse_temp...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13053,13057]`repl`
-                            Frame: [1,repl,Illegal]
+                            Frame: [0,repl,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13059,13066]`pattern`
-                            Frame: [2,pattern,Illegal]
+                            Frame: [1,pattern,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [13028,13037]`sre_parse`
                               Identifier: sre_parse
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [12907,12938]`@functools.lru_cache...`
             CachedCallNodeGen SourceSection: None
@@ -1914,7 +1914,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, match, template, <return_val>]
+            FrameDescriptor: 4 slots [pattern, match, template, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -1925,21 +1925,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: match
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,match,Illegal]
+                        Frame: [1,match,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: template
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,template,Illegal]
+                        Frame: [2,template,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 2
@@ -1947,16 +1947,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: [13161,13215]`template = sre_parse...`
                       Identifier: template
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,template,Illegal]
+                        Frame: [2,template,Illegal]
                       PythonCallNodeGen SourceSection: [13172,13215]`sre_parse.parse_temp...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [13197,13205]`template`
-                          Frame: [3,template,Illegal]
+                          Frame: [2,template,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [13207,13214]`pattern`
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13172,13181]`sre_parse`
@@ -1966,23 +1966,23 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,<return_val>,Illegal]
+                          Frame: [3,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [13227,13269]`sre_parse.expand_tem...`
                           CachedCallNodeGen SourceSection: None
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13253,13261]`template`
-                            Frame: [3,template,Illegal]
+                            Frame: [2,template,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [13263,13268]`match`
-                            Frame: [2,match,Illegal]
+                            Frame: [1,match,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [13227,13236]`sre_parse`
                               Identifier: sre_parse
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [13271,13665]`def _subx(pattern, t...`
         Identifier: _subx
@@ -2001,7 +2001,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 5 slots [__annotations__, pattern, template, filter, <return_val>]
+            FrameDescriptor: 4 slots [pattern, template, filter, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2012,14 +2012,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: pattern
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,pattern,Illegal]
+                        Frame: [0,pattern,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: template
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,template,Illegal]
+                        Frame: [1,template,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
@@ -2027,16 +2027,16 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: [13360,13403]`template = _compile_...`
                       Identifier: template
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,template,Illegal]
+                        Frame: [1,template,Illegal]
                       PythonCallNodeGen SourceSection: [13371,13403]`_compile_repl(templa...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [13385,13393]`template`
-                          Frame: [2,template,Illegal]
+                          Frame: [1,template,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [13395,13402]`pattern`
-                          Frame: [1,pattern,Illegal]
+                          Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: _compile_repl
@@ -2047,7 +2047,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           NotNodeGen SourceSection: [13411,13426]`not template[0]`
                             GetItemNodeGen SourceSection: [13415,13426]`template[0]`
                               ReadLocalVariableNode SourceSection: None
-                                Frame: [2,template,Illegal]
+                                Frame: [1,template,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [13424,13425]`0`
                                 Value: 0
@@ -2060,7 +2060,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CallDispatchNodeGen SourceSection: None
                               GetItemNodeGen SourceSection: [13435,13446]`template[1]`
                                 ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,template,Illegal]
+                                  Frame: [1,template,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [13444,13445]`1`
                                   Value: 1
@@ -2074,11 +2074,11 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [4,<return_val>,Illegal]
+                            Frame: [3,<return_val>,Illegal]
                           GetItemNodeGen SourceSection: [13499,13513]`template[1][0]`
                             GetItemNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: None
-                                Frame: [2,template,Illegal]
+                                Frame: [1,template,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [13508,13509]`1`
                                 Value: 1
@@ -2088,11 +2088,11 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: [13518,13618]`def filter(match, te...`
                       Identifier: filter
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,filter,Illegal]
+                        Frame: [2,filter,Illegal]
                       FunctionDefinitionNode Name: filter SourceSection: None
                         Arguments:
                           ReadLocalVariableNode SourceSection: [13545,13553]`template`
-                            Frame: [2,template,Illegal]
+                            Frame: [1,template,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         KwArguments: None
                         Documentation: StringLiteralNode: Empty
@@ -2107,7 +2107,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CelVars: None
                           FreeVars: None
                           NeedsCellFrame: False
-                          FrameDescriptor: 4 slots [__annotations__, match, template, <return_val>]
+                          FrameDescriptor: 3 slots [match, template, <return_val>]
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
@@ -2118,14 +2118,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: match
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,match,Illegal]
+                                      Frame: [0,match,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: template
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,template,Illegal]
+                                      Frame: [1,template,Illegal]
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 1
@@ -2133,34 +2133,34 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   WriteLocalVariableNodeGen SourceSection: None
                                     Identifier: <return_val>
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [3,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                     PythonCallNodeGen SourceSection: [13571,13613]`sre_parse.expand_tem...`
                                       CachedCallNodeGen SourceSection: None
                                         CreateArgumentsNodeGen SourceSection: None
                                         CallDispatchNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [13597,13605]`template`
-                                        Frame: [2,template,Illegal]
+                                        Frame: [1,template,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [13607,13612]`match`
-                                        Frame: [1,match,Illegal]
+                                        Frame: [0,match,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [13571,13580]`sre_parse`
                                           Identifier: sre_parse
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [3,<return_val>,Illegal]
+                                Frame: [2,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [13618,13631]`return filter`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,<return_val>,Illegal]
+                          Frame: [3,<return_val>,Illegal]
                         ReadLocalVariableNode SourceSection: [13625,13631]`filter`
-                          Frame: [3,filter,Illegal]
+                          Frame: [2,filter,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [13672,13679]`copyreg`
         Identifier: copyreg
@@ -2184,7 +2184,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             CelVars: None
             FreeVars: None
             NeedsCellFrame: False
-            FrameDescriptor: 3 slots [__annotations__, p, <return_val>]
+            FrameDescriptor: 2 slots [p, <return_val>]
             ExecutionSlots:
               FreeVarsSlots: None
               CellVarsSlots: None
@@ -2194,7 +2194,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   WriteLocalVariableNodeGen SourceSection: None
                     Identifier: p
                     WriteLocalFrameSlotNodeGen SourceSection: None
-                      Frame: [1,p,Illegal]
+                      Frame: [0,p,Illegal]
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
@@ -2202,7 +2202,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: <return_val>
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,<return_val>,Illegal]
+                        Frame: [1,<return_val>,Illegal]
                       TupleLiteralNode SourceSection: [13708,13738]`_compile, (p.pattern...`
                         PythonObjectFactoryNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [13708,13716]`_compile`
@@ -2216,7 +2216,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadLocalVariableNode SourceSection: [13719,13720]`p`
-                              Frame: [1,p,Illegal]
+                              Frame: [0,p,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [13730,13737]`p.flags`
                             GetFixedAttributeNodeGen SourceSection: None
@@ -2224,10 +2224,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadLocalVariableNode SourceSection: [13730,13731]`p`
-                              Frame: [1,p,Illegal]
+                              Frame: [0,p,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [13740,13782]`copyreg.pickle(Patte...`
         PythonCallNodeGen SourceSection: [13740,13782]`copyreg.pickle(Patte...`
@@ -2311,7 +2311,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 15 slots [__annotations__, self, lexicon, flags, BRANCH, SUBPATTERN, p, s, gid, phrase, action, __class__, <>temp12, <>temp13, <return_val>]
+                                  FrameDescriptor: 14 slots [self, lexicon, flags, BRANCH, SUBPATTERN, p, s, gid, phrase, action, __class__, <>temp11, <>temp12, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -2322,21 +2322,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,self,Illegal]
+                                              Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: lexicon
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,lexicon,Illegal]
+                                              Frame: [1,lexicon,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: flags
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,flags,Illegal]
+                                              Frame: [2,flags,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 2
@@ -2348,12 +2348,12 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: BRANCH
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [4,BRANCH,Illegal]
+                                                Frame: [3,BRANCH,Illegal]
                                               EmptyNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: SUBPATTERN
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [5,SUBPATTERN,Illegal]
+                                                Frame: [4,SUBPATTERN,Illegal]
                                               EmptyNode SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -2366,7 +2366,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                   CreateArgumentsNodeGen SourceSection: None
                                                   CallDispatchNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [14050,14055]`flags`
-                                                  Frame: [3,flags,Illegal]
+                                                  Frame: [2,flags,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14057,14066]`RegexFlag`
                                                   Identifier: RegexFlag
@@ -2377,34 +2377,34 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             WriteLocalVariableNodeGen SourceSection: [14081,14100]`flags = flags.value`
                                               Identifier: flags
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [3,flags,Illegal]
+                                                Frame: [2,flags,Illegal]
                                               GetAttributeNodeGen SourceSection: [14089,14100]`flags.value`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: value
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNode SourceSection: [14089,14094]`flags`
-                                                  Frame: [3,flags,Illegal]
+                                                  Frame: [2,flags,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                           SetAttributeNodeGen SourceSection: [14109,14131]`self.lexicon = lexic...`
                                             Attribute: lexicon
                                             ReadLocalVariableNode SourceSection: [14109,14113]`self`
-                                              Frame: [1,self,Illegal]
+                                              Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [14124,14131]`lexicon`
-                                              Frame: [2,lexicon,Illegal]
+                                              Frame: [1,lexicon,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14190,14196]`p = []`
                                             Identifier: p
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [6,p,Illegal]
+                                              Frame: [5,p,Illegal]
                                             ListLiteralNode SourceSection: [14194,14196]`[]`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14205,14228]`s = sre_parse.Patter...`
                                             Identifier: s
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [7,s,Illegal]
+                                              Frame: [6,s,Illegal]
                                             PythonCallNodeGen SourceSection: [14209,14228]`sre_parse.Pattern()`
                                               CachedCallNodeGen SourceSection: None
                                                 CreateArgumentsNodeGen SourceSection: None
@@ -2416,10 +2416,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           SetAttributeNodeGen SourceSection: [14237,14252]`s.flags = flags`
                                             Attribute: flags
                                             ReadLocalVariableNode SourceSection: [14237,14238]`s`
-                                              Frame: [7,s,Illegal]
+                                              Frame: [6,s,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [14247,14252]`flags`
-                                              Frame: [3,flags,Illegal]
+                                              Frame: [2,flags,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           ElseNode SourceSection: [14261,14511]`for phrase, action i...`
                                             ForNode SourceSection: None
@@ -2427,39 +2427,39 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                 ForNextElementNodeGen SourceSection: None
                                                   DestructuringAssignmentNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <>temp11
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [11,<>temp11,Illegal]
+                                                    WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <>temp12
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [12,<>temp12,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: None
-                                                      Identifier: <>temp13
-                                                      WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [13,<>temp13,Illegal]
-                                                    WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: phrase
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [9,phrase,Illegal]
+                                                        Frame: [8,phrase,Illegal]
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [12,<>temp12,Illegal]
+                                                        Frame: [11,<>temp11,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: action
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [10,action,Illegal]
+                                                        Frame: [9,action,Illegal]
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [13,<>temp13,Illegal]
+                                                        Frame: [12,<>temp12,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [14304,14323]`gid = s.opengroup()`
                                                     Identifier: gid
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [8,gid,Illegal]
+                                                      Frame: [7,gid,Illegal]
                                                     PythonCallNodeGen SourceSection: [14310,14323]`s.opengroup()`
                                                       CachedCallNodeGen SourceSection: None
                                                         CreateArgumentsNodeGen SourceSection: None
                                                         CallDispatchNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14310,14311]`s`
-                                                          Frame: [7,s,Illegal]
+                                                          Frame: [6,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [14336,14465]`p.append(sre_parse.S...`
                                                     PythonCallNodeGen SourceSection: [14336,14465]`p.append(sre_parse.S...`
@@ -2471,19 +2471,19 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14366,14367]`s`
-                                                          Frame: [7,s,Illegal]
+                                                          Frame: [6,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ListLiteralNode SourceSection: [14369,14463]`[↵                (S...`
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                           TupleLiteralNode SourceSection: [14387,14444]`(SUBPATTERN, (gid, 0...`
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [14388,14398]`SUBPATTERN`
-                                                              Frame: [5,SUBPATTERN,Illegal]
+                                                              Frame: [4,SUBPATTERN,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             TupleLiteralNode SourceSection: [14400,14443]`(gid, 0, 0, sre_pars...`
                                                               PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [14401,14404]`gid`
-                                                                Frame: [8,gid,Illegal]
+                                                                Frame: [7,gid,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [14406,14407]`0`
                                                                 Value: 0
@@ -2494,10 +2494,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                                   CreateArgumentsNodeGen SourceSection: None
                                                                   CallDispatchNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [14428,14434]`phrase`
-                                                                  Frame: [9,phrase,Illegal]
+                                                                  Frame: [8,phrase,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [14436,14441]`flags`
-                                                                  Frame: [3,flags,Illegal]
+                                                                  Frame: [2,flags,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 GetCallAttributeNodeGen SourceSection: None
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14412,14421]`sre_parse`
@@ -2509,7 +2509,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14336,14337]`p`
-                                                          Frame: [6,p,Illegal]
+                                                          Frame: [5,p,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [14478,14502]`s.closegroup(gid, p[...`
                                                     PythonCallNodeGen SourceSection: [14478,14502]`s.closegroup(gid, p[...`
@@ -2517,47 +2517,47 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                         CreateArgumentsNodeGen SourceSection: None
                                                         CallDispatchNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [14491,14494]`gid`
-                                                        Frame: [8,gid,Illegal]
+                                                        Frame: [7,gid,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       GetItemNodeGen SourceSection: [14496,14501]`p[-1]`
                                                         ReadLocalVariableNode SourceSection: None
-                                                          Frame: [6,p,Illegal]
+                                                          Frame: [5,p,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [14498,14500]`-1`
                                                           Value: -1
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14478,14479]`s`
-                                                          Frame: [7,s,Illegal]
+                                                          Frame: [6,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [14283,14290]`lexicon`
                                                 GetIteratorNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [14283,14290]`lexicon`
-                                                  Frame: [2,lexicon,Illegal]
+                                                  Frame: [1,lexicon,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14511,14561]`p = sre_parse.SubPat...`
                                             Identifier: p
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [6,p,Illegal]
+                                              Frame: [5,p,Illegal]
                                             PythonCallNodeGen SourceSection: [14515,14561]`sre_parse.SubPattern...`
                                               CachedCallNodeGen SourceSection: None
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [14536,14537]`s`
-                                                Frame: [7,s,Illegal]
+                                                Frame: [6,s,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ListLiteralNode SourceSection: [14539,14560]`[(BRANCH, (None, p))...`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 TupleLiteralNode SourceSection: [14540,14559]`(BRANCH, (None, p))`
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [14541,14547]`BRANCH`
-                                                    Frame: [4,BRANCH,Illegal]
+                                                    Frame: [3,BRANCH,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [14549,14558]`(None, p)`
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                     ObjectLiteralNode SourceSection: [14550,14554]`None`
                                                     ReadLocalVariableNode SourceSection: [14556,14557]`p`
-                                                      Frame: [6,p,Illegal]
+                                                      Frame: [5,p,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14515,14524]`sre_parse`
@@ -2566,21 +2566,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           SetAttributeNodeGen SourceSection: [14570,14607]`self.scanner = sre_c...`
                                             Attribute: scanner
                                             ReadLocalVariableNode SourceSection: [14570,14574]`self`
-                                              Frame: [1,self,Illegal]
+                                              Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [14585,14607]`sre_compile.compile(...`
                                               CachedCallNodeGen SourceSection: None
                                                 CreateArgumentsNodeGen SourceSection: None
                                                 CallDispatchNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [14605,14606]`p`
-                                                Frame: [6,p,Illegal]
+                                                Frame: [5,p,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14585,14596]`sre_compile`
                                                   Identifier: sre_compile
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [14,<return_val>,Illegal]
+                                        Frame: [13,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [14612,15192]`def scan(self, strin...`
                               ArgumentExpressionNode SourceSection: None
@@ -2602,7 +2602,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   CelVars: None
                                   FreeVars: __class__
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 12 slots [__annotations__, self, string, result, append, match, i, m, j, action, __class__, <return_val>]
+                                  FrameDescriptor: 11 slots [self, string, result, append, match, i, m, j, action, __class__, <return_val>]
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
@@ -2613,14 +2613,14 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: self
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,self,Illegal]
+                                              Frame: [0,self,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 0
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: string
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [2,string,Illegal]
+                                              Frame: [1,string,Illegal]
                                             ArgumentExpressionNode SourceSection: None
                                               ReadIndexedArgumentNodeGen SourceSection: None
                                                 Index: 1
@@ -2628,25 +2628,25 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           WriteLocalVariableNodeGen SourceSection: [14644,14655]`result = []`
                                             Identifier: result
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,result,Illegal]
+                                              Frame: [2,result,Illegal]
                                             ListLiteralNode SourceSection: [14653,14655]`[]`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14664,14686]`append = result.appe...`
                                             Identifier: append
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [4,append,Illegal]
+                                              Frame: [3,append,Illegal]
                                             GetAttributeNodeGen SourceSection: [14673,14686]`result.append`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: append
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNode SourceSection: [14673,14679]`result`
-                                                Frame: [3,result,Illegal]
+                                                Frame: [2,result,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14695,14737]`match = self.scanner...`
                                             Identifier: match
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [5,match,Illegal]
+                                              Frame: [4,match,Illegal]
                                             GetAttributeNodeGen SourceSection: [14703,14737]`self.scanner.scanner...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: match
@@ -2657,7 +2657,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                   CreateArgumentsNodeGen SourceSection: None
                                                   CallDispatchNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [14724,14730]`string`
-                                                  Frame: [2,string,Illegal]
+                                                  Frame: [1,string,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [14703,14715]`self.scanner`
@@ -2666,12 +2666,12 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNode SourceSection: [14703,14707]`self`
-                                                      Frame: [1,self,Illegal]
+                                                      Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14746,14751]`i = 0`
                                             Identifier: i
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [6,i,Illegal]
+                                              Frame: [5,i,Illegal]
                                             IntegerLiteralNode SourceSection: [14750,14751]`0`
                                               Value: 0
                                           BreakTargetNode SourceSection: [14760,15166]`while True:↵        ...`
@@ -2683,32 +2683,32 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                   WriteLocalVariableNodeGen SourceSection: [14784,14795]`m = match()`
                                                     Identifier: m
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [7,m,Illegal]
+                                                      Frame: [6,m,Illegal]
                                                     PythonCallNodeGen SourceSection: [14788,14795]`match()`
                                                       CachedCallNodeGen SourceSection: None
                                                         CreateArgumentsNodeGen SourceSection: None
                                                         CallDispatchNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: None
-                                                        Frame: [5,match,Illegal]
+                                                        Frame: [4,match,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   IfNode SourceSection: [14808,14852]`if not m:↵          ...`
                                                     NotNodeGen SourceSection: [14811,14816]`not m`
                                                       ReadLocalVariableNode SourceSection: [14815,14816]`m`
-                                                        Frame: [7,m,Illegal]
+                                                        Frame: [6,m,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                     BreakNode SourceSection: [14834,14839]`break`
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [14852,14863]`j = m.end()`
                                                     Identifier: j
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [8,j,Illegal]
+                                                      Frame: [7,j,Illegal]
                                                     PythonCallNodeGen SourceSection: [14856,14863]`m.end()`
                                                       CachedCallNodeGen SourceSection: None
                                                         CreateArgumentsNodeGen SourceSection: None
                                                         CallDispatchNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14856,14857]`m`
-                                                          Frame: [7,m,Illegal]
+                                                          Frame: [6,m,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   IfNode SourceSection: [14876,14921]`if i == j:↵         ...`
                                                     YesNodeGen SourceSection: None
@@ -2716,17 +2716,17 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __eq__
                                                         ReadLocalVariableNode SourceSection: [14879,14880]`i`
-                                                          Frame: [6,i,Illegal]
+                                                          Frame: [5,i,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14884,14885]`j`
-                                                          Frame: [8,j,Illegal]
+                                                          Frame: [7,j,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     BreakNode SourceSection: [14903,14908]`break`
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [14921,14960]`action = self.lexico...`
                                                     Identifier: action
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [9,action,Illegal]
+                                                      Frame: [8,action,Illegal]
                                                     GetItemNodeGen SourceSection: [14930,14960]`self.lexicon[m.lasti...`
                                                       GetItemNodeGen SourceSection: None
                                                         GetAttributeNodeGen SourceSection: None
@@ -2735,7 +2735,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNode SourceSection: [14930,14934]`self`
-                                                            Frame: [1,self,Illegal]
+                                                            Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                         BinaryArithmeticExpression SourceSection: [14943,14956]`m.lastindex-1`
                                                           LookupAndCallBinaryNodeGen SourceSection: None
@@ -2746,7 +2746,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                             ReadLocalVariableNode SourceSection: [14943,14944]`m`
-                                                              Frame: [7,m,Illegal]
+                                                              Frame: [6,m,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [14955,14956]`1`
                                                             Value: 1
@@ -2759,7 +2759,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [14985,14991]`action`
-                                                          Frame: [9,action,Illegal]
+                                                          Frame: [8,action,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                           Identifier: callable
@@ -2768,21 +2768,21 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       SetAttributeNodeGen SourceSection: [15010,15024]`self.match = m`
                                                         Attribute: match
                                                         ReadLocalVariableNode SourceSection: [15010,15014]`self`
-                                                          Frame: [1,self,Illegal]
+                                                          Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [15023,15024]`m`
-                                                          Frame: [7,m,Illegal]
+                                                          Frame: [6,m,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: [15041,15073]`action = action(self...`
                                                         Identifier: action
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [9,action,Illegal]
+                                                          Frame: [8,action,Illegal]
                                                         PythonCallNodeGen SourceSection: [15050,15073]`action(self, m.group...`
                                                           CachedCallNodeGen SourceSection: None
                                                             CreateArgumentsNodeGen SourceSection: None
                                                             CallDispatchNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [15057,15061]`self`
-                                                            Frame: [1,self,Illegal]
+                                                            Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           PythonCallNodeGen SourceSection: [15063,15072]`m.group()`
                                                             CachedCallNodeGen SourceSection: None
@@ -2790,17 +2790,17 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                               CallDispatchNodeGen SourceSection: None
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [15063,15064]`m`
-                                                                Frame: [7,m,Illegal]
+                                                                Frame: [6,m,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: None
-                                                            Frame: [9,action,Illegal]
+                                                            Frame: [8,action,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
                                                   IfNode SourceSection: [15086,15152]`if action is not Non...`
                                                     NotNodeGen SourceSection: [15089,15107]`action is not None`
                                                       IsExpressionNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [15089,15095]`action`
-                                                          Frame: [9,action,Illegal]
+                                                          Frame: [8,action,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ObjectLiteralNode SourceSection: [15103,15107]`None`
                                                     ExpressionStatementNode SourceSection: [15125,15139]`append(action)`
@@ -2809,43 +2809,43 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                           CreateArgumentsNodeGen SourceSection: None
                                                           CallDispatchNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [15132,15138]`action`
-                                                          Frame: [9,action,Illegal]
+                                                          Frame: [8,action,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: None
-                                                          Frame: [4,append,Illegal]
+                                                          Frame: [3,append,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [15152,15157]`i = j`
                                                     Identifier: i
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [6,i,Illegal]
+                                                      Frame: [5,i,Illegal]
                                                     ReadLocalVariableNode SourceSection: [15156,15157]`j`
-                                                      Frame: [8,j,Illegal]
+                                                      Frame: [7,j,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                           FrameReturnNode SourceSection: [15166,15191]`return result, strin...`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [11,<return_val>,Illegal]
+                                                Frame: [10,<return_val>,Illegal]
                                               TupleLiteralNode SourceSection: [15173,15191]`result, string[i:]`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [15173,15179]`result`
-                                                  Frame: [3,result,Illegal]
+                                                  Frame: [2,result,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [15181,15191]`string[i:]`
                                                   ReadLocalVariableNode SourceSection: None
-                                                    Frame: [2,string,Illegal]
+                                                    Frame: [1,string,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   SliceLiteralNodeGen SourceSection: [15188,15190]`i:`
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [15188,15189]`i`
-                                                      Frame: [6,i,Illegal]
+                                                      Frame: [5,i,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     EmptyNode SourceSection: None
                                                     EmptyNode SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [11,<return_val>,Illegal]
+                                        Frame: [10,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
                   StringLiteralNode SourceSection: None

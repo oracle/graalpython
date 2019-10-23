@@ -10,11 +10,11 @@ Scope: []
         FreeVars: Empty
         Scope: _keep_positive
             Kind: Function
-            FrameDescriptor: [elem, __annotations__, nonpositive, self, <return_val>, __class__]
+            FrameDescriptor: [elem, nonpositive, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator74
                 Kind: Generator
-                FrameDescriptor: [elem, __annotations__, count, <>temp3, <>temp4, <return_val>]
+                FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty

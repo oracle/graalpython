@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'yeild11'> SourceSection: [0,24]`def f(): yield 1; 
         WriteNameNodeGen SourceSection: [0,24]`def f(): yield 1; re...`
           Identifier: f
           GeneratorFunctionDefinitionNode Name: f SourceSection: None
-            FrameDescriptor: 2 slots [__annotations__, <return_val>]
+            FrameDescriptor: 1 slots [<return_val>]
             Active Flags: 2
             For Nodes: 0
             Block Nodes: 1
@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'yeild11'> SourceSection: [0,24]`def f(): yield 1; 
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 2 slots [__annotations__, <return_val>]
+              FrameDescriptor: 1 slots [<return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -46,7 +46,7 @@ ModuleRootNode Name: <module 'yeild11'> SourceSection: [0,24]`def f(): yield 1; 
                     ReturnNode SourceSection: [18,24]`return`
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

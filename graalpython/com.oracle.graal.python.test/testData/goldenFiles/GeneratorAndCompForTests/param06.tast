@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
               CelVars: files
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [__annotations__, files, dirs, a, <return_val>]
+              FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: files, 
@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: files
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [1,files,Illegal]
+                          Frame: [0,files,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -45,23 +45,23 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: dirs
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,dirs,Illegal]
+                          Frame: [1,dirs,Illegal]
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
                     WriteLocalVariableNodeGen SourceSection: [23,78]`a = [join(dir, file)...`
                       Identifier: a
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [3,a,Illegal]
+                        Frame: [2,a,Illegal]
                       PythonCallNodeGen SourceSection: [28,77]`join(dir, file) for ...`
                         CachedCallNodeGen SourceSection: None
                           CreateArgumentsNodeGen SourceSection: None
                           CallDispatchNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
                           Name: fn.<locals>.<genexp>:param06:2
-                          FrameDescriptor: 5 slots [__annotations__, file, dir, files, <return_val>]
+                          FrameDescriptor: 4 slots [file, dir, files, <return_val>]
                           Enclosing
-                            FrameDescriptor: 5 slots [__annotations__, files, dirs, a, <return_val>]
+                            FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
                           Active Flags: 2
                           For Nodes: 2
                           Block Nodes: 0
@@ -72,7 +72,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                             CelVars: None
                             FreeVars: files
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [__annotations__, file, dir, files, <return_val>]
+                            FrameDescriptor: 4 slots [file, dir, files, <return_val>]
                             ExecutionSlots:
                               FreeVarsSlots: files, 
                               CellVarsSlots: None
@@ -89,10 +89,10 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                             CreateArgumentsNodeGen SourceSection: None
                                             CallDispatchNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [33,36]`dir`
-                                            Frame: [2,dir,Illegal]
+                                            Frame: [1,dir,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
-                                            Frame: [1,file,Illegal]
+                                            Frame: [0,file,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: join
@@ -101,12 +101,12 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: file
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [1,file,Illegal]
+                                        Frame: [0,file,Illegal]
                                     GetIteratorExpressionNodeGen SourceSection: [72,77]`files`
                                       GetIteratorNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [72,77]`files`
                                         ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [3,files,Illegal]
+                                          Frame: [2,files,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                     GetNextNode SourceSection: None
@@ -116,7 +116,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: dir
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [2,dir,Illegal]
+                                      Frame: [1,dir,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -125,7 +125,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -133,12 +133,12 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                           GetIteratorExpressionNodeGen SourceSection: [55,59]`dirs`
                             GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [55,59]`dirs`
-                              Frame: [2,dirs,Illegal]
+                              Frame: [1,dirs,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

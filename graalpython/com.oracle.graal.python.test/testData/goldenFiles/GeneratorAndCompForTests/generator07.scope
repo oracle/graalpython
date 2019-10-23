@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: merge
         Kind: Generator
-        FrameDescriptor: [next, __annotations__, s, <>temp6, <>temp7, <>temp8, <>temp9, h, value, <return_val>, order]
+        FrameDescriptor: [next, s, <>temp6, <>temp7, <>temp8, h, <>temp5, value, <return_val>, order]
         CellVars: Empty
         FreeVars: Empty

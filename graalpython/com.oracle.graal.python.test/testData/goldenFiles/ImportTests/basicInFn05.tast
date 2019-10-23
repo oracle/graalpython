@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'basicInFn05'> SourceSection: [0,39]`def fn():↵  
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, sys, my_math, <return_val>]
+              FrameDescriptor: 3 slots [sys, my_math, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -37,17 +37,17 @@ ModuleRootNode Name: <module 'basicInFn05'> SourceSection: [0,39]`def fn():↵  
                       WriteLocalVariableNodeGen SourceSection: [19,22]`sys`
                         Identifier: sys
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,sys,Illegal]
+                          Frame: [0,sys,Illegal]
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: sys
                       WriteLocalVariableNodeGen SourceSection: [24,39]`math as my_math`
                         Identifier: my_math
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,my_math,Illegal]
+                          Frame: [1,my_math,Illegal]
                         ImportExpression SourceSection: None
                           ImportNode SourceSection: None
                             Module: math
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -5,66 +5,66 @@ Scope: []
     FreeVars: Empty
     Scope: displayhook
         Kind: Function
-        FrameDescriptor: [__annotations__, builtins, bytes, text, value, <return_val>]
+        FrameDescriptor: [builtins, bytes, text, value, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getrecursionlimit
         Kind: Function
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: breakpointhook
         Kind: Function
-        FrameDescriptor: [hookname, funcname, os, <>temp14, <>temp13, kws, warnings, module, <>temp15, modname, dot, args, __annotations__, importlib, hook, <return_val>]
+        FrameDescriptor: [hookname, funcname, os, <>temp14, <>temp13, kws, warnings, module, modname, dot, <>temp12, args, importlib, hook, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: make_excepthook
         Kind: Function
-        FrameDescriptor: [__annotations__, simple_print_traceback, __print_traceback__, <return_val>]
+        FrameDescriptor: [simple_print_traceback, __print_traceback__, <return_val>]
         CellVars: [simple_print_traceback]
         FreeVars: Empty
         Scope: __print_traceback__
             Kind: Function
-            FrameDescriptor: [__annotations__, exc, simple_print_traceback, typ, value, traceback, <return_val>, tb]
+            FrameDescriptor: [exc, simple_print_traceback, typ, value, traceback, <return_val>, tb]
             CellVars: Empty
             FreeVars: [simple_print_traceback]
         Scope: simple_print_traceback
             Kind: Function
-            FrameDescriptor: [msg, __annotations__, e, <return_val>, tb]
+            FrameDescriptor: [msg, e, <return_val>, tb]
             CellVars: Empty
             FreeVars: Empty
     Scope: exit
         Kind: Function
-        FrameDescriptor: [__annotations__, arg, <return_val>]
+        FrameDescriptor: [arg, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: make_hash_info_class
         Kind: Function
-        FrameDescriptor: [__annotations__, make_named_tuple_class, <return_val>]
+        FrameDescriptor: [make_named_tuple_class, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: make_float_info_class
         Kind: Function
-        FrameDescriptor: [__annotations__, make_named_tuple_class, <return_val>]
+        FrameDescriptor: [make_named_tuple_class, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: make_flags_class
         Kind: Function
-        FrameDescriptor: [flags_class, __annotations__, make_func, make_named_tuple_class, names, get_set_descriptor, f, <>temp8, <>temp9, i, <return_val>]
+        FrameDescriptor: [flags_class, make_func, make_named_tuple_class, names, get_set_descriptor, <>temp7, f, <>temp8, i, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: make_func
             Kind: Function
-            FrameDescriptor: [__annotations__, func, i, <return_val>]
+            FrameDescriptor: [func, i, <return_val>]
             CellVars: [i]
             FreeVars: Empty
             Scope: func
                 Kind: Function
-                FrameDescriptor: [__annotations__, self, i, <return_val>]
+                FrameDescriptor: [self, i, <return_val>]
                 CellVars: Empty
                 FreeVars: [i]
     Scope: make_implementation_info
         Kind: Function
-        FrameDescriptor: [__annotations__, make_named_tuple_class, version_info_type, <return_val>, SimpleNamespace]
+        FrameDescriptor: [make_named_tuple_class, version_info_type, <return_val>, SimpleNamespace]
         CellVars: Empty
         FreeVars: Empty

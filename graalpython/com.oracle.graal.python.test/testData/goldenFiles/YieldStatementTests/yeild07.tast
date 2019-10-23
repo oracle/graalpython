@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'yeild07'> SourceSection: [0,22]`def f(): x = y = y
         WriteNameNodeGen SourceSection: [0,22]`def f(): x = y = yie...`
           Identifier: f
           GeneratorFunctionDefinitionNode Name: f SourceSection: None
-            FrameDescriptor: 5 slots [__annotations__, x, y, <>temp3, <return_val>]
+            FrameDescriptor: 4 slots [x, y, <>temp2, <return_val>]
             Active Flags: 2
             For Nodes: 0
             Block Nodes: 1
@@ -29,7 +29,7 @@ ModuleRootNode Name: <module 'yeild07'> SourceSection: [0,22]`def f(): x = y = y
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [__annotations__, x, y, <>temp3, <return_val>]
+              FrameDescriptor: 4 slots [x, y, <>temp2, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -38,9 +38,9 @@ ModuleRootNode Name: <module 'yeild07'> SourceSection: [0,22]`def f(): x = y = y
                   flagSlot: 1
                   GeneratorBlockNode SourceSection: [9,22]`x = y = yield`
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
-                      Identifier: <>temp3
+                      Identifier: <>temp2
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [3,<>temp3,Illegal]
+                        Frame: [2,<>temp2,Illegal]
                       YieldNode SourceSection: [17,22]`yield`
                         flagSlot: 0
                         EmptyNode SourceSection: None
@@ -48,20 +48,20 @@ ModuleRootNode Name: <module 'yeild07'> SourceSection: [0,22]`def f(): x = y = y
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: x
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,x,Illegal]
+                        Frame: [0,x,Illegal]
                       ReadGeneratorFrameVariableNode SourceSection: None
-                        Frame: [3,<>temp3,Illegal]
+                        Frame: [2,<>temp2,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: y
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [2,y,Illegal]
+                        Frame: [1,y,Illegal]
                       ReadGeneratorFrameVariableNode SourceSection: None
-                        Frame: [3,<>temp3,Illegal]
+                        Frame: [2,<>temp2,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None

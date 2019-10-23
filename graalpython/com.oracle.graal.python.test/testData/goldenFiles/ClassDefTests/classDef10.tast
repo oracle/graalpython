@@ -73,7 +73,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                     CelVars: None
                                     FreeVars: __class__
                                     NeedsCellFrame: False
-                                    FrameDescriptor: 5 slots [__annotations__, self, arg, __class__, <return_val>]
+                                    FrameDescriptor: 4 slots [self, arg, __class__, <return_val>]
                                     ExecutionSlots:
                                       FreeVarsSlots: __class__, 
                                       CellVarsSlots: None
@@ -84,14 +84,14 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: self
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [1,self,Illegal]
+                                                Frame: [0,self,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
                                                   Index: 0
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: arg
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [2,arg,Illegal]
+                                                Frame: [1,arg,Illegal]
                                               ArgumentExpressionNode SourceSection: None
                                                 ReadIndexedArgumentNodeGen SourceSection: None
                                                   Index: 1
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [4,<return_val>,Illegal]
+                                                Frame: [3,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [72,83]`test(arg+1)`
                                                 CachedCallNodeGen SourceSection: None
                                                   CreateArgumentsNodeGen SourceSection: None
@@ -108,7 +108,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
                                                   ReadLocalVariableNode SourceSection: [77,80]`arg`
-                                                    Frame: [2,arg,Illegal]
+                                                    Frame: [1,arg,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [81,82]`1`
                                                     Value: 1
@@ -116,7 +116,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                   Identifier: test
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                          Frame: [4,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                             Return Expresssion: ObjectLiteralNode SourceSection: None
                     StringLiteralNode SourceSection: None
@@ -147,7 +147,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, arg, <return_val>]
+              FrameDescriptor: 2 slots [arg, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -157,12 +157,12 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                     WriteLocalVariableNodeGen SourceSection: None
                       Identifier: arg
                       WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [1,arg,Illegal]
+                        Frame: [0,arg,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     ExpressionStatementNode SourceSection: [17,21]`pass`
                       EmptyNode SourceSection: [17,21]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

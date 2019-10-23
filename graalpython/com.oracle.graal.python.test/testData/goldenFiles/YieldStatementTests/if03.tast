@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
         WriteNameNodeGen SourceSection: [0,92]`def gen(c, b):↵  if ...`
           Identifier: gen
           GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-            FrameDescriptor: 4 slots [__annotations__, c, b, <return_val>]
+            FrameDescriptor: 3 slots [c, b, <return_val>]
             Active Flags: 8
             For Nodes: 0
             Block Nodes: 1
@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__annotations__, c, b, <return_val>]
+              FrameDescriptor: 3 slots [c, b, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -42,12 +42,12 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [20,21]`c`
-                          Frame: [1,c,Illegal]
+                          Frame: [0,c,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [27,30]`b=1`
                         Identifier: b
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [2,b,Illegal]
+                          Frame: [1,b,Illegal]
                         IntegerLiteralNode SourceSection: [29,30]`1`
                           Value: 1
                       ExpressionStatementNode SourceSection: [43,50]`yield 9`
@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [56,57]`b`
-                          Frame: [2,b,Illegal]
+                          Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [63,71]`yield 12`
                         YieldNode SourceSection: [63,71]`yield 12`
@@ -76,20 +76,20 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
                           GeneratorAccessNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
                   BlockNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: c
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [1,c,Illegal]
+                        Frame: [0,c,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: b
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [2,b,Illegal]
+                        Frame: [1,b,Illegal]
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1

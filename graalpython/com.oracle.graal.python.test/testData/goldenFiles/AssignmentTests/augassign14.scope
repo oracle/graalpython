@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: _method
         Kind: Function
-        FrameDescriptor: [args, __annotations__, rest, keywords, cls_or_self, <>temp6, <>temp5, <return_val>]
+        FrameDescriptor: [args, rest, keywords, cls_or_self, <>temp4, <>temp5, <return_val>]
         CellVars: Empty
         FreeVars: Empty

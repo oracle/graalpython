@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'annAssign01'> SourceSection: [0,10]`a: int = 1`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 1 slots [__annotations__]
+  FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,10]`a: int = 1`
     ExpressionWithSideEffects SourceSection: [0,10]`a: int = 1`

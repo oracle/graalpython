@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
               CelVars: MyIter, ret
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 6 slots [__annotations__, MyIter, gen, ret, <>temp4, <return_val>]
+              FrameDescriptor: 5 slots [MyIter, gen, ret, <>temp3, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: MyIter, , ret, 
@@ -37,13 +37,13 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                       WriteLocalCellNodeGen SourceSection: [14,148]`class MyIter:↵      ...`
                         Identifier: MyIter
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [1,MyIter,Illegal]
+                          Frame: [0,MyIter,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ExpressionWithSideEffects SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <>temp4
+                            Identifier: <>temp3
                             WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [4,<>temp4,Illegal]
+                              Frame: [3,<>temp3,Illegal]
                             PythonCallNodeGen SourceSection: [14,148]`class MyIter:↵      ...`
                               CachedCallNodeGen SourceSection: None
                                 CreateArgumentsNodeGen SourceSection: None
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                               CelVars: None
                                               FreeVars: __class__
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
+                                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
                                               ExecutionSlots:
                                                 FreeVarsSlots: __class__, 
                                                 CellVarsSlots: None
@@ -109,7 +109,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: self
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [1,self,Illegal]
+                                                        Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
@@ -117,12 +117,12 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [3,<return_val>,Illegal]
+                                                          Frame: [2,<return_val>,Illegal]
                                                         ReadLocalVariableNode SourceSection: [75,79]`self`
-                                                          Frame: [1,self,Illegal]
+                                                          Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                    Frame: [3,<return_val>,Illegal]
+                                                    Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                         SetItemNodeGen SourceSection: [88,148]`def __next__(self):↵...`
                                           ArgumentExpressionNode SourceSection: None
@@ -144,7 +144,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                               CelVars: None
                                               FreeVars: __class__
                                               NeedsCellFrame: False
-                                              FrameDescriptor: 4 slots [__annotations__, self, __class__, <return_val>]
+                                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
                                               ExecutionSlots:
                                                 FreeVarsSlots: __class__, 
                                                 CellVarsSlots: None
@@ -154,7 +154,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: self
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [1,self,Illegal]
+                                                        Frame: [0,self,Illegal]
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
                                                           Index: 0
@@ -170,7 +170,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       EmptyNode SourceSection: None
                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                    Frame: [3,<return_val>,Illegal]
+                                                    Frame: [2,<return_val>,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
                               StringLiteralNode SourceSection: None
@@ -178,17 +178,17 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                 BuiltinsLiteralNode SourceSection: None
                           WriteCellVarNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
-                              Frame: [4,<>temp4,Illegal]
+                              Frame: [3,<>temp3,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
-                            Frame: [4,<>temp4,Illegal]
+                            Frame: [3,<>temp3,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [148,218]`def gen():↵        n...`
                         Identifier: gen
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,gen,Illegal]
+                          Frame: [1,gen,Illegal]
                         GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-                          FrameDescriptor: 4 slots [__annotations__, MyIter, ret, <return_val>]
+                          FrameDescriptor: 3 slots [MyIter, ret, <return_val>]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 1
@@ -205,7 +205,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             CelVars: None
                             FreeVars: MyIter, ret
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [__annotations__, MyIter, ret, <return_val>]
+                            FrameDescriptor: 3 slots [MyIter, ret, <return_val>]
                             ExecutionSlots:
                               FreeVarsSlots: MyIter, , ret, 
                               CellVarsSlots: None
@@ -218,7 +218,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                   WriteLocalCellNodeGen SourceSection: [188,213]`ret = yield from MyI...`
                                     Identifier: ret
                                     ReadGeneratorFrameVariableNode SourceSection: None
-                                      Frame: [2,ret,Illegal]
+                                      Frame: [1,ret,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     YieldFromNode SourceSection: [194,213]`yield from MyIter()`
                                       GetIteratorNodeGen SourceSection: None
@@ -232,12 +232,12 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                           CallDispatchNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: None
-                                            Frame: [1,MyIter,Illegal]
+                                            Frame: [0,MyIter,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -245,7 +245,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                       WriteLocalCellNodeGen SourceSection: [218,228]`ret = None`
                         Identifier: ret
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [3,ret,Illegal]
+                          Frame: [2,ret,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ObjectLiteralNode SourceSection: [224,228]`None`
                       ExpressionStatementNode SourceSection: [233,244]`list(gen())`
@@ -258,11 +258,11 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                               CreateArgumentsNodeGen SourceSection: None
                               CallDispatchNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
-                              Frame: [2,gen,Illegal]
+                              Frame: [1,gen,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

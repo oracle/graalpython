@@ -5,136 +5,136 @@ Scope: []
     FreeVars: Empty
     Scope: _script
         Kind: Function
-        FrameDescriptor: [args, __annotations__, help, user_base, user_site, textwrap, buffer, dir, <return_val>]
+        FrameDescriptor: [args, help, user_base, user_site, textwrap, buffer, dir, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: main
         Kind: Function
-        FrameDescriptor: [__annotations__, orig_path, known_paths, <return_val>]
+        FrameDescriptor: [orig_path, known_paths, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: execusercustomize
         Kind: Function
-        FrameDescriptor: [__annotations__, exc, usercustomize, err, <return_val>]
+        FrameDescriptor: [exc, usercustomize, err, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: execsitecustomize
         Kind: Function
-        FrameDescriptor: [__annotations__, exc, err, sitecustomize, <return_val>]
+        FrameDescriptor: [exc, err, sitecustomize, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: venv
         Kind: Function
-        FrameDescriptor: [<>temp18, <>temp17, <>temp19, line, f, <>temp16, <>temp15, system_site, <>temp20, env, known_paths, executable, __annotations__, candidate_confs, site_prefix, exe_dir, virtual_conf, conf_basename, value, <return_val>, key, _]
+        FrameDescriptor: [<>temp18, <>temp17, <>temp19, <>temp14, line, f, <>temp16, <>temp15, system_site, env, known_paths, executable, candidate_confs, site_prefix, exe_dir, virtual_conf, conf_basename, value, <return_val>, key, _]
         CellVars: Empty
         FreeVars: Empty
         Scope: generator16114
             Kind: Generator
-            FrameDescriptor: [__annotations__, conffile, <return_val>]
+            FrameDescriptor: [conffile, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: enablerlcompleter
         Kind: Function
-        FrameDescriptor: [__annotations__, register_readline, <return_val>]
+        FrameDescriptor: [register_readline, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: register_readline
             Kind: Function
-            FrameDescriptor: [readline_doc, __annotations__, atexit, rlcompleter, history, <return_val>, readline]
+            FrameDescriptor: [readline_doc, atexit, rlcompleter, history, <return_val>, readline]
             CellVars: Empty
             FreeVars: Empty
     Scope: sethelper
         Kind: Function
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: setcopyright
         Kind: Function
-        FrameDescriptor: [here, __annotations__, files, dirs, <>temp4, <>temp5, <return_val>]
+        FrameDescriptor: [here, files, dirs, <>temp3, <>temp4, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: setquit
         Kind: Function
-        FrameDescriptor: [__annotations__, eof, <return_val>]
+        FrameDescriptor: [eof, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: addsitepackages
         Kind: Function
-        FrameDescriptor: [__annotations__, prefixes, known_paths, sitedir, <return_val>]
+        FrameDescriptor: [prefixes, known_paths, sitedir, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getsitepackages
         Kind: Function
-        FrameDescriptor: [__annotations__, prefixes, sitepackages, prefix, <return_val>, seen]
+        FrameDescriptor: [prefixes, sitepackages, prefix, <return_val>, seen]
         CellVars: Empty
         FreeVars: Empty
     Scope: addusersitepackages
         Kind: Function
-        FrameDescriptor: [__annotations__, user_site, known_paths, <return_val>]
+        FrameDescriptor: [user_site, known_paths, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getusersitepackages
         Kind: Function
-        FrameDescriptor: [__annotations__, userbase, <return_val>]
+        FrameDescriptor: [userbase, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getuserbase
         Kind: Function
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _get_path
         Kind: Function
-        FrameDescriptor: [__annotations__, userbase, version, <return_val>]
+        FrameDescriptor: [userbase, version, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _getuserbase
         Kind: Function
-        FrameDescriptor: [__annotations__, joinuser, env_base, <return_val>, base]
+        FrameDescriptor: [joinuser, env_base, <return_val>, base]
         CellVars: Empty
         FreeVars: Empty
         Scope: joinuser
             Kind: Function
-            FrameDescriptor: [args, __annotations__, <return_val>]
+            FrameDescriptor: [args, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: check_enableusersite
         Kind: Function
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: addsitedir
         Kind: Function
-        FrameDescriptor: [__annotations__, sitedircase, names, <>temp7, <>temp8, name, reset, sitedir, known_paths, <return_val>]
+        FrameDescriptor: [sitedircase, names, <>temp6, <>temp7, name, reset, sitedir, known_paths, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: generator7404
             Kind: Generator
-            FrameDescriptor: [__annotations__, name, <return_val>]
+            FrameDescriptor: [name, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: addpackage
         Kind: Function
-        FrameDescriptor: [<>temp14, <>temp13, f, line, <>temp16, <>temp15, dir, sitedir, known_paths, dircase, n, __annotations__, record, name, reset, fullname, traceback, <return_val>]
+        FrameDescriptor: [<>temp14, <>temp13, f, line, <>temp15, <>temp12, dir, sitedir, known_paths, dircase, n, record, name, reset, fullname, traceback, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _init_pathinfo
         Kind: Function
-        FrameDescriptor: [__annotations__, item, d, <>temp6, itemcase, <>temp5, <return_val>, _]
+        FrameDescriptor: [item, d, itemcase, <>temp4, <>temp5, <return_val>, _]
         CellVars: Empty
         FreeVars: Empty
     Scope: removeduppaths
         Kind: Function
-        FrameDescriptor: [__annotations__, <>temp6, <>temp5, L, dir, known_paths, dircase, <return_val>]
+        FrameDescriptor: [<>temp4, <>temp5, L, dir, known_paths, dircase, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: abs_paths
         Kind: Function
-        FrameDescriptor: [__annotations__, m, <return_val>]
+        FrameDescriptor: [m, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: makepath
         Kind: Function
-        FrameDescriptor: [__annotations__, paths, dir, <return_val>]
+        FrameDescriptor: [paths, dir, <return_val>]
         CellVars: Empty
         FreeVars: Empty

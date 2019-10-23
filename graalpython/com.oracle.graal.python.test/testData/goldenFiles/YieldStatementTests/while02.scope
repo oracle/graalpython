@@ -5,6 +5,6 @@ Scope: []
     FreeVars: Empty
     Scope: gen
         Kind: Generator
-        FrameDescriptor: [__annotations__, x, <return_val>]
+        FrameDescriptor: [x, <return_val>]
         CellVars: Empty
         FreeVars: Empty

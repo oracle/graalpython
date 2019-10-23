@@ -5,131 +5,131 @@ Scope: []
     FreeVars: Empty
     Scope: compile
         Kind: Function
-        FrameDescriptor: [p, __annotations__, code, indexgroup, <>temp9, flags, pattern, groupindex, <>temp10, i, k, <return_val>]
+        FrameDescriptor: [p, code, indexgroup, <>temp8, <>temp9, flags, pattern, groupindex, i, k, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: dis
         Kind: Function
-        FrameDescriptor: [offset_width, __annotations__, code, level, sys, <return_val>, dis_, labels]
+        FrameDescriptor: [offset_width, code, level, sys, <return_val>, dis_, labels]
         CellVars: [code, dis_, labels, level, offset_width, sys]
         FreeVars: Empty
         Scope: dis_
             Kind: Function
-            FrameDescriptor: [hi, <>temp39, lo, code, print_, <>temp36, <>temp35, prefix, <>temp38, <>temp37, flags, <>temp32, prefix_len, <>temp31, skip, <>temp34, <>temp33, sys, <>temp30, __annotations__, prefix_skip, min, arg, end, print_2, <>temp29, op, <>temp28, mapping, <>temp25, max, level, <>temp27, <>temp26, start, i, j, labels, offset_width, <return_val>, dis_]
+            FrameDescriptor: [hi, lo, code, print_, <>temp36, <>temp35, prefix, <>temp38, <>temp37, flags, <>temp32, prefix_len, <>temp31, skip, <>temp34, <>temp33, sys, <>temp30, prefix_skip, min, arg, end, print_2, <>temp29, op, <>temp28, mapping, <>temp25, max, level, <>temp24, <>temp27, <>temp26, start, i, j, labels, offset_width, <return_val>, dis_]
             CellVars: [end, start]
             FreeVars: [code, dis_, labels, level, offset_width, sys]
             Scope: generator25717
                 Kind: Generator
-                FrameDescriptor: [__annotations__, x, <return_val>]
+                FrameDescriptor: [x, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator23296
                 Kind: Generator
-                FrameDescriptor: [__annotations__, x, sys, <return_val>]
+                FrameDescriptor: [x, sys, <return_val>]
                 CellVars: Empty
                 FreeVars: [sys]
             Scope: print_2
                 Kind: Function
-                FrameDescriptor: [args, offset_width, __annotations__, level, end, <return_val>]
+                FrameDescriptor: [args, offset_width, level, end, <return_val>]
                 CellVars: Empty
                 FreeVars: [end, level, offset_width]
             Scope: print_
                 Kind: Function
-                FrameDescriptor: [args, offset_width, __annotations__, level, start, end, to, <return_val>, labels]
+                FrameDescriptor: [args, offset_width, level, start, end, to, <return_val>, labels]
                 CellVars: Empty
                 FreeVars: [end, labels, level, offset_width, start]
     Scope: _hex_code
         Kind: Function
-        FrameDescriptor: [__annotations__, code, <return_val>]
+        FrameDescriptor: [code, <return_val>]
         CellVars: Empty
         FreeVars: Empty
         Scope: generator20940
             Kind: Generator
-            FrameDescriptor: [__annotations__, x, <return_val>]
+            FrameDescriptor: [x, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: _code
         Kind: Function
-        FrameDescriptor: [p, __annotations__, code, flags, <return_val>]
+        FrameDescriptor: [p, code, flags, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: isstring
         Kind: Function
-        FrameDescriptor: [__annotations__, obj, <return_val>]
+        FrameDescriptor: [obj, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile_info
         Kind: Function
-        FrameDescriptor: [<>temp18, hi, charset, <>temp17, code, lo, <>temp19, <>temp14, prefix, <>temp16, <>temp15, pattern, flags, <>temp20, skip, hascased, __annotations__, prefix_skip, got_all, emit, <return_val>, mask]
+        FrameDescriptor: [<>temp18, hi, charset, <>temp17, code, lo, <>temp19, <>temp14, <>temp13, prefix, <>temp16, <>temp15, pattern, flags, skip, hascased, prefix_skip, got_all, emit, <return_val>, mask]
         CellVars: Empty
         FreeVars: Empty
     Scope: _get_charset_prefix
         Kind: Function
-        FrameDescriptor: [<>temp18, op, charset, <>temp17, <>temp19, <>temp14, <>temp13, iscased, <>temp16, <>temp15, pattern, flags, <>temp21, <>temp20, <>temp22, del_flags, p, __annotations__, av, add_flags, charsetappend, <return_val>, group]
+        FrameDescriptor: [<>temp18, op, charset, <>temp17, <>temp19, <>temp14, <>temp13, iscased, <>temp16, <>temp15, pattern, flags, <>temp21, <>temp20, <>temp12, del_flags, p, av, add_flags, charsetappend, <return_val>, group]
         CellVars: Empty
         FreeVars: Empty
     Scope: _get_literal_prefix
         Kind: Function
-        FrameDescriptor: [<>temp18, <>temp17, <>temp19, prefix, iscased, pattern, flags, del_flags, __annotations__, prefix_skip, prefixappend, add_flags, prefix_skip1, prefix1, group, op, <>temp25, <>temp24, flags1, <>temp21, <>temp20, <>temp23, <>temp22, p, got_all, av, <return_val>]
+        FrameDescriptor: [<>temp18, <>temp17, <>temp19, prefix, iscased, <>temp16, pattern, flags, del_flags, prefix_skip, prefixappend, add_flags, prefix_skip1, prefix1, group, op, <>temp24, flags1, <>temp21, <>temp20, <>temp23, <>temp22, p, got_all, av, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _get_iscased
         Kind: Function
-        FrameDescriptor: [__annotations__, flags, <return_val>]
+        FrameDescriptor: [flags, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _generate_overlap_table
         Kind: Function
-        FrameDescriptor: [__annotations__, prefix, i, idx, <return_val>, table]
+        FrameDescriptor: [prefix, i, idx, <return_val>, table]
         CellVars: Empty
         FreeVars: Empty
     Scope: _simple
         Kind: Function
-        FrameDescriptor: [p, __annotations__, op, <>temp6, av, <>temp5, <return_val>]
+        FrameDescriptor: [p, op, av, <>temp4, <>temp5, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _bytes_to_codes
         Kind: Function
-        FrameDescriptor: [__annotations__, a, b, <return_val>]
+        FrameDescriptor: [a, b, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _mk_bitmap
         Kind: Function
-        FrameDescriptor: [__annotations__, s, _CODEBITS, bits, _int, <return_val>]
+        FrameDescriptor: [s, _CODEBITS, bits, _int, <return_val>]
         CellVars: [_CODEBITS, _int, s]
         FreeVars: Empty
         Scope: generator14864
             Kind: Generator
-            FrameDescriptor: [__annotations__, s, _CODEBITS, i, _int, <return_val>]
+            FrameDescriptor: [s, _CODEBITS, i, _int, <return_val>]
             CellVars: Empty
             FreeVars: [_CODEBITS, _int, s]
     Scope: _optimize_charset
         Kind: Function
-        FrameDescriptor: [charset, lo, data, iscased, chunk, charmap, fixes, hascased, out, __annotations__, block, op, <>temp28, mapping, comps, <>temp25, <>temp24, tail, <>temp26, i, <>temp23, k, p, q, r, av, runs, <return_val>, fixup]
+        FrameDescriptor: [charset, lo, data, iscased, chunk, charmap, fixes, hascased, out, block, op, mapping, comps, <>temp25, <>temp24, tail, <>temp27, i, <>temp23, k, <>temp22, p, q, r, av, runs, <return_val>, fixup]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile_charset
         Kind: Function
-        FrameDescriptor: [__annotations__, charset, op, code, av, <>temp7, <>temp8, flags, emit, <return_val>]
+        FrameDescriptor: [charset, op, code, <>temp6, av, <>temp7, flags, emit, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compile
         Kind: Function
-        FrameDescriptor: [charset, hi, code, lo, tolower, <>temp36, <>temp35, iscased, <>temp38, <>temp37, pattern, flags, <>temp32, <>temp31, skip, <>temp34, <>temp33, del_flags, fixes, hascased, <>temp30, __annotations__, LITERAL_CODES, ASSERT_CODES, skipno, add_flags, group, <>temp29, op, tail, k, p, av, REPEATING_CODES, skipyes, _len, emit, tailappend, <return_val>, SUCCESS_CODES]
+        FrameDescriptor: [charset, hi, code, lo, tolower, <>temp36, <>temp35, iscased, <>temp37, pattern, flags, <>temp32, <>temp31, skip, <>temp34, <>temp33, del_flags, fixes, hascased, <>temp30, LITERAL_CODES, ASSERT_CODES, skipno, add_flags, group, <>temp29, op, <>temp28, tail, k, p, av, REPEATING_CODES, skipyes, _len, emit, tailappend, <return_val>, SUCCESS_CODES]
         CellVars: Empty
         FreeVars: Empty
     Scope: _combine_flags
         Kind: Function
-        FrameDescriptor: [__annotations__, add_flags, flags, TYPE_FLAGS, del_flags, <return_val>]
+        FrameDescriptor: [add_flags, flags, TYPE_FLAGS, del_flags, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: generator2184
         Kind: Generator
-        FrameDescriptor: [__annotations__, t, i, <return_val>]
+        FrameDescriptor: [t, i, <return_val>]
         CellVars: [i]
         FreeVars: Empty
         Scope: generator2193
             Kind: Generator
-            FrameDescriptor: [__annotations__, i, j, <return_val>]
+            FrameDescriptor: [i, j, <return_val>]
             CellVars: Empty
             FreeVars: [i]

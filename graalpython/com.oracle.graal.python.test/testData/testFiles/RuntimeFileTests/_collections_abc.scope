@@ -10,52 +10,52 @@ Scope: []
         FreeVars: Empty
         Scope: __iadd__
             Kind: Function
-            FrameDescriptor: [__annotations__, values, self, <return_val>, __class__]
+            FrameDescriptor: [values, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: remove
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: pop
             Kind: Function
-            FrameDescriptor: [__annotations__, v, self, index, <return_val>, __class__]
+            FrameDescriptor: [v, self, index, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: extend
             Kind: Function
-            FrameDescriptor: [__annotations__, v, values, self, <return_val>, __class__]
+            FrameDescriptor: [v, values, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: reverse
             Kind: Function
-            FrameDescriptor: [__annotations__, <>temp6, self, i, <>temp5, <return_val>, n, __class__]
+            FrameDescriptor: [self, i, <>temp4, <>temp5, <return_val>, n, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: clear
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: append
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: insert
             Kind: Function
-            FrameDescriptor: [__annotations__, self, index, value, <return_val>, __class__]
+            FrameDescriptor: [self, index, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __delitem__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, index, <return_val>, __class__]
+            FrameDescriptor: [self, index, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __setitem__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, index, value, <return_val>, __class__]
+            FrameDescriptor: [self, index, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: ByteString
@@ -70,37 +70,37 @@ Scope: []
         FreeVars: Empty
         Scope: count
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: [value]
             FreeVars: [__class__]
             Scope: generator24225
                 Kind: Generator
-                FrameDescriptor: [__annotations__, v, value, <return_val>]
+                FrameDescriptor: [v, value, <return_val>]
                 CellVars: Empty
                 FreeVars: [value]
         Scope: index
             Kind: Function
-            FrameDescriptor: [__annotations__, stop, v, start, self, i, value, <return_val>, __class__]
+            FrameDescriptor: [stop, v, start, self, i, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __reversed__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, i, <return_val>, __class__]
+            FrameDescriptor: [self, i, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [__annotations__, v, self, value, <return_val>, __class__]
+            FrameDescriptor: [v, self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __iter__
             Kind: Generator
-            FrameDescriptor: [__annotations__, v, self, i, <return_val>, __class__]
+            FrameDescriptor: [v, self, i, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, index, <return_val>, __class__]
+            FrameDescriptor: [self, index, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: MutableMapping
@@ -110,37 +110,37 @@ Scope: []
         FreeVars: Empty
         Scope: setdefault
             Kind: Function
-            FrameDescriptor: [__annotations__, default, self, <return_val>, key, __class__]
+            FrameDescriptor: [default, self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: update
             Kind: Function
-            FrameDescriptor: [other, <>temp13, <>temp10, kwds, <>temp12, <>temp11, __class__, args, __annotations__, <>temp8, <>temp9, self, value, <return_val>, key]
+            FrameDescriptor: [other, <>temp10, kwds, <>temp12, <>temp11, __class__, args, <>temp7, <>temp8, <>temp9, self, value, <return_val>, key]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: clear
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: popitem
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, key, __class__]
+            FrameDescriptor: [self, value, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: pop
             Kind: Function
-            FrameDescriptor: [__annotations__, default, self, value, <return_val>, key, __class__]
+            FrameDescriptor: [default, self, value, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __delitem__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, key, __class__]
+            FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __setitem__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, key, __class__]
+            FrameDescriptor: [self, value, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: ValuesView
@@ -150,12 +150,12 @@ Scope: []
         FreeVars: Empty
         Scope: __iter__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, <return_val>, key, __class__]
+            FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [__annotations__, v, self, value, <return_val>, key, __class__]
+            FrameDescriptor: [v, self, value, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: ItemsView
@@ -165,17 +165,17 @@ Scope: []
         FreeVars: Empty
         Scope: __iter__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, <return_val>, key, __class__]
+            FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [__annotations__, item, <>temp7, v, <>temp8, self, value, <return_val>, key, __class__]
+            FrameDescriptor: [item, <>temp6, <>temp7, v, self, value, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: _from_iterable
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, <return_val>, __class__]
+            FrameDescriptor: [self, it, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: KeysView
@@ -185,17 +185,17 @@ Scope: []
         FreeVars: Empty
         Scope: __iter__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, key, __class__]
+            FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: _from_iterable
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, <return_val>, __class__]
+            FrameDescriptor: [self, it, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: MappingView
@@ -205,17 +205,17 @@ Scope: []
         FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __len__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [__annotations__, mapping, self, <return_val>, __class__]
+            FrameDescriptor: [mapping, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Mapping
@@ -225,37 +225,37 @@ Scope: []
         FreeVars: Empty
         Scope: __eq__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: values
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: items
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: keys
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, key, __class__]
+            FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: get
             Kind: Function
-            FrameDescriptor: [__annotations__, default, self, <return_val>, key, __class__]
+            FrameDescriptor: [default, self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, key, __class__]
+            FrameDescriptor: [self, <return_val>, key, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: MutableSet
@@ -265,47 +265,47 @@ Scope: []
         FreeVars: Empty
         Scope: __isub__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, value, <return_val>, __class__]
+            FrameDescriptor: [self, it, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __ixor__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, value, <return_val>, __class__]
+            FrameDescriptor: [self, it, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __iand__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, value, <return_val>, __class__]
+            FrameDescriptor: [self, it, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __ior__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, value, <return_val>, __class__]
+            FrameDescriptor: [self, it, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: clear
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: pop
             Kind: Function
-            FrameDescriptor: [__annotations__, self, it, value, <return_val>, __class__]
+            FrameDescriptor: [self, it, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: remove
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: discard
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: add
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Set
@@ -315,87 +315,87 @@ Scope: []
         FreeVars: Empty
         Scope: _hash
             Kind: Function
-            FrameDescriptor: [hx, __annotations__, MAX, h, x, self, <return_val>, n, __class__, MASK]
+            FrameDescriptor: [hx, MAX, h, x, self, <return_val>, n, __class__, MASK]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __xor__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __rsub__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: [self]
             FreeVars: [__class__]
             Scope: generator13433
                 Kind: Generator
-                FrameDescriptor: [__annotations__, self, value, <return_val>]
+                FrameDescriptor: [self, value, <return_val>]
                 CellVars: Empty
                 FreeVars: [self]
         Scope: __sub__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: [other]
             FreeVars: [__class__]
             Scope: generator13112
                 Kind: Generator
-                FrameDescriptor: [__annotations__, other, value, <return_val>]
+                FrameDescriptor: [other, value, <return_val>]
                 CellVars: Empty
                 FreeVars: [other]
         Scope: __or__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, chain, self, <return_val>, __class__]
+            FrameDescriptor: [other, chain, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator12773
                 Kind: Generator
-                FrameDescriptor: [__annotations__, s, e, <return_val>]
+                FrameDescriptor: [s, e, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: isdisjoint
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, value, <return_val>, __class__]
+            FrameDescriptor: [other, self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __and__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: [self]
             FreeVars: [__class__]
             Scope: generator12380
                 Kind: Generator
-                FrameDescriptor: [__annotations__, self, value, <return_val>]
+                FrameDescriptor: [self, value, <return_val>]
                 CellVars: Empty
                 FreeVars: [self]
         Scope: _from_iterable
             Kind: Function
-            FrameDescriptor: [__annotations__, cls, it, <return_val>, __class__]
+            FrameDescriptor: [cls, it, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __eq__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __ge__
             Kind: Function
-            FrameDescriptor: [elem, __annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [elem, other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __gt__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __lt__
             Kind: Function
-            FrameDescriptor: [__annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __le__
             Kind: Function
-            FrameDescriptor: [elem, __annotations__, other, self, <return_val>, __class__]
+            FrameDescriptor: [elem, other, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Callable
@@ -405,12 +405,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, self, kwds, <return_val>, __class__]
+            FrameDescriptor: [args, self, kwds, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Collection
@@ -420,7 +420,7 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Container
@@ -430,12 +430,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [__annotations__, x, self, <return_val>, __class__]
+            FrameDescriptor: [x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Sized
@@ -445,12 +445,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __len__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Generator
@@ -460,27 +460,27 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: close
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: throw
             Kind: Function
-            FrameDescriptor: [val, __annotations__, self, typ, <return_val>, tb, __class__]
+            FrameDescriptor: [val, self, typ, <return_val>, tb, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: send
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Reversible
@@ -490,12 +490,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __reversed__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Iterator
@@ -505,17 +505,17 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Iterable
@@ -525,12 +525,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __iter__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: AsyncGenerator
@@ -540,27 +540,27 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: aclose
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: athrow
             Kind: Function
-            FrameDescriptor: [val, __annotations__, self, typ, <return_val>, tb, __class__]
+            FrameDescriptor: [val, self, typ, <return_val>, tb, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: asend
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __anext__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: AsyncIterator
@@ -570,17 +570,17 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __aiter__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __anext__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: AsyncIterable
@@ -590,12 +590,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __aiter__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Coroutine
@@ -605,22 +605,22 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: close
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: throw
             Kind: Function
-            FrameDescriptor: [val, __annotations__, self, typ, <return_val>, tb, __class__]
+            FrameDescriptor: [val, self, typ, <return_val>, tb, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: send
             Kind: Function
-            FrameDescriptor: [__annotations__, self, value, <return_val>, __class__]
+            FrameDescriptor: [self, value, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Awaitable
@@ -630,12 +630,12 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __await__
             Kind: Generator
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: Hashable
@@ -645,31 +645,31 @@ Scope: []
         FreeVars: Empty
         Scope: __subclasshook__
             Kind: Function
-            FrameDescriptor: [__annotations__, C, cls, <return_val>, __class__]
+            FrameDescriptor: [C, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __hash__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: _check_methods
         Kind: Function
-        FrameDescriptor: [__annotations__, B, C, method, methods, mro, <return_val>]
+        FrameDescriptor: [B, C, method, methods, mro, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _ag
         Kind: Generator
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _coro
         Kind: Function
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: lambda
         Kind: Generator
-        FrameDescriptor: [__annotations__, <return_val>]
+        FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty

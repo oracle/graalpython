@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
               CelVars: c
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, c, <return_val>]
+              FrameDescriptor: 2 slots [c, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: c, 
@@ -37,16 +37,16 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                       WriteLocalCellNodeGen SourceSection: [12,18]`c = 10`
                         Identifier: c
                         ReadLocalVariableNode SourceSection: None
-                          Frame: [1,c,Illegal]
+                          Frame: [0,c,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [16,18]`10`
                           Value: 10
                       ExpressionStatementNode SourceSection: [28,46]`for x in range(10)`
                         GeneratorExpressionNode SourceSection: [28,46]`for x in range(10)`
                           Name: fn.<locals>.<genexp>:generator03:3
-                          FrameDescriptor: 4 slots [__annotations__, x, c, <return_val>]
+                          FrameDescriptor: 3 slots [x, c, <return_val>]
                           Enclosing
-                            FrameDescriptor: 3 slots [__annotations__, c, <return_val>]
+                            FrameDescriptor: 2 slots [c, <return_val>]
                           Active Flags: 2
                           For Nodes: 1
                           Block Nodes: 0
@@ -57,7 +57,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                             CelVars: None
                             FreeVars: c
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [__annotations__, x, c, <return_val>]
+                            FrameDescriptor: 3 slots [x, c, <return_val>]
                             ExecutionSlots:
                               FreeVarsSlots: c, 
                               CellVarsSlots: None
@@ -72,18 +72,18 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __add__
                                         ReadGeneratorFrameVariableNode SourceSection: [22,23]`x`
-                                          Frame: [1,x,Illegal]
+                                          Frame: [0,x,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [26,27]`c`
                                           ReadGeneratorFrameVariableNode SourceSection: None
-                                            Frame: [2,c,Illegal]
+                                            Frame: [1,c,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: x
                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,x,Illegal]
+                                      Frame: [0,x,Illegal]
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
@@ -92,7 +92,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
@@ -110,5 +110,5 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

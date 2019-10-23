@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: _possibly_sorted
         Kind: Function
-        FrameDescriptor: [__annotations__, x, <return_val>]
+        FrameDescriptor: [x, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: Repr
@@ -15,91 +15,91 @@ Scope: []
         FreeVars: Empty
         Scope: repr_instance
             Kind: Function
-            FrameDescriptor: [__annotations__, s, level, x, self, i, j, <return_val>, __class__]
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_int
             Kind: Function
-            FrameDescriptor: [__annotations__, s, level, x, self, i, j, <return_val>, __class__]
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_str
             Kind: Function
-            FrameDescriptor: [__annotations__, s, level, x, self, i, j, <return_val>, __class__]
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_dict
             Kind: Function
-            FrameDescriptor: [level, keyrepr, repr1, newlevel, n, __class__, pieces, __annotations__, s, x, self, valrepr, <return_val>, key]
+            FrameDescriptor: [level, keyrepr, repr1, newlevel, n, __class__, pieces, s, x, self, valrepr, <return_val>, key]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_deque
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_frozenset
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_set
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_array
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, self, header, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, header, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_list
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr_tuple
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: _repr_iterable
             Kind: Function
-            FrameDescriptor: [level, maxiter, repr1, right, newlevel, n, __class__, pieces, __annotations__, trail, s, left, x, self, <return_val>]
+            FrameDescriptor: [level, maxiter, repr1, right, newlevel, n, __class__, pieces, trail, s, left, x, self, <return_val>]
             CellVars: [newlevel, repr1]
             FreeVars: [__class__]
             Scope: generator2158
                 Kind: Generator
-                FrameDescriptor: [elem, __annotations__, repr1, newlevel, <return_val>]
+                FrameDescriptor: [elem, repr1, newlevel, <return_val>]
                 CellVars: Empty
                 FreeVars: [newlevel, repr1]
         Scope: repr1
             Kind: Function
-            FrameDescriptor: [__annotations__, level, x, parts, self, <return_val>, typename, __class__]
+            FrameDescriptor: [level, x, parts, self, <return_val>, typename, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: repr
             Kind: Function
-            FrameDescriptor: [__annotations__, x, self, <return_val>, __class__]
+            FrameDescriptor: [x, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: recursive_repr
         Kind: Function
-        FrameDescriptor: [__annotations__, decorating_function, fillvalue, <return_val>]
+        FrameDescriptor: [decorating_function, fillvalue, <return_val>]
         CellVars: [fillvalue]
         FreeVars: Empty
         Scope: decorating_function
             Kind: Function
-            FrameDescriptor: [__annotations__, fillvalue, repr_running, wrapper, <return_val>, user_function]
+            FrameDescriptor: [fillvalue, repr_running, wrapper, <return_val>, user_function]
             CellVars: [repr_running, user_function]
             FreeVars: [fillvalue]
             Scope: wrapper
                 Kind: Function
-                FrameDescriptor: [result, __annotations__, fillvalue, self, repr_running, <return_val>, key, user_function]
+                FrameDescriptor: [result, fillvalue, self, repr_running, <return_val>, key, user_function]
                 CellVars: Empty
                 FreeVars: [fillvalue, repr_running, user_function]

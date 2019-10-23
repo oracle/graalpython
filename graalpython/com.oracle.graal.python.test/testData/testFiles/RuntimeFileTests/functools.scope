@@ -5,152 +5,152 @@ Scope: []
     FreeVars: Empty
     Scope: singledispatch
         Kind: Function
-        FrameDescriptor: [__annotations__, registry, types, cache_token, weakref, dispatch, func, dispatch_cache, wrapper, <return_val>, register]
+        FrameDescriptor: [registry, types, cache_token, weakref, dispatch, func, dispatch_cache, wrapper, <return_val>, register]
         CellVars: [cache_token, dispatch, dispatch_cache, register, registry]
         FreeVars: Empty
         Scope: wrapper
             Kind: Function
-            FrameDescriptor: [args, __annotations__, dispatch, kw, <return_val>]
+            FrameDescriptor: [args, dispatch, kw, <return_val>]
             CellVars: Empty
             FreeVars: [dispatch]
         Scope: register
             Kind: Function
-            FrameDescriptor: [ann, registry, argname, cache_token, <>temp12, cls, <>temp11, __annotations__, func, dispatch_cache, get_type_hints, <return_val>, register]
+            FrameDescriptor: [ann, registry, argname, cache_token, func, dispatch_cache, <>temp10, cls, get_type_hints, <>temp11, <return_val>, register]
             CellVars: [cls]
             FreeVars: [cache_token, dispatch_cache, register, registry]
             Scope: lambda
                 Kind: Function
-                FrameDescriptor: [__annotations__, f, cls, <return_val>, register]
+                FrameDescriptor: [f, cls, <return_val>, register]
                 CellVars: Empty
                 FreeVars: [cls, register]
         Scope: dispatch
             Kind: Function
-            FrameDescriptor: [__annotations__, impl, registry, cache_token, dispatch_cache, cls, current_token, <return_val>]
+            FrameDescriptor: [impl, registry, cache_token, dispatch_cache, cls, current_token, <return_val>]
             CellVars: Empty
             FreeVars: [cache_token, dispatch_cache, registry]
     Scope: _find_impl
         Kind: Function
-        FrameDescriptor: [__annotations__, registry, t, match, cls, mro, <return_val>]
+        FrameDescriptor: [registry, t, match, cls, mro, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _compose_mro
         Kind: Function
-        FrameDescriptor: [sub, types, type_set, typ, cls, mro, is_strict_base, bases, __annotations__, found, subcls, is_related, <return_val>]
+        FrameDescriptor: [bases, sub, types, found, subcls, type_set, is_related, typ, cls, mro, <return_val>, is_strict_base]
         CellVars: [bases, cls, is_related, is_strict_base, type_set, types]
         FreeVars: Empty
         Scope: generator27763
             Kind: Generator
-            FrameDescriptor: [__annotations__, s, type_set, <return_val>]
+            FrameDescriptor: [s, type_set, <return_val>]
             CellVars: Empty
             FreeVars: [type_set]
         Scope: generator27390
             Kind: Generator
-            FrameDescriptor: [__annotations__, <return_val>, n, is_strict_base]
+            FrameDescriptor: [<return_val>, n, is_strict_base]
             CellVars: Empty
             FreeVars: [is_strict_base]
         Scope: is_strict_base
             Kind: Function
-            FrameDescriptor: [__annotations__, other, types, typ, <return_val>]
+            FrameDescriptor: [other, types, typ, <return_val>]
             CellVars: Empty
             FreeVars: [types]
         Scope: generator27078
             Kind: Generator
-            FrameDescriptor: [__annotations__, is_related, <return_val>, n]
+            FrameDescriptor: [is_related, <return_val>, n]
             CellVars: Empty
             FreeVars: [is_related]
         Scope: is_related
             Kind: Function
-            FrameDescriptor: [bases, __annotations__, typ, cls, <return_val>]
+            FrameDescriptor: [bases, typ, cls, <return_val>]
             CellVars: Empty
             FreeVars: [bases, cls]
     Scope: _c3_mro
         Kind: Function
-        FrameDescriptor: [boundary, explicit_bases, abstract_c3_mros, <>temp13, i, <>temp12, cls, __annotations__, other_c3_mros, other_bases, abcs, abstract_bases, <return_val>, base, explicit_c3_mros]
+        FrameDescriptor: [boundary, explicit_bases, abstract_c3_mros, i, <>temp12, cls, <>temp11, other_c3_mros, other_bases, abcs, abstract_bases, <return_val>, base, explicit_c3_mros]
         CellVars: [abcs, base]
         FreeVars: Empty
         Scope: generator26336
             Kind: Generator
-            FrameDescriptor: [__annotations__, abcs, <return_val>, base]
+            FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator26262
             Kind: Generator
-            FrameDescriptor: [__annotations__, abcs, <return_val>, base]
+            FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator26185
             Kind: Generator
-            FrameDescriptor: [__annotations__, abcs, <return_val>, base]
+            FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator25873
             Kind: Generator
-            FrameDescriptor: [__annotations__, b, <return_val>, base]
+            FrameDescriptor: [b, <return_val>, base]
             CellVars: Empty
             FreeVars: [base]
     Scope: _c3_merge
         Kind: Function
-        FrameDescriptor: [result, __annotations__, candidate, sequences, <return_val>, s1, seq, s2]
+        FrameDescriptor: [result, candidate, sequences, <return_val>, s1, seq, s2]
         CellVars: Empty
         FreeVars: Empty
         Scope: generator23745
             Kind: Generator
-            FrameDescriptor: [__annotations__, s, <return_val>]
+            FrameDescriptor: [s, <return_val>]
             CellVars: Empty
             FreeVars: Empty
     Scope: _lru_cache_wrapper
         Kind: Function
-        FrameDescriptor: [wrapper, __annotations__, PREV, NEXT, misses, root, lock, cache_get, cache_len, cache_clear, user_function, _CacheInfo, sentinel, make_key, cache, <>temp25, <>temp24, <>temp26, <>temp23, <>temp22, hits, typed, maxsize, RESULT, cache_info, <return_val>, KEY, full]
+        FrameDescriptor: [wrapper, PREV, NEXT, misses, root, lock, cache_get, cache_len, cache_clear, user_function, _CacheInfo, sentinel, make_key, cache, <>temp25, <>temp24, <>temp21, <>temp23, <>temp22, hits, typed, maxsize, RESULT, cache_info, <return_val>, KEY, full]
         CellVars: [KEY, NEXT, PREV, RESULT, _CacheInfo, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, sentinel, typed, user_function]
         FreeVars: Empty
         Scope: cache_clear
             Kind: Function
-            FrameDescriptor: [hits, __annotations__, cache, <>temp7, misses, root, lock, <return_val>, full]
+            FrameDescriptor: [hits, cache, <>temp6, misses, root, lock, <return_val>, full]
             CellVars: Empty
             FreeVars: [cache, full, hits, lock, misses, root]
         Scope: cache_info
             Kind: Function
-            FrameDescriptor: [hits, __annotations__, misses, lock, maxsize, cache_len, <return_val>, _CacheInfo]
+            FrameDescriptor: [hits, misses, lock, maxsize, cache_len, <return_val>, _CacheInfo]
             CellVars: Empty
             FreeVars: [_CacheInfo, cache_len, hits, lock, maxsize, misses]
         Scope: wrapper
             Kind: Function
-            FrameDescriptor: [<>temp36, <>temp35, link, <>temp32, kwds, <>temp31, <>temp33, _key, <>temp30, result, __annotations__, oldkey, PREV, NEXT, misses, root, lock, oldroot, cache_get, cache_len, key, user_function, <>temp29, make_key, cache, oldresult, last, args, hits, typed, link_next, link_prev, maxsize, RESULT, <return_val>, KEY, full]
+            FrameDescriptor: [<>temp35, link, <>temp32, kwds, <>temp31, <>temp34, _key, <>temp30, result, oldkey, PREV, NEXT, misses, root, lock, oldroot, cache_get, cache_len, key, user_function, <>temp29, make_key, <>temp28, cache, oldresult, last, args, hits, typed, link_next, link_prev, maxsize, RESULT, <return_val>, KEY, full]
             CellVars: Empty
             FreeVars: [KEY, NEXT, PREV, RESULT, cache, cache_get, cache_len, full, hits, lock, make_key, maxsize, misses, root, typed, user_function]
         Scope: wrapper
             Kind: Function
-            FrameDescriptor: [sentinel, make_key, cache, kwds, args, result, hits, __annotations__, typed, misses, cache_get, <return_val>, key, user_function]
+            FrameDescriptor: [sentinel, make_key, cache, kwds, args, result, hits, typed, misses, cache_get, <return_val>, key, user_function]
             CellVars: Empty
             FreeVars: [cache, cache_get, hits, make_key, misses, sentinel, typed, user_function]
         Scope: wrapper
             Kind: Function
-            FrameDescriptor: [args, result, __annotations__, misses, kwds, <return_val>, user_function]
+            FrameDescriptor: [args, result, misses, kwds, <return_val>, user_function]
             CellVars: Empty
             FreeVars: [misses, user_function]
     Scope: lru_cache
         Kind: Function
-        FrameDescriptor: [__annotations__, typed, decorating_function, maxsize, <return_val>]
+        FrameDescriptor: [typed, decorating_function, maxsize, <return_val>]
         CellVars: [maxsize, typed]
         FreeVars: Empty
         Scope: decorating_function
             Kind: Function
-            FrameDescriptor: [__annotations__, typed, wrapper, maxsize, <return_val>, user_function]
+            FrameDescriptor: [typed, wrapper, maxsize, <return_val>, user_function]
             CellVars: Empty
             FreeVars: [maxsize, typed]
     Scope: _make_key
         Kind: Function
-        FrameDescriptor: [args, __annotations__, typed, kwd_mark, tuple, item, len, kwds, type, fasttypes, <return_val>, key]
+        FrameDescriptor: [args, typed, kwd_mark, tuple, item, len, kwds, type, fasttypes, <return_val>, key]
         CellVars: [type]
         FreeVars: Empty
         Scope: generator16699
             Kind: Generator
-            FrameDescriptor: [__annotations__, v, type, <return_val>]
+            FrameDescriptor: [v, type, <return_val>]
             CellVars: Empty
             FreeVars: [type]
         Scope: generator16634
             Kind: Generator
-            FrameDescriptor: [__annotations__, v, type, <return_val>]
+            FrameDescriptor: [v, type, <return_val>]
             CellVars: Empty
             FreeVars: [type]
     Scope: _HashedSeq
@@ -160,12 +160,12 @@ Scope: []
         FreeVars: Empty
         Scope: __hash__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, tup, hash, __class__]
+            FrameDescriptor: [self, <return_val>, tup, hash, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: partialmethod
@@ -175,37 +175,37 @@ Scope: []
         FreeVars: Empty
         Scope: __isabstractmethod__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __get__
             Kind: Function
-            FrameDescriptor: [result, __annotations__, new_func, obj, get, self, cls, <return_val>, __class__]
+            FrameDescriptor: [result, new_func, obj, get, self, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: _make_unbound_method
             Kind: Function
-            FrameDescriptor: [__annotations__, _method, self, <return_val>, __class__]
+            FrameDescriptor: [_method, self, <return_val>, __class__]
             CellVars: [self]
             FreeVars: [__class__]
             Scope: _method
                 Kind: Function
-                FrameDescriptor: [args, __annotations__, rest, call_args, keywords, cls_or_self, <>temp8, <>temp9, self, call_keywords, <return_val>]
+                FrameDescriptor: [args, rest, call_args, keywords, cls_or_self, <>temp7, <>temp8, self, call_keywords, <return_val>]
                 CellVars: Empty
                 FreeVars: [self]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, keywords, self, format_string, <return_val>, __class__]
+            FrameDescriptor: [args, keywords, self, format_string, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator13105
                 Kind: Generator
-                FrameDescriptor: [__annotations__, v, <>temp3, <>temp4, k, <return_val>]
+                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, func, keywords, self, <return_val>, __class__]
+            FrameDescriptor: [args, func, keywords, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: partial
@@ -215,42 +215,42 @@ Scope: []
         FreeVars: Empty
         Scope: __setstate__
             Kind: Function
-            FrameDescriptor: [<>temp10, kwds, <>temp11, __class__, args, __annotations__, func, <>temp8, <>temp9, namespace, self, state, <return_val>]
+            FrameDescriptor: [args, func, <>temp7, <>temp8, <>temp9, namespace, <>temp10, self, kwds, state, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __reduce__
             Kind: Function
-            FrameDescriptor: [__annotations__, self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, qualname, self, <return_val>, __class__]
+            FrameDescriptor: [args, qualname, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator10496
                 Kind: Generator
-                FrameDescriptor: [__annotations__, v, <>temp3, <>temp4, k, <return_val>]
+                FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator10448
                 Kind: Generator
-                FrameDescriptor: [__annotations__, x, <return_val>]
+                FrameDescriptor: [x, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, keywords, <>temp6, <>temp7, newkeywords, self, <return_val>, __class__]
+            FrameDescriptor: [args, keywords, <>temp6, newkeywords, self, <>temp5, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
         Scope: __new__
             Kind: Function
-            FrameDescriptor: [args, __annotations__, keywords, func, tmpkw, <>temp8, <>temp9, <>temp10, self, cls, <return_val>, __class__]
+            FrameDescriptor: [args, keywords, func, <>temp7, tmpkw, <>temp8, <>temp9, self, cls, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
     Scope: cmp_to_key
         Kind: Function
-        FrameDescriptor: [__annotations__, mycmp, <>temp3, K, <return_val>]
+        FrameDescriptor: [mycmp, <>temp2, K, <return_val>]
         CellVars: [mycmp]
         FreeVars: Empty
         Scope: K
@@ -260,111 +260,111 @@ Scope: []
             FreeVars: [mycmp]
             Scope: __ge__
                 Kind: Function
-                FrameDescriptor: [__annotations__, other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
                 CellVars: Empty
                 FreeVars: [__class__, mycmp]
             Scope: __le__
                 Kind: Function
-                FrameDescriptor: [__annotations__, other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
                 CellVars: Empty
                 FreeVars: [__class__, mycmp]
             Scope: __eq__
                 Kind: Function
-                FrameDescriptor: [__annotations__, other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
                 CellVars: Empty
                 FreeVars: [__class__, mycmp]
             Scope: __gt__
                 Kind: Function
-                FrameDescriptor: [__annotations__, other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
                 CellVars: Empty
                 FreeVars: [__class__, mycmp]
             Scope: __lt__
                 Kind: Function
-                FrameDescriptor: [__annotations__, other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
                 CellVars: Empty
                 FreeVars: [__class__, mycmp]
             Scope: __init__
                 Kind: Function
-                FrameDescriptor: [__annotations__, obj, self, <return_val>, __class__]
+                FrameDescriptor: [obj, self, <return_val>, __class__]
                 CellVars: Empty
                 FreeVars: [__class__]
     Scope: total_ordering
         Kind: Function
-        FrameDescriptor: [__annotations__, opfunc, <>temp6, <>temp7, root, cls, roots, opname, <return_val>]
+        FrameDescriptor: [opfunc, <>temp6, root, cls, roots, opname, <>temp5, <return_val>]
         CellVars: [cls]
         FreeVars: Empty
         Scope: generator7457
             Kind: Generator
-            FrameDescriptor: [__annotations__, op, cls, <return_val>]
+            FrameDescriptor: [op, cls, <return_val>]
             CellVars: Empty
             FreeVars: [cls]
     Scope: _lt_from_ge
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _gt_from_ge
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _le_from_ge
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _le_from_gt
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _ge_from_gt
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _lt_from_gt
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _gt_from_le
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _lt_from_le
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _ge_from_le
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _ge_from_lt
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _le_from_lt
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: _gt_from_lt
         Kind: Function
-        FrameDescriptor: [__annotations__, other, op_result, self, NotImplemented, <return_val>]
+        FrameDescriptor: [other, op_result, self, NotImplemented, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: wraps
         Kind: Function
-        FrameDescriptor: [__annotations__, assigned, wrapped, updated, <return_val>]
+        FrameDescriptor: [assigned, wrapped, updated, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: update_wrapper
         Kind: Function
-        FrameDescriptor: [__annotations__, wrapper, assigned, wrapped, attr, updated, value, <return_val>]
+        FrameDescriptor: [wrapper, assigned, wrapped, attr, updated, value, <return_val>]
         CellVars: Empty
         FreeVars: Empty

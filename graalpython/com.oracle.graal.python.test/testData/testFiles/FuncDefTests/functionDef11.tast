@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [__annotations__, x, <return_val>]
+              FrameDescriptor: 2 slots [x, <return_val>]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                       WriteLocalVariableNodeGen SourceSection: [19,25]`x = 10`
                         Identifier: x
                         WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,x,Illegal]
+                          Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [23,25]`10`
                           Value: 10
                       ExpressionStatementNode SourceSection: [30,38]`print(x)`
@@ -51,11 +51,11 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                             CreateArgumentsNodeGen SourceSection: None
                             CallDispatchNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [36,37]`x`
-                            Frame: [1,x,Illegal]
+                            Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

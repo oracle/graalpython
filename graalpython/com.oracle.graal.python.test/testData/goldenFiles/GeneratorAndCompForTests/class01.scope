@@ -10,6 +10,6 @@ Scope: []
         FreeVars: Empty
         Scope: __reversed__
             Kind: Generator
-            FrameDescriptor: [__annotations__, root, self, curr, <return_val>, __class__]
+            FrameDescriptor: [root, self, curr, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
