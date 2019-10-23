@@ -250,6 +250,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     }
 
     private static boolean compareKeys(DictKey key, DictKey entryKey, Equivalence strategy) {
+        // Comparison as per CPython's dictobject.c#lookdict function.  First
+        // check if the keys are identical, then check if the hashes are the
+        // same, and only if they are, also call the comparison function.
         if (key.value == entryKey.value) {
             return true;
         } else if (key.hash == entryKey.hash) {
