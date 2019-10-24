@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
