@@ -653,6 +653,11 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isHashable(frame, key)")
+        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") EconomicMapStorage storage, Object key) {
+            throw unhashable(key);
+        }
+
+        @Specialization(guards = "!isHashable(frame, key)")
         protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashMapStorage storage, Object key) {
             throw unhashable(key);
         }
