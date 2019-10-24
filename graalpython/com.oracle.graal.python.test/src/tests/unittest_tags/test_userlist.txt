@@ -13,13 +13,16 @@
 *CommonTest.test_delitem
 *CommonTest.test_delslice
 *CommonTest.test_exhausted_iterator
+*CommonTest.test_extend
 *CommonTest.test_extendedslicing
 *CommonTest.test_getitem
 *UserListTest.test_getitemoverwriteiter
+*UserListTest.test_getslice
 *UserListTest.test_iadd
 *CommonTest.test_imul
 *CommonTest.test_index
 *CommonTest.test_init
+*CommonTest.test_insert
 *CommonTest.test_len
 *CommonTest.test_minmax
 *UserListTest.test_mixedadd

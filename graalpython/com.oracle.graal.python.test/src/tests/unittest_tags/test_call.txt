@@ -24,3 +24,4 @@
 *CFunctionCalls.test_varargs2
 *CFunctionCalls.test_varargs2_ext
 *CFunctionCalls.test_varargs2_kw
+*FastCallTests.test_fastcall_clearing_dict

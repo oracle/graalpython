@@ -1,0 +1,6 @@
+*TracebackCases.test_base_exception
+*TracebackCases.test_caret
+*TracebackCases.test_format_exception_only_bad__str__
+*TracebackCases.test_print_exception
+*TracebackFormatTests.test_format_stack
+*TracebackFormatTests.test_print_stack

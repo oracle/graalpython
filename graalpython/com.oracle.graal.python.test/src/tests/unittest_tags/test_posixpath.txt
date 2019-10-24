@@ -1,3 +1,10 @@
 *CommonTest.test_abspath_issue3426
 *GenericTest.test_commonprefix
 *GenericTest.test_exists
+*CommonTest.test_expandvars
+*CommonTest.test_expandvars_nonascii
+*GenericTest.test_filetime
+*GenericTest.test_getsize
+*GenericTest.test_isdir
+*GenericTest.test_isfile
+*GenericTest.test_no_argument

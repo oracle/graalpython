@@ -1,0 +1,7 @@
+*WhichDBTestCase.test_keys
+*WhichDBTestCase.test_whichdb
+*test_anydbm_creation
+*test_anydbm_creation_n_file_exists_with_invalid_contents
+*test_anydbm_not_existing
+*test_empty_value
+*test_error

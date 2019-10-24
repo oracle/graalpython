@@ -1,0 +1,1 @@
+*StringFormattingTest.test_string_formatting

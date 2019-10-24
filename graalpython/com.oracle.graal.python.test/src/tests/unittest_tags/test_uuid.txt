@@ -1,4 +1,7 @@
-test_uuid1_eui64
-test_uuid4
-test_ifconfig_getnode
-test_random_getnode
+*BaseTestUUID.test_exceptions
+*BaseTestUUID.test_pickle_roundtrip
+*BaseTestUUID.test_uuid1
+*BaseTestUUID.test_uuid1_eui64
+*BaseTestUUID.test_uuid4
+*BaseTestInternals.test_ip_getnode
+*BaseTestInternals.test_random_getnode

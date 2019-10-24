@@ -8,6 +8,7 @@
 *MinidomTest.testAttrListValues
 *MinidomTest.testAttrList__getitem__
 *MinidomTest.testAttrList__setitem__
+*MinidomTest.testAttributeRepr
 *MinidomTest.testChildNodes
 *MinidomTest.testCloneDocumentTypeDeepNotOk
 *MinidomTest.testCloneDocumentTypeDeepOk

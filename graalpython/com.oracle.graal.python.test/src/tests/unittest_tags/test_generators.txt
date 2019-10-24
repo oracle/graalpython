@@ -1,0 +1,6 @@
+*GeneratorTest.test_copy
+*GeneratorTest.test_pickle
+*ExceptionTest.test_except_next
+*ExceptionTest.test_except_throw
+*ExceptionTest.test_return_stopiteration
+*ExceptionTest.test_return_tuple
