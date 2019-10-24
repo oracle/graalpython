@@ -170,9 +170,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
     }
 
     /**
-     * See CPython's dictobject.c all_contained_in. The semantics of dict view
-     * comparisons dictates that we need to use iteration to compare them in the
-     * general case.
+     * See CPython's dictobject.c all_contained_in. The semantics of dict view comparisons dictates
+     * that we need to use iteration to compare them in the general case.
      */
     protected static class AllContainedInNode extends PNodeWithContext {
         @Child GetIteratorNode iter = GetIteratorNode.create();
