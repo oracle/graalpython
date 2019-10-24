@@ -75,7 +75,6 @@ def working_tests():
 class TestAllWorkingTests():
     pass
 
-
 WORKING_TESTS = working_tests()
 for idx, working_test in enumerate(WORKING_TESTS):
     def make_test_func(working_test):
@@ -89,10 +88,11 @@ for idx, working_test in enumerate(WORKING_TESTS):
             for testpattern in working_test[1]:
                 cmd.extend(["-k", testpattern])
             testmod = working_test[0].rpartition(".")[2]
-            print()
+            print("Running test:", working_test[0])
             cmd.append(os.path.join(os.path.dirname(test.__file__), "%s.py" % testmod))
             subprocess.check_call(cmd)
-
+            print(working_test[0], "was finished.")
+            
         fun.__name__ = "%s[%d/%d]" % (working_test[0], idx + 1, len(WORKING_TESTS))
         return fun
 
