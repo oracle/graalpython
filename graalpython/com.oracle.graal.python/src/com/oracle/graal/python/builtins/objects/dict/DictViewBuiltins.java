@@ -246,7 +246,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Cached AllContainedInNode allContained) {
             int lenSelf = lenNode.execute(self.getWrappedDict().getDictStorage());
             int lenOther = lenNode.execute(other.getDictStorage());
-            return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, self, other) : allContained.execute(frame, other, self));
+            return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Specialization
