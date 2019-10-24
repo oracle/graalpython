@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -100,14 +101,11 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     // ref.__hash__
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class RefTypeHashNode extends PythonBuiltinNode {
-        protected static long HASH_UNSET = -1;
+    public abstract static class RefTypeHashNode extends PythonUnaryBuiltinNode {
+        static long HASH_UNSET = -1;
 
-        @Specialization(guards = {
-                        "self.getObject() != null",
-                        "self.getHash() != HASH_UNSET"
-        })
-        public long getHash(VirtualFrame frame, PReferenceType self) {
+        @Specialization(guards = "self.getHash() != HASH_UNSET")
+        long getHash(VirtualFrame frame, PReferenceType self) {
             return self.getHash();
         }
 
@@ -115,7 +113,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
                         "self.getObject() != null",
                         "self.getHash() == HASH_UNSET"
         })
-        public long computeHash(VirtualFrame frame, PReferenceType self,
+        long computeHash(VirtualFrame frame, PReferenceType self,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
@@ -130,13 +128,13 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
             return hash;
         }
 
-        @Specialization(guards = "self.getObject() == null")
-        public int hashGone(VirtualFrame frame, @SuppressWarnings("unused") PReferenceType self) {
+        @Specialization(guards = {"self.getObject() == null", "self.getHash() == HASH_UNSET"})
+        int hashGone(VirtualFrame frame, @SuppressWarnings("unused") PReferenceType self) {
             throw raise(PythonErrorType.TypeError, "weak object has gone away");
         }
 
         @Fallback
-        public int hashWrong(@SuppressWarnings("unused") Object self) {
+        int hashWrong(@SuppressWarnings("unused") Object self) {
             throw raise(PythonErrorType.TypeError, "descriptor '__hash__' requires a 'weakref' object but received a '%p'", self);
         }
     }
