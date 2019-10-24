@@ -3,7 +3,6 @@
 *TestWeakSet.test_constructor_identity
 *TestWeakSet.test_copy
 *TestWeakSet.test_difference
-*TestWeakSet.test_discard
 *TestWeakSet.test_eq
 *TestWeakSet.test_gc
 *TestWeakSet.test_gt

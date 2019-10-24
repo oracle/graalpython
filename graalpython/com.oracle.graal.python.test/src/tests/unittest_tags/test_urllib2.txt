@@ -35,7 +35,6 @@
 *HandlerTests.test_proxy_no_proxy_all
 *HandlerTests.test_redirect
 *HandlerTests.test_redirect_fragment
-*HandlerTests.test_redirect_no_path
 *HandlerTests.test_relative_redirect
 *HandlerTests.test_unsupported_auth_basic_handler
 *HandlerTests.test_unsupported_auth_digest_handler

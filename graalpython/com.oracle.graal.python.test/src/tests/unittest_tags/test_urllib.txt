@@ -15,7 +15,6 @@
 *urlopen_HttpTests.test_URLopener_deprecation
 *urlopen_HttpTests.test_empty_socket
 *urlopen_HttpTests.test_ftp_cache_pruning
-*urlopen_HttpTests.test_ftp_nohost
 *urlopen_HttpTests.test_invalid_redirect
 *urlopen_HttpTests.test_read_0_9
 *urlopen_HttpTests.test_read_1_0

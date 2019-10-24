@@ -5,11 +5,7 @@
 *FormatTestCase.test_issue35560
 *FormatTestCase.test_issue5864
 *ReprTestCase.test_repr
-*InfNanTest.test_inf_as_str
-*InfNanTest.test_inf_from_str
 *InfNanTest.test_inf_signs
-*InfNanTest.test_nan_as_str
-*InfNanTest.test_nan_from_str
 *HexFloatTestCase.test_ends
 *HexFloatTestCase.test_from_hex
 *HexFloatTestCase.test_invalid_inputs
