@@ -144,13 +144,13 @@ public final class PythonContext {
     private ThreadLocal<PythonThreadState> threadState;
 
     /* array of thread states */
-    private volatile PythonThreadState[] threadStates;
+    private PythonThreadState[] threadStates;
 
     /* map of thread IDs to indices for array 'threadStates' */
-    private volatile Map<Long, Integer> threadStateMapping;
+    private Map<Long, Integer> threadStateMapping;
 
     /* number of threads attached to this context */
-    private volatile int attachedThreads = 0;
+    private int attachedThreads = 0;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -788,14 +788,16 @@ public final class PythonContext {
         if (singleThreaded.isValid()) {
             action.accept(singleThreadState);
         } else {
-            for (int i = 0; i < attachedThreads; i++) {
-                action.accept(threadStates[i]);
+            synchronized (this) {
+                for (int i = 0; i < attachedThreads; i++) {
+                    action.accept(threadStates[i]);
+                }
             }
         }
     }
 
     @TruffleBoundary
-    private PythonThreadState getThreadStateFullLookup() {
+    private synchronized PythonThreadState getThreadStateFullLookup() {
         int idx = threadStateMapping.get(Thread.currentThread().getId());
         return threadStates[idx];
     }
@@ -808,11 +810,13 @@ public final class PythonContext {
     public void initializeMultiThreading() {
         interopLock = new ReentrantLock();
         singleThreaded.invalidate();
-        threadStates = new PythonThreadState[]{singleThreadState};
         threadState = new ThreadLocal<>();
+        synchronized (this) {
+            threadStates = new PythonThreadState[]{singleThreadState};
+        }
     }
 
-    public void attachThread(Thread thread) {
+    public synchronized void attachThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
         // The first attached thread will be the 'main' thread (or similar).
         if (threadStateMapping == null) {
@@ -833,7 +837,7 @@ public final class PythonContext {
         attachedThreads++;
     }
 
-    public void disposeThread(Thread thread) {
+    public synchronized void disposeThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
         long threadId = thread.getId();
         assert threadStateMapping.containsKey(threadId) : "thread was not attached to this context";
