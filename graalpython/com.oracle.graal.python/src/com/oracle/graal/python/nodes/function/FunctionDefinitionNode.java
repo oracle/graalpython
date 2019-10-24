@@ -59,11 +59,10 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Children protected ExpressionNode[] defaults;
     @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
-    @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
+    @Child private WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.create();
     @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    @Child private WriteAttributeToObjectNode writeAnnotationsNode = WriteAttributeToObjectNode.create();
     private final String[] annotationNames;
     @Children private ExpressionNode[] annotationTypes;
 
@@ -132,7 +131,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         // Processing annotated arguments.
         // The __annotations__ dictionary is created even there are is not any annotated arg.
         PDict annotations = factory().createDict();
-        writeAnnotationsNode.execute(func, __ANNOTATIONS__, annotations);
+        writeAttrNode.execute(func, __ANNOTATIONS__, annotations);
         if (annotationNames != null) {
             // compute the types of the arg
             Object[] types = computeAnnotationsTypes(frame);
@@ -190,7 +189,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
         if (doc != null) {
-            writeDocNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
+            writeAttrNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
         }
         return func;
     }
