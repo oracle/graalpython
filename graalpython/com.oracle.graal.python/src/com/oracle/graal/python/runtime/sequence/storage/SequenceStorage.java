@@ -38,7 +38,28 @@ public abstract class SequenceStorage {
         Double,
         List,
         Tuple,
-        Generic
+        Generic;
+
+        public boolean generalizesFrom(ListStorageType other) {
+            switch (this) {
+            case Uninitialized:
+            case Empty:
+                return false;
+            case Boolean:
+            case Byte:
+            case Char:
+            case Double:
+            case List:
+            case Tuple:
+                return other == Uninitialized || other == Empty;
+            case Int:
+                return other == Uninitialized || other == Empty || other == Byte;
+            case Long:
+                return other == Uninitialized || other == Empty || other == Byte || other == Int;
+            default:
+                return true;
+            }
+        }
     }
 
     public abstract int length();

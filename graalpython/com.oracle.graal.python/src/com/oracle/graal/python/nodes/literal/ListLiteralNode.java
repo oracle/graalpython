@@ -289,12 +289,10 @@ public final class ListLiteralNode extends LiteralNode {
 
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
-            if (newStore.capacity() >= initialCapacity.estimate()) {
+            if (newStore.capacity() > initialCapacity.estimate()) {
                 initialCapacity.updateFrom(newStore.capacity());
-                System.out.println("Updating initial capacity " + initialCapacity.estimate() + " at " + getSourceSection().toString());
             }
-            if (newStore.getElementType() != type) {
-                System.out.println("Updating initial type: " + type + " -> " + newStore.getElementType());
+            if (newStore.getElementType().generalizesFrom(type)) {
                 type = newStore.getElementType();
             }
         }
