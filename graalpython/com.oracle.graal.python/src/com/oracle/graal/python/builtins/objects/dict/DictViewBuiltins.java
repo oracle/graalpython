@@ -292,8 +292,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean notEqual(VirtualFrame frame, Object self, Object other) {
-            return !(Boolean) getEqNode().execute(frame, self, other);
+        public Object notEqual(VirtualFrame frame, Object self, Object other) {
+            Object result = getEqNode().execute(frame, self, other);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            } else {
+                assert result instanceof Boolean;
+                return !((Boolean) result);
+            }
         }
     }
 
