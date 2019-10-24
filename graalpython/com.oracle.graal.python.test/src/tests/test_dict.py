@@ -555,8 +555,7 @@ def test_custom_ob_with_eq_and_hash():
     d[a] = 20
     b = MyClass(10)
 
-    # TODO: temporarily disabled
-    #assert a in d
-    #assert b not in d
-    #assert d.get(a, -1) == 20
-    #assert d.get(b, -1) == -1
+    assert a in d
+    assert b not in d
+    assert d.get(a, -1) == 20
+    assert d.get(b, -1) == -1
