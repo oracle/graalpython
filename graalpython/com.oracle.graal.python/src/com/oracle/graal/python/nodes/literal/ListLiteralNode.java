@@ -27,12 +27,14 @@ package com.oracle.graal.python.nodes.literal;
 
 import java.lang.reflect.Array;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
@@ -289,11 +291,13 @@ public final class ListLiteralNode extends LiteralNode {
 
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
-            if (newStore.capacity() > initialCapacity.estimate()) {
-                initialCapacity.updateFrom(newStore.capacity());
-            }
-            if (newStore.getElementType().generalizesFrom(type)) {
-                type = newStore.getElementType();
+            if (PythonOptions.getFlag(lookupContextReference(PythonLanguage.class).get(), PythonOptions.OverallocateLiteralLists)) {
+                if (newStore.capacity() > initialCapacity.estimate()) {
+                    initialCapacity.updateFrom(newStore.capacity());
+                }
+                if (newStore.getElementType().generalizesFrom(type)) {
+                    type = newStore.getElementType();
+                }
             }
         }
         // n.b.: it's ok that this races when the code is already being compiled

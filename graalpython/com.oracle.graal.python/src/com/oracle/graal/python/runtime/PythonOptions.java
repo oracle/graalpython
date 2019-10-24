@@ -169,6 +169,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
     public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
 
+    @Option(category = OptionCategory.EXPERT, help = "Propagate append operations to lists created as literals back to where they were created, to inform overallocation to avoid having to grow them later.") //
+    public static final OptionKey<Boolean> OverallocateLiteralLists = new OptionKey<>(true);
+
     @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
