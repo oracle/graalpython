@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
 import java.text.MessageFormat;
@@ -54,10 +55,13 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemInteropNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -67,7 +71,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.Assumption;
@@ -77,6 +84,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -86,6 +94,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
+
+    public static final String SHUTDOWN = "_shutdown";
 
     private static final class PythonThreadState {
 
@@ -629,6 +639,37 @@ public final class PythonContext {
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
+    }
+
+    @TruffleBoundary
+    public void shutdownThreads() {
+        PythonLanguage.getLogger().fine("shutting down threads");
+        PDict importedModules = getImportedModules();
+        HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
+        Object value = GetItemInteropNode.getUncached().executeWithGlobalState(dictStorage, "threading");
+        if (value != null) {
+            Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SHUTDOWN);
+            if (attrShutdown == PNone.NO_VALUE) {
+                PythonLanguage.getLogger().fine("threading module has no member " + SHUTDOWN);
+                return;
+            }
+            try {
+                CallNode.getUncached().execute(null, attrShutdown);
+            } catch (Exception | StackOverflowError e) {
+                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+                if (!exitException) {
+                    ExceptionUtils.printPythonLikeStackTrace(e);
+                    if (PythonOptions.getOption(this, PythonOptions.WithJavaStacktrace)) {
+                        e.printStackTrace(new PrintWriter(getStandardErr()));
+                    }
+                }
+                throw e;
+            }
+        } else {
+            // threading was not imported; this is
+            PythonLanguage.getLogger().finest("threading module was not imported");
+        }
+        PythonLanguage.getLogger().fine("successfully shut down all threads");
     }
 
     @TruffleBoundary
