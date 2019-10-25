@@ -41,6 +41,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -88,7 +89,11 @@ public final class PythonContext {
 
     private static final class PythonThreadState {
 
-        private WeakReference<Thread> owner;
+        /*
+         * A thread state may be owned by multiple threads if we know that these threads won't run
+         * concurrently.
+         */
+        private final List<WeakReference<Thread>> owners;
 
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
@@ -105,10 +110,30 @@ public final class PythonContext {
         private PException caughtException;
 
         PythonThreadState() {
+            owners = new LinkedList<>();
         }
 
         PythonThreadState(Thread owner) {
-            this.owner = new WeakReference<>(owner);
+            this();
+            addOwner(owner);
+        }
+
+        private void addOwner(Thread owner) {
+            owners.add(new WeakReference<>(owner));
+        }
+
+        private void removeOwner(Thread thread) {
+            owners.removeIf(item -> item.get() == thread);
+        }
+
+        private boolean isOwner(Thread thread) {
+            return owners.stream().anyMatch(item -> item.get() == thread);
+        }
+
+        private boolean hasOwners() {
+            // first, remove all gone weak references
+            owners.removeIf(item -> item.get() == null);
+            return !owners.isEmpty();
         }
     }
 
@@ -150,7 +175,7 @@ public final class PythonContext {
     private Map<Long, Integer> threadStateMapping;
 
     /* number of threads attached to this context */
-    private int attachedThreads = 0;
+    private int threadStatesCount = 0;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -780,7 +805,7 @@ public final class PythonContext {
             curThreadState = getThreadStateFullLookup();
             threadState.set(curThreadState);
         }
-        assert Thread.currentThread() == curThreadState.owner.get();
+        assert curThreadState.isOwner(Thread.currentThread());
         return curThreadState;
     }
 
@@ -789,7 +814,7 @@ public final class PythonContext {
             action.accept(singleThreadState);
         } else {
             synchronized (this) {
-                for (int i = 0; i < attachedThreads; i++) {
+                for (int i = 0; i < threadStatesCount; i++) {
                     action.accept(threadStates[i]);
                 }
             }
@@ -813,28 +838,33 @@ public final class PythonContext {
         threadState = new ThreadLocal<>();
         synchronized (this) {
             threadStates = new PythonThreadState[]{singleThreadState};
+            threadStatesCount++;
         }
     }
 
     public synchronized void attachThread(Thread thread) {
         CompilerAsserts.neverPartOfCompilation();
         // The first attached thread will be the 'main' thread (or similar).
-        if (threadStateMapping == null) {
-            assert attachedThreads == 0;
-            assert singleThreaded.isValid();
+        if (singleThreaded.isValid()) {
+            assert threadStates == null;
+            assert threadStatesCount == 0;
             threadStateMapping = new HashMap<>();
+
+            // n.b.: Several threads may be attached to the context but we may still be in the
+            // 'singleThreaded' mode because the threads won't run concurrently. For this case, we
+            // map each attached thread to index 0.
             threadStateMapping.put(thread.getId(), 0);
-            singleThreadState.owner = new WeakReference<>(thread);
+            singleThreadState.addOwner(thread);
         } else {
+            assert threadStates != null;
             assert threadStates[0] == singleThreadState;
-            assert attachedThreads > 0;
-            threadStateMapping.put(thread.getId(), attachedThreads);
-            if (attachedThreads >= threadStates.length) {
+            assert threadStatesCount > 0;
+            threadStateMapping.put(thread.getId(), threadStatesCount);
+            if (threadStatesCount >= threadStates.length) {
                 threadStates = Arrays.copyOf(threadStates, threadStates.length * 2);
             }
-            threadStates[attachedThreads] = new PythonThreadState(thread);
+            threadStates[threadStatesCount++] = new PythonThreadState(thread);
         }
-        attachedThreads++;
     }
 
     public synchronized void disposeThread(Thread thread) {
@@ -842,11 +872,23 @@ public final class PythonContext {
         long threadId = thread.getId();
         assert threadStateMapping.containsKey(threadId) : "thread was not attached to this context";
         // check if there is a live sentinel lock
-        if (threadStates == null) {
-            releaseSentinelLock(singleThreadState.sentinelLock);
+        if (singleThreaded.isValid()) {
+            assert threadStates == null;
+            assert threadStatesCount == 0;
+            singleThreadState.removeOwner(thread);
+            // only release sentinel lock if all owners are gone
+            if (!singleThreadState.hasOwners()) {
+                releaseSentinelLock(singleThreadState.sentinelLock);
+            }
         } else {
             int idx = threadStateMapping.get(threadId);
-            releaseSentinelLock(threadStates[idx].sentinelLock);
+            PythonThreadState threadState = threadStates[idx];
+            threadState.removeOwner(thread);
+            if (!threadState.hasOwners()) {
+                releaseSentinelLock(threadState.sentinelLock);
+                threadStates[idx] = null;
+                threadStatesCount--;
+            }
         }
         threadStateMapping.remove(threadId);
     }
