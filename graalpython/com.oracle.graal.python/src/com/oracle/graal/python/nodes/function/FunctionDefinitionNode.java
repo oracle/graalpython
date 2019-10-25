@@ -63,7 +63,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    private final String[] annotationNames;
+    @CompilerDirectives.CompilationFinal(dimensions = 1)private final String[] annotationNames;
     @Children private ExpressionNode[] annotationTypes;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
@@ -133,12 +133,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         PDict annotations = factory().createDict();
         writeAttrNode.execute(func, __ANNOTATIONS__, annotations);
         if (annotationNames != null) {
-            // compute the types of the arg
-            Object[] types = computeAnnotationsTypes(frame);
-            for (int i = 0; i < annotationNames.length; i++) {
-                // set the annotations
-                annotations.setItem(annotationNames[i], types[i]);
-            }
+            writeAnnotations(frame, annotations);
         }
         return func;
     }
@@ -174,17 +169,15 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
         return defaultValues;
     }
-
+    
     @ExplodeLoop
-    private Object[] computeAnnotationsTypes(VirtualFrame frame) {
-        Object[] types = null;
-        if (annotationTypes != null) {
-            types = new Object[annotationTypes.length];
-            for (int i = 0; i < annotationTypes.length; i++) {
-                types[i] = annotationTypes[i].execute(frame);
-            }
+    private void writeAnnotations(VirtualFrame frame, PDict annotations) {
+        for (int i = 0; i < annotationNames.length; i++) {
+            // compute the types of the arg
+            Object type = annotationTypes[i].execute(frame);
+            // set the annotations
+            annotations.setItem(annotationNames[i], type);
         }
-        return types;
     }
 
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
