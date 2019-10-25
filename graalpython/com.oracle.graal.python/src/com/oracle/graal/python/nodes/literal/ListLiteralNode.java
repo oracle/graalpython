@@ -294,9 +294,15 @@ public final class ListLiteralNode extends LiteralNode {
             if (PythonOptions.getFlag(lookupContextReference(PythonLanguage.class).get(), PythonOptions.OverallocateLiteralLists)) {
                 if (newStore.capacity() > initialCapacity.estimate()) {
                     initialCapacity.updateFrom(newStore.capacity());
+                    PythonLanguage.getLogger().fine(() -> {
+                            return getSourceSection().toString() + " => " + newStore.capacity();
+                    });
                 }
                 if (newStore.getElementType().generalizesFrom(type)) {
                     type = newStore.getElementType();
+                    PythonLanguage.getLogger().fine(() -> {
+                            return getSourceSection().toString() + " => " + type.name();
+                    });
                 }
             }
         }
