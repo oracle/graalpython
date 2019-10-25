@@ -666,7 +666,21 @@ public abstract class ListNodes {
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
 
+        protected static final boolean inInterpreter(@SuppressWarnings("unused") PList list) {
+            return CompilerDirectives.inInterpreter();
+        }
+
         public abstract void execute(PList list, Object value);
+
+        @Specialization(guards = {"inInterpreter(list)", "list.getOrigin() != null"})
+        public void appendObjectLiteralInterpreted(PList list, Object value,
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+            list.setSequenceStorage(newStore);
+            if (newStore instanceof BasicSequenceStorage) {
+                list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+            }
+        }
 
         @Specialization
         public void appendObjectGeneric(PList list, Object value,
@@ -676,11 +690,6 @@ public abstract class ListNodes {
             if (list.getSequenceStorage() != newStore) {
                 updateStoreProfile.enter();
                 list.setSequenceStorage(newStore);
-            }
-            if (CompilerDirectives.inInterpreter()) {
-                if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
-                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
-                }
             }
         }
 
