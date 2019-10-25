@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Iterator;
 import java.util.List;
@@ -43,6 +42,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -53,6 +53,12 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put(__HASH__, PNone.NONE);
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -80,15 +86,6 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, self, o, PNone.NO_VALUE);
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doGeneric(Object self) {
-            throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
 

@@ -181,6 +181,26 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
     }
 
+    private static final class DictKey {
+        final Object value;
+        final int hash;
+
+        DictKey(Object value, int hash) {
+            this.value = value;
+            this.hash = hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof DictKey && ((DictKey) obj).hash == hash && ((DictKey) obj).value.equals(value);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }
+
     /**
      * Links the collisions. Needs to be immutable class for allowing efficient shallow copy from
      * other map on construction.
@@ -204,14 +224,14 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
     public Object getItem(Object key, Equivalence eq) {
         Objects.requireNonNull(key);
 
-        int index = find(key, eq);
+        int index = find(new DictKey(key, eq.hashCode(key)), eq);
         if (index != -1) {
             return getValue(index);
         }
         return null;
     }
 
-    private int find(Object key, Equivalence eq) {
+    private int find(DictKey key, Equivalence eq) {
         if (hasHashArray()) {
             return findHash(key, eq);
         } else {
@@ -219,9 +239,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
     }
 
-    private int findLinear(Object key, Equivalence eq) {
+    private int findLinear(DictKey key, Equivalence eq) {
         for (int i = 0; i < totalEntries; i++) {
-            Object entryKey = entriesArr[i << 1];
+            DictKey entryKey = getKey(i);
             if (entryKey != null && compareKeys(key, entryKey, eq)) {
                 return i;
             }
@@ -229,20 +249,29 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         return -1;
     }
 
-    private static boolean compareKeys(Object key, Object entryKey, Equivalence strategy) {
-        if (key == entryKey) {
+    private static boolean compareKeys(DictKey key, DictKey entryKey, Equivalence strategy) {
+        // Comparison as per CPython's dictobject.c#lookdict function. First
+        // check if the keys are identical, then check if the hashes are the
+        // same, and only if they are, also call the comparison function.
+        if (key.value == entryKey.value) {
             return true;
+        } else if (key.hash == entryKey.hash) {
+            if (strategy != null) {
+                // TODO: this may raise and on CPython, that is caught and transformed into a
+                // dictionary exception
+                return strategy.equals(key.value, entryKey.value);
+            } else {
+                return key.value.equals(entryKey.value);
+            }
+        } else {
+            return false;
         }
-        if (strategy != null) {
-            return strategy.equals(key, entryKey);
-        }
-        return key.equals(entryKey);
     }
 
-    private int findHash(Object key, Equivalence eq) {
-        int index = getHashArray(getHashIndex(key, eq)) - 1;
+    private int findHash(DictKey key, Equivalence eq) {
+        int index = getHashArray(getHashIndex(key)) - 1;
         if (index != -1) {
-            Object entryKey = getKey(index);
+            DictKey entryKey = getKey(index);
             if (compareKeys(key, entryKey, eq)) {
                 return index;
             } else {
@@ -256,9 +285,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         return -1;
     }
 
-    private int findWithCollision(Object key, CollisionLink initialEntryValue, Equivalence eq) {
+    private int findWithCollision(DictKey key, CollisionLink initialEntryValue, Equivalence eq) {
         int index;
-        Object entryKey;
+        DictKey entryKey;
         CollisionLink entryValue = initialEntryValue;
         while (true) {
             CollisionLink collisionLink = entryValue;
@@ -305,11 +334,11 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
     }
 
-    private int findAndRemoveHash(Object key, Equivalence eq) {
-        int hashIndex = getHashIndex(key, eq);
+    private int findAndRemoveHash(DictKey key, Equivalence eq) {
+        int hashIndex = getHashIndex(key);
         int index = getHashArray(hashIndex) - 1;
         if (index != -1) {
-            Object entryKey = getKey(index);
+            DictKey entryKey = getKey(index);
             if (compareKeys(key, entryKey, eq)) {
                 Object value = getRawValue(index);
                 int nextIndex = -1;
@@ -330,9 +359,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         return -1;
     }
 
-    private int findAndRemoveWithCollision(Object key, CollisionLink initialEntryValue, int initialIndexValue, Equivalence eq) {
+    private int findAndRemoveWithCollision(DictKey key, CollisionLink initialEntryValue, int initialIndexValue, Equivalence eq) {
         int index;
-        Object entryKey;
+        DictKey entryKey;
         CollisionLink entryValue = initialEntryValue;
         int lastIndex = initialIndexValue;
         while (true) {
@@ -360,13 +389,8 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
     }
 
-    private int getHashIndex(Object key, Equivalence strategy) {
-        int hash;
-        if (strategy != null) {
-            hash = strategy.hashCode(key);
-        } else {
-            hash = key.hashCode();
-        }
+    private int getHashIndex(DictKey key) {
+        int hash = key.hash;
         hash = hash ^ (hash >>> 16);
         return hash & (getHashTableSize() - 1);
     }
@@ -387,7 +411,8 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         if (key == null) {
             throw new UnsupportedOperationException("null not supported as key!");
         }
-        int index = find(key, eq);
+        DictKey newKey = new DictKey(key, eq.hashCode(key));
+        int index = find(newKey, eq);
         if (index != -1) {
             setValue(index, value);
             return;
@@ -404,14 +429,14 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             nextEntryIndex = totalEntries;
         }
 
-        setKey(nextEntryIndex, key);
+        setKey(nextEntryIndex, newKey);
         setValue(nextEntryIndex, value);
         totalEntries++;
 
         if (hasHashArray()) {
             // Rehash on collision if hash table is more than three quarters full.
             boolean rehashOnCollision = (getHashTableSize() < (length() + (length() >> 1)));
-            putHashEntry(key, nextEntryIndex, rehashOnCollision, eq);
+            putHashEntry(newKey, nextEntryIndex, rehashOnCollision, eq);
         } else if (totalEntries > getHashThreshold()) {
             createHash(eq);
         }
@@ -467,7 +492,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         int z = 0;
         int newNextIndex = remaining;
         for (int i = 0; i < totalEntries; ++i) {
-            Object key = getKey(i);
+            DictKey key = getKey(i);
             if (i == nextIndex) {
                 newNextIndex = z;
             }
@@ -524,15 +549,15 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
 
         hashArray = new byte[size];
         for (int i = 0; i < totalEntries; i++) {
-            Object entryKey = getKey(i);
+            DictKey entryKey = getKey(i);
             if (entryKey != null) {
                 putHashEntry(entryKey, i, false, eq);
             }
         }
     }
 
-    private void putHashEntry(Object key, int entryIndex, boolean rehashOnCollision, Equivalence eq) {
-        int hashIndex = getHashIndex(key, eq);
+    private void putHashEntry(DictKey key, int entryIndex, boolean rehashOnCollision, Equivalence eq) {
+        int hashIndex = getHashIndex(key);
         int oldIndex = getHashArray(hashIndex) - 1;
         if (oldIndex != -1 && rehashOnCollision) {
             this.createHash(eq);
@@ -618,11 +643,11 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         }
     }
 
-    private Object getKey(int index) {
-        return entriesArr[index << 1];
+    private DictKey getKey(int index) {
+        return (DictKey) entriesArr[index << 1];
     }
 
-    private void setKey(int index, Object newValue) {
+    private void setKey(int index, DictKey newValue) {
         entriesArr[index << 1] = newValue;
     }
 
@@ -664,9 +689,9 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         while (cursor.advance()) {
             builder.append(sep);
             if (isSet) {
-                builder.append(cursor.getKey());
+                builder.append(cursor.getKey().value);
             } else {
-                builder.append("(").append(cursor.getKey()).append(",").append(cursor.getValue()).append(")");
+                builder.append("(").append(cursor.getKey().value).append(",").append(cursor.getValue()).append(")");
             }
             sep = ",";
         }
@@ -678,18 +703,18 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
         return new SparseMapIterator() {
             @Override
             public Object next() {
-                Object result;
+                DictKey result;
                 while ((result = getKey(current++)) == null) {
                     // skip null entries
                 }
-                return result;
+                return result.value;
             }
         };
     }
 
     @Override
     public boolean hasKey(Object key, Equivalence eq) {
-        return find(key, eq) != -1;
+        return find(new DictKey(key, eq.hashCode(key)), eq) != -1;
     }
 
     @Override
@@ -698,10 +723,11 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             throw new UnsupportedOperationException("null not supported as key!");
         }
         int index;
+        DictKey inKey = new DictKey(key, eq.hashCode(key));
         if (hasHashArray()) {
-            index = this.findAndRemoveHash(key, eq);
+            index = this.findAndRemoveHash(inKey, eq);
         } else {
-            index = this.findLinear(key, eq);
+            index = this.findLinear(inKey, eq);
         }
 
         if (index != -1) {
@@ -728,7 +754,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
             }
         }
 
-        public Object getKey() {
+        public DictKey getKey() {
             return EconomicMapStorage.this.getKey(current);
         }
 
@@ -753,7 +779,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
                 throw new NoSuchElementException();
             }
             consumed++;
-            return new DictEntry(getKey(), getValue());
+            return new DictEntry(getKey().value, getValue());
         }
     }
 

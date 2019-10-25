@@ -222,7 +222,7 @@ class TupleTest(seq_tests.CommonTest):
                 return 1.0;
 
         raiseTypeError(t, IndexF())
-        
+
         t = (NotImplemented,)
         self.assertEqual(t[0], NotImplemented)
 
@@ -279,7 +279,7 @@ class TupleTest(seq_tests.CommonTest):
         self.assertTrue(maketuple(b) is maketuple(b))
         self.assertTrue(tuple(b) is b)
         self.assertFalse(tuple(a) is a)
-        
+
 
 class TupleCompareTest(CompareTest):
 
@@ -385,3 +385,13 @@ class TupleCompareTest(CompareTest):
 def test_same_id():
     empty_ids = set([id(tuple()) for i in range(100)])
     assert len(empty_ids) == 1
+
+
+def test_hashing():
+    assert isinstance(hash((1,2)), int)
+    try:
+        hash(([],))
+    except TypeError as e:
+        assert "unhashable type: 'list'" in str(e)
+    else:
+        assert False

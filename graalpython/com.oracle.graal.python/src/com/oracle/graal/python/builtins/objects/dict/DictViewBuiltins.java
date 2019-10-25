@@ -72,14 +72,21 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -162,42 +169,112 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+    /**
+     * See CPython's dictobject.c all_contained_in. The semantics of dict view comparisons dictates
+     * that we need to use iteration to compare them in the general case.
+     */
+    protected static class AllContainedInNode extends PNodeWithContext {
+        @Child GetIteratorNode iter = GetIteratorNode.create();
+        @Child GetNextNode next;
+        @Child LookupAndCallBinaryNode contains;
+        @Child CastToBooleanNode cast;
+        @CompilationFinal IsBuiltinClassProfile stopProfile;
 
-        @Specialization
-        boolean doKeysView(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
-            return equalsNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage());
+        private GetNextNode getNext() {
+            if (next == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                next = insert(GetNextNode.create());
+            }
+            return next;
+        }
+
+        private LookupAndCallBinaryNode getContains() {
+            if (contains == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contains = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__CONTAINS__));
+            }
+            return contains;
+        }
+
+        private CastToBooleanNode getCast() {
+            if (cast == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cast = insert(CastToBooleanNode.createIfTrueNode());
+            }
+            return cast;
+        }
+
+        private IsBuiltinClassProfile getStopProfile() {
+            if (stopProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                stopProfile = IsBuiltinClassProfile.create();
+            }
+            return stopProfile;
+        }
+
+        public boolean execute(VirtualFrame frame, Object self, Object other) {
+            Object iterator = iter.executeWith(frame, self);
+            boolean ok = true;
+            try {
+                while (ok) {
+                    Object item = getNext().execute(frame, iterator);
+                    ok = getCast().executeBoolean(frame, getContains().executeObject(frame, other, item));
+                }
+            } catch (PException e) {
+                e.expectStopIteration(getStopProfile());
+            }
+            return ok;
+        }
+
+        public static AllContainedInNode create() {
+            return new AllContainedInNode();
+        }
+    }
+
+    protected abstract static class DictViewRichcompareNode extends PythonBinaryBuiltinNode {
+        protected boolean reverse() {
+            throw new IllegalStateException("subclass should have implemented reverse");
+        }
+
+        protected boolean lenCompare(@SuppressWarnings("unused") int lenSelf, @SuppressWarnings("unused") int lenOther) {
+            throw new IllegalStateException("subclass should have implemented lenCompare");
         }
 
         @Specialization
-        boolean doKeysView(VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
-            return equalsNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getDictStorage());
+        boolean doView(VirtualFrame frame, PDictView self, PBaseSet other,
+                        @Cached HashingStorageNodes.LenNode lenNode,
+                        @Cached AllContainedInNode allContained) {
+            int lenSelf = lenNode.execute(self.getWrappedDict().getDictStorage());
+            int lenOther = lenNode.execute(other.getDictStorage());
+            return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Specialization
-        boolean doItemsView(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            // the items view stores the original dict with K:V pairs so full K:V equality needs to
-            // be tested in this case
-            return equalsNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage());
-        }
-
-        @Specialization
-        boolean doItemsView(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            return equalsNode.execute(frame, selfSet.getDictStorage(), other.getDictStorage());
+        boolean doView(VirtualFrame frame, PDictView self, PDictView other,
+                        @Cached HashingStorageNodes.LenNode lenNode,
+                        @Cached AllContainedInNode allContained) {
+            int lenSelf = lenNode.execute(self.getWrappedDict().getDictStorage());
+            int lenOther = lenNode.execute(other.getWrappedDict().getDictStorage());
+            return lenCompare(lenSelf, lenOther) && (reverse() ? allContained.execute(frame, other, self) : allContained.execute(frame, self, other));
         }
 
         @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object self, Object other) {
+        PNotImplemented wrongTypes(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class EqNode extends DictViewRichcompareNode {
+        @Override
+        protected boolean reverse() {
+            return false;
+        }
+
+        @Override
+        protected boolean lenCompare(int lenSelf, int lenOther) {
+            return lenSelf == lenOther;
         }
     }
 
@@ -215,19 +292,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean notEqual(VirtualFrame frame, PDictView self, PDictView other) {
-            return !(Boolean) getEqNode().execute(frame, self, other);
-        }
-
-        @Specialization
-        public boolean notEqual(VirtualFrame frame, PDictView self, PBaseSet other) {
-            return !(Boolean) getEqNode().execute(frame, self, other);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        public Object notEqual(VirtualFrame frame, Object self, Object other) {
+            Object result = getEqNode().execute(frame, self, other);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            } else {
+                assert result instanceof Boolean;
+                return !((Boolean) result);
+            }
         }
     }
 
@@ -383,131 +455,57 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean lessEqual(VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
-            return isSubsetNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getDictStorage());
+    abstract static class LessEqualNode extends DictViewRichcompareNode {
+        @Override
+        protected boolean reverse() {
+            return false;
         }
 
-        @Specialization
-        boolean lessEqual(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
-            return isSubsetNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage());
-        }
-
-        @Specialization
-        boolean lessEqual(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            return isSubsetNode.execute(frame, selfSet.getDictStorage(), other.getDictStorage());
-        }
-
-        @Specialization
-        boolean lessEqual(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            PSet otherSet = constructSetNode.executeWith(frame, other);
-            return isSubsetNode.execute(frame, selfSet.getDictStorage(), otherSet.getDictStorage());
+        @Override
+        protected boolean lenCompare(int lenSelf, int lenOther) {
+            return lenSelf <= lenOther;
         }
     }
 
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean greaterEqual(VirtualFrame frame, PDictKeysView self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
-            return isSupersetNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getDictStorage());
+    abstract static class GreaterEqualNode extends DictViewRichcompareNode {
+        @Override
+        protected boolean reverse() {
+            return true;
         }
 
-        @Specialization
-        boolean greaterEqual(VirtualFrame frame, PDictKeysView self, PDictKeysView other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
-            return isSupersetNode.execute(frame, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage());
-        }
-
-        @Specialization
-        boolean greaterEqual(VirtualFrame frame, PDictItemsView self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            return isSupersetNode.execute(frame, selfSet.getDictStorage(), other.getDictStorage());
-        }
-
-        @Specialization
-        boolean greaterEqual(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
-            PSet selfSet = constructSetNode.executeWith(frame, self);
-            PSet otherSet = constructSetNode.executeWith(frame, other);
-            return isSupersetNode.execute(frame, selfSet.getDictStorage(), otherSet.getDictStorage());
+        @Override
+        protected boolean lenCompare(int lenSelf, int lenOther) {
+            return lenSelf >= lenOther;
         }
     }
 
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LessThanNode extends PythonBinaryBuiltinNode {
-        @Child LessEqualNode lessEqualNode;
-
-        private LessEqualNode getLessEqualNode() {
-            if (lessEqualNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lessEqualNode = insert(DictViewBuiltinsFactory.LessEqualNodeFactory.create());
-            }
-            return lessEqualNode;
+    abstract static class LessThanNode extends DictViewRichcompareNode {
+        @Override
+        protected boolean reverse() {
+            return false;
         }
 
-        @Specialization
-        boolean isLessThan(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
-            if (sizeProfile.profile(self.size() >= other.size())) {
-                return false;
-            }
-            return (Boolean) getLessEqualNode().execute(frame, self, other);
-        }
-
-        @Specialization
-        boolean isLessThan(VirtualFrame frame, PDictView self, PDictView other,
-                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
-            if (sizeProfile.profile(self.size() >= other.size())) {
-                return false;
-            }
-            return (Boolean) getLessEqualNode().execute(frame, self, other);
+        @Override
+        protected boolean lenCompare(int lenSelf, int lenOther) {
+            return lenSelf < lenOther;
         }
     }
 
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
-        @Child GreaterEqualNode greaterEqualNode;
-
-        private GreaterEqualNode getGreaterEqualNode() {
-            if (greaterEqualNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                greaterEqualNode = insert(DictViewBuiltinsFactory.GreaterEqualNodeFactory.create());
-            }
-            return greaterEqualNode;
+    abstract static class GreaterThanNode extends DictViewRichcompareNode {
+        @Override
+        protected boolean reverse() {
+            return true;
         }
 
-        @Specialization
-        boolean isGreaterThan(VirtualFrame frame, PDictView self, PBaseSet other,
-                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
-            if (sizeProfile.profile(self.size() <= other.size())) {
-                return false;
-            }
-            return (Boolean) getGreaterEqualNode().execute(frame, self, other);
-        }
-
-        @Specialization
-        boolean isGreaterThan(VirtualFrame frame, PDictView self, PDictView other,
-                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
-            if (sizeProfile.profile(self.size() <= other.size())) {
-                return false;
-            }
-            return (Boolean) getGreaterEqualNode().execute(frame, self, other);
+        @Override
+        protected boolean lenCompare(int lenSelf, int lenOther) {
+            return lenSelf > lenOther;
         }
     }
 }
