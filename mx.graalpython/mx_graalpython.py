@@ -1168,6 +1168,9 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
 
     def run(self, args, env=None, cwd=None, **kwargs):
         env = env.copy() if env else os.environ.copy()
+        # n.b.: we don't want derived projects to also have to depend on our build env vars
+        env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
+        env.update(self.subject.getBuildEnv())
 
         # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
         for var in ["CC", "CFLAGS", "LDFLAGS"]:

@@ -66,57 +66,34 @@ def system(cmd, msg=""):
 
 def xit(msg, status=-1):
     print(msg)
-    exit(-1)
+    sys.exit(-1)
 
 
 class CAPIDependency:
     _lib_install_dir = os.path.join(site.getuserbase(), "lib", get_config_var("SOABI"))
     _include_install_dir = os.path.join(site.getuserbase(), "include")
 
-    def __init__(self, lib_name, package_spec, url):
+    def __init__(self, lib_name, package_spec, src_var):
         self.lib_name = lib_name
         if "==" in package_spec:
             self.package_name, _, self.version = package_spec.rpartition("==")
         else:
             self.package_name = self.package_spec
             self.version = None
-        self.url = url
+        self.src_var = src_var
 
     def download(self):
         import tempfile
-        package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", None)
-        package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", None)
-        tempdir = tempfile.mkdtemp()
-        package_name = self.package_name
-
-        if package_pattern and package_version_pattern:
-            if self.version:
-                url = package_version_pattern % (package_name, self.version)
-            else:
-                url = package_pattern % package_name
+        tempdir = tempfile.mktemp()
+        src_archive = os.environ.get(self.src_var, None)
+        if src_archive:
+            shutil.copytree(src_archive, tempdir)
         else:
-            url = self.url
-
-        logger.info("Downloading dependency %s from %s to %s" % (package_name, url, tempdir))
-
-        # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
-        os_env = os.environ
-        curl_opts = []
-        if url.startswith("http://") and "HTTP_PROXY" in os_env:
-            curl_opts += ["--proxy", os_env["HTTP_PROXY"]]
-        elif url.startswith("https://") and "HTTPS_PROXY" in os_env:
-            curl_opts += ["--proxy", os_env["HTTPS_PROXY"]]
-
-        system("curl -L %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, package_name, url), msg="Download error")
-        if url.endswith(".tar.gz"):
-            system("tar xzf %s/%s -C %s" % (tempdir, package_name, tempdir), msg="Error extracting tar.gz")
-        elif url.endswith(".tar.bz2"):
-            system("tar xjf %s/%s -C %s" % (tempdir, package_name, tempdir), msg="Error extracting tar.bz2")
-        elif url.endswith(".zip"):
-            system("unzip -u %s/%s -d %s" % (tempdir, package_name, tempdir), msg="Error extracting zip")
-        else:
-            xit("Unknown file type: %s" % package_name)
+            xit("FATAL: Please set the environment variable %s to the location of the source archive of %s" % (src_archive_var, lib_name))
         return tempdir
+
+    def conftest(self):
+        return False
 
     @staticmethod
     def _ensure_dir(dir):
@@ -266,7 +243,7 @@ builtin_exts = (
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_struct"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
-    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz")]),
+    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")]),
 )
 
 
