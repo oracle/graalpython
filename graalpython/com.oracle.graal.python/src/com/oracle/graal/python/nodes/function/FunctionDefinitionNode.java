@@ -63,7 +63,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    @CompilerDirectives.CompilationFinal(dimensions = 1)private final String[] annotationNames;
+    @CompilerDirectives.CompilationFinal(dimensions = 1) private final String[] annotationNames;
     @Children private ExpressionNode[] annotationTypes;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
@@ -169,7 +169,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
         return defaultValues;
     }
-    
+
     @ExplodeLoop
     private void writeAnnotations(VirtualFrame frame, PDict annotations) {
         for (int i = 0; i < annotationNames.length; i++) {
