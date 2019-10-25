@@ -1,3 +1,5 @@
+*AsyncBadSyntaxTest.test_badsyntax_2
+*AsyncBadSyntaxTest.test_badsyntax_3
 *AsyncBadSyntaxTest.test_badsyntax_4
 *CoroutineTest.test_comp_7
 *CoroutineTest.test_for_tuple

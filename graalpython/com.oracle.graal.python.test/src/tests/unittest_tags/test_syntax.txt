@@ -1,1 +1,4 @@
-test_assign_del
+*SyntaxTestCase.test_assign_del
+*SyntaxTestCase.test_kwargs_last
+*SyntaxTestCase.test_kwargs_last2
+*SyntaxTestCase.test_kwargs_last3

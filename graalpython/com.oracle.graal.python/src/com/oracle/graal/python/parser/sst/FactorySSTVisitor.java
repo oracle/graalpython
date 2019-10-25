@@ -53,6 +53,7 @@ import com.oracle.graal.python.parser.*;
 import com.oracle.graal.python.nodes.PNode;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
@@ -110,7 +111,9 @@ import com.oracle.truffle.api.source.SourceSection;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
@@ -200,8 +203,21 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
-        // TODO should be done type checking here?
-        return visit((AssignmentSSTNode) node);
+        PNode assignmentNode = visit((AssignmentSSTNode) node);
+        if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
+            // annotations in a function we ignore at all. Even there are not evalueated, whether
+            // the type is wrong
+            // create simple SST tree for : __annotations__['var_name'] = type
+            VarLookupSSTNode varLookupNode = (VarLookupSSTNode) node.lhs[0];
+            SubscriptSSTNode getAnnotationSST = new SubscriptSSTNode(new VarLookupSSTNode(__ANNOTATIONS__, -1, -1), new StringLiteralSSTNode(new String[]{"'" + varLookupNode.name + "'"}, -1, -1), -1,
+                            -1);
+            AssignmentSSTNode assignAnnotationSST = new AssignmentSSTNode(new SSTNode[]{getAnnotationSST}, node.type, -1, -1);
+            PNode assignAnnotationNode = visit(assignAnnotationSST);
+            // return block with statements[the assignment, add variable name, type to
+            // __annotations__]
+            return BlockNode.create(new StatementNode[]{(StatementNode) assignmentNode, (StatementNode) assignAnnotationNode});
+        }
+        return assignmentNode;
     }
 
     @Override
@@ -342,15 +358,25 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
         SSTNode[] bodyNodes = ((BlockSSTNode) node.body).statements;
 
-        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + 1];
+        int delta = 1 + (classScope.hasAnnotations() ? 1 : 0);
+        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + delta];
         bodyStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
         for (int i = 0; i < bodyNodes.length; i++) {
-            bodyStatements[i + 1] = (StatementNode) bodyNodes[i].accept(this);
+            bodyStatements[i + delta] = (StatementNode) bodyNodes[i].accept(this);
         }
         ExpressionNode doc = StringUtils.extractDoc(bodyStatements[1]);
         if (doc != null) {
             scopeEnvironment.createLocal(__DOC__);
             bodyStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
+            if (classScope.hasAnnotations()) {
+                // create __annotation__ dictionery for the class
+                bodyStatements[2] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
+            }
+        } else {
+            if (classScope.hasAnnotations()) {
+                // create __annotation__ dictionery for the class
+                bodyStatements[1] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
+            }
         }
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
@@ -358,7 +384,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode bodyAsExpr = new ReturnTargetNode(body, nodeFactory.createNullLiteral());
         ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
-        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots());
+        FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
         scopeEnvironment.setCurrentScope(node.classScope.getParent());
 
         ExpressionNode[] args;
@@ -719,6 +745,15 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         }
 
+        Map<String, SSTNode> sstAnnotations = node.argBuilder.getAnnotatedArgs();
+        Map<String, ExpressionNode> annotations = null;
+        if (sstAnnotations != null && !sstAnnotations.isEmpty()) {
+            annotations = new HashMap<>(sstAnnotations.size());
+            for (String argName : sstAnnotations.keySet()) {
+                SSTNode sstType = sstAnnotations.get(argName);
+                annotations.put(argName, (ExpressionNode) sstType.accept(this));
+            }
+        }
         SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
         returnTarget.assignSourceSection(sourceSection);
 
@@ -737,10 +772,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode());
+                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(), annotations);
         } else {
             funcDef = new FunctionDefinitionNode(node.name, node.enclosingClassName, doc, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
-                            scopeEnvironment.getExecutionCellSlots());
+                            scopeEnvironment.getExecutionCellSlots(), annotations);
         }
         scopeEnvironment.setCurrentScope(node.functionScope.getParent());
         ReadNode funcVar = scopeEnvironment.findVariable(node.name);
@@ -876,10 +911,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             RootCallTarget ct = gtran.translate();
             funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
+                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode(), null);
         } else {
             RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
-            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots());
+            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }
         scopeEnvironment.setCurrentScope(oldScope);
@@ -1167,7 +1202,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     }
 
     protected SourceSection createSourceSection(int start, int stop) {
-        if (source.getLength() > start && source.getLength() >= stop) {
+        if (start < stop && source.getLength() > start && source.getLength() >= stop) {
             return source.createSection(start, stop - start);
         } else {
             return source.createUnavailableSection();

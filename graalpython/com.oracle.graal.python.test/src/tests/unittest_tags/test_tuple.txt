@@ -21,3 +21,6 @@
 *TupleTest.test_repr
 *TupleTest.test_repr_large
 *CommonTest.test_subscript
+*TupleTest.test_track_subtypes
+*TupleTest.test_truth
+*TupleTest.test_tupleresizebug

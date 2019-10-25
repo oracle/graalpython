@@ -135,8 +135,8 @@ public class NodeFactory {
         return (T) NodeUtil.cloneNode(orig);
     }
 
-    public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd) {
-        return new ModuleRootNode(language, name, doc, file, fd, null);
+    public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd, boolean hasAnnotations) {
+        return new ModuleRootNode(language, name, doc, file, fd, null, hasAnnotations);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,

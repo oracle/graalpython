@@ -1,3 +1,4 @@
-test_badregistercall
-test_bug828737
-test_unknownhandler
+*CodecCallbackTest.test_badregistercall
+*CodecCallbackTest.test_bug828737
+*CodecCallbackTest.test_unencodablereplacement
+*CodecCallbackTest.test_unknownhandler

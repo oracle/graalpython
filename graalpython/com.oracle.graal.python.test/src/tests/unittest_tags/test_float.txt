@@ -1,0 +1,14 @@
+*GeneralFloatCases.test_floatasratio
+*GeneralFloatCases.test_keyword_args
+*FormatTestCase.test_format
+*FormatTestCase.test_format_testfile
+*FormatTestCase.test_issue35560
+*FormatTestCase.test_issue5864
+*ReprTestCase.test_repr
+*InfNanTest.test_inf_signs
+*HexFloatTestCase.test_ends
+*HexFloatTestCase.test_from_hex
+*HexFloatTestCase.test_invalid_inputs
+*HexFloatTestCase.test_roundtrip
+*HexFloatTestCase.test_subclass
+*HexFloatTestCase.test_whitespace

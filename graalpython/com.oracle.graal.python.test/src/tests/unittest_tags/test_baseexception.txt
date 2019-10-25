@@ -1,1 +1,4 @@
-test_builtins_new_style
+*ExceptionClassTests.test_builtins_new_style
+*UsageTests.test_catch_BaseException_instance
+*UsageTests.test_catch_non_BaseException
+*UsageTests.test_catch_string

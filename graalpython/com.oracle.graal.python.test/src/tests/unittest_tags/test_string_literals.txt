@@ -1,4 +1,5 @@
-test_eval_bytes_normal
-test_eval_bytes_raw
-test_file_utf_8_error
-test_template
+*TestLiterals.test_eval_bytes_incomplete
+*TestLiterals.test_eval_bytes_normal
+*TestLiterals.test_eval_bytes_raw
+*TestLiterals.test_file_utf_8_error
+*TestLiterals.test_template

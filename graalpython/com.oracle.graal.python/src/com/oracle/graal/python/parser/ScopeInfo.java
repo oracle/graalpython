@@ -93,11 +93,14 @@ public final class ScopeInfo {
 
     private TreeSet<String> seenVars;
 
+    private boolean annotationsField;
+
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
         this.frameDescriptor = frameDescriptor == null ? new FrameDescriptor() : frameDescriptor;
         this.parent = parent;
+        this.annotationsField = false;
         this.identifierToIndex = new ArrayList<>();
         // register current scope as child to parent scope
         if (this.parent != null) {
@@ -129,6 +132,14 @@ public final class ScopeInfo {
 
     public FrameDescriptor getFrameDescriptor() {
         return frameDescriptor;
+    }
+
+    public boolean hasAnnotations() {
+        return annotationsField;
+    }
+
+    public void setHasAnnotations(boolean hasAnnotations) {
+        this.annotationsField = hasAnnotations;
     }
 
     public void setFrameDescriptor(FrameDescriptor frameDescriptor) {

@@ -1,4 +1,6 @@
-test_descriptor_errors_propagate
-test_dont_clear_dict
-test_module_getattr_errors
-test_module_getattr_tricky
+*ModuleTests.test_descriptor_errors_propagate
+*ModuleTests.test_dont_clear_dict
+*ModuleTests.test_module_getattr_errors
+*ModuleTests.test_module_getattr_tricky
+*ModuleTests.test_no_docstring
+*ModuleTests.test_weakref

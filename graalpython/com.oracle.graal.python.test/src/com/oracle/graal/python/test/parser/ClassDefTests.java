@@ -208,6 +208,15 @@ public class ClassDefTests extends ParserTestBase {
     }
 
     @Test
+    public void classmethod01() throws Exception {
+        checkScopeAndTree(
+                        "class A:\n" +
+                                        "    @classmethod\n" +
+                                        "    def method(self, string:str):\n" +
+                                        "        pass\n");
+    }
+
+    @Test
     public void metaclass01() throws Exception {
         checkScopeAndTree(
                         "class A:\n" +

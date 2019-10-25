@@ -1,6 +1,7 @@
-test_bad_major_version
-test_bindtextdomain
-test_textdomain
-test_unicode_msgid
-test_unicode_msgstr
-test__all__
+*GettextTestCase2.test_bad_major_version
+*GettextTestCase2.test_bindtextdomain
+*GettextTestCase2.test_textdomain
+*UnicodeTranslationsTest.test_unicode_msgid
+*UnicodeTranslationsTest.test_unicode_msgstr
+*WeirdMetadataTest.test_weird_metadata
+*MiscTestCase.test__all__

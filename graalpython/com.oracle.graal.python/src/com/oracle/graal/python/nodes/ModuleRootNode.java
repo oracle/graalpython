@@ -28,6 +28,8 @@ package com.oracle.graal.python.nodes;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
@@ -48,10 +50,11 @@ public class ModuleRootNode extends PClosureRootNode {
     private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
     @Child private ExpressionNode body;
     @Child private WriteGlobalNode writeModuleDoc;
+    @Child private WriteGlobalNode writeAnnotations;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
-    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
-        super(language, descriptor, freeVarSlots);
+    public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
+        super(language, descriptor, freeVarSlots, hasAnnotations);
         this.name = "<module '" + name + "'>";
         this.doc = doc;
         this.body = new InnerRootNode(this, file);
@@ -63,6 +66,14 @@ public class ModuleRootNode extends PClosureRootNode {
             writeModuleDoc = insert(WriteGlobalNode.create(__DOC__));
         }
         return writeModuleDoc;
+    }
+
+    private WriteGlobalNode getWriteAnnotations() {
+        if (writeAnnotations == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            writeAnnotations = insert(WriteGlobalNode.create(SpecialAttributeNames.__ANNOTATIONS__));
+        }
+        return writeAnnotations;
     }
 
     public String getDoc() {
@@ -84,6 +95,9 @@ public class ModuleRootNode extends PClosureRootNode {
         addClosureCellsToLocals(frame);
         if (doc != null) {
             getWriteModuleDoc().doWrite(frame, doc);
+        }
+        if (hasAnnotations()) {
+            getWriteAnnotations().doWrite(frame, new PDict(PythonBuiltinClassType.PDict));
         }
     }
 

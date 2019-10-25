@@ -295,7 +295,8 @@ locals
 :
 	{
 	    if (!$interactive && $curInlineLocals != null) {
-                factory.createScope(_localctx, ScopeInfo.ScopeKind.Function, $curInlineLocals);
+                ScopeInfo functionScope = factory.createScope(_localctx, ScopeInfo.ScopeKind.Function, $curInlineLocals);
+                functionScope.setHasAnnotations(true);
             } else {
                 factory.createScope(_localctx, ScopeInfo.ScopeKind.Module);
             }
@@ -384,7 +385,8 @@ funcdef
             String name = $n.getText(); 
             ScopeInfo enclosingScope = factory.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
-            ScopeInfo functionScope = factory.createScope(name, ScopeInfo.ScopeKind.Function); 
+            ScopeInfo functionScope = factory.createScope(name, ScopeInfo.ScopeKind.Function);
+            functionScope.setHasAnnotations(true);
             $parameters.result.defineParamsInScope(functionScope); 
         }
 	s = suite
@@ -557,7 +559,7 @@ expr_stmt
                     if (rhs == null) {
                         rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
                     }
-                    push(new AnnAssignmentSSTNode($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
+                    push(factory.createAnnAssignment($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
                 }
 		|
 		augassign
@@ -956,6 +958,7 @@ lambdef returns [SSTNode result]
 	)? 
         {
             ScopeInfo functionScope = factory.createScope("lambda", ScopeInfo.ScopeKind.Function); 
+            functionScope.setHasAnnotations(true);
             if (args != null) {
                 args.defineParamsInScope(functionScope);
             }
@@ -975,6 +978,7 @@ lambdef_nocond returns [SSTNode result]
 	)?
         {
             ScopeInfo functionScope = factory.createScope("lambda", ScopeInfo.ScopeKind.Function); 
+            functionScope.setHasAnnotations(true);
             if (args != null) {
                 args.defineParamsInScope(functionScope);
             }
@@ -1329,7 +1333,9 @@ dictmaker returns [SSTNode result]
             { 
                 SSTNode value; 
                 SSTNode name;
-                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator);
+                generator.setHasAnnotations(true);
+                
             }
             (
 		n=test ':' v=test
@@ -1377,7 +1383,8 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 	
 	(   { 
                 SSTNode value; 
-                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                generator.setHasAnnotations(true);
             }
             (
 		test { value = $test.result; }
@@ -1462,7 +1469,8 @@ arglist returns [ArgListBuilder result]
 
 argument [ArgListBuilder args] returns [SSTNode result]
 :               {
-                    factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                    ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                    generator.setHasAnnotations(true);
                 }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]
                 {

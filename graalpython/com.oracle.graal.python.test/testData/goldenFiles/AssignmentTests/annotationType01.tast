@@ -5,10 +5,14 @@ ModuleRootNode Name: <module 'annotationType01'> SourceSection: [0,6]`j: int`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,6]`j: int`
-    ExpressionWithSideEffect SourceSection: [0,6]`j: int`
-      Expression:
-        EmptyNode SourceSection: None
-      SideEffect:
-        WriteNameNodeGen SourceSection: [0,6]`j: int`
-          Identifier: j
-          ObjectLiteralNode SourceSection: None
+    ExpressionWithSideEffects SourceSection: [0,6]`j: int`
+      WriteNameNodeGen SourceSection: [0,6]`j: int`
+        Identifier: j
+        ObjectLiteralNode SourceSection: None
+      SetItemNodeGen SourceSection: [0,0]Empty
+        ReadNameNodeGen SourceSection: None
+          Identifier: __annotations__
+        StringLiteralNode SourceSection: [0,0]Empty
+        ReadNameNodeGen SourceSection: [3,6]`int`
+          Identifier: int
+      EmptyNode SourceSection: None

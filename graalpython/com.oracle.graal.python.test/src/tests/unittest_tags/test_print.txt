@@ -1,1 +1,1 @@
-test_print_flush
+*TestPrint.test_print_flush
