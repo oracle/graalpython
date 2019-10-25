@@ -99,7 +99,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         protected Object lookup(PythonBuiltinClassType klass, Object key) {
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
+                contextRef = lookupContextReference(PythonLanguage.class);
             }
             return findAttr(contextRef.get().getCore(), klass, key);
         }
@@ -137,7 +137,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     protected PythonCore getCore() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = PythonLanguage.getContextRef();
+            contextRef = lookupContextReference(PythonLanguage.class);
         }
         return contextRef.get().getCore();
     }

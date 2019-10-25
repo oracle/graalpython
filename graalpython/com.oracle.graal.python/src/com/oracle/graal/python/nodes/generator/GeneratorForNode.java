@@ -36,6 +36,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -53,7 +54,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final int iteratorSlot;
 
@@ -97,6 +98,10 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
         }
 
         Object nextIterator = null;
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         PythonContext context = contextRef.get();
         int count = 0;
         try {

@@ -129,7 +129,7 @@ public class TestParserTranslator {
 
     public TestParserTranslator() {
         PythonTests.enterContext();
-        context = PythonLanguage.getContextRef().get();
+        context = PythonLanguage.getContext();
     }
 
     private static class JUnitRootNode extends PRootNode {

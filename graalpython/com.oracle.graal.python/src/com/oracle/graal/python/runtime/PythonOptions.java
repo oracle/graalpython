@@ -206,23 +206,23 @@ public final class PythonOptions {
     }
 
     public static int getAttributeAccessInlineCacheMaxDepth() {
-        return getOption(PythonLanguage.getContextRef().get(), AttributeAccessInlineCacheMaxDepth);
+        return getOption(PythonLanguage.getContext(), AttributeAccessInlineCacheMaxDepth);
     }
 
     public static int getCallSiteInlineCacheMaxDepth() {
-        return getOption(PythonLanguage.getContextRef().get(), CallSiteInlineCacheMaxDepth);
+        return getOption(PythonLanguage.getContext(), CallSiteInlineCacheMaxDepth);
     }
 
     public static int getVariableArgumentInlineCacheLimit() {
-        return getOption(PythonLanguage.getContextRef().get(), VariableArgumentInlineCacheLimit);
+        return getOption(PythonLanguage.getContext(), VariableArgumentInlineCacheLimit);
     }
 
     public static boolean useLazyString() {
-        return getOption(PythonLanguage.getContextRef().get(), LazyStrings);
+        return getOption(PythonLanguage.getContext(), LazyStrings);
     }
 
     public static int getMinLazyStringLength() {
-        return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
+        return getOption(PythonLanguage.getContext(), MinLazyStringLength);
     }
 
     public static boolean isWithThread(Env env) {
@@ -230,24 +230,24 @@ public final class PythonOptions {
     }
 
     public static boolean getEnableForcedSplits() {
-        return getOption(PythonLanguage.getContextRef().get(), EnableForcedSplits);
+        return getOption(PythonLanguage.getContext(), EnableForcedSplits);
     }
 
     public static int getTerminalHeight() {
-        return getOption(PythonLanguage.getContextRef().get(), TerminalHeight);
+        return getOption(PythonLanguage.getContext(), TerminalHeight);
     }
 
     public static int getTerminalWidth() {
-        return getOption(PythonLanguage.getContextRef().get(), TerminalWidth);
+        return getOption(PythonLanguage.getContext(), TerminalWidth);
     }
 
     @TruffleBoundary
     public static String[] getExecutableList() {
-        String option = getOption(PythonLanguage.getContextRef().get(), ExecutableList);
+        String option = getOption(PythonLanguage.getContext(), ExecutableList);
         if (option.isEmpty()) {
-            return getOption(PythonLanguage.getContextRef().get(), Executable).split(" ");
+            return getOption(PythonLanguage.getContext(), Executable).split(" ");
         } else {
-            return getOption(PythonLanguage.getContextRef().get(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
+            return getOption(PythonLanguage.getContext(), ExecutableList).split(EXECUTABLE_LIST_SEPARATOR);
         }
     }
 }

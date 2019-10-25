@@ -258,21 +258,24 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {
-            private final ContextReference<PythonContext> contextRef = getContextRef();
+            @CompilationFinal private ContextReference<PythonContext> contextRef;
             @CompilationFinal private volatile PythonContext cachedContext;
             @Child private ExpressionNode expression;
 
             @Override
             public Object execute(VirtualFrame frame) {
+                if (contextRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    contextRef = lookupContextReference(PythonLanguage.class);
+                }
                 PythonContext context = contextRef.get();
-                assert context == null || context.isInitialized();
+                assert context != null && context.isInitialized();
                 PythonContext cachedCtx = cachedContext;
                 if (cachedCtx == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     parseAndCache(context);
                     cachedCtx = context;
                 }
-                assert context != null;
                 Object result;
                 if (context == cachedCtx) {
                     result = expression.execute(frame);
@@ -334,9 +337,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentLanguage(PythonLanguage.class);
     }
 
-    @SuppressWarnings("deprecation") // TODO: GR-18870
-    public static ContextReference<PythonContext> getContextRef() {
-        return getCurrentLanguage(PythonLanguage.class).getContextReference();
+    public static PythonContext getContext() {
+        return getCurrentContext(PythonLanguage.class);
     }
 
     public static PythonCore getCore() {

@@ -217,7 +217,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     private PythonCore getCore() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = PythonLanguage.getContextRef();
+            contextRef = lookupContextReference(PythonLanguage.class);
         }
         return contextRef.get().getCore();
     }

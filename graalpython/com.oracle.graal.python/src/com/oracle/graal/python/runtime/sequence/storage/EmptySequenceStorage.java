@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class EmptySequenceStorage extends SequenceStorage {
@@ -81,7 +82,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     public void setNewLength(int length) {
         if (length != 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getContextRef().get().getCore().raise(ValueError, "list length out of range");
+            PRaiseNode.getUncached().raise(ValueError, "list length out of range");
         }
     }
 

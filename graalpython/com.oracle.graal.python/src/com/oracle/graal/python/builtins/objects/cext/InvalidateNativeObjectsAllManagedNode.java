@@ -65,7 +65,7 @@ abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
     }
 
     protected static Assumption nativeObjectsAllManagedAssumption() {
-        return PythonLanguage.getContextRef().get().getNativeObjectsAllManagedAssumption();
+        return PythonLanguage.getContext().getNativeObjectsAllManagedAssumption();
     }
 
     static final class InvalidateNativeObjectsAllManagedUncachedNode extends InvalidateNativeObjectsAllManagedNode {
