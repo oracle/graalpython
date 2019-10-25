@@ -2810,7 +2810,11 @@ public abstract class SequenceStorageNodes {
             return new TupleSequenceStorage();
         }
 
-        @Specialization
+        protected static boolean isKnownType(Object val) {
+            return val instanceof Byte || val instanceof Integer || val instanceof Long || val instanceof Double || val instanceof PList || val instanceof PTuple;
+        }
+
+        @Specialization(guards = "!isKnownType(val)")
         ObjectSequenceStorage doEmptyObject(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") Object val) {
             return new ObjectSequenceStorage(DEFAULT_CAPACITY);
         }
