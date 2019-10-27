@@ -602,21 +602,21 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean startsWith(String self, PTuple prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return startsWith(self, prefix, 0, self.length());
+        boolean startsWith(VirtualFrame frame, String self, PTuple prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return startsWith(frame, self, prefix, 0, self.length());
         }
 
         @Specialization
-        boolean startsWith(String self, String prefix, Object start, Object end) {
-            int sIndex = getStartNode().execute(start);
-            int eIndex = getEndNode().execute(end);
+        boolean startsWith(VirtualFrame frame, String self, String prefix, Object start, Object end) {
+            int sIndex = getStartNode().execute(frame, start);
+            int eIndex = getEndNode().execute(frame, end);
             return doIt(self, prefix, correctIndex(sIndex, self), correctIndex(eIndex, self));
         }
 
         @Specialization
-        boolean startsWith(String self, PTuple prefix, Object start, Object end) {
-            int sIndex = getStartNode().execute(start);
-            int eIndex = getEndNode().execute(end);
+        boolean startsWith(VirtualFrame frame, String self, PTuple prefix, Object start, Object end) {
+            int sIndex = getStartNode().execute(frame, start);
+            int eIndex = getEndNode().execute(frame, end);
             return doIt(self, prefix, correctIndex(sIndex, self), correctIndex(eIndex, self));
         }
 
@@ -687,14 +687,14 @@ public final class StringBuiltins extends PythonBuiltins {
             return endNode;
         }
 
-        private SliceInfo computeSlice(int length, long start, long end) {
+        private SliceInfo computeSlice(VirtualFrame frame, int length, long start, long end) {
             PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), 1);
             return tmpSlice.computeIndices(length);
         }
 
-        private SliceInfo computeSlice(int length, Object startO, Object endO) {
-            int start = startO == PNone.NO_VALUE || startO == PNone.NONE ? 0 : getStartNode().execute(startO);
-            int end = endO == PNone.NO_VALUE || endO == PNone.NONE ? length : getEndNode().execute(endO);
+        private SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
+            int start = startO == PNone.NO_VALUE || startO == PNone.NONE ? 0 : getStartNode().execute(frame, startO);
+            int end = endO == PNone.NO_VALUE || endO == PNone.NONE ? length : getEndNode().execute(frame, endO);
             PSlice tmpSlice = factory().createSlice(start, end, 1);
             return tmpSlice.computeIndices(length);
         }
@@ -705,9 +705,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
+        Object find(VirtualFrame frame, String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             int len = self.length();
-            SliceInfo info = computeSlice(len, start, len);
+            SliceInfo info = computeSlice(frame, len, start, len);
             if (info.length == 0) {
                 return -1;
             }
@@ -715,8 +715,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
-            SliceInfo info = computeSlice(self.length(), 0, end);
+        Object find(VirtualFrame frame, String self, String str, @SuppressWarnings("unused") PNone start, long end) {
+            SliceInfo info = computeSlice(frame, self.length(), 0, end);
             if (info.length == 0) {
                 return -1;
             }
@@ -724,8 +724,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object find(String self, String str, long start, long end) {
-            SliceInfo info = computeSlice(self.length(), start, end);
+        Object find(VirtualFrame frame, String self, String str, long start, long end) {
+            SliceInfo info = computeSlice(frame, self.length(), start, end);
             if (info.length == 0) {
                 return -1;
             }
@@ -733,8 +733,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
-            SliceInfo info = computeSlice(self.length(), start, end);
+        Object findGeneric(VirtualFrame frame, String self, String str, Object start, Object end) throws ArithmeticException {
+            SliceInfo info = computeSlice(frame, self.length(), start, end);
             if (info.length == 0) {
                 return -1;
             }
@@ -1862,9 +1862,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String doString(String self, PInt width,
+        String doString(VirtualFrame frame, String self, PInt width,
                         @Cached("create()") CastToIndexNode toIndexNode) {
-            return zfill(self, toIndexNode.execute(width));
+            return zfill(self, toIndexNode.execute(frame, width));
         }
 
         @Specialization
@@ -1984,12 +1984,12 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String createDefault(String self, Object width, @SuppressWarnings("unused") PNone fill) {
-            return make(self, getCastToIndexNode().execute(width), " ");
+        public String createDefault(VirtualFrame frame, String self, Object width, @SuppressWarnings("unused") PNone fill) {
+            return make(self, getCastToIndexNode().execute(frame, width), " ");
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
-        public String create(String self, long width, String fill) {
+        public String create(VirtualFrame frame, String self, long width, String fill) {
             return make(self, getCastToIndexNode().execute(width), fill);
         }
 
@@ -2000,8 +2000,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
-        public String create(String self, PInt width, String fill) {
-            return make(self, getCastToIndexNode().execute(width), fill);
+        public String create(VirtualFrame frame, String self, PInt width, String fill) {
+            return make(self, getCastToIndexNode().execute(frame, width), fill);
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
@@ -2121,15 +2121,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(String primary, long idx,
+        public String doString(VirtualFrame frame, String primary, long idx,
                         @Cached("create()") CastToIndexNode castToIndex) {
             return doString(primary, castToIndex.execute(idx));
         }
 
         @Specialization
-        public String doString(String primary, PInt idx,
+        public String doString(VirtualFrame frame, String primary, PInt idx,
                         @Cached("create()") CastToIndexNode castToIndex) {
-            return doString(primary, castToIndex.execute(idx));
+            return doString(primary, castToIndex.execute(frame, idx));
         }
 
         @SuppressWarnings("unused")

@@ -1427,7 +1427,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public int ord(PIBytesLike chr,
+        public int ord(VirtualFrame frame, PIBytesLike chr,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             int len = lenNode.execute(chr.getSequenceStorage());
@@ -1435,7 +1435,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, "ord() expected a character, but string of length %d found", len);
             }
 
-            Object element = getItemNode.execute(chr.getSequenceStorage(), 0);
+            Object element = getItemNode.execute(frame, chr.getSequenceStorage(), 0);
             if (element instanceof Long) {
                 long e = (long) element;
                 if (e >= Byte.MIN_VALUE && e <= Byte.MAX_VALUE) {

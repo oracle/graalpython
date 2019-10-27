@@ -637,8 +637,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
 
         @Specialization
-        Object doit(Object object, Object key) {
-            return getForeignItemNode.execute(object, key);
+        Object doit(VirtualFrame frame, Object object, Object key) {
+            return getForeignItemNode.execute(frame, object, key);
         }
     }
 
@@ -708,8 +708,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
 
         @Specialization
-        PNone doit(Object object, Object key) {
-            delForeignItemNode.execute(object, key);
+        PNone doit(VirtualFrame frame, Object object, Object key) {
+            delForeignItemNode.execute(frame, object, key);
             return PNone.NONE;
         }
     }

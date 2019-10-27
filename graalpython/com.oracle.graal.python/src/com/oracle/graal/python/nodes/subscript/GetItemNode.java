@@ -68,10 +68,10 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
     @Specialization(guards = "isBuiltinList.profileIsAnyBuiltinObject(primary)")
-    Object doBuiltinList(@SuppressWarnings("unused") VirtualFrame frame, PList primary, Object index,
+    Object doBuiltinList(VirtualFrame frame, PList primary, Object index,
                     @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
-        return getItemNode.execute(primary.getSequenceStorage(), index);
+        return getItemNode.execute(frame, primary.getSequenceStorage(), index);
     }
 
     protected static SequenceStorageNodes.GetItemNode createGetItemNode() {

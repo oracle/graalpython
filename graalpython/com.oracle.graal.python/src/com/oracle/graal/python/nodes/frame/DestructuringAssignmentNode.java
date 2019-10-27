@@ -130,7 +130,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
         } else {
             for (int i = 0; i < slots.length; i++) {
-                Object value = getItemNode.execute(sequenceStorage, i);
+                Object value = getItemNode.execute(frame, sequenceStorage, i);
                 slots[i].doWrite(frame, value);
             }
         }
@@ -163,7 +163,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
         } else {
             for (int i = 0; i < starredIndex; i++) {
-                Object value = getItemNode.execute(sequenceStorage, i);
+                Object value = getItemNode.execute(frame, sequenceStorage, i);
                 slots[i].doWrite(frame, value);
             }
             final int starredLength = len - (slots.length - 1);
@@ -171,11 +171,11 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
             CompilerAsserts.partialEvaluationConstant(starredLength);
             int pos = starredIndex;
             for (int i = 0; i < starredLength; i++) {
-                array[i] = getItemNode.execute(sequenceStorage, pos++);
+                array[i] = getItemNode.execute(frame, sequenceStorage, pos++);
             }
             slots[starredIndex].doWrite(frame, factory().createList(array));
             for (int i = starredIndex + 1; i < slots.length; i++) {
-                Object value = getItemNode.execute(sequenceStorage, pos++);
+                Object value = getItemNode.execute(frame, sequenceStorage, pos++);
                 slots[i].doWrite(frame, value);
             }
         }

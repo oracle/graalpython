@@ -116,7 +116,7 @@ abstract class AccessForeignItemNodes {
     protected abstract static class GetForeignItemNode extends AccessForeignItemBaseNode {
         @Child private PForeignToPTypeNode toPythonNode;
 
-        public abstract Object execute(Object object, Object idx);
+        public abstract Object execute(VirtualFrame frame, Object object, Object idx);
 
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
@@ -154,10 +154,10 @@ abstract class AccessForeignItemNodes {
         }
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
-        public Object doForeignObject(Object object, Object idx,
+        public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
                         @Cached CastToIndexNode castIndex,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return readForeignValue(object, castIndex.execute(idx), lib);
+            return readForeignValue(object, castIndex.execute(frame, idx), lib);
         }
 
         private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {
@@ -266,12 +266,12 @@ abstract class AccessForeignItemNodes {
         }
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
-        public Object doForeignObject(Object object, Object idx, Object value,
+        public Object doForeignObject(VirtualFrame frame, Object object, Object idx, Object value,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CastToIndexNode castIndex,
                         @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
-                int convertedIdx = castIndex.execute(idx);
+                int convertedIdx = castIndex.execute(frame, idx);
                 Object convertedValue = valueToForeignNode.executeConvert(value);
                 writeForeignValue(object, convertedIdx, convertedValue, lib);
                 return PNone.NONE;
@@ -302,7 +302,7 @@ abstract class AccessForeignItemNodes {
 
     protected abstract static class RemoveForeignItemNode extends AccessForeignItemBaseNode {
 
-        public abstract Object execute(Object object, Object idx);
+        public abstract Object execute(VirtualFrame frame, Object object, Object idx);
 
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
@@ -351,12 +351,12 @@ abstract class AccessForeignItemNodes {
         }
 
         @Specialization(guards = "!isSlice(idx)")
-        public Object doForeignObject(Object object, Object idx,
+        public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
                         @Cached CastToIndexNode castIndex,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
                 try {
-                    int convertedIdx = castIndex.execute(idx);
+                    int convertedIdx = castIndex.execute(frame, idx);
                     return removeForeignValue(object, convertedIdx, lib);
                 } catch (UnsupportedMessageException e) {
                     // fall through

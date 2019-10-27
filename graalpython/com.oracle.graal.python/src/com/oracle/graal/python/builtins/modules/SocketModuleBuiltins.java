@@ -54,8 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -92,6 +90,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
@@ -468,8 +468,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (addLen != 2 && addLen != 4) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
-            String address = castAddress.execute(frame, getItem.execute(addr, 0));
-            int port = castPort.execute(getItem.execute(addr, 1));
+            String address = castAddress.execute(frame, getItem.execute(frame, addr, 0));
+            int port = castPort.execute(getItem.execute(frame, addr, 1));
 
             if ((flags & PSocket.NI_NUMERICHOST) != PSocket.NI_NUMERICHOST) {
                 try {

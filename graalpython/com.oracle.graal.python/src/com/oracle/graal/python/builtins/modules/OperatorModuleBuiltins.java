@@ -204,9 +204,9 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object doSequence(PSequence value, Object index,
+        public Object doSequence(VirtualFrame frame, PSequence value, Object index,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(value.getSequenceStorage(), index);
+            return getItemNode.execute(frame, value.getSequenceStorage(), index);
         }
 
         @Specialization

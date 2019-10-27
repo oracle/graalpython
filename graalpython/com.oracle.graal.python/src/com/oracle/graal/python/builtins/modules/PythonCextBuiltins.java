@@ -70,9 +70,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -338,9 +338,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
         @Specialization
-        PTuple doGeneric(Object size,
+        PTuple doGeneric(VirtualFrame frame, Object size,
                         @Cached CastToIndexNode castToIntNode) {
-            return factory().createTuple(new Object[castToIntNode.execute(size)]);
+            return factory().createTuple(new Object[castToIntNode.execute(frame, size)]);
         }
     }
 
@@ -348,9 +348,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
         @Specialization
-        int doManaged(PTuple tuple, Object position, Object element,
+        int doManaged(VirtualFrame frame, PTuple tuple, Object position, Object element,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(tuple.getSequenceStorage(), position, element);
+            setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
             return 0;
         }
 
@@ -2321,7 +2321,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTuple_GetItem extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object doPTuple(PTuple tuple, long key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, long key,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
@@ -2329,7 +2329,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (key < 0 || key >= lenNode.execute(sequenceStorage)) {
                 throw raise(IndexError, NormalizeIndexNode.TUPLE_OUT_OF_BOUNDS);
             }
-            return getItemNode.execute(sequenceStorage, key);
+            return getItemNode.execute(frame, sequenceStorage, key);
         }
 
         @Fallback
@@ -2504,7 +2504,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int resize(PBytes self, long newSizeL,
+        int resize(VirtualFrame frame, PBytes self, long newSizeL,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") CastToIndexNode castToIndexNode,
@@ -2515,7 +2515,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
-                smaller[i] = castToByteNode.execute(getItemNode.execute(storage, i));
+                smaller[i] = castToByteNode.execute(getItemNode.execute(frame, storage, i));
             }
             self.setSequenceStorage(new ByteSequenceStorage(smaller));
             return 0;

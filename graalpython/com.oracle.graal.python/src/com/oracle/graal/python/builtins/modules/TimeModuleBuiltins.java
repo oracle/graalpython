@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -645,14 +646,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @ExplodeLoop
-        double mktime(PTuple tuple) {
+        double mktime(VirtualFrame frame, PTuple tuple) {
             Object[] items = tuple.getArray();
             if (items.length != 9) {
                 throw raise(PythonBuiltinClassType.TypeError, "function takes exactly 9 arguments (%d given)", items.length);
             }
             int[] integers = new int[9];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                integers[i] = castInt.execute(items[i]);
+                integers[i] = castInt.execute(frame, items[i]);
             }
             return op(integers);
         }

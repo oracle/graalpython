@@ -61,8 +61,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -709,24 +707,25 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class FrexpNode extends PythonUnaryBuiltinNode {
-        public static PTuple frexp(double value, PythonObjectFactory factory) {
+        public static double[] frexp(double value) {
+            // double can represent int without loss of data
             int exponent = 0;
             double mantissa = 0.0;
 
             if (value == 0.0 || value == -0.0) {
-                return factory.createTuple(new Object[]{mantissa, exponent});
+                return new double[]{mantissa, exponent};
             }
 
             if (Double.isNaN(value)) {
                 mantissa = Double.NaN;
                 exponent = -1;
-                return factory.createTuple(new Object[]{mantissa, exponent});
+                return new double[]{mantissa, exponent};
             }
 
             if (Double.isInfinite(value)) {
                 mantissa = value;
                 exponent = -1;
-                return factory.createTuple(new Object[]{mantissa, exponent});
+                return new double[]{mantissa, exponent};
             }
 
             boolean neg = false;
@@ -747,12 +746,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     mantissa *= 2;
                 }
             }
-            return factory.createTuple(new Object[]{neg ? -mantissa : mantissa, exponent});
+            return new double[]{neg ? -mantissa : mantissa, exponent};
         }
 
         @Specialization
         public PTuple frexpD(double value) {
-            return frexp(value, factory());
+            Object[] content = new Object[2];
+            double[] primContent = frexp(value);
+            content[0] = primContent[0];
+            content[1] = (int) primContent[1];
+            return factory().createTuple(content);
         }
 
         @Specialization
@@ -761,11 +764,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public PTuple frexpPI(PInt value,
+        public PTuple frexpPI(VirtualFrame frame, PInt value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
-            PTuple result = frexpD(value.getValue().doubleValue());
-            if (Double.isInfinite((double) getItemNode.execute(result.getSequenceStorage(), 0))) {
+            PTuple result = frexpD(value.doubleValue());
+            if (Double.isInfinite((double) getItemNode.execute(frame, result.getSequenceStorage(), 0))) {
                 throw raise(OverflowError, "int too large to convert to float");
             }
             return result;
@@ -1695,9 +1697,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "log2", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class Log2Node extends MathDoubleUnaryBuiltinNode {
-
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
-
         private static final double LOG2 = Math.log(2);
         private static final BigInteger TWO = BigInteger.valueOf(2);
 
@@ -1716,25 +1715,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(value <= 0);
-            PTuple frexpR = FrexpNode.frexp(value, factory());
-            double m = (double) getItem(frexpR.getSequenceStorage(), 0);
-            int e = (int) getItem(frexpR.getSequenceStorage(), 1);
+            double[] frexpR = FrexpNode.frexp(value);
+            double m = frexpR[0];
+            int e = (int) frexpR[1];
             if (value >= 1.0) {
                 return Math.log(2.0 * m) / LOG2 + (e - 1);
             } else {
                 return Math.log(m) / LOG2 + e;
             }
-        }
-
-        private Object getItem(SequenceStorage store, int idx) {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
-            }
-            return getItemNode.execute(store, idx);
         }
     }
 

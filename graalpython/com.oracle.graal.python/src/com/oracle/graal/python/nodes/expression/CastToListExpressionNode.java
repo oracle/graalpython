@@ -114,13 +114,13 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"})
         @ExplodeLoop
-        protected PList starredTupleCachedLength(PTuple v,
+        protected PList starredTupleCachedLength(VirtualFrame frame, PTuple v,
                         @Cached PythonObjectFactory factory,
                         @Cached("getLength(v)") int cachedLength) {
             SequenceStorage s = v.getSequenceStorage();
             Object[] array = new Object[cachedLength];
             for (int i = 0; i < cachedLength; i++) {
-                array[i] = getGetItemNode().execute(s, i);
+                array[i] = getGetItemNode().execute(frame, s, i);
             }
             return factory.createList(array);
         }

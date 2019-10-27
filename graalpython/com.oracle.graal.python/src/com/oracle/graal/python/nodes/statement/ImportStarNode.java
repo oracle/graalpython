@@ -101,7 +101,7 @@ public class ImportStarNode extends AbstractImportNode {
         }
 
         if (attrAll != PNone.NO_VALUE) {
-            int n = ensureCastToIndexNode().execute(ensureCallLenNode().executeObject(frame, attrAll));
+            int n = ensureCastToIndexNode().execute(frame, ensureCallLenNode().executeObject(frame, attrAll));
             exportedModuleAttrs = new String[n];
             for (int i = 0; i < n; i++) {
                 exportedModuleAttrs[i] = ensureCastToStringNode().execute(frame, ensureGetItemNode().executeWith(frame, attrAll, i));

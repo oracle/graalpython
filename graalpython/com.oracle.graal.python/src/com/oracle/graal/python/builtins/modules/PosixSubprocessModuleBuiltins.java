@@ -265,8 +265,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
                             castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
-                            castP2cread.execute(p2cread), castP2cwrite.execute(p2cwrite), castC2pread.execute(c2pread), castC2pwrite.execute(c2pwrite),
-                            castErrread.execute(errread), castErrwrite.execute(errwrite), castErrpipeRead.execute(errpipe_read), castErrpipeWrite.execute(errpipe_write),
+                            castP2cread.execute(frame, p2cread), castP2cwrite.execute(frame, p2cwrite), castC2pread.execute(frame, c2pread), castC2pwrite.execute(frame, c2pwrite),
+                            castErrread.execute(frame, errread), castErrwrite.execute(frame, errwrite), castErrpipeRead.execute(frame, errpipe_read), castErrpipeWrite.execute(frame, errpipe_write),
                             castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
         }
     }

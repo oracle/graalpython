@@ -503,11 +503,11 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(n)")
-        PBytes read(PMMap self, Object n,
+        PBytes read(VirtualFrame frame, PMMap self, Object n,
                         @Cached("create()") ReadFromChannelNode readChannelNode,
                         @Cached("create()") CastToIndexNode castToIndexNode,
                         @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
-            int nread = castToIndexNode.execute(n);
+            int nread = castToIndexNode.execute(frame, n);
             if (negativeProfile.profile(nread < 0)) {
                 return readUnlimited(self, PNone.NO_VALUE, readChannelNode);
             }
@@ -602,7 +602,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     size = self.getLength();
                 }
                 long where;
-                int ihow = castToInt(how);
+                int ihow = castToInt(frame, how);
                 switch (ihow) {
                     case 0: /* relative to start */
                         where = dist;
@@ -629,12 +629,12 @@ public class MMapBuiltins extends PythonBuiltins {
             }
         }
 
-        private int castToInt(Object val) {
+        private int castToInt(VirtualFrame frame, Object val) {
             if (castToLongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castToLongNode = insert(CastToIndexNode.create(PythonBuiltinClassType.TypeError, (obj) -> 0));
             }
-            return castToLongNode.execute(val);
+            return castToLongNode.execute(frame, val);
         }
     }
 
@@ -645,10 +645,10 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
 
-        public abstract long execute(PMMap bytes, Object sub, Object starting, Object ending);
+        public abstract long execute(VirtualFrame frame, PMMap bytes, Object sub, Object starting, Object ending);
 
         @Specialization
-        long find(PMMap primary, PIBytesLike sub, Object starting, Object ending,
+        long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -676,7 +676,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     position(channel, i);
                     for (int j = 0; j < len2; j++) {
                         int hb = readByteNode.execute(channel);
-                        int nb = getGetRightItemNode().executeInt(needle, j);
+                        int nb = getGetRightItemNode().executeInt(frame, needle, j);
                         if (nb != hb || i + j >= end) {
                             continue outer;
                         }

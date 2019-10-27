@@ -101,7 +101,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytesLikeWithMaxLengthI(PLZMADecompressor self, PIBytesLike bytesLike, int maxLength,
+        PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, int maxLength,
                         @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
@@ -110,7 +110,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
             int len = lenNode.execute((PSequence) bytesLike);
             byte[] compressed = new byte[Math.min(len, maxLength)];
             for (int i = 0; i < compressed.length; i++) {
-                castToByteNode.execute(getItemNode.execute(storage, i));
+                castToByteNode.execute(getItemNode.execute(frame, storage, i));
             }
 
             try {
@@ -121,13 +121,13 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytesLikeWithMaxLength(PLZMADecompressor self, PIBytesLike bytesLike, Object maxLength,
+        PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, Object maxLength,
                         @Cached CastToIndexNode castToIntNode,
                         @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
-            return doBytesLikeWithMaxLengthI(self, bytesLike, castToIntNode.execute(maxLength), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
+            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, castToIntNode.execute(frame, maxLength), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
         }
 
         @Fallback

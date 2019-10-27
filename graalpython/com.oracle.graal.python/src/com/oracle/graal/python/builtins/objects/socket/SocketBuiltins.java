@@ -391,7 +391,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
                 for (int i = 0; i < length; i++) {
                     // we don't allow generalization
-                    setItem.execute(storage, i, targetBuffer[i]);
+                    setItem.execute(frame, storage, i, targetBuffer[i]);
                 }
                 return length;
             }

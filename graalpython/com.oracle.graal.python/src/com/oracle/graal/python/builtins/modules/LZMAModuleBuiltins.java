@@ -219,7 +219,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            int id = asInt(idObj);
+            int id = asInt(frame, idObj);
             FilterOptions options = createFilterById(id);
             if (options == null) {
                 throw raise(ValueError, "Invalid filter ID: %d", id);
@@ -282,12 +282,12 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             return keyErrorProfile;
         }
 
-        private int asInt(Object obj) {
+        private int asInt(VirtualFrame frame, Object obj) {
             if (castToLongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castToLongNode = insert(CastToIndexNode.create());
             }
-            return castToLongNode.execute(obj);
+            return castToLongNode.execute(frame, obj);
         }
 
         private int len(VirtualFrame frame, Object obj) {
@@ -295,7 +295,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
             }
-            return asInt(lenNode.execute(frame, obj));
+            return asInt(frame, lenNode.execute(frame, obj));
         }
 
         protected static boolean isNoneOrNoValue(Object obj) {
@@ -323,11 +323,11 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             int preset = LZMA2Options.PRESET_DEFAULT;
 
             if (!isNoneOrNoValue(formatObj)) {
-                format = castFormatToIntNode.execute(formatObj);
+                format = castFormatToIntNode.execute(frame, formatObj);
             }
 
             if (!isNoneOrNoValue(checkObj)) {
-                check = castCheckToIntNode.execute(checkObj);
+                check = castCheckToIntNode.execute(frame, checkObj);
             }
 
             if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
@@ -338,7 +338,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             }
 
             if (!isNoneOrNoValue(presetObj)) {
-                preset = castToIntNode.execute(presetObj);
+                preset = castToIntNode.execute(frame, presetObj);
             }
 
             try {
@@ -433,7 +433,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 
         @Specialization
-        PLZMADecompressor doCreate(LazyPythonClass cls, Object formatObj, Object memlimitObj, Object filters,
+        PLZMADecompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object memlimitObj, Object filters,
                         @Cached CastToIndexNode castFormatToIntNode,
                         @Cached CastToIndexNode castCheckToIntNode) {
 
@@ -441,14 +441,14 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             int memlimit = Integer.MAX_VALUE;
 
             if (!isNoneOrNoValue(formatObj)) {
-                format = castFormatToIntNode.execute(formatObj);
+                format = castFormatToIntNode.execute(frame, formatObj);
             }
 
             if (!isNoneOrNoValue(memlimitObj)) {
                 if (format == FORMAT_RAW) {
                     throw raise(ValueError, "Cannot specify memory limit with FORMAT_RAW");
                 }
-                memlimit = castCheckToIntNode.execute(memlimitObj);
+                memlimit = castCheckToIntNode.execute(frame, memlimitObj);
             }
 
             if (format == FORMAT_RAW && isNoneOrNoValue(filters)) {
