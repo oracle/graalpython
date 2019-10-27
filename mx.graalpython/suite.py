@@ -99,7 +99,13 @@ suite = {
                 "version": "1.8",
             },
         },
-
+        "BZIP2": {
+            "urls": [
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/bzip2-1.0.8.tar.gz",
+            ],
+            "packedResource": True,
+            "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
+        }
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -239,11 +245,13 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+                "BZIP2",
             ],
             "buildEnv": {
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "ARCH": "<arch>",
                 "OS": "<os>",
+                "BZIP2": "<path:BZIP2>",
             },
         },
 
