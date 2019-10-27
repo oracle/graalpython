@@ -110,7 +110,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
             int len = lenNode.execute((PSequence) bytesLike);
             byte[] compressed = new byte[Math.min(len, maxLength)];
             for (int i = 0; i < compressed.length; i++) {
-                castToByteNode.execute(getItemNode.execute(frame, storage, i));
+                castToByteNode.execute(frame, getItemNode.execute(frame, storage, i));
             }
 
             try {

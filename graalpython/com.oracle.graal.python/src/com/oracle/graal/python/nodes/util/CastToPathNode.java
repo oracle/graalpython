@@ -70,17 +70,17 @@ public abstract class CastToPathNode extends Node {
     public abstract String execute(VirtualFrame frame, Object x);
 
     @Specialization
-    String doBytes(PBytes x,
+    String doBytes(VirtualFrame frame, PBytes x,
                     @Cached PRaiseNode raise,
                     @Cached ToByteArrayNode toBytes) {
-        return newString(raise, toBytes.execute(x.getSequenceStorage()));
+        return newString(raise, toBytes.execute(frame, x.getSequenceStorage()));
     }
 
     @Specialization
-    String doBytearray(PByteArray x,
+    String doBytearray(VirtualFrame frame, PByteArray x,
                     @Cached PRaiseNode raise,
                     @Cached ToByteArrayNode toBytes) {
-        return newString(raise, toBytes.execute(x.getSequenceStorage()));
+        return newString(raise, toBytes.execute(frame, x.getSequenceStorage()));
     }
 
     @Specialization
@@ -90,9 +90,9 @@ public abstract class CastToPathNode extends Node {
                     @Cached ToByteArrayNode toBytes) {
         Object toBytesResult = callToBytes.executeObject(frame, x);
         if (toBytesResult instanceof PBytes) {
-            return newString(raise, toBytes.execute(((PBytes) toBytesResult).getSequenceStorage()));
+            return newString(raise, toBytes.execute(frame, ((PBytes) toBytesResult).getSequenceStorage()));
         } else if (toBytesResult instanceof PByteArray) {
-            return newString(raise, toBytes.execute(((PByteArray) toBytesResult).getSequenceStorage()));
+            return newString(raise, toBytes.execute(frame, ((PByteArray) toBytesResult).getSequenceStorage()));
         } else {
             throw raise.raise(PythonBuiltinClassType.TypeError, ERROR_MESSAGE, toBytesResult);
         }

@@ -1190,15 +1190,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object write(int fd, PBytes data,
+        Object write(VirtualFrame frame, int fd, PBytes data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, getByteArray(data), channelClassProfile);
+            return write(fd, getByteArray(frame, data), channelClassProfile);
         }
 
         @Specialization
-        Object write(int fd, PByteArray data,
+        Object write(VirtualFrame frame, int fd, PByteArray data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, getByteArray(data), channelClassProfile);
+            return write(fd, getByteArray(frame, data), channelClassProfile);
         }
 
         @Specialization
@@ -1208,12 +1208,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return recursive.executeWith(frame, castToIntNode.execute(frame, fd), data);
         }
 
-        private byte[] getByteArray(PIBytesLike pByteArray) {
+        private byte[] getByteArray(VirtualFrame frame, PIBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(ToByteArrayNode.create());
             }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+            return toByteArrayNode.execute(frame, pByteArray.getSequenceStorage());
         }
 
         public static WriteNode create() {

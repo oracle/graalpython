@@ -547,7 +547,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, frame, idx, storage));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization(guards = "!isPSlice(idx)")
@@ -1234,7 +1234,8 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected void doByte(ByteSequenceStorage storage, int idx, Object value,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
-            storage.setByteItemNormalized(idx, castToByteNode.execute(value));
+            // TODO: clean this up, we really might need a frame
+            storage.setByteItemNormalized(idx, castToByteNode.execute(null, value));
         }
 
         @Specialization
@@ -1301,7 +1302,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             try {
-                lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(value));
+                lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
                 throw raiseNode.raise(SystemError, e);
             }
@@ -2004,7 +2005,7 @@ public abstract class SequenceStorageNodes {
             this.exact = exact;
         }
 
-        public abstract byte[] execute(SequenceStorage s);
+        public abstract byte[] execute(VirtualFrame frame, SequenceStorage s);
 
         @Specialization
         byte[] doByteSequenceStorage(ByteSequenceStorage s) {
@@ -2029,24 +2030,24 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = {"len(lenNode, s) == cachedLen", "cachedLen <= 32"})
         @ExplodeLoop
-        byte[] doGenericLenCached(SequenceStorage s,
+        byte[] doGenericLenCached(VirtualFrame frame, SequenceStorage s,
                         @Cached CastToByteNode castToByteNode,
                         @Cached @SuppressWarnings("unused") LenNode lenNode,
                         @Cached("len(lenNode, s)") int cachedLen) {
             byte[] barr = new byte[cachedLen];
             for (int i = 0; i < cachedLen; i++) {
-                barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
+                barr[i] = castToByteNode.execute(frame, getGetItemNode().execute(s, i));
             }
             return barr;
         }
 
         @Specialization(replaces = "doGenericLenCached")
-        byte[] doGeneric(SequenceStorage s,
+        byte[] doGeneric(VirtualFrame frame, SequenceStorage s,
                         @Cached CastToByteNode castToByteNode,
                         @Cached LenNode lenNode) {
             byte[] barr = new byte[lenNode.execute(s)];
             for (int i = 0; i < barr.length; i++) {
-                barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
+                barr[i] = castToByteNode.execute(frame, getGetItemNode().execute(s, i));
             }
             return barr;
         }

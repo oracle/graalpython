@@ -150,20 +150,20 @@ public abstract class BytesNodes {
         public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization
-        byte[] doBytes(PBytes bytes,
+        byte[] doBytes(VirtualFrame frame, PBytes bytes,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(bytes, exceptionProfile);
+            return doBytesLike(frame, bytes, exceptionProfile);
         }
 
         @Specialization
-        byte[] doByteArray(PByteArray byteArray,
+        byte[] doByteArray(VirtualFrame frame, PByteArray byteArray,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(byteArray, exceptionProfile);
+            return doBytesLike(frame, byteArray, exceptionProfile);
         }
 
-        private byte[] doBytesLike(PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
+        private byte[] doBytesLike(VirtualFrame frame, PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
             try {
-                return getToByteArrayNode().execute(bytes.getSequenceStorage());
+                return getToByteArrayNode().execute(frame, bytes.getSequenceStorage());
             } catch (PException e) {
                 e.expect(TypeError, exceptionProfile);
                 return doError(bytes);
@@ -315,7 +315,7 @@ public abstract class BytesNodes {
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
                 Object item = getGetItemNode().execute(frame, storage, i);
-                bytes[i] = getCastToByteNode().execute(item);
+                bytes[i] = getCastToByteNode().execute(frame, item);
             }
             return bytes;
         }

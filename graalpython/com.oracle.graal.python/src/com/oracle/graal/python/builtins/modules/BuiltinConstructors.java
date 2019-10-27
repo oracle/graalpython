@@ -278,7 +278,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int i = 0;
             while (true) {
                 try {
-                    byte item = castToByteNode.execute(getNextNode.execute(frame, it));
+                    byte item = castToByteNode.execute(frame, getNextNode.execute(frame, it));
                     if (i >= arr.length) {
                         arr = resize(arr, arr.length * 2);
                     }
@@ -2717,8 +2717,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple freevars, PTuple cellvars,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
-            byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
-            byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
+            byte[] codeBytes = toByteArrayNode.execute(frame, codestring.getSequenceStorage());
+            byte[] lnotabBytes = toByteArrayNode.execute(frame, lnotab.getSequenceStorage());
 
             return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,

@@ -136,8 +136,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(PIBytesLike str) {
-            byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
+        Object run(VirtualFrame frame, PIBytesLike str) {
+            byte[] bytes = doBytes(getToByteArrayNode().execute(frame, str.getSequenceStorage()));
             if (bytes != null) {
                 return factory().createByteArray(bytes);
             }

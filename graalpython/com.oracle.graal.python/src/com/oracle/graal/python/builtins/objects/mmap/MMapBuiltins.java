@@ -339,7 +339,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = position(channel);
 
                 position(channel, idx);
-                writeByteNode.execute(channel, castToByteNode.execute(val));
+                writeByteNode.execute(channel, castToByteNode.execute(frame, val));
 
                 // restore position
                 position(channel, oldPos);
@@ -371,7 +371,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = position(channel);
 
                 position(channel, info.start);
-                writeNode.execute(channel, getStorageNode.execute(val), info.length);
+                writeNode.execute(frame, channel, getStorageNode.execute(val), info.length);
 
                 // restore position
                 position(channel, oldPos);
@@ -562,11 +562,11 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int writeBytesLike(PMMap self, PIBytesLike bytesLike,
+        int writeBytesLike(VirtualFrame frame, PMMap self, PIBytesLike bytesLike,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode) {
             SeekableByteChannel channel = self.getChannel();
-            return writeNode.execute(channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
+            return writeNode.execute(frame, channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -574,7 +574,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             byte[] data = toBytesNode.execute(frame, memoryView);
-            return writeNode.execute(self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
+            return writeNode.execute(frame, self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
         }
     }
 

@@ -348,7 +348,7 @@ public class BytesBuiltins extends PythonBuiltins {
         PBytes join(VirtualFrame frame, PBytes bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(frame, bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback

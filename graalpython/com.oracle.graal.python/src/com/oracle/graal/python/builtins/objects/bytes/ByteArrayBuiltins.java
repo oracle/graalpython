@@ -391,10 +391,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ByteArrayCopyNode extends PythonBuiltinNode {
         @Specialization
-        public PByteArray copy(PByteArray byteArray,
+        public PByteArray copy(VirtualFrame frame, PByteArray byteArray,
                         @Cached("create()") GetLazyClassNode getClass,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return factory().createByteArray(getClass.execute(byteArray), toByteArray.execute(byteArray.getSequenceStorage()));
+            return factory().createByteArray(getClass.execute(byteArray), toByteArray.execute(frame, byteArray.getSequenceStorage()));
         }
     }
 
@@ -561,7 +561,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         PByteArray join(VirtualFrame frame, PByteArray bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createByteArray(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createByteArray(bytesJoinNode.execute(frame, toByteArrayNode.execute(frame, bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback

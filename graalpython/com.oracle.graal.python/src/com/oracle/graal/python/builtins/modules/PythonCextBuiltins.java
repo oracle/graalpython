@@ -1359,7 +1359,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "5")
-        byte[] doForeign(Object obj, long n,
+        byte[] doForeign(VirtualFrame frame, Object obj, long n,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("obj") InteropLibrary interopLib,
                         @Cached CastToByteNode castToByteNode) throws InteropException {
@@ -1369,14 +1369,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } else {
                 size = n;
             }
-            return readWithSize(interopLib, castToByteNode, obj, size);
+            return readWithSize(frame, interopLib, castToByteNode, obj, size);
         }
 
-        private static byte[] readWithSize(InteropLibrary interopLib, CastToByteNode castToByteNode, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
+        private static byte[] readWithSize(VirtualFrame frame, InteropLibrary interopLib, CastToByteNode castToByteNode, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
             byte[] bytes = new byte[(int) size];
             for (long i = 0; i < size; i++) {
                 Object elem = interopLib.readArrayElement(o, i);
-                bytes[(int) i] = castToByteNode.execute(elem);
+                bytes[(int) i] = castToByteNode.execute(frame, elem);
             }
             return bytes;
         }
@@ -2515,7 +2515,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
-                smaller[i] = castToByteNode.execute(getItemNode.execute(frame, storage, i));
+                smaller[i] = castToByteNode.execute(frame, getItemNode.execute(frame, storage, i));
             }
             self.setSequenceStorage(new ByteSequenceStorage(smaller));
             return 0;
