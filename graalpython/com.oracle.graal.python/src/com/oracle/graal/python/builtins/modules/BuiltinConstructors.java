@@ -2207,7 +2207,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop
-                // n.b.: passing the null frame here is fine, since the storage and index are known types
+                // n.b.: passing the null frame here is fine, since the storage and index are known
+                // types
                 String slotName = (String) getSlotItemNode().execute(null, slotList, i);
                 if ((add_dict && __DICT__.equals(slotName)) || (add_weak && __WEAKREF__.equals(slotName))) {
                     continue;

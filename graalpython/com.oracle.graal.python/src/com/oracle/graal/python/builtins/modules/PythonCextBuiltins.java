@@ -1372,7 +1372,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return readWithSize(frame, interopLib, castToByteNode, obj, size);
         }
 
-        private static byte[] readWithSize(VirtualFrame frame, InteropLibrary interopLib, CastToByteNode castToByteNode, Object o, long size) throws UnsupportedMessageException, InvalidArrayIndexException {
+        private static byte[] readWithSize(VirtualFrame frame, InteropLibrary interopLib, CastToByteNode castToByteNode, Object o, long size)
+                        throws UnsupportedMessageException, InvalidArrayIndexException {
             byte[] bytes = new byte[(int) size];
             for (long i = 0; i < size; i++) {
                 Object elem = interopLib.readArrayElement(o, i);
