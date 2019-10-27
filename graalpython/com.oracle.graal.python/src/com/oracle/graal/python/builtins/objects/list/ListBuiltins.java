@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -190,6 +191,23 @@ public class ListBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         PNone init(PList list, @SuppressWarnings("unused") PNone none) {
             clearStorage(list);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "range.getStep() > 0")
+        PNone listRange(PList list, PRange range) {
+            clearStorage(list);
+            int start = range.getStart();
+            int stop = range.getStop();
+            int step = range.getStep();
+            int len = range.len();
+            int[] ary = new int[len];
+            int idx = 0;
+            for (int i = start; i < stop; i += step) {
+                ary[idx] = i;
+                idx++;
+            }
+            list.setSequenceStorage(new IntSequenceStorage(ary));
             return PNone.NONE;
         }
 
