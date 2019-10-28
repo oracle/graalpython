@@ -40,6 +40,7 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -367,7 +368,8 @@ public final class Python3Core implements PythonCore {
                         new ContextvarsModuleBuiltins(),
                         new LZMAModuleBuiltins(),
                         new LZMACompressorBuiltins(),
-                        new LZMADecompressorBuiltins()));
+                        new LZMADecompressorBuiltins(),
+                        new MultiprocessingModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
