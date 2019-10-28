@@ -160,8 +160,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
                 return false;
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
-            Object value = getDictItemNode.execute(frame, dictStorage, getTupleItemNode.execute(tupleStorage, 0));
-            return value != null && castToBoolean.executeBoolean(frame, callEqNode.executeWith(frame, value, getTupleItemNode.execute(tupleStorage, 1)));
+            Object value = getDictItemNode.execute(frame, dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0));
+            return value != null && castToBoolean.executeBoolean(frame, callEqNode.executeWith(frame, value, getTupleItemNode.execute(frame, tupleStorage, 1)));
         }
 
         protected static BinaryComparisonNode createCmpNode() {

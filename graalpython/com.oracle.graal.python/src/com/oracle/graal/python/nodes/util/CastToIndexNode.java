@@ -57,13 +57,15 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNodeFactory.CachedNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
+ *
+ * There are convenience execute methods for primitive types that do not need a frame.
  */
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class CastToIndexNode extends PNodeWithContext {
@@ -72,13 +74,25 @@ public abstract class CastToIndexNode extends PNodeWithContext {
 
     private static final String ERROR_MESSAGE = "cannot fit 'int' into an index-sized integer";
 
-    public abstract int execute(Object x);
+    public abstract int execute(VirtualFrame frame, Object x);
 
-    public abstract int execute(int x);
+    public abstract int execute(VirtualFrame frame, int x);
 
-    public abstract int execute(long x);
+    public final int execute(int x) {
+        return execute(null, x);
+    }
 
-    public abstract int execute(boolean x);
+    public abstract int execute(VirtualFrame frame, long x);
+
+    public final int execute(long x) {
+        return execute(null, x);
+    }
+
+    public abstract int execute(VirtualFrame frame, boolean x);
+
+    public final int execute(boolean x) {
+        return execute(null, x);
+    }
 
     abstract static class CachedNode extends CastToIndexNode {
 
@@ -148,15 +162,13 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         }
 
         @Fallback
-        int doGeneric(Object x) {
+        int doGeneric(VirtualFrame frame, Object x) {
             if (recursive) {
                 if (callIndexNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
                 }
-                // note: it's fine to pass 'null' because this node has an uncached version an so
-                // the caller must already take care of the global state
-                Object result = callIndexNode.executeObject(null, x);
+                Object result = callIndexNode.executeObject(frame, x);
                 if (result == PNone.NO_VALUE) {
                     return handleError("'%p' object cannot be interpreted as an integer", x);
                 }
@@ -164,7 +176,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     recursiveNode = insert(CachedNodeGen.create(errorType, false, typeErrorHandler));
                 }
-                return recursiveNode.execute(result);
+                return recursiveNode.execute(frame, result);
             }
             return handleError("__index__ returned non-int (type %p)", x);
         }
@@ -180,14 +192,13 @@ public abstract class CastToIndexNode extends PNodeWithContext {
     private static final class UncachedNode extends CastToIndexNode {
 
         @Override
-        @TruffleBoundary
-        public int execute(Object x) {
+        public int execute(VirtualFrame frame, Object x) {
             if (x instanceof Integer) {
-                return execute((int) x);
+                return execute(frame, (int) x);
             } else if (x instanceof Long) {
-                return execute((long) x);
+                return execute(frame, (long) x);
             } else if (x instanceof Boolean) {
-                return execute((boolean) x);
+                return execute(frame, (boolean) x);
             } else {
                 // NOTE: since this is an uncached node, any of the callers must already have taken
                 // care of the exception state
@@ -195,18 +206,17 @@ public abstract class CastToIndexNode extends PNodeWithContext {
                 if (result == PNone.NO_VALUE) {
                     throw PRaiseNode.getUncached().raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
                 }
-                return execute(result);
+                return execute(frame, result);
             }
         }
 
         @Override
-        public int execute(int x) {
+        public int execute(VirtualFrame frame, int x) {
             return x;
         }
 
         @Override
-        @TruffleBoundary
-        public int execute(long x) {
+        public int execute(VirtualFrame frame, long x) {
             try {
                 return PInt.intValueExact(x);
             } catch (ArithmeticException e) {
@@ -215,7 +225,7 @@ public abstract class CastToIndexNode extends PNodeWithContext {
         }
 
         @Override
-        public int execute(boolean x) {
+        public int execute(VirtualFrame frame, boolean x) {
             return PInt.intValue(x);
         }
 

@@ -76,7 +76,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object next(PArrayIterator self,
+        Object next(VirtualFrame frame, PArrayIterator self,
                         @Cached("createClassProfile()") ValueProfile itemTypeProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
@@ -84,7 +84,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (self.index < lenNode.execute(sequenceStorage)) {
                 // TODO avoid boxing by getting the array's typecode and using primitive return
                 // types
-                return itemTypeProfile.profile(getItemNode.execute(sequenceStorage, self.index++));
+                return itemTypeProfile.profile(getItemNode.execute(frame, sequenceStorage, self.index++));
             }
             throw raise(StopIteration);
         }
@@ -168,14 +168,14 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isPSequence()")
-        public Object next(PSequenceIterator self,
+        public Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached("createClassProfile()") ValueProfile sequenceProfile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             PSequence sequence = sequenceProfile.profile(self.getPSequence());
             SequenceStorage s = sequence.getSequenceStorage();
             if (!self.isExhausted() && self.index < lenNode.execute(s)) {
-                return getItemNode.execute(s, self.index++);
+                return getItemNode.execute(frame, s, self.index++);
             }
             self.setExhausted();
             throw raise(StopIteration);

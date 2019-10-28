@@ -1400,7 +1400,7 @@ public abstract class CExtNodes {
 
         @Fallback
         long runGeneric(Object value) {
-            return CastToIndexNode.getUncached().execute(value);
+            return CastToIndexNode.getUncached().execute(null, value);
         }
 
         public static AsLong create() {

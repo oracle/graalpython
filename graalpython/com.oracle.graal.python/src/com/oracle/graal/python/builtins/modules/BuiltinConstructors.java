@@ -233,8 +233,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isInt(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            int cap = getCastToIndexNode().execute(capObj);
+        public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            int cap = getCastToIndexNode().execute(frame, capObj);
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
@@ -279,7 +279,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int i = 0;
             while (true) {
                 try {
-                    byte item = castToByteNode.execute(getNextNode.execute(frame, it));
+                    byte item = castToByteNode.execute(frame, getNextNode.execute(frame, it));
                     if (i >= arr.length) {
                         arr = resize(arr, arr.length * 2);
                     }
@@ -1208,9 +1208,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(base)")
-        Object createIntError(LazyPythonClass cls, String number, Object base,
+        Object createIntError(VirtualFrame frame, LazyPythonClass cls, String number, Object base,
                         @Cached CastToIndexNode castToIndexNode) {
-            int intBase = castToIndexNode.execute(base);
+            int intBase = castToIndexNode.execute(frame, base);
             checkBase(intBase);
             return stringToInt(cls, number, intBase);
         }
@@ -2158,7 +2158,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
                 for (int i = 0; i < slotlen; i++) {
                     String slotName;
-                    Object element = getSlotItemNode().execute(slotList, i);
+                    Object element = getSlotItemNode().execute(frame, slotList, i);
                     // Check valid slot name
                     if (element instanceof String) {
                         slotName = (String) element;
@@ -2208,7 +2208,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop
-                String slotName = (String) getSlotItemNode().execute(slotList, i);
+                // n.b.: passing the null frame here is fine, since the storage and index are known
+                // types
+                String slotName = (String) getSlotItemNode().execute(null, slotList, i);
                 if ((add_dict && __DICT__.equals(slotName)) || (add_weak && __WEAKREF__.equals(slotName))) {
                     continue;
                 }
@@ -2332,9 +2334,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 for (Object cls : getMro(pythonClass)) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
-                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
-                        long itemsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
+                        long dictoffset = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2717,8 +2719,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple freevars, PTuple cellvars,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
-            byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
-            byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
+            byte[] codeBytes = toByteArrayNode.execute(frame, codestring.getSequenceStorage());
+            byte[] lnotabBytes = toByteArrayNode.execute(frame, lnotab.getSequenceStorage());
 
             return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
@@ -2875,22 +2877,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(third)")
-        Object slice(@SuppressWarnings("unused") LazyPythonClass cls, Object first, Object second, @SuppressWarnings("unused") PNone third,
+        Object slice(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object first, Object second, @SuppressWarnings("unused") PNone third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(first, second, MISSING_INDEX);
+            return sliceNode.execute(frame, first, second, MISSING_INDEX);
         }
 
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object slice(LazyPythonClass cls, Object first, PNone second, PNone third,
+        Object slice(VirtualFrame frame, LazyPythonClass cls, Object first, PNone second, PNone third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(MISSING_INDEX, first, MISSING_INDEX);
+            return sliceNode.execute(frame, MISSING_INDEX, first, MISSING_INDEX);
         }
 
         @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
-        Object slice(@SuppressWarnings("unused") LazyPythonClass cls, Object start, Object stop, Object step,
+        Object slice(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object start, Object stop, Object step,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(start, stop, step);
+            return sliceNode.execute(frame, start, stop, step);
         }
     }
 

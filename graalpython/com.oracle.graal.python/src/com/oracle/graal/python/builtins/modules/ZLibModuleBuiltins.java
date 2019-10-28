@@ -552,18 +552,18 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone level) {
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, long level,
+        public PBytes doit(VirtualFrame frame, PIBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
                 throw raise(ZLibError, "Bad compression level");
             }
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(compress(array, (int) level));
         }
 
@@ -599,11 +599,11 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private byte[] decompress(byte[] input, @SuppressWarnings("unused") int wbits, int bufsize) {
+        private byte[] decompress(byte[] data, @SuppressWarnings("unused") long wbits, int bufsize) {
             // decompress
             // We don't use wbits currently. There is no easy way how to map to java Inflater.
             Inflater decompresser = new Inflater();
-            decompresser.setInput(input);
+            decompresser.setInput(data);
             byte[] resultArray = new byte[bufsize];
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try {
@@ -622,24 +622,23 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(decompress(array, MAX_WBITS, DEF_BUF_SIZE));
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, byte wbits, int bufsize) {
-            return decompress(data, (long) wbits, bufsize);
+        public PBytes decompress(VirtualFrame frame, PIBytesLike data, byte wbits, int bufsize) {
+            return decompress(frame, data, (long) wbits, bufsize);
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, long wbits, int bufsize) {
+        public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, int bufsize) {
             // checking bufsize
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, "bufsize must be non-negative");
             }
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
         }
 

@@ -269,7 +269,7 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
         SequenceStorage storage = getStorageNode.execute(clause);
         int length = getLenNode.execute(storage);
         for (int i = 0; i < length; i++) {
-            Object clauseType = getItemNode.execute(storage, i);
+            Object clauseType = getItemNode.execute(frame, storage, i);
             if (recursiveNode.executeMatch(frame, e, clauseType)) {
                 return true;
             }

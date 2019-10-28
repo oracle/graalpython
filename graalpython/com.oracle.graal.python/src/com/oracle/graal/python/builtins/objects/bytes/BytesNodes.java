@@ -150,20 +150,20 @@ public abstract class BytesNodes {
         public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization
-        byte[] doBytes(PBytes bytes,
+        byte[] doBytes(VirtualFrame frame, PBytes bytes,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(bytes, exceptionProfile);
+            return doBytesLike(frame, bytes, exceptionProfile);
         }
 
         @Specialization
-        byte[] doByteArray(PByteArray byteArray,
+        byte[] doByteArray(VirtualFrame frame, PByteArray byteArray,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(byteArray, exceptionProfile);
+            return doBytesLike(frame, byteArray, exceptionProfile);
         }
 
-        private byte[] doBytesLike(PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
+        private byte[] doBytesLike(VirtualFrame frame, PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
             try {
-                return getToByteArrayNode().execute(bytes.getSequenceStorage());
+                return getToByteArrayNode().execute(frame, bytes.getSequenceStorage());
             } catch (PException e) {
                 e.expect(TypeError, exceptionProfile);
                 return doError(bytes);
@@ -213,10 +213,10 @@ public abstract class BytesNodes {
         @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
         @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
 
-        public abstract int execute(PIBytesLike bytes, Object sub, Object starting, Object ending);
+        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, Object sub, Object starting, Object ending);
 
         @Specialization
-        int find(PIBytesLike primary, PIBytesLike sub, Object starting, Object ending) {
+        int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, Object starting, Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -239,8 +239,8 @@ public abstract class BytesNodes {
                         continue outer;
                     }
 
-                    int hb = getGetLeftItemNode().executeInt(haystack, i + j);
-                    int nb = getGetRightItemNode().executeInt(needle, j);
+                    int hb = getGetLeftItemNode().executeInt(frame, haystack, i + j);
+                    int nb = getGetRightItemNode().executeInt(frame, needle, j);
 
                     if (nb != hb) {
                         continue outer;
@@ -252,7 +252,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(PIBytesLike primary, int sub, Object starting, @SuppressWarnings("unused") Object ending) {
+        int find(VirtualFrame frame, PIBytesLike primary, int sub, Object starting, @SuppressWarnings("unused") Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -262,7 +262,7 @@ public abstract class BytesNodes {
             }
 
             for (int i = start; i < len1; i++) {
-                int hb = getGetLeftItemNode().executeInt(haystack, i);
+                int hb = getGetLeftItemNode().executeInt(frame, haystack, i);
                 if (hb == sub) {
                     return i;
                 }
@@ -310,12 +310,12 @@ public abstract class BytesNodes {
         @Node.Child private CastToByteNode castToByteNode;
         @Node.Child private SequenceStorageNodes.LenNode lenNode;
 
-        public byte[] execute(SequenceStorage storage) {
+        public byte[] execute(VirtualFrame frame, SequenceStorage storage) {
             int len = getLenNode().execute(storage);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
-                Object item = getGetItemNode().execute(storage, i);
-                bytes[i] = getCastToByteNode().execute(item);
+                Object item = getGetItemNode().execute(frame, storage, i);
+                bytes[i] = getCastToByteNode().execute(frame, item);
             }
             return bytes;
         }
@@ -353,13 +353,13 @@ public abstract class BytesNodes {
 
         @Child private FromSequenceStorageNode fromSequenceStorageNode;
 
-        public byte[] execute(PSequence sequence) {
+        public byte[] execute(VirtualFrame frame, PSequence sequence) {
             if (fromSequenceStorageNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 fromSequenceStorageNode = insert(FromSequenceStorageNode.create());
             }
 
-            return fromSequenceStorageNode.execute(sequence.getSequenceStorage());
+            return fromSequenceStorageNode.execute(frame, sequence.getSequenceStorage());
         }
 
         public static FromSequenceNode create() {
@@ -410,14 +410,14 @@ public abstract class BytesNodes {
         private final ValueProfile leftProfile = ValueProfile.createClassProfile();
         private final ValueProfile rightProfile = ValueProfile.createClassProfile();
 
-        public int execute(PIBytesLike left, PIBytesLike right) {
+        public int execute(VirtualFrame frame, PIBytesLike left, PIBytesLike right) {
             PIBytesLike leftProfiled = leftProfile.profile(left);
             PIBytesLike rightProfiled = rightProfile.profile(right);
             int leftLen = getleftLenNode().execute(leftProfiled.getSequenceStorage());
             int rightLen = getRightLenNode().execute(rightProfiled.getSequenceStorage());
             for (int i = 0; i < Math.min(leftLen, rightLen); i++) {
-                int a = getGetLeftItemNode().executeInt(leftProfiled.getSequenceStorage(), i);
-                int b = getGetRightItemNode().executeInt(rightProfiled.getSequenceStorage(), i);
+                int a = getGetLeftItemNode().executeInt(frame, leftProfiled.getSequenceStorage(), i);
+                int b = getGetRightItemNode().executeInt(frame, rightProfiled.getSequenceStorage(), i);
                 if (a != b) {
                     // CPython uses 'memcmp'; so do unsigned comparison
                     return a & 0xFF - b & 0xFF;

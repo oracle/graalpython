@@ -98,9 +98,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
-        PArray mul(PArray self, Object times,
+        PArray mul(VirtualFrame frame, PArray self, Object times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            return factory().createArray(repeatNode.execute(self.getSequenceStorage(), times));
+            return factory().createArray(repeatNode.execute(frame, self.getSequenceStorage(), times));
         }
     }
 
@@ -217,9 +217,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object getitem(PArray self, Object idx,
+        Object getitem(VirtualFrame frame, PArray self, Object idx,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(self.getSequenceStorage(), idx);
+            return getItemNode.execute(frame, self.getSequenceStorage(), idx);
         }
 
         @Fallback
@@ -237,9 +237,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        PNone getitem(PArray self, Object key, Object value,
+        PNone getitem(VirtualFrame frame, PArray self, Object key, Object value,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(self.getSequenceStorage(), key, value);
+            setItemNode.execute(frame, self.getSequenceStorage(), key, value);
             return PNone.NONE;
         }
 

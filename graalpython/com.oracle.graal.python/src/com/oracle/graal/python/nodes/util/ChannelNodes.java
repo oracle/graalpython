@@ -63,6 +63,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -294,10 +295,10 @@ public abstract class ChannelNodes {
         public static final int MAX_WRITE = Integer.MAX_VALUE / 2;
         private final BranchProfile gotException = BranchProfile.create();
 
-        public abstract int execute(Channel channel, SequenceStorage s, int len);
+        public abstract int execute(VirtualFrame frame, Channel channel, SequenceStorage s, int len);
 
         @Specialization
-        int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len,
+        int writeSeekable(VirtualFrame frame, SeekableByteChannel channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
                         @Cached PRaiseNode raise) {
@@ -312,14 +313,14 @@ public abstract class ChannelNodes {
                 availableSize = MAX_WRITE;
             }
             int sz = (int) Math.min(availableSize, len);
-            return writeWritable(channel, s, sz, limitProfile, raise);
+            return writeWritable(frame, channel, s, sz, limitProfile, raise);
         }
 
         @Specialization
-        int writeWritable(WritableByteChannel channel, SequenceStorage s, int len,
+        int writeWritable(VirtualFrame frame, WritableByteChannel channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached PRaiseNode raise) {
-            ByteBuffer src = allocateBuffer(getBytes(s));
+            ByteBuffer src = allocateBuffer(getBytes(frame, s));
             if (src.remaining() > len) {
                 limitProfile.enter();
                 src.limit(len);
@@ -328,14 +329,14 @@ public abstract class ChannelNodes {
         }
 
         @Specialization
-        int writeGeneric(Channel channel, SequenceStorage s, int len,
+        int writeGeneric(VirtualFrame frame, Channel channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
                         @Cached PRaiseNode raise) {
             if (channel instanceof SeekableByteChannel) {
-                return writeSeekable((SeekableByteChannel) channel, s, len, limitProfile, maxSizeProfile, raise);
+                return writeSeekable(frame, (SeekableByteChannel) channel, s, len, limitProfile, maxSizeProfile, raise);
             } else if (channel instanceof ReadableByteChannel) {
-                return writeWritable((WritableByteChannel) channel, s, len, limitProfile, raise);
+                return writeWritable(frame, (WritableByteChannel) channel, s, len, limitProfile, raise);
             } else {
                 throw raise.raise(OSError, "file not opened for reading");
             }
@@ -346,12 +347,12 @@ public abstract class ChannelNodes {
             return ByteBuffer.wrap(data);
         }
 
-        private byte[] getBytes(SequenceStorage s) {
+        private byte[] getBytes(VirtualFrame frame, SequenceStorage s) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(true));
             }
-            return toByteArrayNode.execute(s);
+            return toByteArrayNode.execute(frame, s);
         }
 
         public static WriteToChannelNode create() {

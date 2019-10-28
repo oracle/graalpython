@@ -1757,7 +1757,7 @@ public class IntBuiltins extends PythonBuiltins {
         private static final String MESSAGE_LENGTH_ARGUMENT = "length argument must be non-negative";
         private static final String MESSAGE_CONVERT_NEGATIVE = "can't convert negative int to unsigned";
 
-        public abstract PBytes execute(Object self, Object byteCount, Object StringOrder, Object signed);
+        public abstract PBytes execute(VirtualFrame frame, Object self, Object byteCount, Object StringOrder, Object signed);
 
         // used for obtaining int, which will be the size of craeted array
         @Child private CastToIndexNode castToIndexNode;
@@ -1838,24 +1838,24 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromLongLong(long self, long byteCount, String byteorder, PNone signed) {
-            return fromLongLong(self, byteCount, byteorder, false);
+        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, PNone signed) {
+            return fromLongLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromLongLong(long self, long byteCount, String byteorder, boolean signed) {
+        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed) {
             int count = getCastToIndexNode().execute(byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
         @Specialization
-        public PBytes fromLongPInt(long self, PInt byteCount, String byteorder, PNone signed) {
-            return fromLongPInt(self, byteCount, byteorder, false);
+        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, PNone signed) {
+            return fromLongPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromLongPInt(long self, PInt byteCount, String byteorder, boolean signed) {
-            int count = getCastToIndexNode().execute(byteCount);
+        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
@@ -1945,24 +1945,24 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromPIntLong(PInt self, long byteCount, String byteorder, PNone signed) {
-            return fromPIntLong(self, byteCount, byteorder, false);
+        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, PNone signed) {
+            return fromPIntLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromPIntLong(PInt self, long byteCount, String byteorder, boolean signed) {
+        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed) {
             int count = getCastToIndexNode().execute(byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
         @Specialization
-        public PBytes fromPIntPInt(PInt self, PInt byteCount, String byteorder, PNone signed) {
-            return fromPIntPInt(self, byteCount, byteorder, false);
+        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, PNone signed) {
+            return fromPIntPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromPIntPInt(PInt self, PInt byteCount, String byteorder, boolean signed) {
-            int count = getCastToIndexNode().execute(byteCount);
+        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed) {
+            int count = getCastToIndexNode().execute(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
@@ -1971,8 +1971,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        PBytes general(Object self, Object byteCount, Object byteorder, Object oSigned) {
-            int count = getCastToIndexNode().execute(byteCount);
+        PBytes general(VirtualFrame frame, Object self, Object byteCount, Object byteorder, Object oSigned) {
+            int count = getCastToIndexNode().execute(frame, byteCount);
             if (!PGuards.isString(byteorder)) {
                 throw raise(PythonErrorType.TypeError, "to_bytes() argument 2 must be str, not %p", byteorder);
             }
@@ -1981,7 +1981,7 @@ public class IntBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = insert(create());
             }
-            return recursiveNode.execute(self, count, byteorder, signed);
+            return recursiveNode.execute(frame, self, count, byteorder, signed);
         }
 
         protected static ToBytesNode create() {
@@ -2121,15 +2121,15 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PArray
         @Specialization
-        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, boolean signed,
+        public Object fromPArray(VirtualFrame frame, LazyPythonClass cl, PArray array, String byteorder, boolean signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return compute(cl, fromSequenceStorageNode.execute(array.getSequenceStorage()), byteorder, signed);
+            return compute(cl, fromSequenceStorageNode.execute(frame, array.getSequenceStorage()), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPArray(LazyPythonClass cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
+        public Object fromPArray(VirtualFrame frame, LazyPythonClass cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return fromPArray(cl, array, byteorder, false, fromSequenceStorageNode);
+            return fromPArray(frame, cl, array, byteorder, false, fromSequenceStorageNode);
         }
 
         // from PMemoryView
@@ -2145,24 +2145,24 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PList, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, boolean signed) {
-            return compute(cl, getFromSequenceNode().execute(list), byteorder, signed);
+        public Object fromPList(VirtualFrame frame, LazyPythonClass cl, PList list, String byteorder, boolean signed) {
+            return compute(cl, getFromSequenceNode().execute(frame, list), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(list))")
-        public Object fromPList(LazyPythonClass cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPList(cl, list, byteorder, false);
+        public Object fromPList(VirtualFrame frame, LazyPythonClass cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPList(frame, cl, list, byteorder, false);
         }
 
         // from PTuple, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, boolean signed) {
-            return compute(cl, getFromSequenceNode().execute(tuple), byteorder, signed);
+        public Object fromPTuple(VirtualFrame frame, LazyPythonClass cl, PTuple tuple, String byteorder, boolean signed) {
+            return compute(cl, getFromSequenceNode().execute(frame, tuple), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(tuple))")
-        public Object fromPTuple(LazyPythonClass cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPTuple(cl, tuple, byteorder, false);
+        public Object fromPTuple(VirtualFrame frame, LazyPythonClass cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPTuple(frame, cl, tuple, byteorder, false);
         }
 
         // rest objects

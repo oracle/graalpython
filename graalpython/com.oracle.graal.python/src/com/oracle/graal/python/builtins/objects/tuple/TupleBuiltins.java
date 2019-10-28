@@ -137,7 +137,7 @@ public class TupleBuiltins extends PythonBuiltins {
             SequenceStorage tupleStore = tuple.getSequenceStorage();
             int len = tupleStore.length();
             for (int i = start; i < end && i < len; i++) {
-                Object object = getGetItemNode().execute(tupleStore, i);
+                Object object = getGetItemNode().execute(frame, tupleStore, i);
                 if (eqNode.executeBool(frame, object, value)) {
                     return i;
                 }
@@ -273,7 +273,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
-                Object object = getItemNode.execute(tupleStore, i);
+                Object object = getItemNode.execute(frame, tupleStore, i);
                 if (eqNode.executeBool(frame, object, value)) {
                     count++;
                 }
@@ -328,12 +328,12 @@ public class TupleBuiltins extends PythonBuiltins {
             StringBuilder buf = new StringBuilder();
             append(buf, "(");
             for (int i = 0; i < len - 1; i++) {
-                append(buf, toString(frame, getItemNode.execute(tupleStore, i), reprNode));
+                append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
                 append(buf, ", ");
             }
 
             if (len > 0) {
-                append(buf, toString(frame, getItemNode.execute(tupleStore, len - 1), reprNode));
+                append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
             }
 
             if (len == 1) {
@@ -367,18 +367,18 @@ public class TupleBuiltins extends PythonBuiltins {
 
         private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers or slices, not %p";
 
-        public abstract Object execute(PTuple tuple, Object index);
+        public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
         @Specialization(guards = "!isPSlice(key)")
-        Object doPTuple(PTuple tuple, Object key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, Object key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), key);
+            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @Specialization
-        Object doPTuple(PTuple tuple, PSlice key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, PSlice key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), key);
+            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @Specialization
@@ -519,9 +519,9 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
-        PTuple mul(PTuple left, Object right,
+        PTuple mul(VirtualFrame frame, PTuple left, Object right,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            return factory().createTuple(repeatNode.execute(left.getSequenceStorage(), right));
+            return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), right));
         }
     }
 
@@ -593,7 +593,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long hash = 0x345678;
             long tmp;
             for (int i = 0; i < len; i++) {
-                Object item = getItemNode.execute(tupleStore, i);
+                Object item = getItemNode.execute(frame, tupleStore, i);
                 Object hashValue = hashNode.execute(frame, item);
                 tmp = castToLongNode.execute(hashValue);
                 if (tmp == -1) {

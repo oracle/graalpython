@@ -145,17 +145,17 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                byteArray[i++] = castToByteNode.execute(nextValue);
+                byteArray[i++] = castToByteNode.execute(frame, nextValue);
             }
 
             return factory().createArray(cls, byteArray);
         }
 
         @Specialization(guards = "isCharArray(typeCode)")
-        PArray arrayCharInitializer(LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+        PArray arrayCharInitializer(VirtualFrame frame, LazyPythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] byteArray = toByteArrayNode.execute(getSequenceStorageNode.execute(initializer));
+            byte[] byteArray = toByteArrayNode.execute(frame, getSequenceStorageNode.execute(initializer));
             return factory().createArray(cls, byteArray);
         }
 
