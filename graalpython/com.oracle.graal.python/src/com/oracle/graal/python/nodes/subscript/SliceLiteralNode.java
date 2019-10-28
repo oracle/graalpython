@@ -171,7 +171,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization
         int doGeneric(VirtualFrame frame, Object i,
-                        @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
+                        @Cached("createForSlice()") CastToIndexNode castToIndexNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             try {
                 return castToIndexNode.execute(frame, i);
@@ -179,12 +179,6 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                 e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
                 return overflowValue;
             }
-        }
-
-        protected CastToIndexNode createCastToIndex() {
-            return CastToIndexNode.create(PythonBuiltinClassType.OverflowError, val -> {
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-            });
         }
 
         private PRaiseNode getRaiseNode() {
