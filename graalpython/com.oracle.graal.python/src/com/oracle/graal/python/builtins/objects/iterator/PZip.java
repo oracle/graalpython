@@ -26,8 +26,12 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonDataModelLibrary.class)
 public final class PZip extends PythonBuiltinObject {
 
     private final Object[] iterators;
@@ -44,5 +48,10 @@ public final class PZip extends PythonBuiltinObject {
     @Override
     public String toString() {
         return "<zip object at " + hashCode() + ">";
+    }
+
+    @ExportMessage
+    public boolean isIterable() {
+        return true;
     }
 }

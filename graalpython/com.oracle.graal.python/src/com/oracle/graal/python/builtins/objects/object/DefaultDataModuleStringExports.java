@@ -38,14 +38,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.iterator;
+package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.Library;
-import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-@GenerateLibrary
-@SuppressWarnings("unused")
-public abstract class PythonIterableLibrary extends Library {
-    static final LibraryFactory<PythonIterableLibrary> FACTORY = LibraryFactory.resolve(PythonIterableLibrary.class);
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = String.class)
+final class DefaultDataModuleStringExports {
+    @ExportMessage
+    static boolean isIterable(@SuppressWarnings("unused") String str) {
+        return true;
+    }
 }

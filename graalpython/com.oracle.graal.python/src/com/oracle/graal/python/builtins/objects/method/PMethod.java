@@ -26,9 +26,13 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonDataModelLibrary.class)
 public final class PMethod extends PythonBuiltinObject {
 
     private final Object function;
@@ -52,5 +56,10 @@ public final class PMethod extends PythonBuiltinObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "<method '" + function + "' of " + self + " object at " + function.hashCode() + ">";
+    }
+
+    @ExportMessage
+    public boolean isCallable() {
+        return true;
     }
 }

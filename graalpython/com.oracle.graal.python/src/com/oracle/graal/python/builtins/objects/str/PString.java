@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -35,6 +36,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonDataModelLibrary.class)
 public final class PString extends PImmutableSequence {
 
     private final CharSequence value;
@@ -114,5 +116,10 @@ public final class PString extends PImmutableSequence {
     @TruffleBoundary(allowInlining = true)
     public static char charAt(String s, int i) {
         return s.charAt(i);
+    }
+
+    @ExportMessage
+    public boolean isIterable() {
+        return true;
     }
 }

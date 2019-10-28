@@ -41,8 +41,14 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.HashSet;
@@ -58,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -71,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -106,6 +115,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonDataModelLibrary.class)
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
@@ -551,6 +561,44 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 keys.add(strKey);
             }
         }
+    }
+
+    @ExportMessage
+    public final boolean isIterable(@Cached GetLazyClassNode getClassNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getIterNode,
+                    @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
+                    @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
+                    @Cached IsCallableNode isCallableNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileIter,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileNext) {
+        LazyPythonClass klass = getClassNode.execute(this);
+        Object iterMethod = getIterNode.execute(klass, __ITER__);
+        if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
+            return true;
+        } else {
+            Object getItemMethod = getGetItemNode.execute(klass, __GETITEM__);
+            if (profileGetItem.profile(getItemMethod != PNone.NO_VALUE)) {
+                return true;
+            } else if (isCallableNode.execute(this)) {
+                return profileNext.profile(hasNextNode.execute(klass, __NEXT__) != PNone.NO_VALUE);
+            }
+        }
+        return false;
+    }
+
+    @ExportMessage
+    public final boolean isCallable(@Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
+        assert !PGuards.isCallable(this) || PGuards.isClass(this);
+        Object call = callAttrGetterNode.execute(this, __CALL__);
+        return PGuards.isCallable(call);
+    }
+
+    @ExportMessage
+    public final boolean isContextManager(@Cached HasInheritedAttributeNode.Dynamic hasEnterNode,
+                @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
+                @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+        return profile.profile(hasEnterNode.execute(this, __ENTER__) && hasExitNode.execute(this, __EXIT__));
     }
 
     @GenerateUncached
