@@ -49,11 +49,6 @@ def allocate_lock():
     return LockType()
 
 
-def _set_sentinel():
-    """Dummy implementation of _thread._set_sentinel()."""
-    return LockType()
-
-
 def load():
     if not _sysconfig.get_config_vars().get('WITH_THREAD'):
         import sys

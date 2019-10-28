@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
@@ -37,7 +36,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -62,13 +61,9 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         // TODO: see also the TODO in BinaryComparisonNode about factoring out comparison nodes that
         // we need to convert to booleans
         @Child private BinaryComparisonNode equalNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
-        @Child private LookupAndCallVarargsNode callNode = LookupAndCallVarargsNode.create(__CALL__);
+        @Child private CallNode callNode = CallNode.create();
 
         private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
-
-        private Object callSentinalIteratorTarget(PSentinelIterator iterator) {
-            return callNode.execute(null, iterator.getCallTarget(), new Object[]{iterator.getCallTarget()});
-        }
 
         @Specialization
         protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator) {
@@ -77,7 +72,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
             }
             Object nextValue;
             try {
-                nextValue = callSentinalIteratorTarget(iterator);
+                nextValue = callNode.execute(frame, iterator.getCallTarget());
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 iterator.markSentinelReached();

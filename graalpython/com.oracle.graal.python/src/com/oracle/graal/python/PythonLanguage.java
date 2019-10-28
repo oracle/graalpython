@@ -152,6 +152,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void finalizeContext(PythonContext context) {
+        context.shutdownThreads();
         context.runShutdownHooks();
         super.finalizeContext(context);
     }
@@ -551,13 +552,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        context.createInteropLock();
-        context.getSingleThreadedAssumption().invalidate();
+        context.initializeMultiThreading();
     }
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
-        super.initializeThread(context, thread);
+        context.attachThread(thread);
     }
 
+    @Override
+    protected void disposeThread(PythonContext context, Thread thread) {
+        context.disposeThread(thread);
+    }
 }

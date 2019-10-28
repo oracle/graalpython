@@ -43,8 +43,10 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -65,6 +67,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -158,9 +161,9 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class StartNewThreadNode extends PythonBuiltinNode {
         @Specialization
         long start(VirtualFrame frame, LazyPythonClass cls, Object callable, Object args, Object kwargs,
-                        @Cached("create()") CallNode callNode,
-                        @Cached("create()") ExecutePositionalStarargsNode getArgsNode,
-                        @Cached("create()") ExpandKeywordStarargsNode getKwArgsNode) {
+                        @Cached CallNode callNode,
+                        @Cached ExecutePositionalStarargsNode getArgsNode,
+                        @Cached ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
 
@@ -169,12 +172,30 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             Thread thread = env.createThread(() -> {
                 Object[] arguments = getArgsNode.executeWith(frame, args);
                 PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);
-                callNode.execute(frame, callable, arguments, keywords);
+
+                // n.b.: It is important to pass 'null' frame here because each thread has it's own
+                // stack and if we would pass the current frame, this would be connected as a caller
+                // which is incorrect. However, the thread-local 'topframeref' is initialized with
+                // EMPTY which will be picked up.
+                callNode.execute(null, callable, arguments, keywords);
             }, env.getContext(), context.getThreadGroup());
 
             PThread pThread = factory().createPythonThread(cls, thread);
             pThread.start();
             return pThread.getId();
+        }
+    }
+
+    @Builtin(name = "_set_sentinel", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class SetSentinelNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object setSentinel(
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PLock sentinelLock = factory().createLock();
+            context.setSentinelLockWeakref(new WeakReference<>(sentinelLock));
+            return sentinelLock;
         }
     }
 }
