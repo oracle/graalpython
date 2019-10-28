@@ -167,7 +167,6 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         Object doRelease(AbstractPythonLock self) {
             self.release();
             return PNone.NONE;
