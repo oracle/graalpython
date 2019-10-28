@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
@@ -93,8 +94,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
-
-    public static final String SHUTDOWN = "_shutdown";
 
     private static final class PythonThreadState {
 
@@ -645,9 +644,9 @@ public final class PythonContext {
         HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
         Object value = GetItemInteropNode.getUncached().executeWithGlobalState(dictStorage, "threading");
         if (value != null) {
-            Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SHUTDOWN);
+            Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.SHUTDOWN);
             if (attrShutdown == PNone.NO_VALUE) {
-                PythonLanguage.getLogger().fine("threading module has no member " + SHUTDOWN);
+                PythonLanguage.getLogger().fine("threading module has no member " + SpecialMethodNames.SHUTDOWN);
                 return;
             }
             try {
