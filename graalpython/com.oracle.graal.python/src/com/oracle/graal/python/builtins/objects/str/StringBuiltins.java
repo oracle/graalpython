@@ -471,7 +471,9 @@ public final class StringBuiltins extends PythonBuiltins {
         private CastToIndexNode getStartNode() {
             if (startNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                startNode = insert(CastToIndexNode.createForSlice());
+                startNode = insert(CastToIndexNode.create(TypeError, val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
+                }));
             }
             return startNode;
         }
@@ -479,7 +481,9 @@ public final class StringBuiltins extends PythonBuiltins {
         private CastToIndexNode getEndNode() {
             if (endNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                endNode = insert(CastToIndexNode.createForSlice());
+                endNode = insert(CastToIndexNode.create(TypeError, val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
+                }));
             }
             return endNode;
         }
