@@ -70,8 +70,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     private static Object resumeGenerator(PGenerator self) {
         try {
-            return self.getCallTarget().call(self.getArguments());
+            return self.getCurrentCallTarget().call(self.getArguments());
         } finally {
+            self.setNextCallTarget(PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getLastYieldIndex());
             PArguments.setSpecialArgument(self.getArguments(), null);
         }
     }
@@ -111,9 +112,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
             return target1 == target2;
         }
 
-        @Specialization(guards = "sameCallTarget(self.getCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         public Object nextCached(VirtualFrame frame, PGenerator self,
-                        @Cached("createDirectCall(self.getCallTarget())") CallTargetInvokeNode call) {
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
@@ -124,6 +125,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
+            } finally {
+                self.setNextCallTarget(PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getLastYieldIndex());
             }
         }
 
@@ -135,11 +138,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
             }
             try {
                 Object[] arguments = self.getArguments();
-                return call.execute(frame, self.getCallTarget(), arguments);
+                return call.execute(frame, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
+            } finally {
+                self.setNextCallTarget(PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getLastYieldIndex());
             }
         }
     }
@@ -229,7 +234,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
             PCode code = self.getCode();
             if (hasCodeProfile.profile(code == null)) {
-                code = factory().createCode(self.getCallTarget());
+                code = factory().createCode(self.getCurrentCallTarget());
                 self.setCode(code);
             }
             return code;

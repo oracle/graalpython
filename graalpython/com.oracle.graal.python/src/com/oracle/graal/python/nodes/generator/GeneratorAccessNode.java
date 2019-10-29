@@ -25,9 +25,13 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -36,6 +40,14 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 final class GeneratorAccessNode extends Node {
 
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
+
+    private static final byte UNSET = -1;
+    private static final byte VOLATILE = -2;
+    private static final byte TRUE = 1;
+    private static final byte FALSE = 2;
+
+    @CompilationFinal(dimensions = 1) private byte[] active = new byte[0];
+    @CompilationFinal(dimensions = 1) private int[] indices = new int[0];
 
     private GeneratorAccessNode() {
         // private constructor
@@ -51,7 +63,28 @@ final class GeneratorAccessNode extends Node {
     }
 
     public boolean isActive(VirtualFrame frame, int flagSlot) {
-        return getControlData(frame).getActive(flagSlot);
+        if (active.length <= flagSlot) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            byte[] newActive = new byte[flagSlot + 1];
+            Arrays.fill(newActive, UNSET);
+            System.arraycopy(active, 0, newActive, 0, active.length);
+            active = newActive;
+        }
+        if (active[flagSlot] == UNSET) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            active[flagSlot] = getControlData(frame).getActive(flagSlot) ? TRUE : FALSE;
+        }
+        if (active[flagSlot] == VOLATILE) {
+            return getControlData(frame).getActive(flagSlot);
+        }
+        boolean returnValue = active[flagSlot] == TRUE;
+        if (returnValue != getControlData(frame).getActive(flagSlot)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            active[flagSlot] = VOLATILE;
+            return getControlData(frame).getActive(flagSlot);
+        } else {
+            return returnValue;
+        }
     }
 
     public void setActive(VirtualFrame frame, int flagSlot, boolean value) {
@@ -59,7 +92,28 @@ final class GeneratorAccessNode extends Node {
     }
 
     public int getIndex(VirtualFrame frame, int blockIndexSlot) {
-        return getControlData(frame).getBlockIndexAt(blockIndexSlot);
+        if (indices.length <= blockIndexSlot) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            int[] newIndices = new int[blockIndexSlot + 1];
+            Arrays.fill(newIndices, UNSET);
+            System.arraycopy(indices, 0, newIndices, 0, indices.length);
+            indices = newIndices;
+        }
+        if (indices[blockIndexSlot] == UNSET) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            indices[blockIndexSlot] = getControlData(frame).getBlockIndexAt(blockIndexSlot);
+        }
+        if (indices[blockIndexSlot] == VOLATILE) {
+            return getControlData(frame).getBlockIndexAt(blockIndexSlot);
+        }
+        int returnValue = indices[blockIndexSlot];
+        if (returnValue != getControlData(frame).getBlockIndexAt(blockIndexSlot)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            indices[blockIndexSlot] = VOLATILE;
+            return getControlData(frame).getBlockIndexAt(blockIndexSlot);
+        } else {
+            return returnValue;
+        }
     }
 
     public void setIndex(VirtualFrame frame, int blockIndexSlot, int value) {
@@ -84,5 +138,9 @@ final class GeneratorAccessNode extends Node {
 
     public static GeneratorAccessNode create() {
         return new GeneratorAccessNode();
+    }
+
+    public void setLastYieldIndex(VirtualFrame frame, int lastYieldIndex) {
+        getControlData(frame).setLastYieldIndex(lastYieldIndex);
     }
 }

@@ -64,6 +64,7 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
             }
         } else {
             access.setActive(frame, flagSlot, true);
+            access.setLastYieldIndex(frame, yieldIndex);
             throw new YieldException(right.execute(frame));
         }
     }

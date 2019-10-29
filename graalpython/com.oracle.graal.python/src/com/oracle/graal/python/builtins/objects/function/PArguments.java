@@ -318,6 +318,10 @@ public final class PArguments {
         return (GeneratorControlData) generatorFrame.getArguments()[INDEX_GENERATOR_FRAME];
     }
 
+    public static GeneratorControlData getControlDataFromGeneratorArguments(Object[] arguments) {
+        return getControlDataFromGeneratorFrame((MaterializedFrame) arguments[INDEX_GENERATOR_FRAME]);
+    }
+
     public static Object[] insertSelf(Object[] arguments, Object self) {
         final int userArgumentLength = arguments.length - USER_ARGUMENTS_OFFSET;
         Object[] results = create(userArgumentLength + 1);

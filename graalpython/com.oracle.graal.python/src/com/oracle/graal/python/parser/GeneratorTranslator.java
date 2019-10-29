@@ -75,6 +75,7 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 public class GeneratorTranslator {
 
     private final FunctionRootNode root;
+    private int numYields = 1;
     private int numOfActiveFlags;
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
@@ -135,6 +136,7 @@ public class GeneratorTranslator {
         PNode current = yield;
         yield.setIteratorSlot(nextGeneratorForNodeSlot());
         yield.setFlagSlot(nextActiveFlagSlot());
+        yield.setIndex(nextYieldIndex());
 
         if (yield.getParent() instanceof GeneratorReturnTargetNode) {
             // if this yield...from is the only thing in the body, we introduce a block
@@ -161,6 +163,7 @@ public class GeneratorTranslator {
     private void replaceYield(YieldNode yield) {
         PNode current = yield;
         yield.setFlagSlot(nextActiveFlagSlot());
+        yield.setIndex(nextYieldIndex());
 
         if (yield.getParent() instanceof GeneratorReturnTargetNode) {
             // if this yield is the only thing in the body, we introduce a block
@@ -365,6 +368,10 @@ public class GeneratorTranslator {
                 }
             });
         }
+    }
+
+    private int nextYieldIndex() {
+        return numYields++;
     }
 
     private int nextActiveFlagSlot() {

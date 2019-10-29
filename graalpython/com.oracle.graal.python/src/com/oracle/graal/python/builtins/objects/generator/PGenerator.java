@@ -35,6 +35,7 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -44,14 +45,15 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 public final class PGenerator extends PythonBuiltinObject {
 
     protected final String name;
-    protected final RootCallTarget callTarget;
+    @CompilationFinal(dimensions = 1) protected final RootCallTarget[] callTargets;
     protected final FrameDescriptor frameDescriptor;
     protected final Object[] arguments;
     private final PCell[] closure;
     private boolean finished;
     private PCode code;
+    private int currentCallTarget;
 
-    public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
+    public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, PythonObjectFactory factory) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
@@ -81,13 +83,14 @@ public final class PGenerator extends PythonBuiltinObject {
             generatorFrame.setObject(cellVarSlots[i], new PCell(cellVarAssumptions[i]));
         }
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(clazz, name, callTarget, frameDescriptor, arguments, closure);
+        return new PGenerator(clazz, name, callTargets, frameDescriptor, arguments, closure);
     }
 
-    private PGenerator(LazyPythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure) {
+    private PGenerator(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure) {
         super(clazz);
         this.name = name;
-        this.callTarget = callTarget;
+        this.callTargets = callTargets;
+        this.currentCallTarget = 0;
         this.frameDescriptor = frameDescriptor;
         this.arguments = arguments;
         this.closure = closure;
@@ -98,8 +101,12 @@ public final class PGenerator extends PythonBuiltinObject {
         return frameDescriptor;
     }
 
-    public RootCallTarget getCallTarget() {
-        return callTarget;
+    public void setNextCallTarget(int idx) {
+        currentCallTarget = idx;
+    }
+
+    public RootCallTarget getCurrentCallTarget() {
+        return callTargets[currentCallTarget];
     }
 
     public Object[] getArguments() {
