@@ -43,25 +43,10 @@ package com.oracle.graal.python.nodes.datamodel;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
 public abstract class PDataModelEmulationNode extends PNodeWithContext {
 
     public abstract boolean execute(Object object);
-
-    public static boolean check(PDataModelEmulationNode isMapping, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object obj) {
-        PythonContext context = contextRef.get();
-        PException caughtException = IndirectCallContext.enter(frame, context, isMapping);
-        try {
-            return isMapping.execute(obj);
-        } finally {
-            IndirectCallContext.exit(context, caughtException);
-        }
-    }
 }

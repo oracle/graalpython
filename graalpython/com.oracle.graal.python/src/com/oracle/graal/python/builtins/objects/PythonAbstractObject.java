@@ -85,7 +85,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
-import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
@@ -108,6 +107,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -216,15 +216,15 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public boolean hasArrayElements(
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
-                    @Shared("isIterableNode") @Cached IsIterableNode isIterableNode) {
-        return (check(isSequenceNode, this) || check(isIterableNode, this)) && !check(isMapping, this);
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+        return (check(isSequenceNode, this) || dataModelLibrary.isIterable(this)) && !check(isMapping, this);
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
                     @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
                     @Shared("isMapping") @Cached IsMappingNode isMapping,
-                    @Shared("isIterableNode") @Cached IsIterableNode isIterableNode,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
@@ -245,7 +245,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
 
-        if (check(isIterableNode, this)) {
+        if (dataModelLibrary.isIterable(this)) {
             Object attrIter = lookupIterNode.execute(this, SpecialMethodNames.__ITER__);
             Object iter = callIterNode.execute(null, attrIter, this);
             if (iter != this) {
@@ -568,7 +568,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Cached LookupAttributeInMRONode.Dynamic getIterNode,
                     @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
                     @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
-                    @Cached IsCallableNode isCallableNode,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileIter,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileNext) {
@@ -580,7 +580,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             Object getItemMethod = getGetItemNode.execute(klass, __GETITEM__);
             if (profileGetItem.profile(getItemMethod != PNone.NO_VALUE)) {
                 return true;
-            } else if (isCallableNode.execute(this)) {
+            } else if (dataModelLibrary.isCallable(this)) {
                 return profileNext.profile(hasNextNode.execute(klass, __NEXT__) != PNone.NO_VALUE);
             }
         }
@@ -596,8 +596,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public final boolean isContextManager(@Cached HasInheritedAttributeNode.Dynamic hasEnterNode,
-                @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
-                @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+                    @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         return profile.profile(hasEnterNode.execute(this, __ENTER__) && hasExitNode.execute(this, __EXIT__));
     }
 

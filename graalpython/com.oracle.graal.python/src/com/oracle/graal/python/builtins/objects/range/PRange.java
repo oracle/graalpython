@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.range;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
@@ -36,10 +35,7 @@ import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonDataModelLibrary.class)
 public final class PRange extends PImmutableSequence {
 
     private final int start;
@@ -142,10 +138,5 @@ public final class PRange extends PImmutableSequence {
         } else {
             return false;
         }
-    }
-
-    @ExportMessage
-    public boolean isIterable() {
-        return true;
     }
 }
