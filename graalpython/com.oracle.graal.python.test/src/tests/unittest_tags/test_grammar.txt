@@ -5,6 +5,7 @@
 *TokenTests.test_long_integers
 *TokenTests.test_plain_integers
 *TokenTests.test_string_literals
+*TokenTests.test_underscore_literals
 *GrammarTests.test_additive_ops
 *GrammarTests.test_assert
 *GrammarTests.test_atoms
