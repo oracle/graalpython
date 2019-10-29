@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class IsHashableNode extends PDataModelEmulationNode {
 
@@ -77,9 +79,9 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
     @Specialization
     protected boolean isHashableGeneric(Object object,
                     @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHashAttributeNode,
-                    @Cached IsCallableNode isCallableNode) {
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(object);
-        return isCallableNode.execute(hashAttr);
+        return dataModelLibrary.isCallable(hashAttr);
     }
 
     public static IsHashableNode create() {

@@ -84,7 +84,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
@@ -444,8 +443,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isExecutable(
-                    @Cached IsCallableNode isCallableNode) {
-        return check(isCallableNode, this);
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+        return dataModelLibrary.isCallable(this);
     }
 
     @ExportMessage
@@ -618,7 +617,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         int access(Object object, String fieldName,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
-                        @Cached IsCallableNode isCallableNode,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
@@ -694,7 +693,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             if ((info & READ_SIDE_EFFECTS) == 0 && (info & INVOCABLE) == 0) {
                 // if this is not a getter, we check if the value inherits a __call__ attr
                 // if it is a getter, we just cannot really tell if the attr is invocable
-                if (check(isCallableNode, attr)) {
+                if (dataModelLibrary.isCallable(attr)) {
                     info |= INVOCABLE;
                 }
             }
