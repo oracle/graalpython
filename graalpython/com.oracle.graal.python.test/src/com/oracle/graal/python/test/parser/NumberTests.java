@@ -164,4 +164,120 @@ public class NumberTests extends ParserTestBase {
     public void underscore05() throws Exception {
         checkTreeResult("0x1_f");
     }
+
+    @Test
+    public void underscore06() throws Exception {
+        checkTreeResult("0_0_0");
+    }
+
+    @Test
+    public void underscore07() throws Exception {
+        checkTreeResult("1_00_00.5");
+    }
+
+    @Test
+    public void underscore08() throws Exception {
+        checkTreeResult("1_00_00.5e5");
+    }
+
+    @Test
+    public void underscore09() throws Exception {
+        checkTreeResult("1_00_00e5_1");
+    }
+
+    @Test
+    public void underscore10() throws Exception {
+        checkTreeResult("1e1_0");
+    }
+
+    @Test
+    public void underscore11() throws Exception {
+        checkTreeResult(".1_4");
+    }
+
+    @Test
+    public void underscore12() throws Exception {
+        checkTreeResult(".1_4e1");
+    }
+
+    @Test
+    public void underscore13() throws Exception {
+        checkTreeResult("1_00_00j");
+    }
+
+    @Test
+    public void underscore14() throws Exception {
+        checkTreeResult("1_00_00.5j");
+    }
+
+    @Test
+    public void underscore15() throws Exception {
+        checkTreeResult("1_00_00e5_1j");
+    }
+
+    @Test
+    public void underscore16() throws Exception {
+        checkTreeResult(".1_4j");
+    }
+
+    @Test
+    public void underscore17() throws Exception {
+        checkTreeResult("(1_2.5+3_3j)");
+    }
+
+    @Test
+    public void underscore18() throws Exception {
+        checkTreeResult("(.5_6j)");
+    }
+
+    @Test
+    public void underscore19() throws Exception {
+        checkSyntaxError("42_");
+    }
+
+    @Test
+    public void underscore20() throws Exception {
+        checkSyntaxError("0x_");
+    }
+
+    @Test
+    public void underscore21() throws Exception {
+        checkSyntaxError("0b1_");
+    }
+
+    @Test
+    public void underscore22() throws Exception {
+        checkSyntaxError("0xf_");
+    }
+
+    @Test
+    public void underscore23() throws Exception {
+        checkSyntaxError("0o5_");
+    }
+
+    @Test
+    public void underscore24() throws Exception {
+        checkSyntaxError("4_______2");
+    }
+
+    @Test
+    public void underscore25() throws Exception {
+        checkSyntaxError("0b1001__0100");
+    }
+
+    @Test
+    public void underscore26() throws Exception {
+        checkSyntaxError("0xffff__ffff");
+    }
+
+    @Test
+    public void underscore27() throws Exception {
+        checkSyntaxError("0x___");
+    }
+
+    @Test
+    public void underscore28() throws Exception {
+        checkSyntaxError("0o5__77");
+    }
+
 }

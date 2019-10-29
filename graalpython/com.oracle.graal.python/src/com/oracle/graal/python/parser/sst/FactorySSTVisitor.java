@@ -620,11 +620,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(FloatLiteralSSTNode node) {
         ExpressionNode result;
+        String value = node.value.indexOf('_') == -1 ? node.value : node.value.replace("_", "");
         if (node.imaginary) {
-            double imag = Double.parseDouble(node.value.substring(0, node.value.length() - 1));
+            double imag = Double.parseDouble(value.substring(0, value.length() - 1));
             result = new ComplexLiteralNode(new PComplex(PythonBuiltinClassType.PComplex, 0, imag));
         } else {
-            result = new DoubleLiteralNode(Double.parseDouble(node.value));
+            result = new DoubleLiteralNode(Double.parseDouble(value));
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

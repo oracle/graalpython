@@ -1,0 +1,12 @@
+ModuleRootNode Name: <module 'underscore17'> SourceSection: [0,12]`(1_2.5+3_3j)`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,12]`(1_2.5+3_3j)`
+    BinaryArithmeticExpression SourceSection: [0,12]`(1_2.5+3_3j)`
+      LookupAndCallBinaryNodeGen SourceSection: None
+        Op: __add__
+      DoubleLiteralNode SourceSection: [1,6]`1_2.5`
+      ComplexLiteralNode SourceSection: [7,11]`3_3j`
