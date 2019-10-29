@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import com.oracle.graal.python.builtins.objects.object.PythonTypeLibrary;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateUncached
 public abstract class IsMappingNode extends PDataModelEmulationNode {
@@ -51,8 +53,8 @@ public abstract class IsMappingNode extends PDataModelEmulationNode {
     @Specialization
     public boolean isMapping(Object object,
                     @Cached GetLazyClassNode getClassNode,
-                    @Cached IsMappingTypeNode isMappingTypeNode) {
-        return isMappingTypeNode.execute(getClassNode.execute(object));
+                    @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isMappingType(getClassNode.execute(object));
     }
 
     public static IsMappingNode create() {
