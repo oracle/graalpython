@@ -152,7 +152,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -218,7 +217,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
-        @Child private IsIndexNode isIndexNode;
         @Child private CastToIndexNode castToIndexNode;
 
         private final IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
@@ -233,8 +231,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, new byte[0]);
         }
 
-        @Specialization(guards = {"isInt(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        @Specialization(guards = {"lib.isIndexable(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
             int cap = getCastToIndexNode().execute(frame, capObj);
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
@@ -268,12 +267,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
         }
 
-        @Specialization(guards = {"!isInt(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!lib.isIndexable(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
-                        @Cached("create()") CastToByteNode castToByteNode) {
+                        @Cached("create()") CastToByteNode castToByteNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
 
             Object it = getIteratorNode.executeWith(frame, iterable);
             byte[] arr = new byte[16];
@@ -295,14 +295,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static byte[] resize(byte[] arr, int len) {
             return Arrays.copyOf(arr, len);
-        }
-
-        protected boolean isInt(Object o) {
-            if (isIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isIndexNode = insert(IsIndexNode.create());
-            }
-            return isIndexNode.execute(o);
         }
 
         protected CastToIndexNode getCastToIndexNode() {

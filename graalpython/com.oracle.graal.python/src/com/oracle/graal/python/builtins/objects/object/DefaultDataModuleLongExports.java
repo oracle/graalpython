@@ -49,4 +49,9 @@ final class DefaultDataModuleLongExports {
     static boolean isHashable(@SuppressWarnings("unused") Long value) {
         return true;
     }
+
+    @ExportMessage
+    static boolean isIndexable(@SuppressWarnings("unused") Long value) {
+        return true;
+    }
 }

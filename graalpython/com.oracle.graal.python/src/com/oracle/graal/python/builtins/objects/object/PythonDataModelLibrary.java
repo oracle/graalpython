@@ -56,6 +56,7 @@ import com.oracle.truffle.api.nodes.Node;
 @DefaultExport(DefaultDataModuleDoubleExports.class)
 @DefaultExport(DefaultDataModuleIntegerExports.class)
 @DefaultExport(DefaultDataModuleLongExports.class)
+@DefaultExport(DefaultDataModuleBooleanExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonDataModelLibrary extends Library {
     static final LibraryFactory<PythonDataModelLibrary> FACTORY = LibraryFactory.resolve(PythonDataModelLibrary.class);
@@ -81,6 +82,10 @@ public abstract class PythonDataModelLibrary extends Library {
     }
 
     public boolean isHashable(Object receiver) {
+        return false;
+    }
+
+    public boolean isIndexable(Object receiver) {
         return false;
     }
 

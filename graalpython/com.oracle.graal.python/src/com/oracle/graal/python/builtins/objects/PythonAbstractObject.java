@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -568,6 +569,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         return dataModelLibrary.isCallable(hashAttr);
+    }
+
+    @ExportMessage
+    public final boolean isIndexable(@Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
+        return hasIndexAttribute.execute(this, __INDEX__);
     }
 
     @ExportMessage

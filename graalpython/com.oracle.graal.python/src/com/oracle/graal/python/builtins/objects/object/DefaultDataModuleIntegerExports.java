@@ -49,4 +49,9 @@ final class DefaultDataModuleIntegerExports {
     static boolean isHashable(@SuppressWarnings("unused") Integer value) {
         return true;
     }
+
+    @ExportMessage
+    static boolean isIndexable(@SuppressWarnings("unused") Integer value) {
+        return true;
+    }
 }

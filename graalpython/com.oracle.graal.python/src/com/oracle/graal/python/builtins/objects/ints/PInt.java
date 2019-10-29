@@ -186,6 +186,11 @@ public final class PInt extends PythonBuiltinObject {
         }
     }
 
+    @ExportMessage
+    public boolean isIndexable() {
+        return true;
+    }
+
     @Override
     public int hashCode() {
         return value.hashCode();
