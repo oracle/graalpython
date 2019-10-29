@@ -40,57 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
-import com.oracle.truffle.api.library.Library;
-import com.oracle.truffle.api.library.LibraryFactory;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-@GenerateLibrary
-@DefaultExport(DefaultDataModuleStringExports.class)
-@DefaultExport(DefaultDataModuleDoubleExports.class)
-@DefaultExport(DefaultDataModuleIntegerExports.class)
-@DefaultExport(DefaultDataModuleLongExports.class)
-@SuppressWarnings("unused")
-public abstract class PythonDataModelLibrary extends Library {
-    static final LibraryFactory<PythonDataModelLibrary> FACTORY = LibraryFactory.resolve(PythonDataModelLibrary.class);
-
-    public static LibraryFactory<PythonDataModelLibrary> getFactory() {
-        return FACTORY;
-    }
-
-    public static PythonDataModelLibrary getUncached() {
-        return FACTORY.getUncached();
-    }
-
-    public boolean isIterable(Object receiver) {
-        return false;
-    }
-
-    public boolean isCallable(Object receiver) {
-        return false;
-    }
-
-    public boolean isContextManager(Object receiver) {
-        return false;
-    }
-
-    public boolean isHashable(Object receiver) {
-        return false;
-    }
-
-    public static boolean checkIsIterable(PythonDataModelLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
-        PythonContext context = contextRef.get();
-        PException caughtException = IndirectCallContext.enter(frame, context, callNode);
-        try {
-            return library.isIterable(object);
-        } finally {
-            IndirectCallContext.exit(context, caughtException);
-        }
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Integer.class)
+final class DefaultDataModuleIntegerExports {
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") Integer value) {
+        return true;
     }
 }

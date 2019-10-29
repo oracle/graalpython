@@ -115,4 +115,9 @@ public final class PString extends PImmutableSequence {
     public static char charAt(String s, int i) {
         return s.charAt(i);
     }
+
+    @ExportMessage
+    public boolean isHashable() {
+        return true;
+    }
 }

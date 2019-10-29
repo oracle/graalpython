@@ -49,4 +49,9 @@ final class DefaultDataModuleStringExports {
     static boolean isIterable(@SuppressWarnings("unused") String str) {
         return true;
     }
+
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") String value) {
+        return true;
+    }
 }
