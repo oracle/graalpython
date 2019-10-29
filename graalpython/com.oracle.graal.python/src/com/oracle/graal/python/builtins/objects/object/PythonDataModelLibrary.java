@@ -52,11 +52,11 @@ import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateLibrary
-@DefaultExport(DefaultDataModuleStringExports.class)
-@DefaultExport(DefaultDataModuleDoubleExports.class)
-@DefaultExport(DefaultDataModuleIntegerExports.class)
-@DefaultExport(DefaultDataModuleLongExports.class)
-@DefaultExport(DefaultDataModuleBooleanExports.class)
+@DefaultExport(DefaultDataModelStringExports.class)
+@DefaultExport(DefaultDataModelDoubleExports.class)
+@DefaultExport(DefaultDataModelIntegerExports.class)
+@DefaultExport(DefaultDataModelLongExports.class)
+@DefaultExport(DefaultDataModelBooleanExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonDataModelLibrary extends Library {
     static final LibraryFactory<PythonDataModelLibrary> FACTORY = LibraryFactory.resolve(PythonDataModelLibrary.class);
@@ -88,6 +88,10 @@ public abstract class PythonDataModelLibrary extends Library {
     public boolean isIndexable(Object receiver) {
         return false;
     }
+
+//    public boolean isSequence(Object receiver) {
+//        return false;
+//    }
 
     public static boolean checkIsIterable(PythonDataModelLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
         PythonContext context = contextRef.get();

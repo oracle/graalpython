@@ -44,7 +44,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Long.class)
-final class DefaultDataModuleLongExports {
+final class DefaultDataModelLongExports {
     @ExportMessage
     static boolean isHashable(@SuppressWarnings("unused") Long value) {
         return true;

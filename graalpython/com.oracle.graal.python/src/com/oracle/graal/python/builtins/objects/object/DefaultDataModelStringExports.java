@@ -43,10 +43,15 @@ package com.oracle.graal.python.builtins.objects.object;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Boolean.class)
-final class DefaultDataModuleBooleanExports {
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = String.class)
+final class DefaultDataModelStringExports {
     @ExportMessage
-    static boolean isIndexable(@SuppressWarnings("unused") Boolean value) {
+    static boolean isIterable(@SuppressWarnings("unused") String str) {
+        return true;
+    }
+
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") String value) {
         return true;
     }
 }
