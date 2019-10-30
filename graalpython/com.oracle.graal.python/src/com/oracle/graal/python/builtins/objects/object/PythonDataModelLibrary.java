@@ -89,9 +89,13 @@ public abstract class PythonDataModelLibrary extends Library {
         return false;
     }
 
-    // public boolean isSequence(Object receiver) {
-    // return false;
-    // }
+    public boolean isSequence(Object receiver) {
+        return false;
+    }
+
+    public boolean isMapping(Object receiver) {
+        return false;
+    }
 
     public static boolean checkIsIterable(PythonDataModelLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
         PythonContext context = contextRef.get();

@@ -152,7 +152,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2772,16 +2771,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Child private IsSequenceNode isMappingNode;
-
         @Specialization
         Object doMapping(LazyPythonClass klass, PHashingCollection obj) {
             return factory().createMappingproxy(klass, obj.getDictStorage());
         }
 
-        @Specialization(guards = {"isMapping(frame, obj)", "!isBuiltinMapping(obj)"})
+        @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
-                        @Cached("create()") HashingStorageNodes.InitNode initNode) {
+                        @Cached("create()") HashingStorageNodes.InitNode initNode,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
         }
 
@@ -2791,8 +2789,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, "mappingproxy() missing required argument 'mapping' (pos 1)");
         }
 
-        @Specialization(guards = {"!isMapping(frame, obj)", "!isNoValue(obj)"})
-        Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj) {
+        @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"})
+        Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
             throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
         }
 
@@ -2800,15 +2799,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return o instanceof PHashingCollection;
         }
 
-        protected boolean isMapping(VirtualFrame frame, Object o) {
-            if (isMappingNode == null) {
-                CompilerDirectives.transferToInterpreter();
-                isMappingNode = insert(IsSequenceNode.create());
-            }
+        protected boolean isSequence(VirtualFrame frame, Object o, PythonDataModelLibrary library) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
-                return isMappingNode.execute(o);
+                return library.isSequence(o);
             } finally {
                 IndirectCallContext.exit(context, caughtException);
             }

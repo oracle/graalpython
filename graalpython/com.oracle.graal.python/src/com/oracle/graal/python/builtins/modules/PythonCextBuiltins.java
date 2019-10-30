@@ -125,6 +125,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -156,7 +157,6 @@ import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -2646,12 +2646,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object object,
-                        @Cached IsSequenceNode isSequenceNode,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
-            PException caughtException = IndirectCallContext.enter(frame, context, isSequenceNode);
+            PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
-                return isSequenceNode.execute(object);
+                return dataModelLibrary.isSequence(object);
             } finally {
                 IndirectCallContext.exit(context, caughtException);
             }

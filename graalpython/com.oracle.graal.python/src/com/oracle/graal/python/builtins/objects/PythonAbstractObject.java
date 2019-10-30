@@ -42,16 +42,20 @@ package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 
 import java.util.HashSet;
 
@@ -68,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonTypeLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -86,9 +91,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
-import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
-import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
@@ -133,7 +135,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
-                    @Shared("isMapping") @Cached IsMappingNode isMapping,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode writeNode,
@@ -157,7 +159,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (check(isMapping, this)) {
+            if (dataModelLibrary.isMapping(this)) {
                 setItemNode.execute(this, key, value);
             } else {
                 writeNode.execute(this, key, value);
@@ -177,7 +179,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode) throws UnknownIdentifierException {
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
         Object attrGetattribute = null;
         if (attrKey != null) {
@@ -202,7 +204,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } catch (PException e) {
             // pass
         }
-        if (check(isSequenceNode, this)) {
+        if (dataModelLibrary.isSequence(this)) {
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
@@ -215,16 +217,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
-                    @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
-        return (check(isSequenceNode, this) || dataModelLibrary.isIterable(this)) && !check(isMapping, this);
+        return (dataModelLibrary.isSequence(this) || dataModelLibrary.isIterable(this)) && !dataModelLibrary.isMapping(this);
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
-                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
-                    @Shared("isMapping") @Cached IsMappingNode isMapping,
                     @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
@@ -232,11 +230,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached CallNode callIterNode,
                     @Exclusive @Cached CallNode callNextNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (check(isSequenceNode, this)) {
+        if (dataModelLibrary.isSequence(this)) {
             try {
                 return toForeign.executeConvert(getItemNode.execute(this, key));
             } catch (PException e) {
-                if (check(isMapping, this)) {
+                if (dataModelLibrary.isMapping(this)) {
                     throw UnsupportedMessageException.create();
                 } else {
                     // TODO(fa) refine exception handling
@@ -266,9 +264,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void writeArrayElement(long key, Object value,
-                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (check(isSequenceNode, this)) {
+        if (dataModelLibrary.isSequence(this)) {
             try {
                 setItemNode.execute(this, key, value);
             } catch (PException e) {
@@ -283,9 +281,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void removeArrayElement(long key,
-                    @Shared("isSequenceNode") @Cached IsSequenceNode isSequenceNode,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
-        if (check(isSequenceNode, this)) {
+        if (dataModelLibrary.isSequence(this)) {
             try {
                 deleteItemNode.execute(this, key);
             } catch (PException e) {
@@ -461,7 +459,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
                     @Cached CastToListInteropNode castToList,
                     @Cached GetClassNode getClass,
-                    @Shared("isMapping") @Cached IsMappingNode isMapping,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode) {
@@ -479,7 +477,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         }
         if (includeInternal) {
             // we use the internal flag to also return dictionary keys for mappings
-            if (check(isMapping, this)) {
+            if (dataModelLibrary.isMapping(this)) {
                 PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, SpecialMethodNames.KEYS));
                 int len = lenNode.execute(mapKeys);
                 for (int i = 0; i < len; i++) {
@@ -500,7 +498,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public void removeMember(String member,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
-                    @Shared("isMapping") @Cached IsMappingNode isMapping,
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
@@ -524,7 +522,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return;
                 }
             }
-            if (check(isMapping, this) && getDelItemNode.execute(this, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE) {
+            if (dataModelLibrary.isMapping(this) && getDelItemNode.execute(this, __DELITEM__) != PNone.NO_VALUE) {
                 delItemNode.execute(this, member);
             } else {
                 deleteAttributeNode.execute(this, member);
@@ -614,6 +612,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         return profile.profile(hasEnterNode.execute(this, __ENTER__) && hasExitNode.execute(this, __EXIT__));
     }
 
+    @ExportMessage
+    public boolean isSequence(@Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isSequenceType(getClassNode.execute(this));
+    }
+
+    @ExportMessage
+    public boolean isMapping(@Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isMappingType(getClassNode.execute(this));
+    }
+
     @GenerateUncached
     public abstract static class PKeyInfoNode extends Node {
         private static final int NONE = 0;
@@ -639,8 +649,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached IsImmutable isImmutable,
                         @Cached KeyForItemAccess itemKey,
                         @Cached KeyForAttributeAccess attrKey,
-                        @Cached GetMroNode getMroNode,
-                        @Cached IsMappingNode isMapping) {
+                        @Cached GetMroNode getMroNode) {
 
             String itemFieldName = itemKey.execute(fieldName);
             if (itemFieldName != null) {
@@ -682,11 +691,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         info |= INVOCABLE;
                     } else {
                         // attr is inherited and might be a descriptor object other than a function
-                        if (getGetNode.execute(attr, SpecialMethodNames.__GET__) != PNone.NO_VALUE) {
+                        if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
                             // is a getter, read may have side effects
                             info |= READ_SIDE_EFFECTS;
                         }
-                        if (getSetNode.execute(attr, SpecialMethodNames.__SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, SpecialMethodNames.__DELETE__) != PNone.NO_VALUE) {
+                        if (getSetNode.execute(attr, __SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, __DELETE__) != PNone.NO_VALUE) {
                             info |= WRITE_SIDE_EFFECTS;
                         }
                     }
@@ -698,7 +707,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     info |= REMOVABLE;
                     info |= MODIFIABLE;
                 }
-            } else if (!isImmutable.execute(object) || check(isMapping, object)) {
+            } else if (!isImmutable.execute(object) || dataModelLibrary.isMapping(object)) {
                 // If the member does not exist yet, it is insertable if this object is mutable,
                 // i.e., it's not a builtin object or it is a mapping.
                 info |= INSERTABLE;
@@ -1054,7 +1063,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallNode callSetAttrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) throws UnsupportedMessageException {
-            Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__DELITEM__);
+            Object attrDelattr = lookupSetAttrNode.execute(primary, __DELITEM__);
             if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
                 callSetAttrNode.execute(null, attrDelattr, primary, key);
             } else {
@@ -1113,9 +1122,4 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     private static boolean objectHasAttribute(Object object, Object field) {
         return ((PythonObject) object).getAttributeNames().contains(field);
     }
-
-    public static boolean check(PDataModelEmulationNode isMapping, Object obj) {
-        return isMapping.execute(obj);
-    }
-
 }
