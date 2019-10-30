@@ -656,7 +656,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InetAtoNNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PBytes doConvert(VirtualFrame frame, String addr) {
+        PBytes doConvert(@SuppressWarnings("unused") VirtualFrame frame, String addr) {
             return factory().createBytes(aton(addr));
         }
 
@@ -704,7 +704,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InetPtoNNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PBytes doConvert(VirtualFrame frame, Object addrFamily, String addr,
+        PBytes doConvert(@SuppressWarnings("unused") VirtualFrame frame, Object addrFamily, String addr,
                         @Cached CastToJavaIntNode castToJavaIntNode) {
             return factory().createBytes(aton(castToJavaIntNode.execute(addrFamily), addr));
         }

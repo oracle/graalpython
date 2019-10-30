@@ -143,6 +143,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isCallable() {
         return true;
     }

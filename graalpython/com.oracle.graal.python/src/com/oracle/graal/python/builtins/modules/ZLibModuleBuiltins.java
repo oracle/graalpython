@@ -237,7 +237,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private long doCRC32(byte[] data) {
+        private static long doCRC32(byte[] data) {
             CRC32 crc32 = new CRC32();
             crc32.update(data);
             return crc32.getValue();
@@ -313,7 +313,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private long doAdler32(byte[] data) {
+        private static long doAdler32(byte[] data) {
             Adler32 adler32 = new Adler32();
             adler32.update(data);
             return adler32.getValue();

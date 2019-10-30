@@ -117,6 +117,7 @@ public final class PString extends PImmutableSequence {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isHashable() {
         return true;
     }

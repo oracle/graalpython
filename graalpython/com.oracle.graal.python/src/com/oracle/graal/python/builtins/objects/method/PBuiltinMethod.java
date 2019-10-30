@@ -60,6 +60,7 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isCallable() {
         return true;
     }

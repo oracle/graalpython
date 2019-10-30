@@ -49,4 +49,9 @@ final class DefaultDataModelBooleanExports {
     static boolean isIndexable(@SuppressWarnings("unused") Boolean value) {
         return true;
     }
+
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
+        return true;
+    }
 }

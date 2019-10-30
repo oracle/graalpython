@@ -600,7 +600,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         protected static long HASH_UNSET = -1;
 
         @Specialization(guards = {"self.getHash() != HASH_UNSET"})
-        public long getHash(VirtualFrame frame, PFrozenSet self) {
+        public long getHash(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self) {
             return self.getHash();
         }
 
