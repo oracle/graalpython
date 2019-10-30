@@ -193,7 +193,7 @@ Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
 
 
 __attribute__((always_inline))
-inline void* native_to_java(PyObject* obj) {
+inline void* native_to_java(void* obj) {
     if (obj == NULL) {
         return Py_NoValue;
     } else if (obj == Py_None) {

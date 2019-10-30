@@ -55,7 +55,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        native_to_java(mod),
 					   NULL,
                        polyglot_from_string((const char*)(def.ml_name), SRC_CS),
-                       pytruffle_decorate_function(def.ml_meth, native_to_java_exported),
+                       pytruffle_decorate_function(native_to_java(def.ml_meth), native_to_java_exported),
                        get_method_flags_wrapper(def.ml_flags),
                        polyglot_from_string((const char*)(def.ml_doc ? def.ml_doc : ""), SRC_CS));
         def = methods[++idx];
