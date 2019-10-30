@@ -1,4 +1,5 @@
 *TrivialTests.test_URLError_reasonstr
+*TrivialTests.test___all__
 *TrivialTests.test_parse_http_list
 *TrivialTests.test_trivial
 *RequestHdrsTests.test_password_manager
@@ -27,6 +28,9 @@
 *HandlerTests.test_http_doubleslash
 *HandlerTests.test_http_handler_debuglevel
 *HandlerTests.test_invalid_redirect
+*HandlerTests.test_proxy
+*HandlerTests.test_proxy_basic_auth
+*HandlerTests.test_proxy_https
 *HandlerTests.test_proxy_no_proxy
 *HandlerTests.test_proxy_no_proxy_all
 *HandlerTests.test_redirect
@@ -44,6 +48,7 @@
 *RequestTests.test_get_host
 *RequestTests.test_get_type
 *RequestTests.test_method
+*RequestTests.test_proxy
 *RequestTests.test_selector
 *RequestTests.test_setting_data_should_remove_content_length
 *RequestTests.test_url_fragment

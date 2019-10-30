@@ -100,8 +100,7 @@ def StopIteration__repr__(self):
     return "StopIteration%s" % repr(self.args)
 
 
-StopIteration.value = property(StopIteration__value__get)
-StopIteration.value.setter(StopIteration__value__set)
+StopIteration.value = property(fget=StopIteration__value__get, fset=StopIteration__value__set)
 StopIteration.__repr__ = StopIteration__repr__
 
 # These errors are just an alias of OSError (i.e. 'EnvironmentError is OSError == True')

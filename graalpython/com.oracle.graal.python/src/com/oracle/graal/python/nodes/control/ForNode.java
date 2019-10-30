@@ -57,7 +57,7 @@ import com.oracle.truffle.api.nodes.RepeatingNode;
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     @CompilationFinal FrameSlot iteratorSlot;
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
     @Child PRaiseNode raise;
@@ -80,6 +80,10 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
             throw raise.raise(PythonErrorType.RuntimeError, "internal error: unexpected frame slot type");
         }
         body.executeVoid(frame);
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         contextRef.get().triggerAsyncActions(frame, this);
         return true;
     }

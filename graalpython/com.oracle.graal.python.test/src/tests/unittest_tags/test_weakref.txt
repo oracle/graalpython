@@ -1,8 +1,9 @@
-test_basic_ref
-test_callback_gcs
-test_callback_in_cycle_1
-test_callback_in_cycle_2
-test_callback_in_cycle_3
-test_callback_in_cycle_4
-test_callbacks_protected
-test_constructor_kwargs
+*ReferencesTestCase.test_basic_ref
+*ReferencesTestCase.test_callback_gcs
+*ReferencesTestCase.test_callback_in_cycle_1
+*ReferencesTestCase.test_callback_in_cycle_2
+*ReferencesTestCase.test_callback_in_cycle_3
+*ReferencesTestCase.test_callback_in_cycle_4
+*ReferencesTestCase.test_callbacks_protected
+*ReferencesTestCase.test_constructor_kwargs
+*ReferencesTestCase.test_equality

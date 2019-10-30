@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
@@ -172,6 +173,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         Object getBackref(VirtualFrame frame, PFrame self,
                         @Cached BranchProfile noBackref,
                         @Cached BranchProfile topRef,
+                        @Cached("createBinaryProfile()") ConditionProfile notMaterialized,
                         @Cached ReadCallerFrameNode readCallerFrame) {
             PFrame.Reference backref;
             for (PFrame cur = self;; cur = backref.getPyFrame()) {
@@ -199,14 +201,36 @@ public final class FrameBuiltins extends PythonBuiltins {
                     }
                 }
 
-                if (backref.getPyFrame() == null) {
+                if (backref == Reference.EMPTY) {
                     return PNone.NONE;
                 } else if (!PRootNode.isPythonInternal(backref.getCallNode().getRootNode())) {
-                    return backref.getPyFrame();
+                    PFrame fback = materialize(frame, readCallerFrame, backref, notMaterialized);
+                    assert fback.getRef() == backref;
+                    return fback;
                 }
 
                 assert backref.getPyFrame() != null;
             }
+        }
+
+        private static PFrame materialize(VirtualFrame frame, ReadCallerFrameNode readCallerFrameNode, PFrame.Reference backref, ConditionProfile notMaterialized) {
+            if (notMaterialized.profile(backref.getPyFrame() == null)) {
+                // Special case: the backref's PFrame object is not yet available; this is because
+                // the frame is still on the stack. So we need to find and materialize it.
+                for (int i = 0;; i++) {
+                    PFrame caller = readCallerFrameNode.executeWith(frame, i);
+                    if (caller == null) {
+                        break;
+                    } else if (caller.getRef() == backref) {
+                        // now, the PFrame object is available since the readCallerFrameNode
+                        // materialized it
+                        assert backref.getPyFrame() != null;
+                        return caller;
+                    }
+                }
+                assert false : "could not find frame of backref on the stack";
+            }
+            return backref.getPyFrame();
         }
     }
 

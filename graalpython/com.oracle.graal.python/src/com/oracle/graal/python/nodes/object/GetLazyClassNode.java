@@ -60,6 +60,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.object.Shape;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
 @GenerateUncached
+@ReportPolymorphism
 public abstract class GetLazyClassNode extends PNodeWithContext {
 
     public abstract LazyPythonClass execute(boolean object);

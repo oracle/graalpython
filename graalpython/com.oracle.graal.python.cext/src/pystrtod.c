@@ -53,3 +53,19 @@ double PyOS_string_to_double(const char *s, char **endptr, PyObject *overflow_ex
 	}
 	return result;
 }
+
+/* translation macro to be independent of changes in 'pystrtod.h' */
+#define TRANSLATE_TYPE(__tc__) ((__tc__) == 0 ? Py_DTST_FINITE : ((__tc__) == 1 ? Py_DTST_INFINITE : Py_DTST_NAN))
+
+UPCALL_ID(PyTruffle_OS_DoubleToString);
+char * PyOS_double_to_string(double val, char format_code, int precision, int flags, int *type) {
+	char* result = NULL;
+	PyObject* resultTuple = UPCALL_CEXT_O(_jls_PyTruffle_OS_DoubleToString, val, (int32_t)format_code, precision, flags);
+	if (resultTuple != NULL) {
+		result = (char *) PyTuple_GetItem(resultTuple, 0);
+		if (type != NULL) {
+			*type = TRANSLATE_TYPE(as_int(PyTuple_GetItem(resultTuple, 1)));
+		}
+	}
+	return result;
+}

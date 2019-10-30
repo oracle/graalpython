@@ -1,0 +1,29 @@
+ModuleRootNode Name: <module 'annotationType03'> SourceSection: [0,39]`j = 1↵ahoj.__annotat...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,39]`j = 1↵ahoj.__annotat...`
+    ExpressionWithSideEffect SourceSection: [0,39]`j = 1↵ahoj.__annotat...`
+      Expression:
+        ExpressionWithSideEffect SourceSection: None
+          Expression:
+            EmptyNode SourceSection: None
+          SideEffect:
+            SetItemNodeGen SourceSection: [6,39]`ahoj.__annotations__...`
+              GetAttributeNodeGen SourceSection: None
+                GetFixedAttributeNodeGen SourceSection: None
+                  Key: __annotations__
+                  LookupAndCallBinaryNodeGen SourceSection: None
+                    Op: __getattribute__
+                ReadNameNodeGen SourceSection: [6,10]`ahoj`
+                  Identifier: ahoj
+              StringLiteralNode SourceSection: [27,30]`'j'`
+              ReadNameNodeGen SourceSection: [34,39]`float`
+                Identifier: float
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,5]`j = 1`
+          Identifier: j
+          IntegerLiteralNode SourceSection: [4,5]`1`
+            Value: 1

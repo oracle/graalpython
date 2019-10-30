@@ -167,6 +167,7 @@ public abstract class SpecialMethodNames {
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";
+    public static final String SHUTDOWN = "_shutdown";
 
     // (tfel): The order of these matches the one in CPython, and thus is assumed to remain the same
     // in various places

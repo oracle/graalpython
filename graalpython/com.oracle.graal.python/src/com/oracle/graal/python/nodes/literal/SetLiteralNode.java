@@ -28,9 +28,13 @@ package com.oracle.graal.python.nodes.literal;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -38,25 +42,86 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public final class SetLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] values;
-    @Child HashingStorageNodes.SetItemNode setItemNode;
+    @Child private HashingStorageNodes.SetItemNode setItemNode;
+    @Child private SequenceStorageNodes.LenNode lenNode;
+    @Child private SequenceStorageNodes.GetItemNode getItemNode;
+
+    private final boolean hasStarredExpressions;
 
     public SetLiteralNode(ExpressionNode[] values) {
         this.values = values;
+        for (PNode v : values) {
+            if (v instanceof StarredExpressionNode) {
+                hasStarredExpressions = true;
+                return;
+            }
+        }
+        hasStarredExpressions = false;
     }
 
     @Override
-    @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
-        HashingStorage storage = PDict.createNewStorage(true, values.length);
+    public PSet execute(VirtualFrame frame) {
+        if (!hasStarredExpressions) {
+            return directSet(frame);
+        } else {
+            return expandingSet(frame);
+        }
+    }
 
-        if (setItemNode == null && values.length > 0) {
+    @ExplodeLoop
+    private PSet expandingSet(VirtualFrame frame) {
+        // we will usually have more than 'values.length' elements
+        HashingStorage storage = PDict.createNewStorage(true, values.length);
+        for (ExpressionNode n : values) {
+            if (n instanceof StarredExpressionNode) {
+                storage = addAllElement(frame, storage, ((StarredExpressionNode) n).getStorage(frame));
+            } else {
+                Object element = n.execute(frame);
+                storage = ensureSetItemNode().execute(frame, storage, element, PNone.NO_VALUE);
+            }
+        }
+        return factory.createSet(storage);
+    }
+
+    private HashingStorage addAllElement(VirtualFrame frame, HashingStorage setStorage, SequenceStorage sequenceStorage) {
+        int n = ensureLenNode().execute(sequenceStorage);
+        for (int i = 0; i < n; i++) {
+            Object element = ensureGetItemNode().execute(frame, sequenceStorage, i);
+            setStorage = ensureSetItemNode().execute(frame, setStorage, element, PNone.NO_VALUE);
+        }
+        return setStorage;
+    }
+
+    @ExplodeLoop
+    private PSet directSet(VirtualFrame frame) {
+        HashingStorage storage = PDict.createNewStorage(true, values.length);
+        for (ExpressionNode v : this.values) {
+            storage = ensureSetItemNode().execute(frame, storage, v.execute(frame), PNone.NO_VALUE);
+        }
+        return factory.createSet(storage);
+    }
+
+    private SequenceStorageNodes.LenNode ensureLenNode() {
+        if (lenNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lenNode = insert(SequenceStorageNodes.LenNode.create());
+        }
+        return lenNode;
+    }
+
+    private SequenceStorageNodes.GetItemNode ensureGetItemNode() {
+        if (getItemNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+        }
+        return getItemNode;
+    }
+
+    private HashingStorageNodes.SetItemNode ensureSetItemNode() {
+        if (setItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             setItemNode = insert(HashingStorageNodes.SetItemNode.create());
         }
-        for (ExpressionNode v : this.values) {
-            storage = setItemNode.execute(frame, storage, v.execute(frame), PNone.NO_VALUE);
-        }
-
-        return factory.createSet(storage);
+        return setItemNode;
     }
 }

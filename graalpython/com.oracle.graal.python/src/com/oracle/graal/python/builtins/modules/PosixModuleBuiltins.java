@@ -49,6 +49,7 @@ import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
 import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -129,6 +130,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -492,7 +494,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object fstatPInt(VirtualFrame frame, Object fd,
                         @Cached("createOverflow()") CastToIndexNode castToIntNode,
                         @Cached("create()") FstatNode recursive) {
-            return recursive.executeWith(frame, castToIntNode.execute(fd));
+            return recursive.executeWith(frame, castToIntNode.execute(frame, fd));
         }
 
         protected static FstatNode create() {
@@ -865,25 +867,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "dup", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
         @Specialization
-        int dup(int fd) {
+        int dupInt(int fd) {
             return getResources().dup(fd);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int dupPInt(PInt fd) {
-            return getResources().dup(fd.intValueExact());
-        }
-
-        @Specialization(replaces = "dupPInt")
-        int dupOvf(PInt fd) {
-            try {
-                return dupPInt(fd);
-            } catch (ArithmeticException e) {
-                throw raise(OSError, "invalid fd %r", fd);
-            }
+        @Specialization(replaces = "dupInt")
+        int dupGeneric(Object fd,
+                        @Cached CastToJavaIntNode castToJavaIntNode) {
+            return getResources().dup(castToJavaIntNode.execute(fd));
         }
     }
 
@@ -1026,11 +1019,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object lseek(VirtualFrame frame, long fd, long pos, int how,
-                        @Cached PRaiseOSErrorNode raise,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+                        @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel((int) fd, channelClassProfile);
-            if (noFile.profile(channel == null || !(channel instanceof SeekableByteChannel))) {
-                throw raise.raiseOSError(frame, OSErrorEnum.ESPIPE);
+            if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
+                throw raiseOSError(frame, OSErrorEnum.ESPIPE);
             }
             SeekableByteChannel fc = (SeekableByteChannel) channel;
             try {
@@ -1038,8 +1030,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 gotException.enter();
                 // if this happen, we should raise OSError with appropriate errno
-                throw raise.raiseOSError(frame, -1);
+                throw raiseOSError(frame, -1);
             }
+        }
+
+        @Specialization
+        Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
+                        @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Cached CastToJavaLongNode castFdNode,
+                        @Cached CastToJavaLongNode castPosNode,
+                        @Cached CastToJavaIntNode castHowNode) {
+
+            return lseek(frame, castFdNode.execute(fd), castPosNode.execute(pos), castHowNode.execute(how), channelClassProfile);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1065,10 +1067,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        Object close(Object fdObject,
+        Object close(VirtualFrame frame, Object fdObject,
                         @Cached CastToIndexNode castToIndex,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            int fd = castToIndex.execute(fdObject);
+            int fd = castToIndex.execute(frame, fdObject);
             PosixResources resources = getResources();
             Channel channel = resources.getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null)) {
@@ -1152,7 +1154,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
         private final BranchProfile notWritable = BranchProfile.create();
 
-        public abstract Object executeWith(Object fd, Object data);
+        public abstract Object executeWith(VirtualFrame frame, Object fd, Object data);
 
         @Specialization
         Object write(int fd, byte[] data,
@@ -1188,30 +1190,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object write(int fd, PBytes data,
+        Object write(VirtualFrame frame, int fd, PBytes data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, getByteArray(data), channelClassProfile);
+            return write(fd, getByteArray(frame, data), channelClassProfile);
         }
 
         @Specialization
-        Object write(int fd, PByteArray data,
+        Object write(VirtualFrame frame, int fd, PByteArray data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, getByteArray(data), channelClassProfile);
+            return write(fd, getByteArray(frame, data), channelClassProfile);
         }
 
         @Specialization
-        Object writePInt(Object fd, Object data,
+        Object writePInt(VirtualFrame frame, Object fd, Object data,
                         @Cached("createOverflow()") CastToIndexNode castToIntNode,
                         @Cached("create()") WriteNode recursive) {
-            return recursive.executeWith(castToIntNode.execute(fd), data);
+            return recursive.executeWith(frame, castToIntNode.execute(frame, fd), data);
         }
 
-        private byte[] getByteArray(PIBytesLike pByteArray) {
+        private byte[] getByteArray(VirtualFrame frame, PIBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(ToByteArrayNode.create());
             }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+            return toByteArrayNode.execute(frame, pByteArray.getSequenceStorage());
         }
 
         public static WriteNode create() {
@@ -1341,8 +1343,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object utime(VirtualFrame frame, Object path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
-            long atime = getTime(times, 0, "times");
-            long mtime = getTime(times, 1, "times");
+            long atime = getTime(frame, times, 0, "times");
+            long mtime = getTime(frame, times, 1, "times");
             setMtime(getFile(castNode.execute(frame, path), true), mtime);
             setAtime(getFile(castNode.execute(frame, path), true), atime);
             return PNone.NONE;
@@ -1351,8 +1353,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks) {
-            long atime = getTime(ns, 0, "ns") / 1000;
-            long mtime = getTime(ns, 1, "ns") / 1000;
+            long atime = getTime(frame, ns, 0, "ns") / 1000;
+            long mtime = getTime(frame, ns, 1, "ns") / 1000;
             setMtime(getFile(castNode.execute(frame, path), true), mtime);
             setAtime(getFile(castNode.execute(frame, path), true), atime);
             return PNone.NONE;
@@ -1361,8 +1363,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks) {
-            long atime = getTime(ns, 0, "ns") / 1000;
-            long mtime = getTime(ns, 1, "ns") / 1000;
+            long atime = getTime(frame, ns, 0, "ns") / 1000;
+            long mtime = getTime(frame, ns, 1, "ns") / 1000;
             setMtime(getFile(castNode.execute(frame, path), true), mtime);
             setAtime(getFile(castNode.execute(frame, path), true), atime);
             return PNone.NONE;
@@ -1388,11 +1390,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object utimeError(Object path, Object times, Object ns, Object dir_fd, Object follow_symlinks) {
+        Object utimeError(VirtualFrame frame, Object path, Object times, Object ns, Object dir_fd, Object follow_symlinks) {
             throw raise(NotImplementedError, "utime");
         }
 
-        private long getTime(PTuple times, int index, String argname) {
+        private long getTime(VirtualFrame frame, PTuple times, int index, String argname) {
             if (getLength(times) <= index) {
                 throw tupleError(argname);
             }
@@ -1400,7 +1402,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getItemNode = insert(GetItemNode.createNotNormalized());
             }
-            Object mtimeObj = getItemNode.execute(times.getSequenceStorage(), index);
+            Object mtimeObj = getItemNode.execute(frame, times.getSequenceStorage(), index);
             long mtime;
             if (mtimeObj instanceof Integer) {
                 mtime = ((Integer) mtimeObj).longValue();
@@ -1498,7 +1500,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTuple waitpidFallback(VirtualFrame frame, Object pid, Object options,
                         @Cached CastToIndexNode castToInt) {
-            return waitpid(frame, castToInt.execute(pid), castToInt.execute(options));
+            return waitpid(frame, castToInt.execute(frame, pid), castToInt.execute(frame, options));
         }
     }
 
@@ -1565,6 +1567,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Env env = context.getEnv();
             try {
                 ProcessBuilder pb = new ProcessBuilder(command);
+                pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
                 PipePump stdout = null, stderr = null;
                 boolean stdsArePipes = !terminalIsInteractive(context);
                 if (stdsArePipes) {
@@ -1717,7 +1720,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids,
                         @SuppressWarnings("unused") PNone follow_symlinks) {
-            return access(castToPath(frame, path), castToInt(mode), PNone.NONE, false, true);
+            return access(castToPath(frame, path), castToInt(frame, mode), PNone.NONE, false, true);
         }
 
         private String castToPath(VirtualFrame frame, Object path) {
@@ -1728,12 +1731,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return castToPathNode.execute(frame, path);
         }
 
-        private int castToInt(Object mode) {
+        private int castToInt(VirtualFrame frame, Object mode) {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castToIntNode = insert(CastToIndexNode.createOverflow());
             }
-            return castToIntNode.execute(mode);
+            return castToIntNode.execute(frame, mode);
         }
 
         @Specialization
@@ -2003,7 +2006,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached CastToIndexNode castInt,
                         @Shared("readSignalNode") @Cached ReadAttributeFromObjectNode readSignalNode,
                         @Shared("isNode") @Cached IsNode isNode) {
-            return kill(frame, castInt.execute(pid), castInt.execute(signal), readSignalNode, isNode);
+            return kill(frame, castInt.execute(frame, pid), castInt.execute(frame, signal), readSignalNode, isNode);
         }
     }
 

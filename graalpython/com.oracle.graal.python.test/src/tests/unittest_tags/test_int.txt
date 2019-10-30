@@ -1,0 +1,5 @@
+*IntTestCases.test_int_subclass_with_int
+*IntTestCases.test_issue31619
+*IntTestCases.test_no_args
+*IntTestCases.test_small_ints
+*IntTestCases.test_string_float

@@ -53,11 +53,15 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -97,19 +101,40 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     // ref.__hash__
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class RefTypeHashNode extends PythonBuiltinNode {
-        @Specialization(guards = "self.getObject() != null")
-        public int hash(PReferenceType self) {
+    public abstract static class RefTypeHashNode extends PythonUnaryBuiltinNode {
+        static long HASH_UNSET = -1;
+
+        @Specialization(guards = "self.getHash() != HASH_UNSET")
+        long getHash(VirtualFrame frame, PReferenceType self) {
             return self.getHash();
         }
 
-        @Specialization(guards = "self.getObject() == null")
-        public int hashGone(@SuppressWarnings("unused") PReferenceType self) {
+        @Specialization(guards = {
+                        "self.getObject() != null",
+                        "self.getHash() == HASH_UNSET"
+        })
+        long computeHash(VirtualFrame frame, PReferenceType self,
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
+                        @Cached IsInstanceNode isInstanceNode,
+                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+            Object referent = self.getObject();
+            Object hashValue = dispatchHash.executeObject(frame, referent);
+            if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
+                throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+            }
+
+            long hash = castToLongNode.execute(hashValue);
+            self.setHash(hash);
+            return hash;
+        }
+
+        @Specialization(guards = {"self.getObject() == null", "self.getHash() == HASH_UNSET"})
+        int hashGone(VirtualFrame frame, @SuppressWarnings("unused") PReferenceType self) {
             throw raise(PythonErrorType.TypeError, "weak object has gone away");
         }
 
         @Fallback
-        public int hashWrong(@SuppressWarnings("unused") Object self) {
+        int hashWrong(@SuppressWarnings("unused") Object self) {
             throw raise(PythonErrorType.TypeError, "descriptor '__hash__' requires a 'weakref' object but received a '%p'", self);
         }
     }

@@ -88,7 +88,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -603,7 +603,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 Object res = null;
-                PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+                PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
                 try {
                     if (lib.isExecutable(callee)) {
                         res = lib.execute(callee, convertedArgs);
@@ -613,7 +613,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {
-                    IndirectCallContext.exit(context, savedExceptionState);
+                    ForeignCallContext.exit(context, savedExceptionState);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");
@@ -637,8 +637,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private AccessForeignItemNodes.GetForeignItemNode getForeignItemNode = AccessForeignItemNodes.GetForeignItemNode.create();
 
         @Specialization
-        Object doit(Object object, Object key) {
-            return getForeignItemNode.execute(object, key);
+        Object doit(VirtualFrame frame, Object object, Object key) {
+            return getForeignItemNode.execute(frame, object, key);
         }
     }
 
@@ -708,8 +708,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private AccessForeignItemNodes.RemoveForeignItemNode delForeignItemNode = AccessForeignItemNodes.RemoveForeignItemNode.create();
 
         @Specialization
-        PNone doit(Object object, Object key) {
-            delForeignItemNode.execute(object, key);
+        PNone doit(VirtualFrame frame, Object object, Object key) {
+            delForeignItemNode.execute(frame, object, key);
             return PNone.NONE;
         }
     }

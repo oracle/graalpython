@@ -474,22 +474,22 @@ public abstract class SequenceStorageNodes {
             return castToIndexNode;
         }
 
-        protected final int normalizeIndex(Object idx, SequenceStorage store) {
-            int intIdx = getCastToIndexNode().execute(idx);
+        protected final int normalizeIndex(VirtualFrame frame, Object idx, SequenceStorage store) {
+            int intIdx = getCastToIndexNode().execute(frame, idx);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
             return intIdx;
         }
 
-        protected final int normalizeIndex(int idx, SequenceStorage store) {
+        protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, int idx, SequenceStorage store) {
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(idx, getStoreProfile().profile(store).length());
             }
             return idx;
         }
 
-        protected final int normalizeIndex(long idx, SequenceStorage store) {
+        protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, long idx, SequenceStorage store) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
@@ -525,34 +525,34 @@ public abstract class SequenceStorageNodes {
             this.factoryMethod = factoryMethod;
         }
 
-        public abstract Object execute(SequenceStorage s, Object key);
+        public abstract Object execute(VirtualFrame frame, SequenceStorage s, Object key);
 
-        public abstract Object execute(SequenceStorage s, int key);
+        public abstract Object execute(VirtualFrame frame, SequenceStorage s, int key);
 
-        public abstract Object execute(SequenceStorage s, long key);
+        public abstract Object execute(VirtualFrame frame, SequenceStorage s, long key);
 
-        public abstract int executeInt(SequenceStorage s, int key);
+        public abstract int executeInt(VirtualFrame frame, SequenceStorage s, int key);
 
-        public abstract long executeLong(SequenceStorage s, long key);
+        public abstract long executeLong(VirtualFrame frame, SequenceStorage s, long key);
 
         @Specialization
-        protected Object doScalarInt(SequenceStorage storage, int idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected Object doScalarInt(VirtualFrame frame, SequenceStorage storage, int idx) {
+            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization
-        protected Object doScalarLong(SequenceStorage storage, long idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected Object doScalarLong(VirtualFrame frame, SequenceStorage storage, long idx) {
+            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization
-        protected Object doScalarPInt(SequenceStorage storage, PInt idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected Object doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx) {
+            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization(guards = "!isPSlice(idx)")
-        protected Object doScalarGeneric(SequenceStorage storage, Object idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected Object doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx) {
+            return getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization
@@ -1085,17 +1085,17 @@ public abstract class SequenceStorageNodes {
             this.generalizationNodeProvider = generalizationNodeProvider;
         }
 
-        public abstract SequenceStorage execute(SequenceStorage s, Object key, Object value);
+        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage s, Object key, Object value);
 
-        public abstract SequenceStorage executeInt(SequenceStorage s, int key, Object value);
+        public abstract SequenceStorage executeInt(VirtualFrame frame, SequenceStorage s, int key, Object value);
 
-        public abstract SequenceStorage executeLong(SequenceStorage s, long key, Object value);
+        public abstract SequenceStorage executeLong(VirtualFrame frame, SequenceStorage s, long key, Object value);
 
         @Specialization
-        protected SequenceStorage doScalarInt(SequenceStorage storage, int idx, Object value,
+        protected SequenceStorage doScalarInt(VirtualFrame frame, SequenceStorage storage, int idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
-            int normalized = normalizeIndex(idx, storage);
+            int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -1113,10 +1113,10 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected SequenceStorage doScalarLong(SequenceStorage storage, long idx, Object value,
+        protected SequenceStorage doScalarLong(VirtualFrame frame, SequenceStorage storage, long idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
-            int normalized = normalizeIndex(idx, storage);
+            int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -1129,10 +1129,10 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected SequenceStorage doScalarPInt(SequenceStorage storage, PInt idx, Object value,
+        protected SequenceStorage doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
-            int normalized = normalizeIndex(idx, storage);
+            int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -1145,10 +1145,10 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "!isPSlice(idx)")
-        protected SequenceStorage doScalarGeneric(SequenceStorage storage, Object idx, Object value,
+        protected SequenceStorage doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx, Object value,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Shared("setItemScalarNode") @Cached SetItemScalarNode setItemScalarNode) {
-            int normalized = normalizeIndex(idx, storage);
+            int normalized = normalizeIndex(frame, idx, storage);
             try {
                 setItemScalarNode.execute(storage, normalized, value);
                 return storage;
@@ -1234,7 +1234,8 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected void doByte(ByteSequenceStorage storage, int idx, Object value,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
-            storage.setByteItemNormalized(idx, castToByteNode.execute(value));
+            // TODO: clean this up, we really might need a frame
+            storage.setByteItemNormalized(idx, castToByteNode.execute(null, value));
         }
 
         @Specialization
@@ -1301,7 +1302,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             try {
-                lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(value));
+                lib.writeArrayElement(storage.getPtr(), idx, castToByteNode.execute(null, value));
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
                 throw raiseNode.raise(SystemError, e);
             }
@@ -2004,7 +2005,7 @@ public abstract class SequenceStorageNodes {
             this.exact = exact;
         }
 
-        public abstract byte[] execute(SequenceStorage s);
+        public abstract byte[] execute(VirtualFrame frame, SequenceStorage s);
 
         @Specialization
         byte[] doByteSequenceStorage(ByteSequenceStorage s) {
@@ -2029,24 +2030,24 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = {"len(lenNode, s) == cachedLen", "cachedLen <= 32"})
         @ExplodeLoop
-        byte[] doGenericLenCached(SequenceStorage s,
+        byte[] doGenericLenCached(VirtualFrame frame, SequenceStorage s,
                         @Cached CastToByteNode castToByteNode,
                         @Cached @SuppressWarnings("unused") LenNode lenNode,
                         @Cached("len(lenNode, s)") int cachedLen) {
             byte[] barr = new byte[cachedLen];
             for (int i = 0; i < cachedLen; i++) {
-                barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
+                barr[i] = castToByteNode.execute(frame, getGetItemNode().execute(s, i));
             }
             return barr;
         }
 
         @Specialization(replaces = "doGenericLenCached")
-        byte[] doGeneric(SequenceStorage s,
+        byte[] doGeneric(VirtualFrame frame, SequenceStorage s,
                         @Cached CastToByteNode castToByteNode,
                         @Cached LenNode lenNode) {
             byte[] barr = new byte[lenNode.execute(s)];
             for (int i = 0; i < barr.length; i++) {
-                barr[i] = castToByteNode.execute(getGetItemNode().execute(s, i));
+                barr[i] = castToByteNode.execute(frame, getGetItemNode().execute(s, i));
             }
             return barr;
         }
@@ -2384,9 +2385,9 @@ public abstract class SequenceStorageNodes {
         @Child private CastToIndexNode castToindexNode;
         @Child private RepeatNode recursive;
 
-        public abstract SequenceStorage execute(SequenceStorage left, Object times);
+        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, Object times);
 
-        public abstract SequenceStorage execute(SequenceStorage left, int times);
+        public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, int times);
 
         @Specialization
         SequenceStorage doEmpty(EmptySequenceStorage s, @SuppressWarnings("unused") int times) {
@@ -2556,14 +2557,14 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "!isInt(times)")
-        SequenceStorage doNonInt(SequenceStorage s, Object times,
+        SequenceStorage doNonInt(VirtualFrame frame, SequenceStorage s, Object times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            int i = toIndex(times, raiseNode);
+            int i = toIndex(frame, times, raiseNode);
             if (recursive == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursive = insert(RepeatNodeGen.create());
             }
-            return recursive.execute(s, i);
+            return recursive.execute(frame, s, i);
         }
 
         private GetItemScalarNode getGetItemNode() {
@@ -2584,7 +2585,7 @@ public abstract class SequenceStorageNodes {
             return times instanceof Integer;
         }
 
-        private int toIndex(Object times, PRaiseNode raiseNode) {
+        private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode) {
             if (isIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isIndexNode = insert(IsIndexNode.create());
@@ -2594,7 +2595,7 @@ public abstract class SequenceStorageNodes {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castToindexNode = insert(CastToIndexNode.createOverflow());
                 }
-                return castToindexNode.execute(times);
+                return castToindexNode.execute(frame, times);
             }
             throw raiseNode.raise(TypeError, ERROR_MSG, times);
         }
@@ -3109,30 +3110,30 @@ public abstract class SequenceStorageNodes {
             this.keyTypeErrorMessage = keyTypeErrorMessage;
         }
 
-        public abstract void execute(SequenceStorage s, Object indexOrSlice);
+        public abstract void execute(VirtualFrame frame, SequenceStorage s, Object indexOrSlice);
 
-        public abstract void execute(SequenceStorage s, int index);
+        public abstract void execute(VirtualFrame frame, SequenceStorage s, int index);
 
-        public abstract void execute(SequenceStorage s, long index);
+        public abstract void execute(VirtualFrame frame, SequenceStorage s, long index);
 
         @Specialization
-        protected void doScalarInt(SequenceStorage storage, int idx) {
-            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected void doScalarInt(VirtualFrame frame, SequenceStorage storage, int idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization
-        protected void doScalarLong(SequenceStorage storage, long idx) {
-            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected void doScalarLong(VirtualFrame frame, SequenceStorage storage, long idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization
-        protected void doScalarPInt(SequenceStorage storage, PInt idx) {
-            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected void doScalarPInt(VirtualFrame frame, SequenceStorage storage, PInt idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization(guards = "!isPSlice(idx)")
-        protected void doScalarGeneric(SequenceStorage storage, Object idx) {
-            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        protected void doScalarGeneric(VirtualFrame frame, SequenceStorage storage, Object idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(frame, idx, storage));
         }
 
         @Specialization

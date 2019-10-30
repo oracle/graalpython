@@ -152,6 +152,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void finalizeContext(PythonContext context) {
+        context.shutdownThreads();
         context.runShutdownHooks();
         super.finalizeContext(context);
     }
@@ -211,7 +212,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
-        PythonContext context = this.getContextReference().get();
+        PythonContext context = getCurrentContext(PythonLanguage.class);
         PythonCore core = context.getCore();
         Source source = request.getSource();
         CompilerDirectives.transferToInterpreter();
@@ -258,21 +259,24 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {
-            private final ContextReference<PythonContext> contextRef = getContextReference();
+            @CompilationFinal private ContextReference<PythonContext> contextRef;
             @CompilationFinal private volatile PythonContext cachedContext;
             @Child private ExpressionNode expression;
 
             @Override
             public Object execute(VirtualFrame frame) {
+                if (contextRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    contextRef = lookupContextReference(PythonLanguage.class);
+                }
                 PythonContext context = contextRef.get();
-                assert context == null || context.isInitialized();
+                assert context != null && context.isInitialized();
                 PythonContext cachedCtx = cachedContext;
                 if (cachedCtx == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     parseAndCache(context);
                     cachedCtx = context;
                 }
-                assert context != null;
                 Object result;
                 if (context == cachedCtx) {
                     result = expression.execute(frame);
@@ -334,8 +338,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentLanguage(PythonLanguage.class);
     }
 
-    public static ContextReference<PythonContext> getContextRef() {
-        return getCurrentLanguage(PythonLanguage.class).getContextReference();
+    public static PythonContext getContext() {
+        return getCurrentContext(PythonLanguage.class);
     }
 
     public static PythonCore getCore() {
@@ -548,13 +552,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
-        context.createInteropLock();
-        context.getSingleThreadedAssumption().invalidate();
+        context.initializeMultiThreading();
     }
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
-        super.initializeThread(context, thread);
+        context.attachThread(thread);
     }
 
+    @Override
+    protected void disposeThread(PythonContext context, Thread thread) {
+        context.disposeThread(thread);
+    }
 }

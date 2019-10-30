@@ -73,7 +73,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
     @Override
     public int length() {
-        return store.size();
+        return store.getShape().getPropertyCount();
     }
 
     @Override
@@ -122,7 +122,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     @Override
     @TruffleBoundary
     public Iterable<Object> values() {
-        ArrayList<Object> entries = new ArrayList<>(store.size());
+        ArrayList<Object> entries = new ArrayList<>(store.getShape().getPropertyCount());
         for (Object key : getKeysIterable()) {
             entries.add(store.get(key));
         }
@@ -132,7 +132,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
     @Override
     @TruffleBoundary
     public Iterable<DictEntry> entries() {
-        ArrayList<DictEntry> entries = new ArrayList<>(store.size());
+        ArrayList<DictEntry> entries = new ArrayList<>(store.getShape().getPropertyCount());
         for (Object key : getKeysIterable()) {
             entries.add(new DictEntry(key, store.get(key)));
         }

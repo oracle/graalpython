@@ -56,6 +56,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -79,7 +80,7 @@ public abstract class CastToByteNode extends Node {
         this.coerce = coerce;
     }
 
-    public abstract byte execute(Object val);
+    public abstract byte execute(VirtualFrame frame, Object val);
 
     @Specialization
     protected byte doByte(byte value) {
@@ -134,10 +135,10 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization(guards = "coerce")
-    protected byte doBytes(PIBytesLike value,
+    protected byte doBytes(VirtualFrame frame, PIBytesLike value,
                     @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
                     @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-        return doIntOvf(getItemNode.executeInt(getStorageNode.execute(value), 0));
+        return doIntOvf(getItemNode.executeInt(frame, getStorageNode.execute(value), 0));
     }
 
     @Specialization(guards = "isForeignObject(value)", limit = "1")

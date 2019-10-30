@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -80,6 +81,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDict)
 public final class DictBuiltins extends PythonBuiltins {
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put(__HASH__, PNone.NONE);
+    }
 
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -428,15 +435,6 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization
         public PDictView values(PDict self) {
             return factory().createDictValuesView(self);
-        }
-    }
-
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doGeneric(Object self) {
-            throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
 

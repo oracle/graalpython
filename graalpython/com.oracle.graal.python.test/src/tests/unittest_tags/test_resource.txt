@@ -1,0 +1,6 @@
+*ResourceTest.test_freebsd_contants
+*ResourceTest.test_fsize_enforced
+*ResourceTest.test_fsize_ismax
+*ResourceTest.test_fsize_toobig
+*ResourceTest.test_linux_constants
+*ResourceTest.test_setrusage_refcount

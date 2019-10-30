@@ -60,3 +60,49 @@ def cleanup(ref):
     caller_code = sys._getframe(1).f_code
     assert caller_code == test_weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (test_weakref_finalizer.__code__, caller_code)
     cleaned_up = True
+
+
+def test_weakref_hash():
+    from collections import UserString as ustr
+    from weakref import ref
+    import gc
+
+    o1 = ustr('a')
+    o2 = ustr('a')
+    o3 = ustr('b')
+    r1 = ref(o1)
+    r2 = ref(o2)
+    r3 = ref(o3)
+    r1_hash = hash(r1)
+    assert hash(o1) == hash(r1)
+    assert hash(o2) == hash(r2)
+    assert hash(r1) == hash(r2)
+
+    # we need a function that calls 'hash' otherwise 'hash' is inlined and will specialize differently
+    def do_hash(item):
+        return hash(item)
+
+    o1 = None
+    o2 = None
+    o3 = None
+
+    # let them die
+
+    # try hard to collect the two objects but avoid infinite loop
+    i = 0
+    while not (r1() is None and r3() is None) and i < 10000:
+        gc.collect()
+        i += 1
+
+    # We still cannot guarantee that the objects were collected; so avoid introducing transient errors and just do
+    # not test if they weren't collected.
+    if r1() is None and r3() is None:
+        try:
+            # it's important that we've never computed the has for r3 before
+            do_hash(r3)
+        except TypeError as e:
+            pass
+        else:
+            assert False, "could compute hash for r3 but should have failed"
+
+        assert r1_hash == do_hash(r1)

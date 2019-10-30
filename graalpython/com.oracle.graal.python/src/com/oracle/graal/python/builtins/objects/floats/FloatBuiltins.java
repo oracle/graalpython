@@ -75,7 +75,9 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -563,6 +565,56 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
+        protected boolean noDecimals(float num) {
+            return num % 1 == 0;
+        }
+
+        protected boolean noDecimals(double num) {
+            return num % 1 == 0;
+        }
+
+        protected boolean noDecimals(PFloat num) {
+            return num.getValue() % 1 == 0;
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        long hashFloatNoDecimals(float self) {
+            return (long) self;
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        @TruffleBoundary
+        long hashFloatWithDecimals(float self) {
+            return Float.valueOf(self).hashCode();
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        long hashDoubleNoDecimals(double self) {
+            return (long) self;
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        @TruffleBoundary
+        long hashDoubleWithDecimals(double self) {
+            return Double.valueOf(self).hashCode();
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        long hashPFloatNoDecimals(PFloat self) {
+            return (long) self.getValue();
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        @TruffleBoundary
+        long hashPFloatWithDecimals(PFloat self) {
+            return Double.valueOf(self.getValue()).hashCode();
         }
     }
 
@@ -1257,6 +1309,76 @@ public final class FloatBuiltins extends PythonBuiltins {
             return 0;
         }
 
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "as_integer_ratio", minNumOfPositionalArgs = 1)
+    abstract static class AsIntegerRatio extends PythonBuiltinNode {
+
+        @Specialization
+        PTuple get(double self,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+            if (nanProfile.profile(Double.isNaN(self))) {
+                throw raise(PythonErrorType.ValueError, "cannot convert NaN to integer ratio");
+            }
+            if (infProfile.profile(Double.isInfinite(self))) {
+                throw raise(PythonErrorType.OverflowError, "cannot convert Infinity to integer ratio");
+            }
+
+            // At the first time find mantissa and exponent. This is functionanlity of Math.frexp
+            // node basically.
+            int exponent = 0;
+            double mantissa = 0.0;
+
+            if (!(self == 0.0 || self == -0.0)) {
+                boolean neg = false;
+                mantissa = self;
+
+                if (mantissa < 0) {
+                    mantissa = -mantissa;
+                    neg = true;
+                }
+                if (mantissa >= 1.0) {
+                    while (mantissa >= 1) {
+                        ++exponent;
+                        mantissa /= 2;
+                    }
+                } else if (mantissa < 0.5) {
+                    while (mantissa < 0.5) {
+                        --exponent;
+                        mantissa *= 2;
+                    }
+                }
+                if (neg) {
+                    mantissa = -mantissa;
+                }
+            }
+
+            // count the ratio
+            return factory().createTuple(countIt(mantissa, exponent));
+        }
+
+        @TruffleBoundary
+        private Object[] countIt(double manitssa, int exponent) {
+            for (int i = 0; i < 300 && Double.compare(manitssa, Math.floor(manitssa)) != 0; i++) {
+                manitssa *= 2.0;
+                exponent--;
+            }
+
+            BigInteger numerator = BigInteger.valueOf((new Double(manitssa)).longValue());
+            BigInteger denominator = BigInteger.ONE;
+            BigInteger py_exponent = denominator.shiftLeft(Math.abs(exponent));
+            if (exponent > 0) {
+                numerator = numerator.multiply(py_exponent);
+            } else {
+                denominator = py_exponent;
+            }
+            if (numerator.bitLength() < Long.SIZE && denominator.bitLength() < Long.SIZE) {
+                return new Object[]{numerator.longValue(), denominator.longValue()};
+            }
+            return new Object[]{factory().createInt(numerator), factory().createInt(denominator)};
+        }
     }
 
     @GenerateNodeFactory

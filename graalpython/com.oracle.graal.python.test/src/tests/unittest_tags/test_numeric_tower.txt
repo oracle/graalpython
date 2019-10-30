@@ -1,3 +1,5 @@
-test_bools
-test_fractions
-test_hash_normalization
+*HashTest.test_bools
+*HashTest.test_decimals
+*HashTest.test_fractions
+*HashTest.test_hash_normalization
+*ComparisonTest.test_mixed_comparisons

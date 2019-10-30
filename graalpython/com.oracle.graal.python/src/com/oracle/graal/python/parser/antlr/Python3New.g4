@@ -295,7 +295,8 @@ locals
 :
 	{
 	    if (!$interactive && $curInlineLocals != null) {
-                factory.createScope(_localctx, ScopeInfo.ScopeKind.Function, $curInlineLocals);
+                ScopeInfo functionScope = factory.createScope(_localctx, ScopeInfo.ScopeKind.Function, $curInlineLocals);
+                functionScope.setHasAnnotations(true);
             } else {
                 factory.createScope(_localctx, ScopeInfo.ScopeKind.Module);
             }
@@ -384,7 +385,8 @@ funcdef
             String name = $n.getText(); 
             ScopeInfo enclosingScope = factory.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
-            ScopeInfo functionScope = factory.createScope(name, ScopeInfo.ScopeKind.Function); 
+            ScopeInfo functionScope = factory.createScope(name, ScopeInfo.ScopeKind.Function);
+            functionScope.setHasAnnotations(true);
             $parameters.result.defineParamsInScope(functionScope); 
         }
 	s = suite
@@ -550,9 +552,15 @@ expr_stmt
 	(
 		':' t=test
 		(
-			'=' test { rhs = $test.result; rhsStopIndex = getStopIndex($test.stop);}
+			'=' test { rhs = $test.result;}
 		)?
-		{ push(new AnnAssignmentSSTNode($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); }
+		{ 
+                    rhsStopIndex = getStopIndex($test.stop);
+                    if (rhs == null) {
+                        rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
+                    }
+                    push(factory.createAnnAssignment($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
+                }
 		|
 		augassign
 		(
@@ -573,7 +581,20 @@ expr_stmt
 				testlist_star_expr { value = $testlist_star_expr.result; rhsStopIndex = getStopIndex($testlist_star_expr.stop);}
 			)
 		)*
-		{ push(start == start() ? new ExpressionStatementSSTNode(value) : factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex($ctx), rhsStopIndex)); }
+		{ 
+                    if (value instanceof StarSSTNode) {
+                        throw new PythonRecognitionException("can't use starred expression here", this, _input, $ctx, $ctx.start);
+                    }
+                    if (start == start()) {
+                        push(new ExpressionStatementSSTNode(value));
+                    } else {
+                        SSTNode[] lhs = getArray(start, SSTNode[].class);
+                        if (lhs.length == 1 && lhs[0] instanceof StarSSTNode) {
+                            throw new PythonRecognitionException("starred assignment target must be in a list or tuple", this, _input, $ctx, $ctx.start);
+                        }
+                        push(factory.createAssignment(lhs, value, getStartIndex(_localctx), rhsStopIndex));
+                    }
+                }
 	)
 ;
 
@@ -937,6 +958,7 @@ lambdef returns [SSTNode result]
 	)? 
         {
             ScopeInfo functionScope = factory.createScope("lambda", ScopeInfo.ScopeKind.Function); 
+            functionScope.setHasAnnotations(true);
             if (args != null) {
                 args.defineParamsInScope(functionScope);
             }
@@ -956,6 +978,7 @@ lambdef_nocond returns [SSTNode result]
 	)?
         {
             ScopeInfo functionScope = factory.createScope("lambda", ScopeInfo.ScopeKind.Function); 
+            functionScope.setHasAnnotations(true);
             if (args != null) {
                 args.defineParamsInScope(functionScope);
             }
@@ -1310,7 +1333,9 @@ dictmaker returns [SSTNode result]
             { 
                 SSTNode value; 
                 SSTNode name;
-                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator);
+                generator.setHasAnnotations(true);
+                
             }
             (
 		n=test ':' v=test
@@ -1358,7 +1383,8 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 	
 	(   { 
                 SSTNode value; 
-                factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                generator.setHasAnnotations(true);
             }
             (
 		test { value = $test.result; }
@@ -1443,7 +1469,8 @@ arglist returns [ArgListBuilder result]
 
 argument [ArgListBuilder args] returns [SSTNode result]
 :               {
-                    factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                    ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                    generator.setHasAnnotations(true);
                 }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]
                 {
@@ -1453,7 +1480,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
 	|
                 { String name = getCurrentToken().getText();
                   if (getCurrentToken().getType() != NAME) {
-                    throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                    throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                   }
                   // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
                   boolean isNameAsVariableInScope = factory.getCurrentScope().getSeenVars() == null ? false : factory.getCurrentScope().getSeenVars().contains(name);
@@ -1461,7 +1488,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
 		n=test 
                 {
                     if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupSSTNode)) {
-                        throw new PythonRecognitionException("Keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                        throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
                     }
                     if (!isNameAsVariableInScope && factory.getCurrentScope().getSeenVars().contains(name)) {
                         factory.getCurrentScope().getSeenVars().remove(name);
@@ -1497,6 +1524,9 @@ comp_for
 returns [SSTNode result]
 :
 	{ 
+            if (target instanceof StarSSTNode) {
+                throw new PythonRecognitionException("iterable unpacking cannot be used in comprehension", this, _input, $ctx, $ctx.start);
+            }
             boolean scopeCreated = true; 
             boolean async = false; 
         }

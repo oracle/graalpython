@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "19.3.0",
+    "version": "20.0.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "102dcd8ab124628a0d1cfc10e333e71a4a212f1a",
+                "version": "ecbb41e20846fd4be1e0620b4b1185e7da5810e0",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "102dcd8ab124628a0d1cfc10e333e71a4a212f1a",
+                "version": "b06ba4554dfab182980b3a3d64264bb19559a0c4",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -99,7 +99,13 @@ suite = {
                 "version": "1.8",
             },
         },
-
+        "BZIP2": {
+            "urls": [
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/bzip2-1.0.8.tar.gz",
+            ],
+            "packedResource": True,
+            "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
+        }
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -171,6 +177,7 @@ suite = {
             "dependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+                "sulong:SULONG_TOOLCHAIN_LAUNCHERS",
             ],
             "jacoco": "include",
             "javaCompliance": "8+",
@@ -238,11 +245,13 @@ suite = {
                 "sulong:SULONG_HOME",
                 "sulong:SULONG_LEGACY",
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
+                "BZIP2",
             ],
             "buildEnv": {
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
                 "ARCH": "<arch>",
                 "OS": "<os>",
+                "BZIP2": "<path:BZIP2>",
             },
         },
 
@@ -291,6 +300,9 @@ suite = {
             "distDependencies": [
                 "sdk:GRAAL_SDK",
                 "sdk:LAUNCHER_COMMON",
+            ],
+            "overlaps" : [
+                "sulong:SULONG_TOOLCHAIN_LAUNCHERS"
             ],
             "description": "GraalPython launcher",
         },

@@ -47,7 +47,9 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ArgDefListBuilder {
 
@@ -87,6 +89,7 @@ public final class ArgDefListBuilder {
     private List<ParameterWithDefValue> kwargsWithDefValue;
     private int splatIndex = -1;
     private int kwarIndex = -1;
+    private int countOfTypedParams = 0;
 
     public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
         this.scopeEnvironment = scopeEnvironment;
@@ -95,6 +98,9 @@ public final class ArgDefListBuilder {
     public void addParam(String name, SSTNode type, SSTNode defValue) {
         // System.out.println("Param: " + name);
         Parameter arg = defValue == null ? new Parameter(name, type) : new ParameterWithDefValue(name, type, defValue);
+        if (type != null) {
+            countOfTypedParams++;
+        }
         if (splatIndex == -1) {
             if (defValue != null) {
                 if (argsWithDefValue == null) {
@@ -202,6 +208,20 @@ public final class ArgDefListBuilder {
             }
         }
         return nodes;
+    }
+
+    public Map<String, SSTNode> getAnnotatedArgs() {
+        if (countOfTypedParams == 0) {
+            return null;
+        }
+        Map<String, SSTNode> result = new HashMap<>(countOfTypedParams);
+        for (Parameter param : args) {
+            if (param.type != null) {
+                result.put(param.name, param.type);
+            }
+        }
+
+        return result;
     }
 
     public ExpressionNode[] getDefaultParameterValues(FactorySSTVisitor visitor) {

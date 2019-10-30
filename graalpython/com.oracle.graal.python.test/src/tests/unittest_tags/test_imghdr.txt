@@ -1,0 +1,3 @@
+*TestImghdr.test_file_pos
+*TestImghdr.test_output_stream
+*TestImghdr.test_unseekable

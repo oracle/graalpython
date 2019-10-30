@@ -172,6 +172,7 @@ import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -232,8 +233,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isInt(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            int cap = getCastToIndexNode().execute(capObj);
+        public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            int cap = getCastToIndexNode().execute(frame, capObj);
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
@@ -278,7 +279,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int i = 0;
             while (true) {
                 try {
-                    byte item = castToByteNode.execute(getNextNode.execute(frame, it));
+                    byte item = castToByteNode.execute(frame, getNextNode.execute(frame, it));
                     if (i >= arr.length) {
                         arr = resize(arr, arr.length * 2);
                     }
@@ -941,58 +942,57 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
+        private final ConditionProfile invalidBase = ConditionProfile.createBinaryProfile();
+        private final BranchProfile invalidValueProfile = BranchProfile.create();
+        private final BranchProfile bigIntegerProfile = BranchProfile.create();
+        private final BranchProfile primitiveIntProfile = BranchProfile.create();
+        private final BranchProfile fullIntProfile = BranchProfile.create();
+
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
 
-        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object keywordArg);
+        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg, Object base);
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private Object stringToIntInternal(String num, int base) throws NumberFormatException {
+        @TruffleBoundary
+        private static Object stringToIntInternal(String num, int base) {
             String s = num.replace("_", "");
-            if ((base >= 2 && base <= 32) || base == 0) {
+            try {
                 BigInteger bi = asciiToBigInteger(s, base, false);
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {
                     return bi.intValue();
                 }
-            } else {
-                throw raise(ValueError, "base is out of range for int()");
-            }
-        }
-
-        private Object convertToIntInternal(LazyPythonClass cls, Object value, Object number, int base) throws NumberFormatException {
-            if (value == null) {
-                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
-            } else if (value instanceof BigInteger) {
-                return factory().createInt(cls, (BigInteger) value);
-            } else if (isPrimitiveInt(cls)) {
-                return value;
-            } else {
-                return factory().createInt(cls, (int) value);
+            } catch (NumberFormatException e) {
+                return null;
             }
         }
 
         private Object stringToInt(LazyPythonClass cls, String number, int base) {
             Object value = stringToIntInternal(number, base);
-            return convertToIntInternal(cls, value, number, base);
-        }
-
-        private Object toIntInternal(Object number, Object base) throws NumberFormatException {
-            if (number instanceof String && base instanceof Integer) {
-                return stringToIntInternal((String) number, (Integer) base);
+            if (value == null) {
+                invalidValueProfile.enter();
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
+            } else if (value instanceof BigInteger) {
+                bigIntegerProfile.enter();
+                return factory().createInt(cls, (BigInteger) value);
+            } else if (isPrimitiveInt(cls)) {
+                primitiveIntProfile.enter();
+                return value;
             } else {
-                throw raise(ValueError, "invalid base or val for int()");
+                fullIntProfile.enter();
+                return factory().createInt(cls, (int) value);
             }
         }
 
-        private Object toInt(LazyPythonClass cls, Object number, int base) throws NumberFormatException {
-            Object value = toIntInternal(number, base);
-            return convertToIntInternal(cls, value, number, base);
+        private void checkBase(int base) {
+            if (invalidBase.profile((base < 2 || base > 32) && base != 0)) {
+                throw raise(ValueError, "base is out of range for int()");
+            }
         }
 
         // Copied directly from Jython
-        @TruffleBoundary(transferToInterpreterOnException = false)
         private static BigInteger asciiToBigInteger(String str, int possibleBase, boolean isLong) throws NumberFormatException {
+            CompilerAsserts.neverPartOfCompilation();
             int base = possibleBase;
             int b = 0;
             int e = str.length();
@@ -1070,6 +1070,63 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return bi;
         }
 
+        @TruffleBoundary
+        private static int parseInt(String arg, int base) {
+            if (arg.isEmpty() || base == 0) {
+                throw new NumberFormatException();
+            }
+            boolean negative = arg.charAt(0) == '-';
+            int start = negative ? 1 : 0;
+            if (arg.length() <= start || arg.charAt(start) == '_') {
+                throw new NumberFormatException();
+            }
+            long value = 0;
+            for (int i = start; i < arg.length(); i++) {
+                char c = arg.charAt(i);
+                if (c == '_') {
+                    continue;
+                }
+                if (c < '0' || c > '9') {
+                    throw new NumberFormatException();
+                }
+                value = value * base + (c - '0');
+                if (value > Integer.MAX_VALUE) {
+                    throw new NumberFormatException();
+                }
+            }
+            return (int) (negative ? -value : value);
+        }
+
+        private static final long MAX_VALUE = (Long.MAX_VALUE - 10) / 10;
+
+        @TruffleBoundary
+        private static long parseLong(String arg, int base) {
+            if (arg.isEmpty() || base == 0) {
+                throw new NumberFormatException();
+            }
+            boolean negative = arg.charAt(0) == '-';
+            int start = negative ? 1 : 0;
+            if (arg.length() <= start || arg.charAt(start) == '_') {
+                throw new NumberFormatException();
+            }
+            long value = 0;
+            for (int i = start; i < arg.length(); i++) {
+                char c = arg.charAt(i);
+                if (c == '_') {
+                    continue;
+                }
+                if (c < '0' || c > '9') {
+                    throw new NumberFormatException();
+                }
+                if (value >= MAX_VALUE) {
+                    // overflow, this will not allow Long.MIN_VALUE to be parsed
+                    throw new NumberFormatException();
+                }
+                value = value * base + (c - '0');
+            }
+            return negative ? -value : value;
+        }
+
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
 
         protected boolean isPrimitiveInt(LazyPythonClass cls) {
@@ -1077,7 +1134,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object parseInt(LazyPythonClass cls, boolean arg, @SuppressWarnings("unused") PNone keywordArg) {
+        Object parseInt(LazyPythonClass cls, boolean arg, @SuppressWarnings("unused") PNone base) {
             if (isPrimitiveInt(cls)) {
                 return arg ? 1 : 0;
             } else {
@@ -1085,16 +1142,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "isNoValue(keywordArg)")
-        Object createInt(LazyPythonClass cls, int arg, @SuppressWarnings("unused") PNone keywordArg) {
+        @Specialization(guards = "isNoValue(base)")
+        Object createInt(LazyPythonClass cls, int arg, @SuppressWarnings("unused") PNone base) {
             if (isPrimitiveInt(cls)) {
                 return arg;
             }
             return factory().createInt(cls, arg);
         }
 
-        @Specialization(guards = "isNoValue(keywordArg)")
-        Object createInt(LazyPythonClass cls, long arg, @SuppressWarnings("unused") PNone keywordArg,
+        @Specialization(guards = "isNoValue(base)")
+        Object createInt(LazyPythonClass cls, long arg, @SuppressWarnings("unused") PNone base,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             if (isPrimitiveInt(cls)) {
                 int intValue = (int) arg;
@@ -1107,8 +1164,119 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createInt(cls, arg);
         }
 
-        @Specialization(guards = "isNoValue(keywordArg)")
-        Object createInt(LazyPythonClass cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone keywordArg) {
+        @Specialization(guards = "isNoValue(base)")
+        Object createInt(VirtualFrame frame, LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone base,
+                        @Cached("createFloatInt()") FloatBuiltins.IntNode intNode,
+                        @Cached("createGeneric()") CreateIntFromObjectNode createIntFromObjectNode) {
+            Object result = intNode.executeWithDouble(arg);
+            return createIntFromObjectNode.execute(frame, cls, result);
+        }
+
+        // String
+
+        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
+        int createIntBase10(@SuppressWarnings("unused") LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
+            return parseInt(arg, 10);
+        }
+
+        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
+        long createLongBase10(@SuppressWarnings("unused") LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
+            return parseLong(arg, 10);
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone base) {
+            return stringToInt(cls, arg, 10);
+        }
+
+        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
+        int parseInt(@SuppressWarnings("unused") LazyPythonClass cls, String arg, int base) throws NumberFormatException {
+            checkBase(base);
+            return parseInt(arg, base);
+        }
+
+        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
+        long parseLong(@SuppressWarnings("unused") LazyPythonClass cls, String arg, int base) throws NumberFormatException {
+            checkBase(base);
+            return parseLong(arg, base);
+        }
+
+        @Specialization
+        Object parsePIntError(LazyPythonClass cls, String number, int base) {
+            checkBase(base);
+            return stringToInt(cls, number, base);
+        }
+
+        @Specialization(guards = "!isNoValue(base)")
+        Object createIntError(VirtualFrame frame, LazyPythonClass cls, String number, Object base,
+                        @Cached CastToIndexNode castToIndexNode) {
+            int intBase = castToIndexNode.execute(frame, base);
+            checkBase(intBase);
+            return stringToInt(cls, number, intBase);
+        }
+
+        // PIBytesLike
+
+        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
+        int parseInt(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int base) throws NumberFormatException {
+            return parseInt(cls, toString(frame, arg), base);
+        }
+
+        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
+        long parseLong(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int base) throws NumberFormatException {
+            return parseLong(cls, toString(frame, arg), base);
+        }
+
+        @Specialization
+        Object parseBytesError(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int base) {
+            checkBase(base);
+            return stringToInt(cls, toString(frame, arg), base);
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object parseBytesError(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base) {
+            return parseBytesError(frame, cls, arg, 10);
+        }
+
+        // PString
+
+        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
+        int createInt(@SuppressWarnings("unused") LazyPythonClass cls, PString arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
+            return parseInt(arg.getValue(), 10);
+        }
+
+        @Specialization(guards = {"isNoValue(base)", "isPrimitiveInt(cls)"}, rewriteOn = NumberFormatException.class)
+        long createLong(@SuppressWarnings("unused") LazyPythonClass cls, PString arg, @SuppressWarnings("unused") PNone base) throws NumberFormatException {
+            return parseLong(arg.getValue(), 10);
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object parsePInt(LazyPythonClass cls, PString arg, @SuppressWarnings("unused") PNone base) {
+            return stringToInt(cls, arg.getValue(), 10);
+        }
+
+        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
+        int parseInt(@SuppressWarnings("unused") LazyPythonClass cls, PString arg, int base) throws NumberFormatException {
+            checkBase(base);
+            return parseInt(arg.getValue(), base);
+        }
+
+        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
+        long parseLong(@SuppressWarnings("unused") LazyPythonClass cls, PString arg, int base) throws NumberFormatException {
+            checkBase(base);
+            return parseLong(arg.getValue(), base);
+        }
+
+        @Specialization
+        Object parsePInt(LazyPythonClass cls, PString arg, int base) {
+            checkBase(base);
+            return stringToInt(cls, arg.getValue(), base);
+        }
+
+        // other
+
+        @Specialization(guards = "isNoValue(base)")
+        Object createInt(LazyPythonClass cls, PythonNativeVoidPtr arg, @SuppressWarnings("unused") PNone base) {
             if (isPrimitiveInt(cls)) {
                 return arg;
             } else {
@@ -1117,129 +1285,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "isNoValue(keywordArg)")
-        Object createInt(VirtualFrame frame, LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone keywordArg,
-                        @Cached("createFloatInt()") FloatBuiltins.IntNode intNode,
-                        @Cached("createGeneric()") CreateIntFromObjectNode createIntFromObjectNode) {
-            Object result = intNode.executeWithDouble(arg);
-            return createIntFromObjectNode.execute(frame, cls, result);
-        }
-
         @Specialization
-        Object createInt(LazyPythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone keywordArg) {
+        Object createInt(LazyPythonClass cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone base) {
             if (isPrimitiveInt(cls)) {
                 return 0;
             }
             return factory().createInt(cls, 0);
         }
 
-        @Specialization(guards = "isNoValue(keywordArg)")
-        Object createInt(LazyPythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
-            try {
-                return stringToInt(cls, arg, 10);
-            } catch (NumberFormatException e) {
-                throw raise(ValueError, "invalid literal for int() with base 10: %s", arg);
-            }
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseInt(cls, toString(frame, arg), keywordArg);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        long parseLong(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseLong(cls, toString(frame, arg), keywordArg);
-        }
-
-        @Specialization
-        Object parseBytesError(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, int base,
-                        @Cached("create()") BranchProfile errorProfile) {
-            try {
-                return parsePInt(cls, toString(frame, arg), base);
-            } catch (NumberFormatException e) {
-                errorProfile.enter();
-                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
-            }
-        }
-
-        @Specialization(guards = "isNoValue(base)")
-        Object parseBytesError(VirtualFrame frame, LazyPythonClass cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base,
-                        @Cached("create()") BranchProfile errorProfile) {
-            return parseBytesError(frame, cls, arg, 10, errorProfile);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        int parseInt(LazyPythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
-            return parseInt(cls, arg.getValue(), keywordArg);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        @TruffleBoundary
-        long parseLong(LazyPythonClass cls, PString arg, int keywordArg) throws NumberFormatException {
-            return parseLong(cls, arg.getValue(), keywordArg);
-        }
-
-        @Specialization
-        Object parsePInt(LazyPythonClass cls, PString arg, int keywordArg) {
-            return parsePInt(cls, arg.getValue(), keywordArg);
-        }
-
-        @Specialization(guards = "isNoValue(base)")
-        Object parsePInt(LazyPythonClass cls, PString arg, PNone base) {
-            return createInt(cls, arg.getValue(), base);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        @TruffleBoundary
-        int parseInt(@SuppressWarnings("unused") LazyPythonClass cls, String arg, int keywordArg) throws NumberFormatException {
-            return Integer.parseInt(arg, keywordArg);
-        }
-
-        @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
-        @TruffleBoundary
-        long parseLong(@SuppressWarnings("unused") LazyPythonClass cls, String arg, int keywordArg) throws NumberFormatException {
-            return Long.parseLong(arg, keywordArg);
-        }
-
-        @Specialization(rewriteOn = NumberFormatException.class)
-        Object parsePInt(LazyPythonClass cls, String number, int base) {
-            return toInt(cls, number, base);
-        }
-
-        @Specialization(replaces = "parsePInt")
-        Object parsePIntError(LazyPythonClass cls, String number, int base) {
-            try {
-                return parsePInt(cls, number, base);
-            } catch (NumberFormatException e) {
-                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
-            }
-        }
-
-        @Specialization(guards = "!isNoValue(base)", rewriteOn = NumberFormatException.class)
-        Object parsePIntWithBaseObject(LazyPythonClass cls, String number, Object base,
-                        @Cached CastToIndexNode castToIndexNode) {
-            return toInt(cls, number, castToIndexNode.execute(base));
-        }
-
-        @Specialization(guards = "!isNoValue(base)", replaces = "parsePIntWithBaseObject")
-        Object createIntError(LazyPythonClass cls, String number, Object base,
-                        @Cached CastToIndexNode castToIndexNode) {
-            try {
-                return toInt(cls, number, castToIndexNode.execute(base));
-            } catch (NumberFormatException e) {
-                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, number);
-            }
-        }
-
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!isString(arg)", "!isNoValue(keywordArg)"})
-        Object fail(LazyPythonClass cls, Object arg, Object keywordArg) {
+        @Specialization(guards = {"!isString(arg)", "!isNoValue(base)"})
+        Object fail(LazyPythonClass cls, Object arg, Object base) {
             throw raise(TypeError, "int() can't convert non-string with explicit base");
         }
 
-        @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)", "!isHandledType(obj)"})
-        Object createInt(VirtualFrame frame, LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone keywordArg,
+        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
+        Object createInt(VirtualFrame frame, LazyPythonClass cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @Cached("createGeneric()") CreateIntFromObjectNode createIntFromObjectNode) {
             return createIntFromObjectNode.execute(frame, cls, obj);
         }
@@ -2097,7 +2158,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
                 for (int i = 0; i < slotlen; i++) {
                     String slotName;
-                    Object element = getSlotItemNode().execute(slotList, i);
+                    Object element = getSlotItemNode().execute(frame, slotList, i);
                     // Check valid slot name
                     if (element instanceof String) {
                         slotName = (String) element;
@@ -2120,7 +2181,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Make slots into a tuple
                 }
                 PythonContext context = getContextRef().get();
-                PException caughtException = IndirectCallContext.enter(frame, context, this);
+                PException caughtException = ForeignCallContext.enter(frame, context, this);
                 try {
                     PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
@@ -2134,7 +2195,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    IndirectCallContext.exit(context, caughtException);
+                    ForeignCallContext.exit(context, caughtException);
                 }
             }
 
@@ -2147,7 +2208,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
                 // the cast is ensured by the previous loop
-                String slotName = (String) getSlotItemNode().execute(slotList, i);
+                // n.b.: passing the null frame here is fine, since the storage and index are known
+                // types
+                String slotName = (String) getSlotItemNode().execute(null, slotList, i);
                 if ((add_dict && __DICT__.equals(slotName)) || (add_weak && __WEAKREF__.equals(slotName))) {
                     continue;
                 }
@@ -2271,9 +2334,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 for (Object cls : getMro(pythonClass)) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
-                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
-                        long itemsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
+                        long dictoffset = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2656,8 +2719,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple freevars, PTuple cellvars,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
-            byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
-            byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
+            byte[] codeBytes = toByteArrayNode.execute(frame, codestring.getSequenceStorage());
+            byte[] lnotabBytes = toByteArrayNode.execute(frame, lnotab.getSequenceStorage());
 
             return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
@@ -2814,22 +2877,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(third)")
-        Object slice(@SuppressWarnings("unused") LazyPythonClass cls, Object first, Object second, @SuppressWarnings("unused") PNone third,
+        Object slice(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object first, Object second, @SuppressWarnings("unused") PNone third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(first, second, MISSING_INDEX);
+            return sliceNode.execute(frame, first, second, MISSING_INDEX);
         }
 
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object slice(LazyPythonClass cls, Object first, PNone second, PNone third,
+        Object slice(VirtualFrame frame, LazyPythonClass cls, Object first, PNone second, PNone third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(MISSING_INDEX, first, MISSING_INDEX);
+            return sliceNode.execute(frame, MISSING_INDEX, first, MISSING_INDEX);
         }
 
         @Specialization(guards = {"!isNoValue(stop)", "!isNoValue(step)"})
-        Object slice(@SuppressWarnings("unused") LazyPythonClass cls, Object start, Object stop, Object step,
+        Object slice(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object start, Object stop, Object step,
                         @Cached("create()") SliceLiteralNode sliceNode) {
-            return sliceNode.execute(start, stop, step);
+            return sliceNode.execute(frame, start, stop, step);
         }
     }
 

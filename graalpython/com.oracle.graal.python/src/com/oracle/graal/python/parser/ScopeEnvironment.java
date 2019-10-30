@@ -115,7 +115,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         ScopeInfo.ScopeKind definingScopeKind = definingScope.getScopeKind();
         if (localySeenVars != null || !unresolvedVars.isEmpty()) {
             for (Object identifier : identifiers) {
-                String name = (String) identifier;
+                String name = identifier instanceof String ? (String) identifier : identifier.toString();
 
                 if (localySeenVars != null) {
                     // remove the localy declared variable

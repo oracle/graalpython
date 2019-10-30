@@ -137,7 +137,7 @@ public class TupleBuiltins extends PythonBuiltins {
             SequenceStorage tupleStore = tuple.getSequenceStorage();
             int len = tupleStore.length();
             for (int i = start; i < end && i < len; i++) {
-                Object object = getGetItemNode().execute(tupleStore, i);
+                Object object = getGetItemNode().execute(frame, tupleStore, i);
                 if (eqNode.executeBool(frame, object, value)) {
                     return i;
                 }
@@ -273,7 +273,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
-                Object object = getItemNode.execute(tupleStore, i);
+                Object object = getItemNode.execute(frame, tupleStore, i);
                 if (eqNode.executeBool(frame, object, value)) {
                     count++;
                 }
@@ -328,12 +328,12 @@ public class TupleBuiltins extends PythonBuiltins {
             StringBuilder buf = new StringBuilder();
             append(buf, "(");
             for (int i = 0; i < len - 1; i++) {
-                append(buf, toString(frame, getItemNode.execute(tupleStore, i), reprNode));
+                append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
                 append(buf, ", ");
             }
 
             if (len > 0) {
-                append(buf, toString(frame, getItemNode.execute(tupleStore, len - 1), reprNode));
+                append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
             }
 
             if (len == 1) {
@@ -367,18 +367,18 @@ public class TupleBuiltins extends PythonBuiltins {
 
         private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers or slices, not %p";
 
-        public abstract Object execute(PTuple tuple, Object index);
+        public abstract Object execute(VirtualFrame frame, PTuple tuple, Object index);
 
         @Specialization(guards = "!isPSlice(key)")
-        Object doPTuple(PTuple tuple, Object key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, Object key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), key);
+            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @Specialization
-        Object doPTuple(PTuple tuple, PSlice key,
+        Object doPTuple(VirtualFrame frame, PTuple tuple, PSlice key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple.getSequenceStorage(), key);
+            return getItemNode.execute(frame, tuple.getSequenceStorage(), key);
         }
 
         @Specialization
@@ -519,9 +519,9 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
-        PTuple mul(PTuple left, Object right,
+        PTuple mul(VirtualFrame frame, PTuple left, Object right,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            return factory().createTuple(repeatNode.execute(left.getSequenceStorage(), right));
+            return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), right));
         }
     }
 
@@ -573,41 +573,45 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public long tupleHash(VirtualFrame frame, PTuple self,
+        protected static long HASH_UNSET = -1;
+
+        @Specialization(guards = {"self.getHash() != HASH_UNSET"})
+        public long getHash(PTuple self) {
+            return self.getHash();
+        }
+
+        @Specialization(guards = {"self.getHash() == HASH_UNSET"})
+        public long computeHash(VirtualFrame frame, PTuple self,
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
-                        @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode,
+                        @Cached("create()") BuiltinFunctions.HashNode hashNode,
                         @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             long multiplier = 0xf4243;
-            long x = 0x345678;
-            long y;
+            long hash = 0x345678;
+            long tmp;
             for (int i = 0; i < len; i++) {
-                Object item = getItemNode.execute(tupleStore, i);
-                Object hashValue = lookupHashAttributeNode.executeObject(frame, item);
-                if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
-                    throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
-                }
-                y = castToLongNode.execute(hashValue);
-                if (y == -1) {
+                Object item = getItemNode.execute(frame, tupleStore, i);
+                Object hashValue = hashNode.execute(frame, item);
+                tmp = castToLongNode.execute(hashValue);
+                if (tmp == -1) {
                     return -1;
                 }
 
-                x = (x ^ y) * multiplier;
+                hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }
 
-            x += 97531;
+            hash += 97531;
 
-            if (x == Long.MAX_VALUE) {
-                x = -2;
+            if (hash == Long.MAX_VALUE) {
+                hash = -2;
             }
 
-            return x;
+            self.setHash(hash);
+            return hash;
         }
 
         @Fallback

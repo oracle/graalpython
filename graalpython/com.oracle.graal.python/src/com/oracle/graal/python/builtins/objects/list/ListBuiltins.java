@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -108,6 +110,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
 public class ListBuiltins extends PythonBuiltins {
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put(__HASH__, PNone.NONE);
+    }
 
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -186,6 +194,23 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @Specialization(guards = "range.getStep() > 0")
+        PNone listRange(PList list, PRange range) {
+            clearStorage(list);
+            int start = range.getStart();
+            int stop = range.getStop();
+            int step = range.getStep();
+            int len = range.len();
+            int[] ary = new int[len];
+            int idx = 0;
+            for (int i = start; i < stop; i += step) {
+                ary[idx] = i;
+                idx++;
+            }
+            list.setSequenceStorage(new IntSequenceStorage(ary));
+            return PNone.NONE;
+        }
+
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
@@ -209,9 +234,9 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        protected Object doGeneric(PList self, Object key,
+        protected Object doGeneric(VirtualFrame frame, PList self, Object key,
                         @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode) {
-            deleteNode.execute(self.getSequenceStorage(), key);
+            deleteNode.execute(frame, self.getSequenceStorage(), key);
             return PNone.NONE;
         }
 
@@ -227,9 +252,9 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        protected Object doScalar(PList self, Object key,
+        protected Object doScalar(VirtualFrame frame, PList self, Object key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(self.getSequenceStorage(), key);
+            return getItemNode.execute(frame, self.getSequenceStorage(), key);
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
@@ -254,9 +279,9 @@ public class ListBuiltins extends PythonBuiltins {
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public Object doGeneric(PList primary, Object key, Object value,
+        public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), key, value));
+            updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
         }
 
@@ -459,9 +484,9 @@ public class ListBuiltins extends PythonBuiltins {
             SequenceStorage listStore = list.getSequenceStorage();
             int len = lenNode.execute(listStore);
             for (int i = 0; i < len; i++) {
-                Object object = getItemNode.execute(listStore, i);
+                Object object = getItemNode.execute(frame, listStore, i);
                 if (castToBooleanNode.executeBoolean(frame, eqNode.executeWith(frame, object, value))) {
-                    deleteNode.execute(listStore, i);
+                    deleteNode.execute(frame, listStore, i);
                     return PNone.NONE;
                 }
             }
@@ -479,20 +504,20 @@ public class ListBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
         @Specialization
-        public Object popLast(PList list, @SuppressWarnings("unused") PNone none,
+        public Object popLast(VirtualFrame frame, PList list, @SuppressWarnings("unused") PNone none,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
             SequenceStorage store = list.getSequenceStorage();
-            Object ret = getGetItemNode().execute(store, -1);
-            deleteNode.execute(store, -1);
+            Object ret = getGetItemNode().execute(frame, store, -1);
+            deleteNode.execute(frame, store, -1);
             return ret;
         }
 
         @Specialization(guards = {"!isNoValue(idx)", "!isPSlice(idx)"})
-        public Object doIndex(PList list, Object idx,
+        public Object doIndex(VirtualFrame frame, PList list, Object idx,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
             SequenceStorage store = list.getSequenceStorage();
-            Object ret = getGetItemNode().execute(store, idx);
-            deleteNode.execute(store, idx);
+            Object ret = getGetItemNode().execute(frame, store, idx);
+            deleteNode.execute(frame, store, idx);
             return ret;
         }
 
@@ -678,7 +703,7 @@ public class ListBuiltins extends PythonBuiltins {
             long count = 0;
             SequenceStorage s = self.getSequenceStorage();
             for (int i = 0; i < lenNode.execute(s); i++) {
-                Object object = getItemNode.execute(s, i);
+                Object object = getItemNode.execute(frame, s, i);
                 if (eqNode.executeBool(frame, object, value)) {
                     count++;
                 }
@@ -775,10 +800,10 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PList doPListInt(PList left, Object right,
+        PList doPListInt(VirtualFrame frame, PList left, Object right,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
             try {
-                SequenceStorage repeated = repeatNode.execute(left.getSequenceStorage(), right);
+                SequenceStorage repeated = repeatNode.execute(frame, left.getSequenceStorage(), right);
                 return factory().createList(repeated);
             } catch (ArithmeticException | OutOfMemoryError e) {
                 throw raise(MemoryError);
@@ -796,15 +821,15 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBuiltinNode {
 
-        public abstract PList execute(PList list, Object value);
+        public abstract PList execute(VirtualFrame frame, PList list, Object value);
 
         @Specialization
-        Object doGeneric(PList list, Object right,
+        Object doGeneric(VirtualFrame frame, PList list, Object right,
                         @Cached("createBinaryProfile()") ConditionProfile updatedProfile,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
 
             SequenceStorage store = list.getSequenceStorage();
-            SequenceStorage updated = repeatNode.execute(store, right);
+            SequenceStorage updated = repeatNode.execute(frame, store, right);
             if (updatedProfile.profile(store != updated)) {
                 list.setSequenceStorage(updated);
             }
@@ -996,15 +1021,6 @@ public class ListBuiltins extends PythonBuiltins {
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
-        @Specialization
-        Object doGeneric(Object self) {
-            throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
 }

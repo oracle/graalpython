@@ -71,10 +71,12 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -87,12 +89,12 @@ import com.oracle.truffle.api.source.SourceSection;
 public class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
-    private final ContextReference<PythonContext> context;
     private final SourceSection sourceSection;
+    @CompilationFinal private ContextReference<PythonContext> context;
 
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
-    @Child private CallNode callNode = CallNode.create();
+    @Child private CallNode exceptionHookCallNode = CallNode.create();
     @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
     @Child private PythonObjectFactory factory;
     @Child private GetTracebackNode getTracebackNode;
@@ -100,7 +102,6 @@ public class TopLevelExceptionHandler extends RootNode {
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
         this.sourceSection = child.getSourceSection();
-        this.context = language.getContextReference();
         this.innerCallTarget = Truffle.getRuntime().createCallTarget(child);
         this.exception = null;
     }
@@ -108,9 +109,16 @@ public class TopLevelExceptionHandler extends RootNode {
     public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
         super(language);
         this.sourceSection = exception.getSourceLocation();
-        this.context = language.getContextReference();
         this.innerCallTarget = null;
         this.exception = exception;
+    }
+
+    private PythonContext getContext() {
+        if (context == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            context = lookupContextReference(PythonLanguage.class);
+        }
+        return context.get();
     }
 
     @Override
@@ -119,7 +127,7 @@ public class TopLevelExceptionHandler extends RootNode {
             printExc(frame, exception);
             return null;
         } else {
-            assert context.get().getCurrentException() == null;
+            assert getContext().getCurrentException() == null;
             try {
                 return run(frame);
             } catch (PException e) {
@@ -131,14 +139,15 @@ public class TopLevelExceptionHandler extends RootNode {
                     e.getExceptionObject().setTraceback(tbHead);
                 }
                 printExc(frame, e);
-                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
+                if (PythonOptions.getOption(getContext(), PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
                 }
                 return null;
             } catch (Exception | StackOverflowError e) {
-                if (PythonOptions.getOption(context.get(), PythonOptions.WithJavaStacktrace)) {
-                    boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                    if (!exitException) {
+                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+                if (!exitException) {
+                    ExceptionUtils.printPythonLikeStackTrace(e);
+                    if (PythonOptions.getOption(getContext(), PythonOptions.WithJavaStacktrace)) {
                         printStackTrace(e);
                     }
                 }
@@ -158,7 +167,7 @@ public class TopLevelExceptionHandler extends RootNode {
      */
     private void printExc(VirtualFrame frame, PException e) {
         CompilerDirectives.transferToInterpreter();
-        PythonContext theContext = context.get();
+        PythonContext theContext = getContext();
         PythonCore core = theContext.getCore();
         if (IsBuiltinClassProfile.profileClassSlowPath(e.getExceptionObject().getLazyPythonClass(), SystemExit)) {
             handleSystemExit(frame, e);
@@ -178,7 +187,10 @@ public class TopLevelExceptionHandler extends RootNode {
         if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
             if (hook != PNone.NO_VALUE) {
                 try {
-                    callNode.execute(frame, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+                    // Note: it is important to pass frame 'null' because that will cause the
+                    // CallNode to tread the invoke like a foreign call and access the top frame ref
+                    // in the context.
+                    exceptionHookCallNode.execute(null, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher
@@ -199,7 +211,7 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     private void handleSystemExit(VirtualFrame frame, PException e) {
-        PythonContext theContext = context.get();
+        PythonContext theContext = getContext();
         if (PythonOptions.getOption(theContext, PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
@@ -257,7 +269,7 @@ public class TopLevelExceptionHandler extends RootNode {
         for (int i = 0; i < frame.getArguments().length; i++) {
             PArguments.setArgument(arguments, i, frame.getArguments()[i]);
         }
-        PythonContext pythonContext = context.get();
+        PythonContext pythonContext = getContext();
         if (getSourceSection().getSource().isInternal()) {
             // internal sources are not run in the main module
             PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());

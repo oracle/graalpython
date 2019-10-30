@@ -433,7 +433,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached CastToIndexNode castToIntNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __BASICSIZE__);
-            return val != PNone.NO_VALUE ? castToIntNode.execute(val) : 0L;
+            return val != PNone.NO_VALUE ? castToIntNode.execute(null, val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
@@ -443,7 +443,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             Object val = getAttrNode.execute(object, __ITEMSIZE__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            return val != PNone.NO_VALUE ? castToIntNode.execute(val) : 0L;
+            return val != PNone.NO_VALUE ? castToIntNode.execute(null, val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
@@ -455,7 +455,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return 0L;
             }
             Object dictoffset = getAttrNode.execute(object, __DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? castToIntNode.execute(dictoffset) : 0L;
+            return dictoffset != PNone.NO_VALUE ? castToIntNode.execute(null, dictoffset) : 0L;
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")

@@ -391,7 +391,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
                 for (int i = 0; i < length; i++) {
                     // we don't allow generalization
-                    setItem.execute(storage, i, targetBuffer[i]);
+                    setItem.execute(frame, storage, i, targetBuffer[i]);
                 }
                 return length;
             }
@@ -429,7 +429,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object send(PSocket socket, PBytes bytes, Object flags,
+        Object send(VirtualFrame frame, PSocket socket, PBytes bytes, Object flags,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
             if (socket.getSocket() == null) {
@@ -441,7 +441,7 @@ public class SocketBuiltins extends PythonBuiltins {
             }
 
             try {
-                byte[] storageArray = toBytes.execute(bytes.getSequenceStorage());
+                byte[] storageArray = toBytes.execute(frame, bytes.getSequenceStorage());
                 ByteBuffer buffer = ByteBuffer.wrap(storageArray);
                 doWrite(socket, buffer);
                 return PNone.NONE;
@@ -461,11 +461,11 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object sendAll(PSocket socket, PIBytesLike bytes, Object flags,
+        Object sendAll(VirtualFrame frame, PSocket socket, PIBytesLike bytes, Object flags,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
             try {
-                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(bytes.getSequenceStorage()));
+                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(frame, bytes.getSequenceStorage()));
                 doWrite(socket, buffer);
                 return PNone.NONE;
             } catch (IOException e) {

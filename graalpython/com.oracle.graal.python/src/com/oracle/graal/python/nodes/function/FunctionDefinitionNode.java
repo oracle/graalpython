@@ -27,10 +27,12 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -40,15 +42,17 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
+import java.util.Map;
 
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
-    protected final ContextReference<PythonContext> contextRef;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
     protected final String functionName;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
@@ -56,18 +60,21 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Children protected ExpressionNode[] defaults;
     @Children protected KwDefaultExpressionNode[] kwDefaults;
     @Child private ExpressionNode doc;
-    @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
+    @Child private WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.create();
     @Child private WriteAttributeToDynamicObjectNode writeNameNode = WriteAttributeToDynamicObjectNode.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+
+    @CompilerDirectives.CompilationFinal(dimensions = 1) private final String[] annotationNames;
+    @Children private ExpressionNode[] annotationTypes;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
     private final Assumption sharedDefaultsStableAssumption = Truffle.getRuntime().createAssumption("shared defaults stable assumption");
 
     public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, ExpressionNode[] defaults, KwDefaultExpressionNode[] kwDefaults,
                     RootCallTarget callTarget,
-                    DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
+                    DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
+                    Map<String, ExpressionNode> annotations) {
         super(definitionCellSlots, executionCellSlots);
-        this.contextRef = PythonLanguage.getContextRef();
         this.functionName = functionName;
         this.enclosingClassName = enclosingClassName;
         this.doc = doc;
@@ -76,9 +83,20 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         this.defaults = defaults;
         assert kwDefaults == null || noNullElements(kwDefaults);
         this.kwDefaults = kwDefaults;
+        if (annotations != null) {
+            this.annotationNames = annotations.keySet().toArray(new String[annotations.size()]);
+            this.annotationTypes = annotations.values().toArray(new ExpressionNode[annotations.size()]);
+        } else {
+            this.annotationNames = null;
+            this.annotationTypes = null;
+        }
     }
 
     protected PythonContext getContext() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
         return contextRef.get();
     }
 
@@ -102,6 +120,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         Assumption codeStableAssumption;
         Assumption defaultsStableAssumption;
+
         if (CompilerDirectives.inCompiledCode()) {
             codeStableAssumption = getSharedCodeStableAssumption();
             defaultsStableAssumption = getSharedDefaultsStableAssumption();
@@ -109,9 +128,18 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             codeStableAssumption = Truffle.getRuntime().createAssumption();
             defaultsStableAssumption = Truffle.getRuntime().createAssumption();
         }
-        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode,
-                        codeStableAssumption, defaultsStableAssumption));
+        PFunction func = withDocString(frame,
+                        factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode,
+                                        codeStableAssumption, defaultsStableAssumption));
 
+        // Processing annotated arguments.
+        // The __annotations__ dictionary is created even there are is not any annotated arg.
+        PDict annotations = factory().createDict();
+        writeAttrNode.execute(func, __ANNOTATIONS__, annotations);
+        if (annotationNames != null) {
+            writeAnnotations(frame, annotations);
+        }
+        return func;
     }
 
     private Assumption getSharedDefaultsStableAssumption() {
@@ -146,9 +174,19 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         return defaultValues;
     }
 
+    @ExplodeLoop
+    private void writeAnnotations(VirtualFrame frame, PDict annotations) {
+        for (int i = 0; i < annotationNames.length; i++) {
+            // compute the types of the arg
+            Object type = annotationTypes[i].execute(frame);
+            // set the annotations
+            annotations.setItem(annotationNames[i], type);
+        }
+    }
+
     protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
         if (doc != null) {
-            writeDocNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
+            writeAttrNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
         }
         return func;
     }

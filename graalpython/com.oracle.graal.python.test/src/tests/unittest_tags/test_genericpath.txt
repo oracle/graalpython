@@ -1,2 +1,4 @@
 *GenericTest.test_commonprefix
 *GenericTest.test_exists
+*GenericTest.test_filetime
+*GenericTest.test_getsize

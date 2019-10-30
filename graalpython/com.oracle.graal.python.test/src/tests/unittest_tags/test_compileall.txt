@@ -1,2 +1,11 @@
-*CompileallTests.test_compile_dir_pathlike
-*CompileallTests.test_compile_file_pathlike
+*CompileallTestsBase.test_compile_dir_pathlike
+*CompileallTestsBase.test_compile_file_pathlike
+*CompileallTestsBase.test_compile_file_pathlike_ddir
+*CompileallTestsBase.test_compile_files
+*CompileallTestsBase.test_compile_path
+*CompileallTestsBase.test_compile_workers_non_positive
+*CompileallTestsBase.test_no_pycache_in_non_package
+*CompileallTestsBase.test_optimize
+*CompileallTestsBase.test_magic_number
+*CompileallTestsBase.test_mtime
+*EncodingTest.test_error

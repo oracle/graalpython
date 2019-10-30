@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -354,12 +356,28 @@ public abstract class PGuards {
         return obj instanceof Long || obj instanceof Integer;
     }
 
+    public static boolean isDouble(Object obj) {
+        return obj instanceof Long || obj instanceof Integer;
+    }
+
+    public static boolean isBoolean(Object obj) {
+        return obj instanceof Long || obj instanceof Integer;
+    }
+
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytes || obj instanceof PByteArray;
     }
 
     public static boolean isMemoryView(Object obj) {
         return obj instanceof PMemoryView;
+    }
+
+    public static boolean isAnySet(Object obj) {
+        return obj instanceof PBaseSet;
+    }
+
+    public static boolean isDictView(Object obj) {
+        return obj instanceof PDictView;
     }
 
     public static boolean isPSlice(Object obj) {

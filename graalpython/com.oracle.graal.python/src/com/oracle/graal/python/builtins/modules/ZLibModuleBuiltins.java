@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
 import java.io.ByteArrayOutputStream;
@@ -72,7 +71,6 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -153,10 +151,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Crc32Node extends PythonBinaryBuiltinNode {
 
-        @Child private SequenceStorageNodes.ToByteArrayNode toArrayNode;
         @Child private CastToIntegerFromIntNode castToIntNode;
-
-        public abstract long execute(PIBytesLike data, Object value);
 
         // we can't use jdk Crc32 class, if there is done init value of crc
         private static final int[] CRC32_TABLE = {
@@ -224,14 +219,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
-            if (toArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
-            }
-            return toArrayNode;
-        }
-
         private CastToIntegerFromIntNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -243,38 +230,40 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        public long doit(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+                        @Cached ToBytesNode toBytesNode) {
+            return doCRC32(toBytesNode.execute(frame, data));
+        }
+
         @TruffleBoundary
-        public long doit(PIBytesLike data, @SuppressWarnings("unused") PNone value) {
+        private long doCRC32(byte[] data) {
             CRC32 crc32 = new CRC32();
-            crc32.update(getToArrayNode().execute(data.getSequenceStorage()));
+            crc32.update(data);
             return crc32.getValue();
         }
 
         @Specialization
-        public long doit(PIBytesLike data, long value) {
+        public long doit(VirtualFrame frame, Object data, long value,
+                        @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = toBytesNode.execute(frame, data);
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doPInt(PIBytesLike data, PInt value) {
+        public long doPInt(VirtualFrame frame, Object data, PInt value,
+                        @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = value.intValue();
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = toBytesNode.execute(frame, data);
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doObject(PIBytesLike data, Object value,
+        public long doObject(VirtualFrame frame, Object data, Object value,
                         @Cached("create()") Crc32Node recursiveNode) {
-            return recursiveNode.execute(data, getCastToIntNode().execute(value));
-        }
-
-        @Fallback
-        public long doObject(Object data, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, "a bytes-like object is required, not '%p'", data);
+            return (long) recursiveNode.execute(frame, data, getCastToIntNode().execute(value));
         }
 
         protected static Crc32Node create() {
@@ -288,10 +277,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Adler32Node extends PythonBinaryBuiltinNode {
 
-        @Child private SequenceStorageNodes.ToByteArrayNode toArrayNode;
         @Child private CastToIntegerFromIntNode castToIntNode;
-
-        public abstract long execute(PIBytesLike data, Object value);
 
         private static final int DEFER = 3850;
         private static final int BASE = 65521;
@@ -315,14 +301,6 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
-            if (toArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
-            }
-            return toArrayNode;
-        }
-
         private CastToIntegerFromIntNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -333,39 +311,41 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return castToIntNode;
         }
 
-        @Specialization
         @TruffleBoundary
-        public long doit(PIBytesLike data, @SuppressWarnings("unused") PNone value) {
+        private long doAdler32(byte[] data) {
             Adler32 adler32 = new Adler32();
-            adler32.update(getToArrayNode().execute(data.getSequenceStorage()));
+            adler32.update(data);
             return adler32.getValue();
         }
 
         @Specialization
-        public long doit(PIBytesLike data, long value) {
+        public long doit(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+                        @Cached ToBytesNode toBytesNode) {
+            return doAdler32(toBytesNode.execute(frame, data));
+        }
+
+        @Specialization
+        public long doit(VirtualFrame frame, Object data, long value,
+                        @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = toBytesNode.execute(frame, data);
             return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doPInt(PIBytesLike data, PInt value) {
+        public long doPInt(VirtualFrame frame, Object data, PInt value,
+                        @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = value.intValue();
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = toBytesNode.execute(frame, data);
             return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doObject(PIBytesLike data, Object value,
+        public long doObject(VirtualFrame frame, Object data, Object value,
                         @Cached("create()") Adler32Node recursiveNode) {
-            return recursiveNode.execute(data, getCastToIntNode().execute(value));
-        }
-
-        @Fallback
-        public long doObject(Object data, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, "a bytes-like object is required, not '%p'", data);
+            return (long) recursiveNode.execute(frame, data, getCastToIntNode().execute(value));
         }
 
         protected static Adler32Node create() {
@@ -422,7 +402,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, PIBytesLike pb, int mode) {
+        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, Object pb, int mode) {
             byte[] data = toBytes.execute(frame, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
 
@@ -518,7 +498,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
             return factory().createTuple(new Object[]{
                             factory().createBytes(decompressed),
-                            stream.needsInput(),
+                            stream.inflater.finished(),
                             stream.getRemaining()
             });
         }
@@ -572,18 +552,18 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone level) {
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, long level,
+        public PBytes doit(VirtualFrame frame, PIBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
                 throw raise(ZLibError, "Bad compression level");
             }
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(compress(array, (int) level));
         }
 
@@ -619,11 +599,11 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private byte[] decompress(byte[] input, @SuppressWarnings("unused") int wbits, int bufsize) {
+        private byte[] decompress(byte[] data, @SuppressWarnings("unused") long wbits, int bufsize) {
             // decompress
             // We don't use wbits currently. There is no easy way how to map to java Inflater.
             Inflater decompresser = new Inflater();
-            decompresser.setInput(input);
+            decompresser.setInput(data);
             byte[] resultArray = new byte[bufsize];
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try {
@@ -642,24 +622,23 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(decompress(array, MAX_WBITS, DEF_BUF_SIZE));
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, byte wbits, int bufsize) {
-            return decompress(data, (long) wbits, bufsize);
+        public PBytes decompress(VirtualFrame frame, PIBytesLike data, byte wbits, int bufsize) {
+            return decompress(frame, data, (long) wbits, bufsize);
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, long wbits, int bufsize) {
+        public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, int bufsize) {
             // checking bufsize
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, "bufsize must be non-negative");
             }
-            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
             return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
         }
 

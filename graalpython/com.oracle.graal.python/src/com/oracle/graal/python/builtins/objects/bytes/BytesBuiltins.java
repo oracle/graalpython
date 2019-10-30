@@ -180,12 +180,12 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class CmpNode extends PythonBinaryBuiltinNode {
         @Child private BytesNodes.CmpNode cmpNode;
 
-        int cmp(PBytes self, PBytes other) {
+        int cmp(VirtualFrame frame, PBytes self, PBytes other) {
             if (cmpNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 cmpNode = insert(BytesNodes.CmpNode.create());
             }
-            return cmpNode.execute(self, other);
+            return cmpNode.execute(frame, self, other);
         }
 
     }
@@ -194,8 +194,8 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LtNode extends CmpNode {
         @Specialization
-        boolean doBytes(PBytes self, PBytes other) {
-            return cmp(self, other) < 0;
+        boolean doBytes(VirtualFrame frame, PBytes self, PBytes other) {
+            return cmp(frame, self, other) < 0;
         }
 
         @Fallback
@@ -209,8 +209,8 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LeNode extends CmpNode {
         @Specialization
-        boolean doBytes(PBytes self, PBytes other) {
-            return cmp(self, other) <= 0;
+        boolean doBytes(VirtualFrame frame, PBytes self, PBytes other) {
+            return cmp(frame, self, other) <= 0;
         }
 
         @Fallback
@@ -224,8 +224,8 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GtNode extends CmpNode {
         @Specialization
-        boolean doBytes(PBytes self, PBytes other) {
-            return cmp(self, other) > 0;
+        boolean doBytes(VirtualFrame frame, PBytes self, PBytes other) {
+            return cmp(frame, self, other) > 0;
         }
 
         @Fallback
@@ -239,8 +239,8 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GeNode extends CmpNode {
         @Specialization
-        boolean doBytes(PBytes self, PBytes other) {
-            return cmp(self, other) >= 0;
+        boolean doBytes(VirtualFrame frame, PBytes self, PBytes other) {
+            return cmp(frame, self, other) >= 0;
         }
 
         @Fallback
@@ -270,7 +270,7 @@ public class BytesBuiltins extends PythonBuiltins {
             Object bytesObj = toBytesNode.executeObject(frame, other);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), ((PBytes) bytesObj).getSequenceStorage());
-                return factory().createByteArray(res);
+                return factory().createBytes(res);
             }
             throw raise(SystemError, "could not get bytes of memoryview");
         }
@@ -286,17 +286,17 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object mul(PBytes self, int times,
+        public Object mul(VirtualFrame frame, PBytes self, int times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
-            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             return factory().createBytes(res);
         }
 
         @Specialization
-        public Object mul(PBytes self, Object times,
+        public Object mul(VirtualFrame frame, PBytes self, Object times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached("create()") CastToIndexNode castToInt) {
-            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), castToInt.execute(times));
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), castToInt.execute(frame, times));
             return factory().createBytes(res);
         }
 
@@ -315,18 +315,28 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
         @TruffleBoundary
-        public Object repr(PBytes self,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            SequenceStorage store = self.getSequenceStorage();
-            int len = store.length();
-            StringBuilder sb = new StringBuilder("b'");
-            for (int i = 0; i < len; i++) {
-                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(store, i));
-            }
+        private static final StringBuilder newStringBuilder() {
+            return new StringBuilder("b'");
+        }
+
+        @TruffleBoundary
+        private static final String sbFinishAndToString(StringBuilder sb) {
             sb.append("'");
             return sb.toString();
+        }
+
+        @Specialization
+        public Object repr(VirtualFrame frame, PBytes self,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+            SequenceStorage store = self.getSequenceStorage();
+            int len = lenNode.execute(store);
+            StringBuilder sb = newStringBuilder();
+            for (int i = 0; i < len; i++) {
+                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(frame, store, i));
+            }
+            return sbFinishAndToString(sb);
         }
     }
 
@@ -338,7 +348,7 @@ public class BytesBuiltins extends PythonBuiltins {
         PBytes join(VirtualFrame frame, PBytes bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(frame, bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -364,27 +374,27 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
-        boolean contains(PBytes self, PBytes other,
+        boolean contains(VirtualFrame frame, PBytes self, PBytes other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization
-        boolean contains(PBytes self, PByteArray other,
+        boolean contains(VirtualFrame frame, PBytes self, PByteArray other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization
-        boolean contains(PBytes self, int other,
+        boolean contains(VirtualFrame frame, PBytes self, int other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization
-        boolean contains(PBytes self, long other,
+        boolean contains(VirtualFrame frame, PBytes self, long other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
+            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Fallback
@@ -416,21 +426,21 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+        boolean startswith(VirtualFrame frame, PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, prefix, 0, getLength(self.getSequenceStorage())) == 0;
+            return findNode.execute(frame, self, prefix, 0, getLength(self.getSequenceStorage())) == 0;
         }
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
+        boolean startswith(VirtualFrame frame, PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, prefix, start, getLength(self.getSequenceStorage())) == start;
+            return findNode.execute(frame, self, prefix, start, getLength(self.getSequenceStorage())) == start;
         }
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, int start, int end,
+        boolean startswith(VirtualFrame frame, PBytes self, PIBytesLike prefix, int start, int end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, prefix, start, end) == start;
+            return findNode.execute(frame, self, prefix, start, end) == start;
         }
 
         private int getLength(SequenceStorage s) {
@@ -448,9 +458,9 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
-        boolean endswith(PBytes self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+        boolean endswith(VirtualFrame frame, PBytes self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, suffix, getLength(self.getSequenceStorage()) - getLength(suffix.getSequenceStorage()), getLength(self.getSequenceStorage())) != -1;
+            return findNode.execute(frame, self, suffix, getLength(self.getSequenceStorage()) - getLength(suffix.getSequenceStorage()), getLength(self.getSequenceStorage())) != -1;
         }
 
         private int getLength(SequenceStorage s) {
@@ -470,18 +480,18 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
-        int find(PBytes self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, 0, getLength(self.getSequenceStorage()));
+        int find(VirtualFrame frame, PBytes self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return find(frame, self, sub, 0, getLength(self.getSequenceStorage()));
         }
 
         @Specialization
-        int find(PBytes self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, start, getLength(self.getSequenceStorage()));
+        int find(VirtualFrame frame, PBytes self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
+            return find(frame, self, sub, start, getLength(self.getSequenceStorage()));
         }
 
         @Specialization
-        int find(PBytes self, Object sub, int start, int ending) {
-            return getFindNode().execute(self, sub, start, ending);
+        int find(VirtualFrame frame, PBytes self, Object sub, int start, int ending) {
+            return getFindNode().execute(frame, self, sub, start, ending);
         }
 
         private BytesNodes.FindNode getFindNode() {
@@ -505,13 +515,13 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doSlice(PBytes self, Object key,
+        Object doSlice(VirtualFrame frame, PBytes self, Object key,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
-            return getSequenceItemNode.execute(self.getSequenceStorage(), key);
+            return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
         }
 
         protected static SequenceStorageNodes.GetItemNode createGetItem() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create(), (s, f) -> f.createByteArray(s));
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create(), (s, f) -> f.createBytes(s));
         }
     }
 

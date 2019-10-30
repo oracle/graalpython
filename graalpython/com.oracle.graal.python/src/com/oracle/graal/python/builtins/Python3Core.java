@@ -40,6 +40,9 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
@@ -89,6 +92,7 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltins;
@@ -163,6 +167,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -182,8 +187,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -365,7 +368,8 @@ public final class Python3Core implements PythonCore {
                         new ContextvarsModuleBuiltins(),
                         new LZMAModuleBuiltins(),
                         new LZMACompressorBuiltins(),
-                        new LZMADecompressorBuiltins()));
+                        new LZMADecompressorBuiltins(),
+                        new MultiprocessingModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
@@ -634,7 +638,7 @@ public final class Python3Core implements PythonCore {
             // use an anonymous module for the side-effects
             mod = factory().createPythonModule("__anonymous__");
         }
-        callTarget.call(PArguments.withGlobals(mod));
+        GenericInvokeNode.getUncached().execute(null, callTarget, PArguments.withGlobals(mod));
     }
 
     public PythonObjectFactory factory() {
@@ -658,6 +662,7 @@ public final class Python3Core implements PythonCore {
         return pyNaN;
     }
 
+    @Override
     public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
         Node location = new Node() {
             @Override
@@ -677,7 +682,10 @@ public final class Python3Core implements PythonCore {
         Source source = section.getSource();
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute
+        // is NONE, then the line is not printed
+        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
         String msg;

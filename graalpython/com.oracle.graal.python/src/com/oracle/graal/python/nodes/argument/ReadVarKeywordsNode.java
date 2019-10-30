@@ -72,7 +72,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     protected int getAndCheckKwargLen(VirtualFrame frame) {
         CompilerAsserts.neverPartOfCompilation("caching the kwarg len should never be compiled");
         int length = getKwargLen(frame);
-        if (length >= PythonOptions.getIntOption(PythonLanguage.getContextRef().get(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
+        if (length >= PythonOptions.getIntOption(PythonLanguage.getContext(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
             return -1;
         }
         return length;

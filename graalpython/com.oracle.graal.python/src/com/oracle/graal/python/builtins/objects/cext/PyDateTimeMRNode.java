@@ -91,14 +91,14 @@ public abstract class PyDateTimeMRNode extends Node {
                     @Cached PInteropGetAttributeNode getSecNode,
                     @Cached PInteropGetAttributeNode getUSecNode,
                     @Cached CastToIndexNode castToIntNode) {
-
-        int year = castToIntNode.execute(getYearNode.execute(object, YEAR));
-        int month = castToIntNode.execute(getMonthNode.execute(object, MONTH));
-        int day = castToIntNode.execute(getDayNode.execute(object, DAY));
-        int hour = castToIntNode.execute(getHourNode.execute(object, HOUR));
-        int min = castToIntNode.execute(getMinNode.execute(object, MIN));
-        int sec = castToIntNode.execute(getSecNode.execute(object, SEC));
-        int usec = castToIntNode.execute(getUSecNode.execute(object, USEC));
+        // passing null here should be ok, since we should be in an interop situation
+        int year = castToIntNode.execute(null, getYearNode.execute(object, YEAR));
+        int month = castToIntNode.execute(null, getMonthNode.execute(object, MONTH));
+        int day = castToIntNode.execute(null, getDayNode.execute(object, DAY));
+        int hour = castToIntNode.execute(null, getHourNode.execute(object, HOUR));
+        int min = castToIntNode.execute(null, getMinNode.execute(object, MIN));
+        int sec = castToIntNode.execute(null, getSecNode.execute(object, SEC));
+        int usec = castToIntNode.execute(null, getUSecNode.execute(object, USEC));
         assert year >= 0 && year < 0x10000;
         assert month >= 0 && month < 0x100;
         assert day >= 0 && day < 0x100;

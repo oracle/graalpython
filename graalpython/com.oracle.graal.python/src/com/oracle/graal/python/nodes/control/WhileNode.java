@@ -30,6 +30,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -40,7 +42,7 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     private final LoopConditionProfile conditionProfile = LoopConditionProfile.createCountingProfile();
-    private final ContextReference<PythonContext> contextRef = PythonLanguage.getContextRef();
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     @Child CastToBooleanNode condition;
     @Child StatementNode body;
@@ -54,6 +56,10 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
     public boolean executeRepeating(VirtualFrame frame) {
         if (conditionProfile.profile(condition.executeBoolean(frame))) {
             body.executeVoid(frame);
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
             contextRef.get().triggerAsyncActions(frame, this);
             return true;
         }

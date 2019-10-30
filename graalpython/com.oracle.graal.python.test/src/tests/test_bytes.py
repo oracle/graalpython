@@ -185,6 +185,34 @@ def test_setitem():
         pass
 
 
+class BaseGetSlice:
+    def assertEqualWithType(self, a, b):
+        self.assertEqual(a, b)
+        self.assertEqual(type(a), type(b))
+
+    def test_getslice(self):
+        # whole sequence
+        b = self.type2test(b"hello")
+        self.assertEqualWithType(b[:], self.type2test(b"hello"))
+
+        # whole same length as slice
+        b = self.type2test(b"hellohellohello")
+        self.assertEqualWithType(b[5:10], self.type2test(b"hello"))
+
+        # shrink
+        b = self.type2test(b"hellohellohello")
+        self.assertEqualWithType(b[:10], self.type2test(b"hellohello"))
+
+        # extend
+        b = self.type2test(b"hellohelloworld")
+        self.assertEqualWithType(b[5:], self.type2test(b"helloworld"))
+
+class BytesGetSliceTest(BaseGetSlice, unittest.TestCase):
+    type2test = bytes
+
+class ByteArrayGetSliceTest(BaseGetSlice, unittest.TestCase):
+    type2test = bytearray
+
 def test_setslice():
     # whole sequence
     b = bytearray(b"hello")
@@ -646,6 +674,7 @@ def test_add_mv_to_bytes():
     mv = memoryview(b'world')
     b += mv
     assert b == b'hello world'
+    assert type(b) == bytes
 
 def test_add_mv_to_bytearray():
     ba = bytearray(b'hello ')

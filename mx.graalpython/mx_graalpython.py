@@ -106,15 +106,15 @@ def get_jdk():
     return mx.get_jdk(tag=tag)
 
 
-def python(args):
+def python(args, **kwargs):
     """run a Python program or shell"""
     if '--python.WithJavaStacktrace' not in args:
         args.insert(0, '--python.WithJavaStacktrace')
 
-    do_run_python(args)
+    do_run_python(args, **kwargs)
 
 
-def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
+def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, **kwargs):
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
@@ -136,19 +136,20 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
 
-    if mx.suite("sulong-managed", fatalIfMissing=False):
-        dists.append('SULONG_MANAGED')
+    if extra_dists:
+        dists += extra_dists
 
-    # Try eagerly to include tools for convenience when running Python
-    if not mx.suite("tools", fatalIfMissing=False):
-        SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
-    if mx.suite("tools", fatalIfMissing=False):
-        if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
-            # CHROMEINSPECTOR was built, put it on the classpath
-            dists.append('CHROMEINSPECTOR')
-            graalpython_args.insert(0, "--llvm.enableLVI=true")
-        else:
-            mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
+    if not os.environ.get("CI"):
+        # Try eagerly to include tools for convenience when running Python
+        if not mx.suite("tools", fatalIfMissing=False):
+            SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
+        if mx.suite("tools", fatalIfMissing=False):
+            if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
+                # CHROMEINSPECTOR was built, put it on the classpath
+                dists.append('CHROMEINSPECTOR')
+                graalpython_args.insert(0, "--llvm.enableLVI=true")
+            else:
+                mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
 
     graalpython_args.insert(0, '--experimental-options=true')
 
@@ -281,10 +282,6 @@ def find_eclipse():
                 return
 
 
-def python_build_svm(args):
-    return python_svm(args + ["--version"])
-
-
 @contextlib.contextmanager
 def set_env(**environ):
     "Temporarily set the process environment variables"
@@ -319,7 +316,7 @@ def _python_graalvm_launcher(args):
     dy = "/vm,/tools,/substratevm"
     if "sandboxed" in args:
         args.remove("sandboxed")
-        dy += ",/sulong-managed"
+        dy += ",/sulong-managed,/graalpython-enterprise"
     dy = ["--dynamicimports", dy]
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
@@ -1061,13 +1058,12 @@ def _register_vms(namespace):
         '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE, extra_polyglot_args=[
-        "--llvm.managed=false"
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_SANDBOXED_MULTI, extra_polyglot_args=[
         '--experimental-options', '-multi-context', '--llvm.managed',
     ]), SUITE, 10)
     python_vm_registry.add_vm(GraalPythonVm(config_name=CONFIGURATION_NATIVE_MULTI, extra_polyglot_args=[
-        '--experimental-options', '-multi-context', '--llvm.managed=false',
+        '--experimental-options', '-multi-context',
     ]), SUITE, 10)
 
 
@@ -1154,6 +1150,15 @@ def python_build_watch(args):
 
 
 class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
+    class PrefixingOutput():
+        def __init__(self, prefix, printfunc):
+            self.prefix = "[" + prefix + "] "
+            self.printfunc = printfunc
+
+        def __call__(self, line):
+            # n.b.: mx already sends us the output line-by-line
+            self.printfunc(self.prefix + line.rstrip())
+
     def __init__(self, args, project):
         jobs = min(mx.cpu_count(), 8)
         super(GraalpythonCAPIBuildTask, self).__init__(args, jobs, project)
@@ -1161,8 +1166,17 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
     def __str__(self):
         return 'Building C API project {} with setuptools'.format(self.subject.name)
 
-    def run(self, args, env=None, cwd=None):
-        return do_run_python(args, env=env, cwd=cwd)
+    def run(self, args, env=None, cwd=None, **kwargs):
+        env = env.copy() if env else os.environ.copy()
+        # n.b.: we don't want derived projects to also have to depend on our build env vars
+        env.update(mx.dependency("com.oracle.graal.python.cext").getBuildEnv())
+        env.update(self.subject.getBuildEnv())
+
+        # distutils will honor env variables CC, CFLAGS, LDFLAGS but we won't allow to change them
+        for var in ["CC", "CFLAGS", "LDFLAGS"]:
+            env.pop(var, None)
+
+        return do_run_python(args, env=env, cwd=cwd, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 
     def _dev_headers_dir(self):
         return os.path.join(SUITE.dir, "graalpython", "include")
@@ -1192,12 +1206,6 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
-        # TODO: GR-18535
-        if mx.suite("sulong-managed", fatalIfMissing=False):
-            mx.log("Building C API project com.oracle.graal.python.cext managed ...")
-            mx.ensure_dir_exists(cwd)
-            rc = self.run(["--llvm.managed"] + args, cwd=cwd)
-            shutil.rmtree(cwd) # remove the temporary build files
         return min(rc, 1)
 
     def src_dir(self):

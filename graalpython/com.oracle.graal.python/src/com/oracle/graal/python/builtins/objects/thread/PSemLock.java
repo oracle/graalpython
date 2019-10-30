@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,53 +38,95 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.shell;
+package com.oracle.graal.python.builtins.objects.thread;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-public class GraalPythonCompiler {
-    protected static final String A_OUT = "a.out";
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-    protected boolean verbose;
+public final class PSemLock extends AbstractPythonLock {
+    public static final int RECURSIVE_MUTEX = 0;
+    public static final int SEMAPHORE = 1;
 
-    public GraalPythonCompiler() {
-        super();
+    private final Semaphore semaphore;
+    private final int kind;
+
+    private int lastThreadID = -1;
+    private int count;
+
+    @TruffleBoundary
+    public PSemLock(LazyPythonClass cls, int kind, int value) {
+        super(cls);
+        semaphore = new Semaphore(value);
+        this.kind = kind;
     }
 
-    protected void exec(List<String> args) {
+    @Override
+    @TruffleBoundary
+    protected boolean acquireNonBlocking() {
+        return semaphore.tryAcquire();
+    }
+
+    @Override
+    @TruffleBoundary
+    protected boolean acquireBlocking() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.inheritIO();
-            processBuilder.command(args);
-            logV(args);
-            int status = processBuilder.start().waitFor();
-            if (status != 0) {
-                System.exit(status);
-            }
-        } catch (IOException | InterruptedException e) {
+            semaphore.acquire();
+            return true;
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+            return false;
         }
     }
 
-    protected void logV(String prefix, List<String> args) {
-        if (verbose) {
-            System.err.print("[python] ");
-            System.err.print("[" + getClass().getSimpleName() + "] ");
-            if (prefix != null) {
-                System.err.print(prefix);
-            }
-            System.err.println(String.join(" ", args));
+    @Override
+    @TruffleBoundary
+    protected boolean acquireTimeout(long timeout) {
+        try {
+            return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 
-    protected void logV(List<String> args) {
-        logV(null, args);
+    @Override
+    @TruffleBoundary
+    public void release() {
+        semaphore.release();
     }
 
-    protected void logV(String... args) {
-        logV(null, Arrays.asList(args));
+    @Override
+    @TruffleBoundary
+    public boolean locked() {
+        return semaphore.availablePermits() == 0;
+    }
+
+    @TruffleBoundary
+    public int getValue() {
+        return semaphore.availablePermits();
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void increaseCount() {
+        count++;
+    }
+
+    public void decreaseCount() {
+        count--;
+    }
+
+    @TruffleBoundary
+    public boolean isMine() {
+        return count > 0 && lastThreadID == Thread.currentThread().getId();
+    }
+
+    public int getKind() {
+        return kind;
     }
 }

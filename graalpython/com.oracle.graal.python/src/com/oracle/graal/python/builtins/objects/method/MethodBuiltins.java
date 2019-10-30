@@ -185,7 +185,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization

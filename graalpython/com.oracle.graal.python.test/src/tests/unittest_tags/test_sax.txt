@@ -37,6 +37,7 @@
 *XmlgenTest.test_xmlgen_ns
 *XmlgenTest.test_xmlgen_ns_empty
 *XmlgenTest.test_xmlgen_pi
+*XMLFilterBaseTest.test_filter_basic
 *ErrorReportingTest.test_sax_parse_exception_str
 *XmlReaderTest.test_attrs_empty
 *XmlReaderTest.test_attrs_wattr

@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -815,6 +816,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PThread createPythonThread(LazyPythonClass cls, Thread thread) {
         return trace(new PThread(cls, thread));
+    }
+
+    public PSemLock createSemLock(LazyPythonClass cls, int kind, int value, @SuppressWarnings("unused") int maxvalue, @SuppressWarnings("unused") Object nameObj) {
+        return trace(new PSemLock(cls, kind, value));
     }
 
     public PScandirIterator createScandirIterator(LazyPythonClass cls, String path, DirectoryStream<TruffleFile> next) {

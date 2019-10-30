@@ -54,15 +54,17 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public abstract class PClosureRootNode extends PRootNode {
     private static final PCell[] NO_CLOSURE = new PCell[0];
     private final Assumption singleContextAssumption;
+    private final boolean annotationsAvailable;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected PCell[] closure;
     private final int length;
 
-    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots) {
+    protected PClosureRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
         super(language, frameDescriptor);
         this.singleContextAssumption = language.singleContextAssumption;
         this.freeVarSlots = freeVarSlots;
         this.length = freeVarSlots != null ? freeVarSlots.length : 0;
+        this.annotationsAvailable = hasAnnotations;
     }
 
     protected void addClosureCellsToLocals(Frame frame) {
@@ -121,5 +123,9 @@ public abstract class PClosureRootNode extends PRootNode {
             return freeVars;
         }
         return new String[0];
+    }
+
+    public boolean hasAnnotations() {
+        return annotationsAvailable;
     }
 }

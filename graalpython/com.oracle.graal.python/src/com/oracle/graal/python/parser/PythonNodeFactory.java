@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
+import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.ArgListBuilder;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.AugAssignmentSSTNode;
@@ -169,6 +170,14 @@ public final class PythonNodeFactory {
         return new AssignmentSSTNode(lhs, rhs, start, stop);
     }
 
+    public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
+        declareVar(lhs);
+        if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
+            scopeEnvironment.getCurrentScope().setHasAnnotations(true);
+        }
+        return new AnnAssignmentSSTNode(lhs, type, rhs, start, end);
+    }
+
     public SSTNode createAugAssignment(SSTNode lhs, String operation, SSTNode rhs, int startOffset, int endOffset) {
         declareVar(lhs);
         return new AugAssignmentSSTNode(lhs, operation, rhs, startOffset, endOffset);
@@ -211,6 +220,9 @@ public final class PythonNodeFactory {
     }
 
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
+        if (!scopeEnvironment.isInFunctionScope()) {
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), "'yield' outside function");
+        }
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
@@ -247,20 +259,22 @@ public final class PythonNodeFactory {
                 result = functionRoot;
                 break;
             case File:
-                result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor());
+                result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                                scopeEnvironment.getGlobalScope().hasAnnotations());
                 ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             case InlineEvaluation:
                 result = body;
                 break;
             case InteractiveStatement:
-                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd);
+                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
                 ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             case Statement:
                 ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
                 printExpression.assignSourceSection(body.getSourceSection());
-                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor());
+                result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                                scopeEnvironment.getGlobalScope().hasAnnotations());
                 ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                 break;
             default:

@@ -340,7 +340,7 @@ class SRE_Pattern():
         if self.__binary:
             return bytes(elem)
         elif elem is None:
-            return None
+            return ""
         else:
             return str(elem)
 

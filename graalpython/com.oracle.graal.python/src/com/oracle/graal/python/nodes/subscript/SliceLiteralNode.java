@@ -47,6 +47,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild(value = "first", type = ExpressionNode.class)
@@ -59,7 +60,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     @Child private CastToSliceComponentNode castStopNode;
     @Child private CastToSliceComponentNode castStepNode;
 
-    public abstract PSlice execute(Object start, Object stop, Object step);
+    public abstract PSlice execute(VirtualFrame frame, Object start, Object stop, Object step);
 
     @Specialization
     public PSlice doInt(int start, int stop, int step) {
@@ -67,37 +68,37 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     }
 
     @Specialization
-    public PSlice doInt(int start, int stop, PNone step) {
-        return factory.createSlice(start, stop, castStep(step));
+    public PSlice doInt(VirtualFrame frame, int start, int stop, PNone step) {
+        return factory.createSlice(start, stop, castStep(frame, step));
     }
 
     @Fallback
-    public PSlice doGeneric(Object start, Object stop, Object step) {
-        return factory.createSlice(castStart(start), castStop(stop), castStep(step));
+    public PSlice doGeneric(VirtualFrame frame, Object start, Object stop, Object step) {
+        return factory.createSlice(castStart(frame, start), castStop(frame, stop), castStep(frame, step));
     }
 
-    private int castStart(Object o) {
+    private int castStart(VirtualFrame frame, Object o) {
         if (castStartNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             castStartNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
         }
-        return castStartNode.execute(o);
+        return castStartNode.execute(frame, o);
     }
 
-    private int castStop(Object o) {
+    private int castStop(VirtualFrame frame, Object o) {
         if (castStopNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             castStopNode = insert(CastToSliceComponentNode.create(MISSING_INDEX, MISSING_INDEX));
         }
-        return castStopNode.execute(o);
+        return castStopNode.execute(frame, o);
     }
 
-    private int castStep(Object o) {
+    private int castStep(VirtualFrame frame, Object o) {
         if (castStepNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             castStepNode = insert(CastToSliceComponentNode.create(1, Integer.MAX_VALUE));
         }
-        return castStepNode.execute(o);
+        return castStepNode.execute(frame, o);
     }
 
     public abstract PNode getFirst();
@@ -127,11 +128,11 @@ public abstract class SliceLiteralNode extends ExpressionNode {
             this.overflowValue = overflowValue;
         }
 
-        public abstract int execute(int i);
+        public abstract int execute(VirtualFrame frame, int i);
 
-        public abstract int execute(long i);
+        public abstract int execute(VirtualFrame frame, long i);
 
-        public abstract int execute(Object i);
+        public abstract int execute(VirtualFrame frame, Object i);
 
         @Specialization
         int doNone(@SuppressWarnings("unused") PNone i) {
@@ -169,11 +170,11 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doGeneric(Object i,
+        int doGeneric(VirtualFrame frame, Object i,
                         @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             try {
-                return castToIndexNode.execute(i);
+                return castToIndexNode.execute(frame, i);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
                 return overflowValue;

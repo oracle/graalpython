@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,48 @@ def test_backref():
         a = 'foo'
         return sys._getframe(0).f_back
     assert foo().f_locals['a'] == 'test_backref'
+
+    def get_frame():
+        return sys._getframe(0)
+
+    def get_frame_caller():
+        return get_frame()
+
+    def do_stackwalk(f):
+        stack = []
+        while f:
+            stack.append(f)
+            f = f.f_back
+        return stack
+
+    stack = do_stackwalk(get_frame_caller())
+    actual_fnames = [n.f_code.co_name for n in stack]
+    expected_prefix = ['get_frame', 'get_frame_caller', 'test_backref']
+    assert len(stack) >= len(expected_prefix)
+    assert expected_prefix == actual_fnames[:len(expected_prefix)]
+
+
+def test_backref_recursive():
+    def get_frame():
+        return sys._getframe(0)
+
+    def foo(i):
+        if i == 1:
+            f = get_frame()
+            stack = []
+            while f:
+                stack.append(f)
+                f = f.f_back
+            return stack
+        else:
+            # This recursive call will cause
+            return foo(i+1)
+
+    def bar():
+        return foo(0)
+
+    s = bar()
+    print([n.f_code for n in s])
 
 
 def test_code():

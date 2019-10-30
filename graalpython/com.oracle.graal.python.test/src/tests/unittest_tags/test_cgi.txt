@@ -9,10 +9,13 @@
 *CgiTests.test_fieldstorage_invalid
 *CgiTests.test_fieldstorage_multipart
 *CgiTests.test_fieldstorage_multipart_leading_whitespace
+*CgiTests.test_fieldstorage_multipart_maxline
 *CgiTests.test_fieldstorage_multipart_non_ascii
 *CgiTests.test_fieldstorage_multipart_w3c
 *CgiTests.test_fieldstorage_part_content_length
 *CgiTests.test_fieldstorage_properties
+*CgiTests.test_fieldstorage_readline
 *CgiTests.test_log
+*CgiTests.test_max_num_fields
 *CgiTests.test_parse_header
 *CgiTests.test_parse_multipart

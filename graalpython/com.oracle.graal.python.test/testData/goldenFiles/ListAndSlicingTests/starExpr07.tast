@@ -1,0 +1,41 @@
+ModuleRootNode Name: <module 'starExpr07'> SourceSection: [0,16]`[a, *b, c] = seq`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 3 slots [<>temp0, <>temp1, <>temp2]
+  Documentation: None
+  InnerRootNode SourceSection: [0,16]`[a, *b, c] = seq`
+    ExpressionWithSideEffect SourceSection: [0,16]`[a, *b, c] = seq`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        DestructuringAssignmentNodeGen SourceSection: [0,16]`[a, *b, c] = seq`
+          ReadNameNodeGen SourceSection: [13,16]`seq`
+            Identifier: seq
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp0
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp1
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [1,<>temp1,Illegal]
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp2
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [2,<>temp2,Illegal]
+          WriteNameNodeGen SourceSection: None
+            Identifier: a
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+          WriteNameNodeGen SourceSection: None
+            Identifier: b
+            ReadLocalVariableNode SourceSection: None
+              Frame: [1,<>temp1,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+          WriteNameNodeGen SourceSection: None
+            Identifier: c
+            ReadLocalVariableNode SourceSection: None
+              Frame: [2,<>temp2,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.objects.common.HashingStorage.DEFAULT_EQIVALENCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -139,7 +140,7 @@ public abstract class HashingStorageNodes {
     public static class PythonEquivalence extends Equivalence {
         @Child private PRaiseNode raise;
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
-        @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
+        @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==", null, null);
         @Child private CastToBooleanNode castToBoolean = CastToBooleanNode.createIfTrueNode();
         @CompilationFinal private int state = 0;
 
@@ -652,6 +653,11 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isHashable(frame, key)")
+        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") EconomicMapStorage storage, Object key) {
+            throw unhashable(key);
+        }
+
+        @Specialization(guards = "!isHashable(frame, key)")
         protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashMapStorage storage, Object key) {
             throw unhashable(key);
         }
@@ -1150,6 +1156,7 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    @ImportStatic(SpecialMethodNames.class)
     public abstract static class GetItemNode extends DictStorageBaseNode {
         protected static final int MAX_DYNAMIC_STORAGES = 3;
 
@@ -1161,7 +1168,11 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = "isHashable(frame, key)")
         @SuppressWarnings("unused")
-        Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key) {
+        Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key,
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode hashNode) {
+            // n.b.: we need to call the __hash__ function here for the
+            // side-effect to comply with Python semantics.
+            hashNode.executeObject(frame, key);
             return null;
         }
 

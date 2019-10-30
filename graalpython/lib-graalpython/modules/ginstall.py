@@ -48,13 +48,25 @@ import importlib
 import sys
 
 
+def get_module_name(package_name):
+    non_standard_packages = {
+        'pyyaml':'pyaml',
+        'protobuf':'google.protobuf',
+        'python-dateutil':'dateutil',
+        'websocket-client':'websocket',
+    }
+    module_name = non_standard_packages.get(package_name, package_name)
+    return  module_name.replace('-', '_')
+
+
 def pip_package(name=None):
     def decorator(func):
         def wrapper(*args, **kwargs):
             _name = name if name else func.__name__
             try:
-                importlib.import_module(_name)
-                del sys.modules[_name]
+                module_name = get_module_name(_name)
+                importlib.import_module(module_name)
+                del sys.modules[module_name]
             except ImportError:
                 print("Installing required dependency: {}".format(_name))
                 func(*args, **kwargs)
@@ -144,6 +156,11 @@ index 66d8530..8bb2ab6 100644
         install_from_pypi("pytest==5.0.1", patch=patch, **kwargs)
 
     @pip_package()
+    def pytest_parallel(**kwargs):
+        pytest(**kwargs)
+        install_from_pypi("pytest-parallel==0.0.9", **kwargs)
+
+    @pip_package()
     def py(**kwargs):
         install_from_pypi("py==1.8.0", **kwargs)
 
@@ -224,8 +241,10 @@ index 66d8530..8bb2ab6 100644
         install_from_pypi("six==1.12.0", **kwargs)
 
     @pip_package()
-    def Cython(**kwargs):
-        install_from_pypi("Cython==0.29.2", **kwargs)
+    def Cython(extra_opts=None, **kwargs):
+        if extra_opts is None:
+            extra_opts = []
+        install_from_pypi("Cython==0.29.13", extra_opts=['--no-cython-compile'] + extra_opts, **kwargs)
 
     @pip_package()
     def setuptools(**kwargs):
@@ -271,6 +290,144 @@ index 66d8530..8bb2ab6 100644
     @pip_package()
     def Werkzeug(**kwargs):
         install_from_pypi("Werkzeug==0.15.4", **kwargs)
+
+    @pip_package()
+    def h5py(**kwargs):
+        numpy(**kwargs)
+        Cython(**kwargs)
+        patch = '''
+--- a/setup_configure.py
++++ b/setup_configure.py
+@@ -189,59 +189,71 @@ def autodetect_version(hdf5_dir=None):
+ 
+     hdf5_dir: optional HDF5 install directory to look in (containing "lib")
+     """
++    # import re
++    # import ctypes
++    # from ctypes import byref
++
++    # import pkgconfig
++
++    # if sys.platform.startswith('darwin'):
++    #     default_path = 'libhdf5.dylib'
++    #     regexp = re.compile(r'^libhdf5.dylib')
++    # elif sys.platform.startswith('win') or \
++    #     sys.platform.startswith('cygwin'):
++    #     default_path = 'hdf5.dll'
++    #     regexp = re.compile(r'^hdf5.dll')
++    # else:
++    #     default_path = 'libhdf5.so'
++    #     regexp = re.compile(r'^libhdf5.so')
++
++    # libdirs = ['/usr/local/lib', '/opt/local/lib']
++    # try:
++    #     if pkgconfig.exists("hdf5"):
++    #         libdirs.extend(pkgconfig.parse("hdf5")['library_dirs'])
++    # except EnvironmentError:
++    #     pass
++    # if hdf5_dir is not None:
++    #     if sys.platform.startswith('win'):
++    #         lib = 'bin'
++    #     else:
++    #         lib = 'lib'
++    #     libdirs.insert(0, op.join(hdf5_dir, lib))
++
++    # path = None
++    # for d in libdirs:
++    #     try:
++    #         candidates = [x for x in os.listdir(d) if regexp.match(x)]
++    #     except Exception:
++    #         continue   # Skip invalid entries
++
++    #     if len(candidates) != 0:
++    #         candidates.sort(key=lambda x: len(x))   # Prefer libfoo.so to libfoo.so.X.Y.Z
++    #         path = op.abspath(op.join(d, candidates[0]))
++    #         break
++
++    # if path is None:
++    #     path = default_path
++
++    # print("Loading library to get version:", path)
++
++    # lib = ctypes.cdll.LoadLibrary(path)
++
++    # major = ctypes.c_uint()
++    # minor = ctypes.c_uint()
++    # release = ctypes.c_uint()
++
++    # lib.H5get_libversion(byref(major), byref(minor), byref(release))
++
++    # return "{0}.{1}.{2}".format(int(major.value), int(minor.value), int(release.value))
+     import re
+-    import ctypes
+-    from ctypes import byref
+-
+-    import pkgconfig
+-
+-    if sys.platform.startswith('darwin'):
+-        default_path = 'libhdf5.dylib'
+-        regexp = re.compile(r'^libhdf5.dylib')
+-    elif sys.platform.startswith('win') or \
+-        sys.platform.startswith('cygwin'):
+-        default_path = 'hdf5.dll'
+-        regexp = re.compile(r'^hdf5.dll')
+-    else:
+-        default_path = 'libhdf5.so'
+-        regexp = re.compile(r'^libhdf5.so')
+-
+-    libdirs = ['/usr/local/lib', '/opt/local/lib']
+-    try:
+-        if pkgconfig.exists("hdf5"):
+-            libdirs.extend(pkgconfig.parse("hdf5")['library_dirs'])
+-    except EnvironmentError:
+-        pass
+-    if hdf5_dir is not None:
+-        if sys.platform.startswith('win'):
+-            lib = 'bin'
+-        else:
+-            lib = 'lib'
+-        libdirs.insert(0, op.join(hdf5_dir, lib))
+-
+-    path = None
+-    for d in libdirs:
+-        try:
+-            candidates = [x for x in os.listdir(d) if regexp.match(x)]
+-        except Exception:
+-            continue   # Skip invalid entries
+-
+-        if len(candidates) != 0:
+-            candidates.sort(key=lambda x: len(x))   # Prefer libfoo.so to libfoo.so.X.Y.Z
+-            path = op.abspath(op.join(d, candidates[0]))
+-            break
+-
+-    if path is None:
+-        path = default_path
+-
+-    print("Loading library to get version:", path)
+-
+-    lib = ctypes.cdll.LoadLibrary(path)
+-
+-    major = ctypes.c_uint()
+-    minor = ctypes.c_uint()
+-    release = ctypes.c_uint()
+-
+-    lib.H5get_libversion(byref(major), byref(minor), byref(release))
+-
+-    return "{0}.{1}.{2}".format(int(major.value), int(minor.value), int(release.value))
++    from subprocess import check_output, STDOUT
++
++    PATTERN_VERSION = re.compile(r'^\s*HDF5 Version:\s*(?P<version>[0-9.]+).*', re.DOTALL)
++
++    hdf5_config = check_output('h5cc -showconfig', stderr=STDOUT, shell=True).decode('utf-8')
++    # detect version string 
++    for line in hdf5_config.splitlines():
++        match = re.match(PATTERN_VERSION, line)
++        if match:
++            return match.group('version')
++    raise RuntimeError("HDF5 Version couuld not be found, h5cc not in PATH")
+
+        '''
+        install_from_pypi("h5py==2.10.0", patch=patch, **kwargs)
 
     # Does not yet work
     # def h5py(**kwargs):
@@ -1125,13 +1282,74 @@ index 8b2ded1..8a9295a 100755
              'console_scripts': f2py_cmds
          },
 
+diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
+index 14451fa..85e64cc 100644
+--- a/numpy/distutils/ccompiler.py
++++ b/numpy/distutils/ccompiler.py
+@@ -682,7 +682,7 @@ def CCompiler_cxx_compiler(self):
+         return self
+ 
+     cxx = copy(self)
+-    cxx.compiler_so = [cxx.compiler_cxx[0]] + cxx.compiler_so[1:]
++    cxx.compiler_so = cxx.compiler_cxx + cxx.compiler_so[1:]
+     if sys.platform.startswith('aix') and 'ld_so_aix' in cxx.linker_so[0]:
+         # AIX needs the ld_so_aix script included with Python
+         cxx.linker_so = [cxx.linker_so[0], cxx.compiler_cxx[0]] \
+
 '''
-        install_from_pypi("numpy==1.16.4", patch=patch, env={"NPY_NUM_BUILD_JOBS": "1"})
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        numpy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                numpy_build_env[key] = os.environ[key]
+        install_from_pypi("numpy==1.16.4", patch=patch, env=numpy_build_env, **kwargs)
 
     @pip_package()
     def dateutil(**kwargs):
         setuptools_scm(**kwargs)
         install_from_pypi("python-dateutil==2.7.5", **kwargs)
+
+    @pip_package()
+    def certifi(**kwargs):
+        install_from_pypi("certifi==2019.9.11", **kwargs)
+
+    @pip_package()
+    def idna(**kwargs):
+        install_from_pypi("idna==2.8", **kwargs)
+
+    @pip_package()
+    def chardet(**kwargs):
+        install_from_pypi("chardet==3.0.4", **kwargs)
+
+    @pip_package()
+    def urllib3(**kwargs):
+        install_from_pypi("urllib3==1.25.6", **kwargs)
+
+    @pip_package()
+    def requests(**kwargs):
+        idna(**kwargs)
+        certifi(**kwargs)
+        chardet(**kwargs)
+        urllib3(**kwargs)
+        install_from_pypi("requests==2.22", **kwargs)
+
+    @pip_package()
+    def lightfm(**kwargs):
+        # pandas(**kwargs)
+        requests(**kwargs)
+        patch = r"""
+--- a/setup.py
++++ b/setup.py
+@@ -147,7 +147,8 @@ typedef struct {PyObject **p; const char *s; const Py_ssize_t n; const char* enc
+
+
+ use_openmp = not sys.platform.startswith('darwin') and not sys.platform.startswith('win')
++use_openmp = False
+
+ setup(
+     name='lightfm',
+"""
+        install_from_pypi("lightfm==1.15", patch=patch, **kwargs)
 
     @pip_package()
     def pytz(**kwargs):
@@ -1193,6 +1411,20 @@ index d527af6..773cfe0 100644
      #define __Pyx_sst_abs(value) abs(value)
  #elif SIZEOF_LONG >= SIZEOF_SIZE_T
      #define __Pyx_sst_abs(value) labs(value)
+@@ -881,13 +881,7 @@ static const char *__pyx_filename;
+ 
+ /* Header.proto */
+ #if !defined(CYTHON_CCOMPLEX)
+-  #if defined(__cplusplus)
+-    #define CYTHON_CCOMPLEX 1
+-  #elif defined(_Complex_I)
+-    #define CYTHON_CCOMPLEX 1
+-  #else
+     #define CYTHON_CCOMPLEX 0
+-  #endif
+ #endif
+ #if CYTHON_CCOMPLEX
+   #ifdef __cplusplus
 diff --git a/pandas/core/window.py b/pandas/core/window.py
 index 8657420..f7b3f08 100644
 --- a/pandas/core/window.py
@@ -1208,8 +1440,70 @@ index 8657420..f7b3f08 100644
  from pandas.util._decorators import Appender, Substitution, cache_readonly
 '''
         # workaround until Sulong toolchain fixes this
-        cflags = "-stdlib=libc++ -lc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
+        cflags = "-stdlib=libc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
         install_from_pypi("pandas==0.25.0", patch=patch, add_cflags=cflags, **kwargs)
+
+    @pip_package()
+    def scipy(**kwargs):
+        if sys.implementation.name == "graalpython":
+            venv_path = os.environ.get("VIRTUAL_ENV", None)
+            if not venv_path:
+                xit("SciPy can only be installed within a virtual env.")
+    
+            r = subprocess.check_output(sys.executable + " -llvm-path", shell=True).decode("utf8")
+            llvm_bin_dir = r.splitlines()[-1].strip()
+            if not os.path.isdir(llvm_bin_dir):
+                xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
+    
+            # currently we need 'ar', 'ranlib', and 'ld.lld'
+            llvm_bins = {"llvm-ar": "ar", "llvm-ranlib": "ranlib", "ld.lld": "ld.lld"}
+            for binary in llvm_bins.keys():
+                llvm_bin = os.path.join(llvm_bin_dir, binary)
+                if not os.path.isfile(llvm_bin):
+                    xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
+                else:
+                    dest = os.path.join(venv_path, "bin", llvm_bins[binary])
+                    if os.path.exists(dest):
+                        os.unlink(dest)
+                    os.symlink(llvm_bin, dest)
+    
+            # locate system's gfortran
+            path_without_venv = os.pathsep.join([x for x in os.environ["PATH"].split(os.pathsep) if venv_path not in x])
+            system_gfortran = shutil.which("gfortran", path=path_without_venv)
+            if not system_gfortran:
+                xit("Could not locate gfortran binary.")
+                
+            # create gfortran wrapper script into venv's bin directory
+            gfortran_wrapper = os.path.join(venv_path, "bin", "gfortran")
+            assert system_gfortran != gfortran_wrapper
+            with open(gfortran_wrapper, "w") as f:
+                f.write('#!/bin/bash\nexec "{}" -fuse-ld=lld $@\n'.format(system_gfortran))
+            # make it executable
+            os.chmod(gfortran_wrapper , 0o775)
+
+        # install dependencies
+        numpy(**kwargs)
+
+        patch = '''diff --git a/scipy/__init__.py b/scipy/__init__.py
+index 2c7508f..f3352ec 100755
+--- a/scipy/__init__.py
++++ b/scipy/__init__.py
+@@ -116,8 +116,6 @@ else:
+ 
+     del _NumpyVersion
+ 
+-    from scipy._lib._ccallback import LowLevelCallable
+-
+     from scipy._lib._testutils import PytestTester
+     test = PytestTester(__name__)
+     del PytestTester
+'''
+        # honor following selected env variables: BLAS, LAPACK, ATLAS
+        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        for key in ("BLAS", "LAPACK", "ATLAS"):
+            if key in os.environ:
+                scipy_build_env[key] = os.environ[key]
+        install_from_pypi("scipy==1.3.1", patch=patch, env=scipy_build_env, **kwargs)
 
     return locals()
 

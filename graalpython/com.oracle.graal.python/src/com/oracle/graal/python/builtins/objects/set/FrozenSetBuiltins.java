@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
@@ -45,10 +46,10 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -68,11 +70,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -137,29 +139,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
-
-        @Specialization
-        Object run(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached HashingCollectionNodes.LenNode selfLen,
-                        @Cached HashingCollectionNodes.LenNode otherLen) {
-            if (selfLen.execute(self) > otherLen.execute(other)) {
-                return false;
-            }
-
-            for (Object value : self.values()) {
-                if (!containsKeyNode.execute(frame, other.getDictStorage(), value)) {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 
@@ -467,14 +446,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class IsSubsetNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean isSubSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+                        @Cached HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
             return isSubsetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
         }
 
-        @Specialization
-        boolean isSubSet(VirtualFrame frame, PBaseSet self, String other,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+        @Specialization(replaces = "isSubSet")
+        boolean isSubSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Cached HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
             PSet otherSet = constructSetNode.executeWith(frame, other);
             return isSubsetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
         }
@@ -485,52 +464,49 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class IsSupersetNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean isSuperSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+                        @Cached HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
             return isSupersetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
         }
 
-        @Specialization
-        boolean isSuperSetPSequence(VirtualFrame frame, PBaseSet self, PSequence other,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+        @Specialization(replaces = "isSuperSet")
+        boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Cached HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
             PSet otherSet = constructSetNode.executeWith(frame, other);
             return isSupersetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
         }
 
-        @Specialization
-        boolean isSuperSetString(VirtualFrame frame, PBaseSet self, String other,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
-            PSet otherSet = constructSetNode.executeWith(frame, other);
-            return isSupersetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
-        }
     }
 
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class LessEqualNode extends IsSubsetNode {
+    abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object isLessEqual(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached("create(__GE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
-            if (result != PNone.NO_VALUE) {
-                return result;
-            }
-            throw raise(PythonErrorType.TypeError, "unorderable types: %p <= %p", self, other);
+        boolean doLE(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            return isSubsetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        PNotImplemented doNotImplemented(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class GreaterEqualNode extends IsSupersetNode {
+    abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object isGreaterEqual(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached("create(__LE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
-            if (result != PNone.NO_VALUE) {
-                return result;
-            }
-            throw raise(PythonErrorType.TypeError, "unorderable types: %p >= %p", self, other);
+        boolean doGE(VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @Cached HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            return isSupersetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        PNotImplemented doNotImplemented(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -615,6 +591,75 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "unorderable types: %p > %p", self, other);
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+        protected static long HASH_UNSET = -1;
+
+        @Specialization(guards = {"self.getHash() != HASH_UNSET"})
+        public long getHash(VirtualFrame frame, PFrozenSet self) {
+            return self.getHash();
+        }
+
+        @Specialization(guards = {"self.getHash() == HASH_UNSET"})
+        public long computeHash(VirtualFrame frame, PFrozenSet self,
+                        @Cached HashingStorageNodes.LenNode getLen,
+                        @Cached HashingStorageNodes.GetItemNode getItemNode,
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
+                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+            // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
+            HashingStorage storage = self.getDictStorage();
+            int len = getLen.execute(storage);
+            long m1 = 0x72e8ef4d;
+            long m2 = 0x10dcd;
+            long c1 = 0x3611c3e3;
+            long c2 = 0x2338c7c1;
+            long hash = 0;
+            long tmp;
+
+            for (Object key : storage.keys()) {
+                Object value = getItemNode.execute(frame, storage, key);
+                Object hashValue = lookupHashAttributeNode.executeObject(frame, value);
+                if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
+                    throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+                }
+                tmp = castToLongNode.execute(hashValue);
+                hash ^= shuffleBits(tmp);
+            }
+
+            // TODO:
+            // Remove the effect of an odd number of NULL entries
+
+            // TODO:
+            // Remove the effect of an odd number of dummy entries
+
+            // Factor in the number of active entries
+            hash ^= (len + 1) * m1;
+
+            // Disperse patterns arising in nested frozensets
+            hash ^= (hash >> 11) ^ (hash >> 25);
+            hash = hash * m2 + c1;
+
+            // -1 is reserved as an error code
+            if (hash == -1) {
+                hash = c2;
+            }
+
+            self.setHash(hash);
+            return hash;
+        }
+
+        private static long shuffleBits(long value) {
+            return ((value ^ 0x55b4db3) ^ (value << 16)) * 0xd93f34d7;
+        }
+
+        @Fallback
+        Object genericHash(@SuppressWarnings("unused") Object self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

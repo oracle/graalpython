@@ -1128,6 +1128,13 @@ class EncodedString(str):
     def as_utf8_string(self):
         return bytes_literal(self.utf8encode(), 'utf8')
 
+
 def test_radd():
     val = EncodedString('abc')
     assert 'cde' + val == 'cdeabc'
+
+
+def test_replace_count():
+    s = "1 2 3 1 2 3 1 2 3 1 2 3"
+    s = s.replace("1", "1 _", s.count("1"))
+    assert s == "1 _ 2 3 1 _ 2 3 1 _ 2 3 1 _ 2 3"

@@ -151,15 +151,14 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
         return NULL;
     }}
 
-    if (strlen("{argspec}") > 0) {{
-        if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
-            return NULL;
-        }}
-    }}
 #ifdef SINGLEARG
-    else {{
-        {singleargumentname} = ___arg;
+    {singleargumentname} = ___arg;
+#else 
+#ifndef NOARGS
+    if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
+        return NULL;
     }}
+#endif
 #endif
 
     return Py_BuildValue("{resultspec}", {callfunction}({argumentnames}));
@@ -326,10 +325,12 @@ class CPyExtFunction():
 
         self._insert(fargs, "argumentdeclarations", ";".join(fargs["parseargs"]))
         self._insert(fargs, "argumentnames", ", ".join(arg.rpartition(" ")[2] for arg in fargs["arguments"]))
-        self._insert(fargs, "singleargumentname", fargs["arguments"][0].rpartition(" ")[2])
+        self._insert(fargs, "singleargumentname", fargs["arguments"][0].rpartition(" ")[2] if fargs["arguments"] else "")
         self._insert(fargs, "derefargumentnames", ", ".join("&" + arg.rpartition(" ")[2].partition("=")[0] for arg in fargs["arguments"]))
         self._insert(fargs, "callfunction", fargs["capifunction"])
-        if len(fargs["argspec"]) == 0:
+        if len(fargs["argspec"]) == 0 and len(fargs["arguments"]) == 0:
+            fargs["defines"] = "#define NOARGS"
+        elif len(fargs["argspec"]) == 0:
             fargs["defines"] = "#define SINGLEARG"
         else:
             fargs["defines"] = ""

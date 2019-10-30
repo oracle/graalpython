@@ -36,6 +36,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 public final class PTuple extends PImmutableSequence {
 
     private SequenceStorage store;
+    private long hash = -1;
 
     public PTuple(LazyPythonClass cls, Object[] elements) {
         super(cls);
@@ -123,4 +124,11 @@ public final class PTuple extends PImmutableSequence {
         throw new UnexpectedResultException(value);
     }
 
+    public long getHash() {
+        return hash;
+    }
+
+    public void setHash(long hash) {
+        this.hash = hash;
+    }
 }

@@ -40,8 +40,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -272,10 +272,10 @@ public class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(PRange self, Object elem,
+        Object doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @Cached CastToIndexNode castToIntNode) {
             try {
-                return doInt(self, castToIntNode.execute(elem));
+                return doInt(self, castToIntNode.execute(frame, elem));
             } catch (PException e) {
                 throw raise(ValueError, "%s is not in range", elem);
             }
@@ -306,7 +306,7 @@ public class RangeBuiltins extends PythonBuiltins {
             int len = self.len();
             int cnt = 0;
             for (int i = 0; i < len; i++) {
-                Object item = getItemNode.execute(self.getSequenceStorage(), i);
+                Object item = getItemNode.execute(frame, self.getSequenceStorage(), i);
                 if (castToBooleanNode.executeBoolean(frame, cmpNode.executeWith(frame, elem, item))) {
                     cnt++;
                 }

@@ -36,6 +36,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -52,7 +53,7 @@ import com.oracle.truffle.api.source.SourceSection;
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
 public class FunctionRootNode extends PClosureFunctionRootNode {
-    private final ContextReference<PythonContext> contextRef;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final PCell[] cells;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
@@ -70,7 +71,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, boolean isRewritten, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots executionCellSlots, Signature signature) {
         super(language, frameDescriptor, executionCellSlots, signature);
-        this.contextRef = language.getContextReference();
         this.executionCellSlots = executionCellSlots;
         this.cells = new PCell[this.cellVarSlots.length];
 
@@ -141,6 +141,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public Object execute(VirtualFrame frame) {
         CalleeContext.enter(frame, customLocalsProfile);
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
             contextRef.get().triggerAsyncActions(frame, this);
         }
         try {

@@ -77,7 +77,7 @@ public class PythonModuleTests {
     @Before
     public void setUp() {
         PythonTests.enterContext();
-        context = PythonLanguage.getContextRef().get();
+        context = PythonLanguage.getContext();
     }
 
     @Test

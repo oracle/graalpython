@@ -37,11 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Address families
-AF_UNSPEC = 0
-AF_INET = 2
-AF_INET6 = 30
-
 # Flag values for getaddrinfo()
 AI_PASSIVE = 1  # get address to use bind()
 AI_CANONNAME = 2  # fill ai_canonname

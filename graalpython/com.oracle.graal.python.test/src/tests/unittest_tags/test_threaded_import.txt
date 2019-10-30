@@ -1,1 +1,2 @@
+*ThreadedImportTests.test_import_hangers
 *ThreadedImportTests.test_parallel_meta_path

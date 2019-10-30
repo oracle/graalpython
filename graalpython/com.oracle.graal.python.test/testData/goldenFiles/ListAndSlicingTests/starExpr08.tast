@@ -1,0 +1,66 @@
+ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(1, 2,...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 2 slots [<>temp0, <>temp1]
+  Documentation: None
+  InnerRootNode SourceSection: [0,52]`for a, *b in [(1, 2,...`
+    ExpressionWithSideEffect SourceSection: [0,52]`for a, *b in [(1, 2,...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        ElseNode SourceSection: [0,52]`for a, *b in [(1, 2,...`
+          ForNode SourceSection: None
+            ForRepeatingNode SourceSection: None
+              ForNextElementNodeGen SourceSection: None
+                DestructuringAssignmentNodeGen SourceSection: None
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <>temp0
+                    WriteLocalFrameSlotNodeGen SourceSection: None
+                      Frame: [0,<>temp0,Illegal]
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <>temp1
+                    WriteLocalFrameSlotNodeGen SourceSection: None
+                      Frame: [1,<>temp1,Illegal]
+                  WriteNameNodeGen SourceSection: None
+                    Identifier: a
+                    ReadLocalVariableNode SourceSection: None
+                      Frame: [0,<>temp0,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+                  WriteNameNodeGen SourceSection: None
+                    Identifier: b
+                    ReadLocalVariableNode SourceSection: None
+                      Frame: [1,<>temp1,Illegal]
+                      ReadVariableFromFrameNodeGen SourceSection: None
+              ExpressionStatementNode SourceSection: [44,52]`print(b)`
+                PythonCallNodeGen SourceSection: [44,52]`print(b)`
+                  CachedCallNodeGen SourceSection: None
+                    CreateArgumentsNodeGen SourceSection: None
+                    CallDispatchNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [50,51]`b`
+                    Identifier: b
+                  ReadNameNodeGen SourceSection: None
+                    Identifier: print
+            GetIteratorExpressionNodeGen SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
+              GetIteratorNodeGen SourceSection: None
+              ListLiteralNode SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
+                PythonObjectFactoryNodeGen SourceSection: None
+                TupleLiteralNode SourceSection: [14,23]`(1, 2, 3)`
+                  PythonObjectFactoryNodeGen SourceSection: None
+                  IntegerLiteralNode SourceSection: [15,16]`1`
+                    Value: 1
+                  IntegerLiteralNode SourceSection: [18,19]`2`
+                    Value: 2
+                  IntegerLiteralNode SourceSection: [21,22]`3`
+                    Value: 3
+                TupleLiteralNode SourceSection: [25,37]`(4, 5, 6, 7)`
+                  PythonObjectFactoryNodeGen SourceSection: None
+                  IntegerLiteralNode SourceSection: [26,27]`4`
+                    Value: 4
+                  IntegerLiteralNode SourceSection: [29,30]`5`
+                    Value: 5
+                  IntegerLiteralNode SourceSection: [32,33]`6`
+                    Value: 6
+                  IntegerLiteralNode SourceSection: [35,36]`7`
+                    Value: 7
+          BlockNode SourceSection: None

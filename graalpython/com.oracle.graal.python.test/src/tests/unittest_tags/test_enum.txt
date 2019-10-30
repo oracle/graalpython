@@ -22,6 +22,7 @@
 *TestEnum.test_duplicate_auto
 *TestEnum.test_duplicate_name
 *TestEnum.test_duplicate_values_give_unique_enum_items
+*TestEnum.test_empty_globals
 *TestEnum.test_enum
 *TestEnum.test_enum_duplicates
 *TestEnum.test_enum_function_with_qualname
@@ -46,6 +47,7 @@
 *TestEnum.test_getattr_dunder
 *TestEnum.test_getattr_getitem
 *TestEnum.test_hash
+*TestEnum.test_ignore
 *TestEnum.test_inherited_new_from_enhanced_enum
 *TestEnum.test_inherited_new_from_mixed_enum
 *TestEnum.test_inherited_repr
@@ -61,12 +63,16 @@
 *TestEnum.test_invalid_names
 *TestEnum.test_iteration_order
 *TestEnum.test_member_contains
+*TestEnum.test_missing
 *TestEnum.test_mixed_enum_in_call_1
 *TestEnum.test_mixed_enum_in_call_2
+*TestEnum.test_multiple_inherited_mixin
+*TestEnum.test_multiple_mixin
 *TestEnum.test_multiple_mixin_mro
 *TestEnum.test_new_repr
 *TestEnum.test_no_duplicates
 *TestEnum.test_no_such_enum_member
+*TestEnum.test_nonhash_value
 *TestEnum.test_ordered_mixin
 *TestEnum.test_pickle_by_name
 *TestEnum.test_pickle_enum
@@ -86,6 +92,8 @@
 *TestEnum.test_strenum_from_scratch
 *TestEnum.test_strenum_inherited
 *TestEnum.test_string_enum
+*TestEnum.test_subclass_duplicate_name
+*TestEnum.test_subclass_duplicate_name_dynamic
 *TestEnum.test_value_name
 *TestEnum.test_wrong_enum_in_call
 *TestEnum.test_wrong_enum_in_mixed_call
@@ -106,6 +114,8 @@
 *TestFlag.test_contains
 *TestFlag.test_duplicate_auto
 *TestFlag.test_invert
+*TestFlag.test_member_contains
+*TestFlag.test_multiple_mixin
 *TestFlag.test_or
 *TestFlag.test_pickle
 *TestFlag.test_programatic_function_from_dict

@@ -111,7 +111,7 @@ public abstract class ExternalFunctionNodes {
             toSulongNode.executeInto(frameArgs, 0, arguments, 0);
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            PException savedExceptionState = IndirectCallContext.enter(frame, ctx, this);
+            PException savedExceptionState = ForeignCallContext.enter(frame, ctx, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(callable, arguments))));
@@ -123,7 +123,7 @@ public abstract class ExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                IndirectCallContext.exit(ctx, savedExceptionState);
+                ForeignCallContext.exit(ctx, savedExceptionState);
                 calleeContext.exit(frame, this);
             }
         }
