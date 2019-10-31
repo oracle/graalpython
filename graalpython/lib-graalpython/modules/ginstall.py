@@ -1456,30 +1456,17 @@ index 8657420..f7b3f08 100644
                 xit("Sulong LLVM bin directory does not exist: %r" % llvm_bin_dir)
     
             # currently we need 'ar', 'ranlib', and 'ld.lld'
-            llvm_bins = {"llvm-ar": "ar", "llvm-ranlib": "ranlib", "ld.lld": "ld.lld"}
+            llvm_bins = {"llvm-ar": ("ar",), "llvm-ranlib": ("ranlib",), "ld.lld": ("ld.lld", "ld")}
             for binary in llvm_bins.keys():
                 llvm_bin = os.path.join(llvm_bin_dir, binary)
                 if not os.path.isfile(llvm_bin):
                     xit("Could not locate llvm-ar at '{}'".format(llvm_bin))
                 else:
-                    dest = os.path.join(venv_path, "bin", llvm_bins[binary])
-                    if os.path.exists(dest):
-                        os.unlink(dest)
-                    os.symlink(llvm_bin, dest)
-    
-            # locate system's gfortran
-            path_without_venv = os.pathsep.join([x for x in os.environ["PATH"].split(os.pathsep) if venv_path not in x])
-            system_gfortran = shutil.which("gfortran", path=path_without_venv)
-            if not system_gfortran:
-                xit("Could not locate gfortran binary.")
-                
-            # create gfortran wrapper script into venv's bin directory
-            gfortran_wrapper = os.path.join(venv_path, "bin", "gfortran")
-            assert system_gfortran != gfortran_wrapper
-            with open(gfortran_wrapper, "w") as f:
-                f.write('#!/bin/bash\nexec "{}" -fuse-ld=lld $@\n'.format(system_gfortran))
-            # make it executable
-            os.chmod(gfortran_wrapper , 0o775)
+                    for name in llvm_bins[binary]:
+                        dest = os.path.join(venv_path, "bin", name)
+                        if os.path.exists(dest):
+                            os.unlink(dest)
+                        os.symlink(llvm_bin, dest)
 
         # install dependencies
         numpy(**kwargs)

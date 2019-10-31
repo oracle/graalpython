@@ -29,8 +29,8 @@ import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHO
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -136,7 +136,12 @@ public final class PythonContext {
         }
 
         boolean isOwner(Thread thread) {
-            return owners.stream().anyMatch(item -> item.get() == thread);
+            for (WeakReference<Thread> owner : owners) {
+                if (owner.get() == thread) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         boolean hasOwners() {
@@ -345,9 +350,9 @@ public final class PythonContext {
     }
 
     public PFrame.Reference popTopFrameInfo() {
-        PythonThreadState threadState = getThreadState();
-        PFrame.Reference ref = threadState.topframeref;
-        threadState.topframeref = null;
+        PythonThreadState ts = getThreadState();
+        PFrame.Reference ref = ts.topframeref;
+        ts.topframeref = null;
         return ref;
     }
 
@@ -445,7 +450,7 @@ public final class PythonContext {
             patchPackagePaths(stdLibPlaceholder, getStdlibHome());
         }
 
-        applyToAllThreadStates(threadState -> threadState.currentException = null);
+        applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
     }
 
@@ -673,10 +678,10 @@ public final class PythonContext {
             // collect list of threads to join in synchronized block
             LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
             synchronized (this) {
-                for (PythonThreadState threadState : threadStateMapping.values()) {
+                for (PythonThreadState ts : threadStateMapping.values()) {
                     // do not join the initial thread; this could cause a dead lock
-                    if (threadState != singleThreadState) {
-                        threadList.addAll(threadState.getOwners());
+                    if (ts != singleThreadState) {
+                        threadList.addAll(ts.getOwners());
                     }
                 }
             }
@@ -879,8 +884,8 @@ public final class PythonContext {
             action.accept(singleThreadState);
         } else {
             synchronized (this) {
-                for (PythonThreadState threadState : threadStateMapping.values()) {
-                    action.accept(threadState);
+                for (PythonThreadState ts : threadStateMapping.values()) {
+                    action.accept(ts);
                 }
             }
         }
@@ -938,12 +943,12 @@ public final class PythonContext {
                 releaseSentinelLock(singleThreadState.sentinelLock);
             }
         } else {
-            PythonThreadState threadState = threadStateMapping.get(threadId);
-            assert threadState != null : "thread was not attached to this context";
-            threadState.removeOwner(thread);
+            PythonThreadState ts = threadStateMapping.get(threadId);
+            assert ts != null : "thread was not attached to this context";
+            ts.removeOwner(thread);
             threadStateMapping.remove(threadId);
-            if (!threadState.hasOwners()) {
-                releaseSentinelLock(threadState.sentinelLock);
+            if (!ts.hasOwners()) {
+                releaseSentinelLock(ts.sentinelLock);
             }
         }
     }
