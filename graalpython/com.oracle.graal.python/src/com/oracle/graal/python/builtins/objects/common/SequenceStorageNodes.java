@@ -2558,10 +2558,10 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!isInt(times)")
+        @Specialization(guards = "!isInt(times)", limit = "1")
         SequenceStorage doNonInt(VirtualFrame frame, SequenceStorage s, Object times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                        @CachedLibrary("times") PythonDataModelLibrary lib) {
             int i = toIndex(frame, times, raiseNode, lib);
             if (recursive == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
