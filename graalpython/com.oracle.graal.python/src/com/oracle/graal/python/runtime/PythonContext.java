@@ -29,8 +29,8 @@ import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHO
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -136,7 +136,12 @@ public final class PythonContext {
         }
 
         boolean isOwner(Thread thread) {
-            return owners.stream().anyMatch(item -> item.get() == thread);
+            for (WeakReference<Thread> owner : owners) {
+                if (owner.get() == thread) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         boolean hasOwners() {
