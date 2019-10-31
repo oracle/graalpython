@@ -595,7 +595,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public final boolean isHashable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
-                                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         return dataModelLibrary.isCallable(hashAttr);
     }

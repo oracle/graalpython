@@ -69,30 +69,131 @@ public abstract class PythonDataModelLibrary extends Library {
         return FACTORY.getUncached();
     }
 
+    /**
+     * Checks whether the receiver is a Python iterable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__iter__</b>
+     * special method. If not defined, it will also check for iterable objects that implement the
+     * following special methods: <b>
+     * <ul>
+     * <li>__getitem__</li>
+     * <li>__next__</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if object is iterable
+     */
     public boolean isIterable(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python callable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__call__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object is callable
+     */
     public boolean isCallable(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python context manager. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model </a>,
+     * <a href="https://www.python.org/dev/peps/pep-0343/">PEP 343</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the following
+     * special methods: <b>
+     * <ul>
+     * <li>__enter__</li>
+     * <li>__exit__</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if object is a context manager
+     */
     public boolean isContextManager(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python hashable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__hash__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object is hashable
+     */
     public boolean isHashable(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python an indexable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object is indexable
+     */
     public boolean isIndexable(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python sequence. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * See {@link PythonTypeLibrary#isSequenceType(Object)}
+     *
+     * @param receiver the receiver Object
+     * @return True if object is a Python sequence object
+     */
     public boolean isSequence(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python mapping. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * See {@link PythonTypeLibrary#isMappingType(Object)}
+     *
+     * @param receiver the receiver Object
+     * @return True if object is a Python mapping object
+     */
     public boolean isMapping(Object receiver) {
         return false;
     }

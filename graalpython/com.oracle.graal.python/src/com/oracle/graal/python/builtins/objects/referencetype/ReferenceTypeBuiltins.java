@@ -105,7 +105,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         static long HASH_UNSET = -1;
 
         @Specialization(guards = "self.getHash() != HASH_UNSET")
-        long getHash(@SuppressWarnings("unused") VirtualFrame frame, PReferenceType self) {
+        long getHash(PReferenceType self) {
             return self.getHash();
         }
 

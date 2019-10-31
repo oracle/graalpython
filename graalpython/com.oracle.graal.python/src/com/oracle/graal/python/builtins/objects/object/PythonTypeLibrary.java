@@ -49,10 +49,48 @@ import com.oracle.truffle.api.library.LibraryFactory;
 @DefaultExport(DefaultTypeLazyPythonClassExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonTypeLibrary extends Library {
+    /**
+     * Checks whether the receiver is a Python sequence type. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the following
+     * special methods: <b>
+     * <ul>
+     * <li>__getitem__</li>
+     * <li>__len__</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if a sequence type
+     */
     public boolean isSequenceType(Object receiver) {
         return false;
     }
 
+    /**
+     * Checks whether the receiver is a Python mapping type. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks whether the receiver
+     * {@link #isSequenceType(Object)} and for the implementation of the following special methods:
+     * <b>
+     * <ul>
+     * <li>keys</li>
+     * <li>items</li>
+     * <li>values</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if a mapping type
+     */
     public boolean isMappingType(Object receiver) {
         return false;
     }
