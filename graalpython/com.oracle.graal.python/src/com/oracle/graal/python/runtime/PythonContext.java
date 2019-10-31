@@ -350,9 +350,9 @@ public final class PythonContext {
     }
 
     public PFrame.Reference popTopFrameInfo() {
-        PythonThreadState threadState = getThreadState();
-        PFrame.Reference ref = threadState.topframeref;
-        threadState.topframeref = null;
+        PythonThreadState ts = getThreadState();
+        PFrame.Reference ref = ts.topframeref;
+        ts.topframeref = null;
         return ref;
     }
 
@@ -450,7 +450,7 @@ public final class PythonContext {
             patchPackagePaths(stdLibPlaceholder, getStdlibHome());
         }
 
-        applyToAllThreadStates(threadState -> threadState.currentException = null);
+        applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
     }
 
@@ -678,10 +678,10 @@ public final class PythonContext {
             // collect list of threads to join in synchronized block
             LinkedList<WeakReference<Thread>> threadList = new LinkedList<>();
             synchronized (this) {
-                for (PythonThreadState threadState : threadStateMapping.values()) {
+                for (PythonThreadState ts : threadStateMapping.values()) {
                     // do not join the initial thread; this could cause a dead lock
-                    if (threadState != singleThreadState) {
-                        threadList.addAll(threadState.getOwners());
+                    if (ts != singleThreadState) {
+                        threadList.addAll(ts.getOwners());
                     }
                 }
             }
@@ -884,8 +884,8 @@ public final class PythonContext {
             action.accept(singleThreadState);
         } else {
             synchronized (this) {
-                for (PythonThreadState threadState : threadStateMapping.values()) {
-                    action.accept(threadState);
+                for (PythonThreadState ts : threadStateMapping.values()) {
+                    action.accept(ts);
                 }
             }
         }
@@ -943,12 +943,12 @@ public final class PythonContext {
                 releaseSentinelLock(singleThreadState.sentinelLock);
             }
         } else {
-            PythonThreadState threadState = threadStateMapping.get(threadId);
-            assert threadState != null : "thread was not attached to this context";
-            threadState.removeOwner(thread);
+            PythonThreadState ts = threadStateMapping.get(threadId);
+            assert ts != null : "thread was not attached to this context";
+            ts.removeOwner(thread);
             threadStateMapping.remove(threadId);
-            if (!threadState.hasOwners()) {
-                releaseSentinelLock(threadState.sentinelLock);
+            if (!ts.hasOwners()) {
+                releaseSentinelLock(ts.sentinelLock);
             }
         }
     }
