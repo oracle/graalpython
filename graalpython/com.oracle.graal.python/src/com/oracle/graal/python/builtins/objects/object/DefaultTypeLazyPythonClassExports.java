@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -60,9 +61,9 @@ final class DefaultTypeLazyPythonClassExports {
     @ExportMessage
     public static boolean isSequenceType(LazyPythonClass type,
                     @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
-                    @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
         if (lenProfile.profile(hasLenNode.execute(type, __LEN__) != PNone.NO_VALUE)) {
             return getItemProfile.profile(hasGetItemNode.execute(type, __GETITEM__) != PNone.NO_VALUE);
         }
@@ -71,11 +72,11 @@ final class DefaultTypeLazyPythonClassExports {
 
     @ExportMessage
     public static boolean isMappingType(LazyPythonClass type,
-                    @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
                     @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary,
-                    @Cached("createBinaryProfile()") ConditionProfile profile) {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         if (pythonTypeLibrary.isSequenceType(type)) {
             return profile.profile(hasKeysNode.execute(type, KEYS) != PNone.NO_VALUE &&
                             hasItemsNode.execute(type, ITEMS) != PNone.NO_VALUE &&

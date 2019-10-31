@@ -563,19 +563,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean isHashable(@Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
-        Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
-        return dataModelLibrary.isCallable(hashAttr);
-    }
-
-    @ExportMessage
-    public final boolean isIndexable(@Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
-        return hasIndexAttribute.execute(this, __INDEX__);
-    }
-
-    @ExportMessage
-    public final boolean isIterable(@Cached GetLazyClassNode getClassNode,
+    public final boolean isIterable(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
                     @Cached LookupAttributeInMRONode.Dynamic getIterNode,
                     @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
                     @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
@@ -599,27 +587,39 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean isCallable(@Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
+    public final boolean isCallable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
         assert !PGuards.isCallable(this) || PGuards.isClass(this);
         Object call = callAttrGetterNode.execute(this, __CALL__);
         return PGuards.isCallable(call);
     }
 
     @ExportMessage
-    public final boolean isContextManager(@Cached HasInheritedAttributeNode.Dynamic hasEnterNode,
-                    @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
+    public final boolean isHashable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+                                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+        Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
+        return dataModelLibrary.isCallable(hashAttr);
+    }
+
+    @ExportMessage
+    public final boolean isIndexable(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
+        return hasIndexAttribute.execute(this, __INDEX__);
+    }
+
+    @ExportMessage
+    public final boolean isContextManager(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasEnterNode,
+                    @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         return profile.profile(hasEnterNode.execute(this, __ENTER__) && hasExitNode.execute(this, __EXIT__));
     }
 
     @ExportMessage
-    public boolean isSequence(@Cached GetLazyClassNode getClassNode,
+    public boolean isSequence(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
                     @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
         return pythonTypeLibrary.isSequenceType(getClassNode.execute(this));
     }
 
     @ExportMessage
-    public boolean isMapping(@Cached GetLazyClassNode getClassNode,
+    public boolean isMapping(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
                     @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
         return pythonTypeLibrary.isMappingType(getClassNode.execute(this));
     }

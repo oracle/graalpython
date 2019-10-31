@@ -2779,7 +2779,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
                         @Cached("create()") HashingStorageNodes.InitNode initNode,
-                        @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
         }
 
@@ -2791,7 +2791,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"})
         Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj,
-                        @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
             throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
         }
 
