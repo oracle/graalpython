@@ -45,6 +45,14 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 public final class PGenerator extends PythonBuiltinObject {
 
     protected final String name;
+    /**
+     * Call targets with copies of the generator's AST. Each call target
+     * corresponds to one possible entry point into the generator: the first
+     * call, and continuation for each yield. Each AST can then specialize
+     * towards which nodes are executed when starting from that particular entry
+     * point. When yielding, the next index to the next call target to continue
+     * from is updated via {@link #setNextCallTarget}.
+     */
     @CompilationFinal(dimensions = 1) protected final RootCallTarget[] callTargets;
     protected final FrameDescriptor frameDescriptor;
     protected final Object[] arguments;
