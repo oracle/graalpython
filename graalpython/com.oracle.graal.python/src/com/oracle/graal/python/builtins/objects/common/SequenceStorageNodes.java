@@ -2936,12 +2936,7 @@ public abstract class SequenceStorageNodes {
             int newLen = len + 1;
             int capacity = profiled.capacity();
             if (newLen > capacity) {
-                if (CompilerDirectives.inCompiledCode()) {
-                    // We want to ignore this branch in the initial compilation,
-                    // because we're propagating list sizes back to the
-                    // allocation position.
-                    increaseCapacity.enter();
-                }
+                increaseCapacity.enter();
                 profiled.ensureCapacity(len + 1);
             }
             try {

@@ -295,13 +295,13 @@ public final class ListLiteralNode extends LiteralNode {
                 if (newStore.capacity() > initialCapacity.estimate()) {
                     initialCapacity.updateFrom(newStore.capacity());
                     PythonLanguage.getLogger().fine(() -> {
-                            return getSourceSection().toString() + " => " + newStore.capacity();
+                             return String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.capacity(), initialCapacity.estimate());
                     });
                 }
                 if (newStore.getElementType().generalizesFrom(type)) {
                     type = newStore.getElementType();
                     PythonLanguage.getLogger().fine(() -> {
-                            return getSourceSection().toString() + " => " + type.name();
+                            return String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name());
                     });
                 }
             }

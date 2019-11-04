@@ -70,6 +70,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIterat
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFrameNodeGen;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -90,7 +91,6 @@ import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -98,7 +98,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -665,43 +664,37 @@ public abstract class ListNodes {
         }
     }
 
+    /**
+     * This node takes a bit of care to avoid compiling code for switching
+     * storages. In the interpreter, it will use a different {@link
+     * SequenceStorageNodes.AppendNode} than in the compiled code, so the
+     * specializations for the compiler are different. This is useful, because
+     * in the interpreter we will report back type and size changes to the
+     * origin of the list via {@link PList#getOrigin} and {@link
+     * ListLiteralNode#reportUpdatedCapacity}. Thus, there's a chance that the
+     * compiled code will only see lists of the correct size and storage type.
+     */
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
-        protected static final class StoreUnchangedException extends ControlFlowException {
-            private static final long serialVersionUID = 1L;
-        }
-
-        protected static final boolean inInterpreter(@SuppressWarnings("unused") PList list) {
-            return CompilerDirectives.inInterpreter();
-        }
 
         public abstract void execute(PList list, Object value);
 
-        @Specialization(guards = {"inInterpreter(list)", "list.getOrigin() != null"}, rewriteOn = StoreUnchangedException.class)
-        public void appendObjectLiteralInterpreted(PList list, Object value,
-                        @Exclusive @Cached SequenceStorageNodes.AppendNode appendNode) throws StoreUnchangedException {
-            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
-            list.setSequenceStorage(newStore);
-            if (newStore instanceof BasicSequenceStorage) {
-                list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
-            } else {
-                // we need to switch to the other specialization at some point to get the compiler to compile the right thing
-                throw new StoreUnchangedException();
-            }
-        }
-
-        @Specialization(replaces = "appendObjectLiteralInterpreted")
+        @Specialization
         public void appendObjectGeneric(PList list, Object value,
-                        @Exclusive @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached SequenceStorageNodes.AppendNode appendInInterpreterNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached BranchProfile updateStoreProfile) {
-            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
-            if (list.getSequenceStorage() != newStore) {
-                updateStoreProfile.enter();
+            if (CompilerDirectives.inInterpreter() && list.getOrigin() != null) {
+                SequenceStorage newStore = appendInInterpreterNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 list.setSequenceStorage(newStore);
-            }
-            if (CompilerDirectives.inInterpreter()) {
                 if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
                     list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+                }
+            } else {
+                SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+                if (list.getSequenceStorage() != newStore) {
+                    updateStoreProfile.enter();
+                    list.setSequenceStorage(newStore);
                 }
             }
         }
