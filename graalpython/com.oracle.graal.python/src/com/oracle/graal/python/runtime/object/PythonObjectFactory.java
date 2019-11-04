@@ -527,8 +527,8 @@ public abstract class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references
      */
 
-    public PGenerator createGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
-                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+    public PGenerator createGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode, this));
     }

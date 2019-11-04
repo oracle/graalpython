@@ -72,7 +72,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         try {
             return self.getCurrentCallTarget().call(self.getArguments());
         } finally {
-            self.setNextCallTarget(PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getLastYieldIndex());
+            self.setNextCallTarget();
             PArguments.setSpecialArgument(self.getArguments(), null);
         }
     }
@@ -126,7 +126,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 throw e;
             } finally {
-                self.setNextCallTarget(PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getLastYieldIndex());
+                self.setNextCallTarget();
             }
         }
 
@@ -144,7 +144,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 self.markAsFinished();
                 throw e;
             } finally {
-                self.setNextCallTarget(PArguments.getControlDataFromGeneratorArguments(self.getArguments()).getLastYieldIndex());
+                self.setNextCallTarget();
             }
         }
     }
