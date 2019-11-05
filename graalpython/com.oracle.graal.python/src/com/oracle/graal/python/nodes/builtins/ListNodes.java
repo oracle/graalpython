@@ -677,18 +677,29 @@ public abstract class ListNodes {
 
         public abstract void execute(PList list, Object value);
 
+        protected static boolean[] flagContainer(boolean flag) {
+            boolean[] container = new boolean[1];
+            container[0] = flag;
+            return container;
+        }
+
         @Specialization
         public void appendObjectGeneric(PList list, Object value,
                         @Cached SequenceStorageNodes.AppendNode appendInInterpreterNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached(value = "flagContainer(false)", uncached = "flagContainer(true)", dimensions = 1) boolean[] triedToCompile,
                         @Cached BranchProfile updateStoreProfile) {
-            if (CompilerDirectives.inInterpreter() && list.getOrigin() != null) {
+            if (CompilerDirectives.inInterpreter() && !triedToCompile[0] && list.getOrigin() != null) {
                 SequenceStorage newStore = appendInInterpreterNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 list.setSequenceStorage(newStore);
                 if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
                     list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
                 }
             } else {
+                if (!triedToCompile[0]) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    triedToCompile[0] = true;
+                }
                 SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 if (list.getSequenceStorage() != newStore) {
                     updateStoreProfile.enter();
