@@ -54,7 +54,9 @@ libpython_name = "libpython"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
+relative_rpath = "@dloader_path" if sys.platform == "darwin" else "\$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
+SOABI = get_config_var("SOABI")
 
 
 def system(cmd, msg=""):
@@ -70,9 +72,6 @@ def xit(msg, status=-1):
 
 
 class CAPIDependency:
-    _lib_install_dir = os.path.join(site.getuserbase(), "lib", get_config_var("SOABI"))
-    _include_install_dir = os.path.join(site.getuserbase(), "include")
-
     def __init__(self, lib_name, package_spec, src_var):
         self.lib_name = lib_name
         if "==" in package_spec:
@@ -99,6 +98,11 @@ class CAPIDependency:
     def _ensure_dir(dir):
         if not (os.path.isdir(dir) and os.path.exists(dir)):
             os.makedirs(dir)
+
+    @classmethod
+    def set_lib_install_base(cls, value):
+        cls._lib_install_dir = os.path.join(value, "lib", SOABI)
+        cls._include_install_dir = os.path.join(value, "include")
 
     @property
     def lib_install_dir(self):
@@ -194,15 +198,17 @@ class Bzip2Depedency(CAPIDependency):
 
 
 class NativeBuiltinModule:
-    def __init__(self, name, subdir="modules", files=None, deps=[]):
+    def __init__(self, name, subdir="modules", files=None, deps=[], **kwargs):
         self.name = name
         self.subdir = subdir
         self.deps = deps
         # common case: just a single file which is the module's name plus the file extension
         if not files:
             self.files = [name + ".c"]
+        self.kwargs = kwargs
 
     def __call__(self):
+        kwargs = self.kwargs
         libs = []
         library_dirs = []
         include_dirs = []
@@ -225,11 +231,17 @@ class NativeBuiltinModule:
             if dep.include_install_dir:
                 include_dirs.append(dep.include_install_dir)
 
+        libs += kwargs.get("libs", [])
+        library_dirs += kwargs.get("library_dirs", [])
+        runtime_library_dirs += kwargs.get("runtime_library_dirs", [])
+        include_dirs += kwargs.get("include_dirs", [])
+        extra_link_args += kwargs.get("extra_link_args", [])
+
         return Extension(self.name,
                          sources=[os.path.join(__dir__, self.subdir, f) for f in self.files],
                          libraries=libs,
                          library_dirs=library_dirs,
-                         extra_compile_args=cflags_warnings,
+                         extra_compile_args=cflags_warnings + kwargs.get("cflags_warnings", []),
                          runtime_library_dirs=runtime_library_dirs,
                          include_dirs=include_dirs,
                          extra_link_args=extra_link_args,
@@ -243,7 +255,7 @@ builtin_exts = (
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_struct"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
-    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")]),
+    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
 )
 
 
@@ -280,6 +292,7 @@ def build_builtin_exts(capi_home):
 
 
 def build(capi_home):
+    CAPIDependency.set_lib_install_base(capi_home)
     build_libpython(capi_home)
     build_builtin_exts(capi_home)
 
