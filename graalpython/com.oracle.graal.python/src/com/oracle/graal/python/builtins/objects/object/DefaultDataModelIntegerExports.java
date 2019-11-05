@@ -51,7 +51,7 @@ final class DefaultDataModelIntegerExports {
     }
 
     @ExportMessage
-    static boolean isIndexable(@SuppressWarnings("unused") Integer value) {
+    static boolean canBeIndex(@SuppressWarnings("unused") Integer value) {
         return true;
     }
 }

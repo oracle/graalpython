@@ -2589,7 +2589,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonDataModelLibrary lib) {
-            if (lib.isIndexable(times)) {
+            if (lib.canBeIndex(times)) {
                 if (castToindexNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castToindexNode = insert(CastToIndexNode.createOverflow());

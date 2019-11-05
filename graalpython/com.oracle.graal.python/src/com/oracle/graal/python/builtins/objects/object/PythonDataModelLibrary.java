@@ -162,7 +162,7 @@ public abstract class PythonDataModelLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object is indexable
      */
-    public boolean isIndexable(Object receiver) {
+    public boolean canBeIndex(Object receiver) {
         return false;
     }
 

@@ -601,7 +601,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean isIndexable(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
+    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
         return hasIndexAttribute.execute(this, __INDEX__);
     }
 

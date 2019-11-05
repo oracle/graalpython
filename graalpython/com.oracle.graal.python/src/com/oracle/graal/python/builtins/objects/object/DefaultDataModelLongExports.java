@@ -51,7 +51,7 @@ final class DefaultDataModelLongExports {
     }
 
     @ExportMessage
-    static boolean isIndexable(@SuppressWarnings("unused") Long value) {
+    static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
         return true;
     }
 }

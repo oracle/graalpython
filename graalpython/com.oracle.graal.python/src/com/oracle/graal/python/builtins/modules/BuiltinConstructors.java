@@ -230,7 +230,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, new byte[0]);
         }
 
-        @Specialization(guards = {"lib.isIndexable(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
             int cap = getCastToIndexNode().execute(frame, capObj);
@@ -266,7 +266,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
         }
 
-        @Specialization(guards = {"!lib.isIndexable(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,

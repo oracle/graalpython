@@ -46,7 +46,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Boolean.class)
 final class DefaultDataModelBooleanExports {
     @ExportMessage
-    static boolean isIndexable(@SuppressWarnings("unused") Boolean value) {
+    static boolean canBeIndex(@SuppressWarnings("unused") Boolean value) {
         return true;
     }
 

@@ -188,7 +188,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isIndexable() {
+    public boolean canBeIndex() {
         return true;
     }
 
