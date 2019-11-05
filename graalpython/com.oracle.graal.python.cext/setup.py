@@ -154,48 +154,6 @@ class Bzip2Depedency(CAPIDependency):
 
         return self.lib_install_dir
 
-    def conftest(self):
-        import tempfile
-        src = b'''#include <bzlib.h>
-        #include <stdio.h>
-
-        int main(void) {
-            printf("%.200s", BZ2_bzlibVersion());
-            return 0;
-        }
-        '''
-        conftest_file = None
-        try:
-            prefix = "_conftest_" + self.lib_name
-            conftest_file = tempfile.NamedTemporaryFile(suffix=".c", prefix=prefix, delete=False)
-            conftest_file.write(src)
-            conftest_file.close()
-            logger.debug("Created conftest file %s" % conftest_file.name)
-
-            try:
-                # try to compile
-                conftest_module = Extension(prefix,
-                                            sources=[conftest_file.name],
-                                            include_dirs=[self.include_install_dir],
-                                            extra_link_args=["-L" + self.lib_install_dir, "-lbz2"],
-                                            )
-                setup_args = [verbosity, 'build', "clean"]
-                setup(script_name='setup_' + prefix,
-                      script_args=setup_args,
-                      name=libpython_name,
-                      version='1.0',
-                      description="Conftest for " + self.lib_name,
-                      ext_modules=[conftest_module],
-                      )
-            except BaseException as e:
-                logger.debug("Conftest %s produced exception: %s" % (conftest_file.name, e))
-                return False
-        finally:
-            if conftest_file:
-                os.unlink(conftest_file.name)
-        # success
-        return True
-
 
 class NativeBuiltinModule:
     def __init__(self, name, subdir="modules", files=None, deps=[], **kwargs):
