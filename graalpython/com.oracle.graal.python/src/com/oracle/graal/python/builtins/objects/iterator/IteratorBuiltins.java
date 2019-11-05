@@ -40,7 +40,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -153,18 +152,6 @@ public class IteratorBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static boolean hasNext(Iterator<Object> iterator) {
             return iterator.hasNext();
-        }
-
-        @Specialization(guards = "self.isPList()")
-        public Object nextList(PSequenceIterator self,
-                        @Cached("createClassProfile()") ValueProfile storageProfile) {
-            SequenceStorage storage = storageProfile.profile(((PList) self.getPSequence()).getSequenceStorage());
-            int length = storage.length();
-            if (!self.isExhausted() && self.index < length) {
-                return storage.getItemNormalized(self.index++);
-            }
-            self.setExhausted();
-            throw raise(StopIteration);
         }
 
         @Specialization(guards = "self.isPSequence()")
