@@ -957,7 +957,10 @@ PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order)
 }
 
 
-static PyObject *
+// n.b.: using return type 'PyMemoryViewObject *' is a workaround
+// for Sulong's behavior that it overwrites the polyglot cast with
+// the function's static return type.
+static PyMemoryViewObject *
 memory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 {
     PyObject *obj;
@@ -3131,7 +3134,7 @@ PyTypeObject PyNativeMemoryView_Type = {
     0,                                        /* tp_dictoffset */
     0,                                        /* tp_init */
     0,                                        /* tp_alloc */
-    memory_new,                               /* tp_new */
+    (newfunc)memory_new,                      /* tp_new */
 };
 
 
@@ -3156,12 +3159,23 @@ static void memory_managed_releasebuf(PyMemoryViewObject *self, Py_buffer *view)
     memory_releasebuf(_get_managed_self(self), view);
 }
 
+static PyMemoryViewObject *
+attach_native_type(PyObject *module, PyObject *obj)
+{
+    return polyglot_from_PyMemoryViewObject((PyMemoryViewObject *)obj);
+}
+
+static PyMethodDef _memoryviewmodule_methods[] = {
+    {"attach_native_type",     (PyCFunction)attach_native_type, METH_O, NULL},
+    {NULL,          NULL}
+};
+
 static struct PyModuleDef _memoryviewmodule = {
     PyModuleDef_HEAD_INIT,
     "_memoryview",
     "",
     -1,
-    NULL,
+    _memoryviewmodule_methods,
     NULL,
     NULL,
     NULL,

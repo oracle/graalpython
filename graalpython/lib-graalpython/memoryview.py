@@ -57,7 +57,7 @@ def __memoryview_init2(self, *args, **kwargs):
     # it is also referenced in native code and Java code
     if args and isinstance(args[0], c_memoryview_module.nativememoryview):
         # wrapping case
-        PyTruffle_SetAttr(self, "__c_memoryview", args[0])
+        PyTruffle_SetAttr(self, "__c_memoryview", c_memoryview_module.attach_native_type(args[0]))
     else:
         PyTruffle_SetAttr(self, "__c_memoryview", c_memoryview_module.nativememoryview(*args, **kwargs))
 
