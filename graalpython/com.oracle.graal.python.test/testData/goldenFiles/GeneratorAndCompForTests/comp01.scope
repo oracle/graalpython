@@ -4,12 +4,12 @@ Scope: []
     CellVars: Empty
     FreeVars: Empty
     Scope: generator10
-        Kind: Generator
+        Kind: DictComp
         FrameDescriptor: [t, i, <return_val>]
         CellVars: [i]
         FreeVars: Empty
         Scope: generator19
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [i, j, <return_val>]
             CellVars: Empty
             FreeVars: [i]

@@ -89,7 +89,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator8227
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -134,7 +134,7 @@ Scope: []
                 CellVars: [obj]
                 FreeVars: [items]
                 Scope: generator6907
-                    Kind: Generator
+                    Kind: GenExp
                     FrameDescriptor: [obj, i, <return_val>]
                     CellVars: Empty
                     FreeVars: [obj]
@@ -174,7 +174,7 @@ Scope: []
                 CellVars: [obj]
                 FreeVars: [getters]
                 Scope: generator5918
-                    Kind: Generator
+                    Kind: GenExp
                     FrameDescriptor: [getter, obj, <return_val>]
                     CellVars: Empty
                     FreeVars: [obj]

@@ -1333,7 +1333,7 @@ dictmaker returns [SSTNode result]
             { 
                 SSTNode value; 
                 SSTNode name;
-                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator);
+                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.DictComp);
                 generator.setHasAnnotations(true);
                 
             }
@@ -1383,7 +1383,14 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
 	
 	(   { 
                 SSTNode value; 
-                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                ScopeInfo.ScopeKind scopeKind;
+                switch (compType) {
+                    case PList: scopeKind = ScopeInfo.ScopeKind.ListComp; break;
+                    case PDict: scopeKind = ScopeInfo.ScopeKind.DictComp; break;
+                    case PSet: scopeKind = ScopeInfo.ScopeKind.SetComp; break;
+                    default: scopeKind = ScopeInfo.ScopeKind.GenExp;
+                }
+                ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), scopeKind); 
                 generator.setHasAnnotations(true);
             }
             (
@@ -1469,7 +1476,7 @@ arglist returns [ArgListBuilder result]
 
 argument [ArgListBuilder args] returns [SSTNode result]
 :               {
-                    ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.Generator); 
+                    ScopeInfo generator = factory.createScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.GenExp); 
                     generator.setHasAnnotations(true);
                 }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]

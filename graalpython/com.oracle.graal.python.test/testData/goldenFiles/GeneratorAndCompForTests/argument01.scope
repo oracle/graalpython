@@ -4,7 +4,7 @@ Scope: []
     CellVars: Empty
     FreeVars: Empty
     Scope: generator4
-        Kind: Generator
+        Kind: GenExp
         FrameDescriptor: [x, <return_val>]
         CellVars: Empty
         FreeVars: Empty

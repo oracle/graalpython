@@ -39,12 +39,12 @@ Scope: []
         CellVars: [bases, cls, is_related, is_strict_base, type_set, types]
         FreeVars: Empty
         Scope: generator27763
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [s, type_set, <return_val>]
             CellVars: Empty
             FreeVars: [type_set]
         Scope: generator27390
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [<return_val>, n, is_strict_base]
             CellVars: Empty
             FreeVars: [is_strict_base]
@@ -54,7 +54,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [types]
         Scope: generator27078
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [is_related, <return_val>, n]
             CellVars: Empty
             FreeVars: [is_related]
@@ -69,22 +69,22 @@ Scope: []
         CellVars: [abcs, base]
         FreeVars: Empty
         Scope: generator26336
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator26262
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator26185
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [abcs, <return_val>, base]
             CellVars: Empty
             FreeVars: [abcs]
         Scope: generator25873
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [b, <return_val>, base]
             CellVars: Empty
             FreeVars: [base]
@@ -94,7 +94,7 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
         Scope: generator23745
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [s, <return_val>]
             CellVars: Empty
             FreeVars: Empty
@@ -144,12 +144,12 @@ Scope: []
         CellVars: [type]
         FreeVars: Empty
         Scope: generator16699
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [v, type, <return_val>]
             CellVars: Empty
             FreeVars: [type]
         Scope: generator16634
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [v, type, <return_val>]
             CellVars: Empty
             FreeVars: [type]
@@ -199,7 +199,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator13105
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -229,12 +229,12 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator10496
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator10448
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [x, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -294,7 +294,7 @@ Scope: []
         CellVars: [cls]
         FreeVars: Empty
         Scope: generator7457
-            Kind: Generator
+            Kind: SetComp
             FrameDescriptor: [op, cls, <return_val>]
             CellVars: Empty
             FreeVars: [cls]

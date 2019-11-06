@@ -1,0 +1,82 @@
+ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i in r...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,28]`{i: i + 1 for i in r...`
+    PythonCallNodeGen SourceSection: [0,28]`{i: i + 1 for i in r...`
+      CachedCallNodeGen SourceSection: None
+        CreateArgumentsNodeGen SourceSection: None
+        CallDispatchNodeGen SourceSection: None
+      GeneratorExpressionNode SourceSection: [10,27]`for i in range(3)`
+        Name: [].<locals>.<genexp>:dictCompr:1
+        FrameDescriptor: 2 slots [i, <return_val>]
+        Enclosing
+          FrameDescriptor:  Empty
+        Active Flags: 2
+        For Nodes: 1
+        Block Nodes: 0
+        Is Enclosing Frame Generator: false
+        FunctionRootNode SourceSection: [10,27]`for i in range(3)`
+          Name: [].<locals>.<genexp>:dictCompr:1
+          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+          CelVars: None
+          FreeVars: None
+          NeedsCellFrame: False
+          FrameDescriptor: 2 slots [i, <return_val>]
+          ExecutionSlots:
+            FreeVarsSlots: None
+            CellVarsSlots: None
+          InnerRootNode SourceSection: [10,27]`for i in range(3)`
+            GeneratorReturnTargetNode SourceSection: [10,27]`for i in range(3)`
+              flagSlot: 1
+              GeneratorForNode SourceSection: [10,27]`for i in range(3)`
+                ExpressionStatementNode SourceSection: None
+                  YieldNode SourceSection: None
+                    flagSlot: 0
+                    TupleLiteralNode SourceSection: None
+                      PythonObjectFactoryNodeGen SourceSection: None
+                      ReadGeneratorFrameVariableNode SourceSection: [1,2]`i`
+                        Frame: [0,i,Illegal]
+                        ReadVariableFromFrameNodeGen SourceSection: None
+                      BinaryArithmeticExpression SourceSection: [4,9]`i + 1`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __add__
+                        ReadGeneratorFrameVariableNode SourceSection: [4,5]`i`
+                          Frame: [0,i,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        IntegerLiteralNode SourceSection: [8,9]`1`
+                          Value: 1
+                    GeneratorAccessNode SourceSection: None
+                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                  Identifier: i
+                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                    Frame: [0,i,Illegal]
+                ArgumentExpressionNode SourceSection: None
+                  ReadIndexedArgumentNodeGen SourceSection: None
+                    Index: 0
+                GetNextNode SourceSection: None
+                  LookupAndCallUnaryNodeGen SourceSection: None
+                    Op: __next__
+                GeneratorAccessNode SourceSection: None
+              ReadGeneratorFrameVariableNode SourceSection: None
+                Frame: [1,<return_val>,Illegal]
+                ReadVariableFromFrameNodeGen SourceSection: None
+              BlockNode SourceSection: None
+              GeneratorAccessNode SourceSection: None
+              PRaiseNodeGen SourceSection: None
+        GetIteratorExpressionNodeGen SourceSection: [19,27]`range(3)`
+          GetIteratorNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [19,27]`range(3)`
+            CachedCallNodeGen SourceSection: None
+              CreateArgumentsNodeGen SourceSection: None
+              CallDispatchNodeGen SourceSection: None
+            IntegerLiteralNode SourceSection: [25,26]`3`
+              Value: 3
+            ReadNameNodeGen SourceSection: None
+              Identifier: range
+        PythonObjectFactoryNodeGen SourceSection: None
+      ReadGlobalOrBuiltinNodeGen SourceSection: None
+        Identifier: dict
+        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
@@ -319,6 +320,10 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ScopeInfo tmpScope = scope.getParent();
         while (tmpScope != null) {
             switch (tmpScope.getScopeKind()) {
+                case GenExp:
+                case ListComp:
+                case DictComp:
+                case SetComp:
                 case Function:
                 case Generator:
                     qualifiedName.insert(0, ".<locals>.");
@@ -877,15 +882,39 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Parameters
          */
         // Args args = visitArgs(varargslist, defaultArgs, defaultKwArgs);
-        StatementNode argumentLoads = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes());
+        StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes());
         Signature signature = node.args == null ? Signature.EMPTY : node.args.getSignature();
 
         /**
          * Lambda body
          */
-        StatementNode frameReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal((ExpressionNode) node.body.accept(this), scopeEnvironment.getReturnSlot()));
-        StatementNode body = nodeFactory.createBlock(argumentLoads, frameReturn);
-        ReturnTargetNode returnTargetNode = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+        ExpressionNode lambdaBody;
+        GeneratorFactorySSTVisitor generatorFactory = null;
+        boolean isGenerator = scopeEnvironment.isInGeneratorScope();
+        StatementNode frameReturn;
+        if (isGenerator) {
+            generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
+            lambdaBody = (ExpressionNode) node.body.accept(generatorFactory);
+            frameReturn = nodeFactory.createFrameReturn(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), lambdaBody));
+        } else {
+            lambdaBody = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
+                            ? ((GeneratorFactorySSTVisitor) this).parentVisitor
+                            : this);
+            frameReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(lambdaBody, scopeEnvironment.getReturnSlot()));
+        }
+
+        // StatementNode body = nodeFactory.createBlock(argumentLoads, frameReturn);
+        // StatementNode body = frameReturn;
+        // ReturnTargetNode returnTargetNode = new ReturnTargetNode(body,
+        // nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+        ExpressionNode returnTargetNode;
+        if (scopeEnvironment.isInGeneratorScope()) {
+            returnTargetNode = new GeneratorReturnTargetNode(argumentNodes, frameReturn, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()),
+                            generatorFactory.getNextNumOfActiveFlags());
+        } else {
+            StatementNode body = nodeFactory.createBlock(argumentNodes, frameReturn);
+            returnTargetNode = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+        }
         returnTargetNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
 
         /**
@@ -907,17 +936,31 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Definition
          */
         PNode funcDef;
+        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
-            GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
-            RootCallTarget ct = gtran.translate();
             funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-                            gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode(), null);
+                            generatorFactory.getNumOfActiveFlags(), generatorFactory.getNumOfGeneratorBlockNode(), generatorFactory.getNumOfGeneratorForNode(), null);
         } else {
-            RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
-            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
+            funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct, scopeEnvironment.getDefinitionCellSlots(),
+                            scopeEnvironment.getExecutionCellSlots(), null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }
+        // if (scopeEnvironment.isInGeneratorScope()) {
+        // GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
+        // RootCallTarget ct = gtran.translate();
+        // funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults,
+        // kwDefaults, ct, fd,
+        // scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
+        // gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(),
+        // gtran.getNumOfGeneratorForNode(), null);
+        // } else {
+        // RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        // funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct,
+        // scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
+        // null);
+        // funcDef.assignSourceSection(returnTargetNode.getSourceSection());
+        // }
         scopeEnvironment.setCurrentScope(oldScope);
         return funcDef;
     }
@@ -1213,7 +1256,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public ReadNode makeTempLocalVariable() {
         String tempName = TEMP_LOCAL_PREFIX + scopeEnvironment.getCurrentScope().getFrameDescriptor().getSize();
         FrameSlot tempSlot = scopeEnvironment.createAndReturnLocal(tempName);
-        return scopeEnvironment.getCurrentScope().getScopeKind() != ScopeKind.Generator
+        return !scopeEnvironment.isInGeneratorScope()
                         ? ReadLocalVariableNode.create(tempSlot)
                         : ReadGeneratorFrameVariableNode.create(tempSlot);
     }

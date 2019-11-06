@@ -69,7 +69,7 @@ Scope: []
             CellVars: [newlevel, repr1]
             FreeVars: [__class__]
             Scope: generator2158
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [elem, repr1, newlevel, <return_val>]
                 CellVars: Empty
                 FreeVars: [newlevel, repr1]

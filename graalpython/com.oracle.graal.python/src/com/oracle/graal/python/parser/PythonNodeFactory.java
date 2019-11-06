@@ -220,8 +220,26 @@ public final class PythonNodeFactory {
     }
 
     public YieldExpressionSSTNode createYieldExpressionSSTNode(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
-        if (!scopeEnvironment.isInFunctionScope()) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), "'yield' outside function");
+        ScopeKind scopeKind = scopeEnvironment.getScopeKind();
+        if (!(scopeKind == ScopeKind.Function || scopeKind == ScopeKind.Generator)) {
+            String message;
+            switch (scopeKind) {
+                case ListComp:
+                    message = "'yield' inside list comprehension";
+                    break;
+                case DictComp:
+                    message = "'yield' inside dict comprehension";
+                    break;
+                case SetComp:
+                    message = "'yield' inside set comprehension";
+                    break;
+                case GenExp:
+                    message = "'yield' inside generator expression";
+                    break;
+                default:
+                    message = "'yield' outside function";
+            }
+            throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message);
         }
         scopeEnvironment.setToGeneratorScope();
         return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
