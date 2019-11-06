@@ -192,8 +192,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
