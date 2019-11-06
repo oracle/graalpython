@@ -54,7 +54,7 @@ libpython_name = "libpython"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
-relative_rpath = "@dloader_path" if sys.platform == "darwin" else "\$ORIGIN"
+relative_rpath = "@loader_path" if darwin_native else "\$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 
@@ -125,6 +125,15 @@ class Bzip2Depedency(CAPIDependency):
             extracted_dir = self.download()
         lib_src_folder = os.path.join(extracted_dir, self.package_name + "-" + self.version)
         logger.info("Building dependency %s in %s using Makefile %s" % (self.package_name, lib_src_folder, self.makefile))
+
+        # On Darwin, we need to use -install_name for the native linker
+        if darwin_native:
+            with open(self.makefile, "rw") as f:
+                content = f.read()
+                content.replace("-Wl,-soname", "-Wl,-install_name")
+                f.truncate(0)
+                f.write(content)
+
         system("make -C '%s' -f '%s' CC='%s'" % (lib_src_folder, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
         return lib_src_folder
 
