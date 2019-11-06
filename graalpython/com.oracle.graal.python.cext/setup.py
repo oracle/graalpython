@@ -128,10 +128,10 @@ class Bzip2Depedency(CAPIDependency):
 
         # On Darwin, we need to use -install_name for the native linker
         if darwin_native:
-            with open(self.makefile, "rw") as f:
+            with open(self.makefile, "r") as f:
                 content = f.read()
                 content.replace("-Wl,-soname", "-Wl,-install_name")
-                f.truncate(0)
+            with open(self.makefile, "w") as f:
                 f.write(content)
 
         system("make -C '%s' -f '%s' CC='%s'" % (lib_src_folder, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
