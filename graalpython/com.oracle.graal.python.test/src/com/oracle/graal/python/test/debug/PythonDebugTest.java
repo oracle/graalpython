@@ -384,14 +384,13 @@ public class PythonDebugTest {
                 assertTrue(x.hasWriteSideEffects());
                 assertTrue(x.isReadable());
                 assertTrue(x.isWritable());
-                DebugValue nx = p.getProperty("__nx");
-                assertEquals(0, nx.as(Number.class).intValue());
+                assertEquals(0, p.getProperty("__nx").as(Number.class).intValue());
                 assertEquals("None", x.as(String.class));
-                assertEquals(1, nx.as(Number.class).intValue());
+                assertEquals(1, p.getProperty("__nx").as(Number.class).intValue());
                 x.set(42);
-                assertEquals(2, nx.as(Number.class).intValue());
+                assertEquals(2, p.getProperty("__nx").as(Number.class).intValue());
                 assertEquals("42", x.as(String.class));
-                assertEquals(3, nx.as(Number.class).intValue());
+                assertEquals(3, p.getProperty("__nx").as(Number.class).intValue());
                 DebugValue y = p.getProperty("y");
                 assertTrue(y.hasReadSideEffects());
                 assertFalse(y.hasWriteSideEffects());
