@@ -832,7 +832,11 @@ public class IntBuiltins extends PythonBuiltins {
                 // handle shortcut cases:
                 int value = a.intValueExact();
                 if (value == 0) {
-                    return BigInteger.ZERO;
+                    if (b == 0) {
+                        return BigInteger.ONE;
+                    } else {
+                        return BigInteger.ZERO;
+                    }
                 } else if (value == 1) {
                     return BigInteger.ONE;
                 } else if (value == -1) {
