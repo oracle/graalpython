@@ -391,7 +391,7 @@ suite = {
             "description": "Graal.Python support distribution for the GraalVM license files",
             "layout": {
                 "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
-                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
+                "THIRD_PARTY_LICENSE_GRAALPYTHON.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
         },
