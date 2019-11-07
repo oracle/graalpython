@@ -73,7 +73,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noUserSite = false;
     private boolean noSite = false;
     private boolean stdinIsInteractive = System.console() != null;
-    private boolean runLLI = false;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private VersionAction versionAction = VersionAction.None;
@@ -325,18 +324,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
-        if (runLLI) {
-            assert inputFile != null : "lli needs an input file";
-            try (Context context = contextBuilder.build()) {
-                try {
-                    context.eval(Source.newBuilder("llvm", new File(inputFile)).build());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return;
-        }
-
         if (!ignoreEnv) {
             String pythonpath = System.getenv("PYTHONPATH");
             if (pythonpath != null) {
