@@ -354,6 +354,35 @@ class TestObject(object):
         obj.hello = "world"
         assert obj.hello == "world", 'expected "world" but was %s' % obj.hello
 
+    def test_reverse_ops(self):
+        TestReverseOps = CPyExtType("TestReverseOps",
+                               """
+                               PyObject* generic_nb(PyObject* self, PyObject* other) {
+                                   return PyLong_FromLong(123);
+                               }
+                               """,
+                               nb_add="generic_nb",
+                               nb_subtract="generic_nb",
+                               nb_multiply="generic_nb",
+                               nb_remainder="generic_nb",
+                               nb_divmod="generic_nb",
+                               nb_floor_divide="generic_nb",
+                               nb_true_divide="generic_nb",
+                               nb_rshift="generic_nb",
+                               nb_lshift="generic_nb",
+                               nb_matrix_multiply="generic_nb",
+                               )
+        tester = TestReverseOps()
+        assert 1 + tester == 123, "__radd__ failed"
+        assert 1 - tester == 123, "__rsub__ failed"
+        assert 1 * tester == 123, "__rmul__ failed"
+        assert 1 / tester == 123, "__rtruediv__ failed"
+        assert 1 // tester == 123, "__rfloordiv__ failed"
+        assert 1 % tester == 123, "__rmod__ failed"
+        assert 1 << tester == 123, "__rlshift__ failed"
+        assert 1 >> tester == 123, "__rrshift__ failed"
+        assert 1 @ tester == 123, "__rmatmul__ failed"
+
 
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):

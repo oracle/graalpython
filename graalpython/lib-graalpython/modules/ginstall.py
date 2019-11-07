@@ -454,6 +454,7 @@ index 66d8530..8bb2ab6 100644
 
     @pip_package()
     def setuptools_scm(**kwargs):
+        setuptools(**kwargs)
         install_from_pypi("setuptools_scm==1.15.0", **kwargs)
 
     @pip_package()
