@@ -131,7 +131,7 @@ class Bzip2Depedency(CAPIDependency):
             makefile_path = os.path.join(lib_src_folder, self.makefile)
             with open(makefile_path, "r") as f:
                 content = f.read()
-                content = content.replace("-Wl,-soname", "-Wl,-install_name")
+                content = content.replace("-Wl,-soname -Wl,%s" % self.install_name, "-Wl,-install_name -Wl,@rpath/%s" % self.install_name)
             with open(makefile_path, "w") as f:
                 f.write(content)
 
