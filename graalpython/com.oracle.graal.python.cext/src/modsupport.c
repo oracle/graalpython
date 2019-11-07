@@ -47,11 +47,11 @@ static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
         *errmsg = "bytes-like object";
         return -1;
     }
-//    if (!PyBuffer_IsContiguous(view, 'C')) {
-//        PyBuffer_Release(view);
-//        *errmsg = "contiguous buffer";
-//        return -1;
-//    }
+    if (!PyBuffer_IsContiguous(view, 'C')) {
+        PyBuffer_Release(view);
+        *errmsg = "contiguous buffer";
+        return -1;
+    }
     return 0;
 }
 
@@ -123,12 +123,12 @@ MUST_INLINE static int _PyTruffleArg_ParseTupleAndKeywords(PyObject *argv, PyObj
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             if (format[format_idx + 1] == '*') {
                 Py_buffer* p = PyTruffleVaArg(poly_args, offset, va, Py_buffer*);
-            	const char* buf;
-            	format_idx++; // skip over '*'
-            	if (getbuffer(arg, p, &buf) < 0) {
-            		PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg));
-            		return 0;
-            	}
+                const char* buf;
+                format_idx++; // skip over '*'
+                if (getbuffer(arg, p, &buf) < 0) {
+                    PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg));
+                    return 0;
+                }
             } else if (arg == Py_None) {
                 if (c == 'z') {
                     PyTruffle_WriteOut(poly_args, offset, va, const char*, NULL);
@@ -180,9 +180,6 @@ MUST_INLINE static int _PyTruffleArg_ParseTupleAndKeywords(PyObject *argv, PyObj
             }
             PyTruffle_WriteOut(poly_args, offset, va, PyObject*, arg);
             break;
-        case 'w':
-            PyErr_Format(PyExc_TypeError, "'w' format specifier in argument parsing not supported");
-            return 0;
         case 'e':
             switch (format[++format_idx]) {
             case 's':
@@ -325,6 +322,30 @@ MUST_INLINE static int _PyTruffleArg_ParseTupleAndKeywords(PyObject *argv, PyObj
                 PyTruffle_WriteOut(poly_args, offset, va, PyObject*, arg);
             }
             break;
+        case 'w': { /* "w*": memory buffer, read-write access */
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            Py_buffer* p = PyTruffleVaArg(poly_args, offset, va, Py_buffer*);
+
+            if (format[format_idx + 1] != '*') {
+                PyErr_Format(PyExc_TypeError, "(invalid use of 'w' format character)");
+                return 0;
+            }
+            format++;
+
+            /* Caller is interested in Py_buffer, and the object
+               supports it directly. */
+            if (PyObject_GetBuffer(arg, p, PyBUF_WRITABLE) < 0) {
+                PyErr_Clear();
+                PyErr_Format(PyExc_TypeError, "read-write bytes-like object");
+                return 0;
+            }
+            if (!PyBuffer_IsContiguous((Py_buffer*)p, 'C')) {
+                PyBuffer_Release((Py_buffer*)p);
+                PyErr_Format(PyExc_TypeError, "contiguous buffer");
+                return 0;
+            }
+            break;
+        }
         case 'p':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(poly_args, offset, va, int, arg, rest_optional);
@@ -402,29 +423,29 @@ MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
 
 NO_INLINE
 int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
-	// TODO(fa) Converting the stack to a tuple is rather slow. We should refactor
-	// '_PyTruffleArg_ParseTupleAndKeywords' (like CPython) into smaller operations.
+    // TODO(fa) Converting the stack to a tuple is rather slow. We should refactor
+    // '_PyTruffleArg_ParseTupleAndKeywords' (like CPython) into smaller operations.
     CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), PyDict_New(), format, NULL);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
-	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
+    // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 3, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), PyDict_New(), format, NULL);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
+    // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-	// TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
+    // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
     CallWithPolyglotArgs(int result, parser, 4, _PyTruffleArg_ParseTupleAndKeywords, PyTruffle_Stack2Tuple(args, nargs), kwnames, parser->format, parser->keywords);
     return result;
 }

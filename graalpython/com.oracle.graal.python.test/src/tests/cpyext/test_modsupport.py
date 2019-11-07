@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,11 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_e
 __dir__ = __file__.rpartition("/")[0]
 
 
+def _reference_format_specifier_w_star(args):
+    bytes_like = args[0]
+    bytes_like[0] = ord('a')
+    return bytes_like
+
 class TestModsupport(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -58,4 +63,31 @@ class TestModsupport(CPyExtTestCase):
         argspec="Oss",
         arguments=["PyObject* m", "const char* name", "const char* value"],
         cmpfunc=lambda cr, pr: cr == 0 and pr is True
+    )
+
+    test_format_specifier_w_star = CPyExtFunction(
+        _reference_format_specifier_w_star,
+        lambda: (
+            (bytearray(b'helloworld'),),
+        ),
+        code='''PyObject* wrap_PyArg_ParseTuple(PyObject* bytesLike) {
+            Py_buffer buf;
+            PyObject* args = PyTuple_New(1);
+            char *ptr = NULL;
+            PyTuple_SetItem(args, 0, bytesLike);
+            Py_INCREF(args);
+            if (PyArg_ParseTuple(args, "w*", &buf) == 0) {
+                return NULL;
+            }
+            ptr = (char*) (buf.buf);
+            ptr[0] = 'a';
+            Py_DECREF(args);
+            return bytesLike;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* bytesLike"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
     )
