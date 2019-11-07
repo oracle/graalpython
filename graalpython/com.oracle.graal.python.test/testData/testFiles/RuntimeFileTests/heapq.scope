@@ -9,22 +9,22 @@ Scope: []
         CellVars: [key]
         FreeVars: Empty
         Scope: generator22590
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, <>temp3, <>temp4, k, <>temp5, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
         Scope: generator22176
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, i, <>temp3, <>temp4, <return_val>, key]
             CellVars: Empty
             FreeVars: [key]
         Scope: generator22068
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, <>temp2, <>temp3, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
         Scope: generator21642
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, <>temp2, i, <>temp3, <return_val>]
             CellVars: Empty
             FreeVars: Empty
@@ -34,22 +34,22 @@ Scope: []
         CellVars: [key]
         FreeVars: Empty
         Scope: generator20788
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, <>temp3, <>temp4, k, <>temp5, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
         Scope: generator20385
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, i, <>temp3, <>temp4, <return_val>, key]
             CellVars: Empty
             FreeVars: [key]
         Scope: generator20277
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, <>temp2, <>temp3, <return_val>, order]
             CellVars: Empty
             FreeVars: Empty
         Scope: generator19862
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [elem, <>temp2, i, <>temp3, <return_val>]
             CellVars: Empty
             FreeVars: Empty

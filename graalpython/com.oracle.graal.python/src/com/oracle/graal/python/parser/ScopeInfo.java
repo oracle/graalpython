@@ -44,11 +44,16 @@ public final class ScopeInfo {
         Module,
         Function,
         Class,
-        // generator expression or generator function
+        // Generator Function
         Generator,
-        // list comprehension
+        // Generatro Expression
+        GenExp,
+        // List Comprehension
         ListComp,
-
+        // Set Comprehension
+        SetComp,
+        // Dir Comprehension
+        DictComp,
         // new
         Transparent
     }

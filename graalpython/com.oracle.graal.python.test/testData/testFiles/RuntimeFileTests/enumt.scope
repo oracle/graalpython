@@ -19,12 +19,12 @@ Scope: []
             CellVars: Empty
             FreeVars: Empty
         Scope: generator33751
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [v, <>temp2, <>temp3, m, <return_val>]
             CellVars: Empty
             FreeVars: Empty
         Scope: generator33513
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [v, <>temp2, <>temp3, m, <return_val>]
             CellVars: Empty
             FreeVars: Empty
@@ -34,7 +34,7 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
         Scope: generator32846
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [name, <>temp2, alias, <>temp3, <return_val>]
             CellVars: Empty
             FreeVars: Empty
@@ -114,7 +114,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator29023
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [m, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -124,7 +124,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator28490
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [m, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -179,7 +179,7 @@ Scope: []
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator25215
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [filter, name, source, <return_val>]
                 CellVars: Empty
                 FreeVars: [filter, source]
@@ -214,7 +214,7 @@ Scope: []
             CellVars: [self]
             FreeVars: [__class__]
             Scope: generator22699
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [self, cls, m, <return_val>]
                 CellVars: Empty
                 FreeVars: [self]
@@ -274,7 +274,7 @@ Scope: []
             CellVars: [cls]
             FreeVars: [__class__]
             Scope: generator14734
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [name, cls, <return_val>]
                 CellVars: Empty
                 FreeVars: [cls]
@@ -299,7 +299,7 @@ Scope: []
             CellVars: [cls]
             FreeVars: [__class__]
             Scope: generator14218
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [name, cls, <return_val>]
                 CellVars: Empty
                 FreeVars: [cls]
@@ -344,17 +344,17 @@ Scope: []
             CellVars: [classdict, member_type]
             FreeVars: [__class__]
             Scope: generator7411
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [member_type, m, <return_val>]
                 CellVars: Empty
                 FreeVars: [member_type]
             Scope: generator6377
-                Kind: Generator
+                Kind: SetComp
                 FrameDescriptor: [a, b, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator5304
-                Kind: Generator
+                Kind: DictComp
                 FrameDescriptor: [k, classdict, <return_val>]
                 CellVars: Empty
                 FreeVars: [classdict]

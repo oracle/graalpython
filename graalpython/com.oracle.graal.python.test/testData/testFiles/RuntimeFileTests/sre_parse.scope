@@ -14,7 +14,7 @@ Scope: []
         CellVars: [groups, literal, literals, pattern, s]
         FreeVars: Empty
         Scope: generator38862
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [s, <return_val>]
             CellVars: Empty
             FreeVars: Empty

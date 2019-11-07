@@ -237,11 +237,15 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     }
 
     public boolean isInFunctionScope() {
-        return getScopeKind() == ScopeInfo.ScopeKind.Function || getScopeKind() == ScopeInfo.ScopeKind.Generator;
+        ScopeInfo.ScopeKind kind = getScopeKind();
+        return kind == ScopeInfo.ScopeKind.Function || kind == ScopeInfo.ScopeKind.Generator || kind == ScopeInfo.ScopeKind.DictComp || kind == ScopeInfo.ScopeKind.GenExp ||
+                        kind == ScopeInfo.ScopeKind.ListComp || kind == ScopeInfo.ScopeKind.SetComp;
     }
 
     public boolean isInGeneratorScope() {
-        return getScopeKind() == ScopeInfo.ScopeKind.Generator;
+        ScopeInfo.ScopeKind kind = getScopeKind();
+        return kind == ScopeInfo.ScopeKind.Generator || kind == ScopeInfo.ScopeKind.DictComp || kind == ScopeInfo.ScopeKind.GenExp || kind == ScopeInfo.ScopeKind.ListComp ||
+                        kind == ScopeInfo.ScopeKind.SetComp;
     }
 
     public boolean isGlobal(String name) {
@@ -368,7 +372,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         if (isGlobal(name)) {
             return findVariableInGlobalOrBuiltinScope(name);
         } else if (isNonlocal(name)) {
-            if (currentScope.getScopeKind() == ScopeInfo.ScopeKind.Generator) {
+            if (isInGeneratorScope()) {
                 return findVariableNodeInGenerator(name);
             }
             return findVariableInLocalOrEnclosingScopes(name);
@@ -378,8 +382,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             case Module:
                 return findVariableNodeModule(name);
             case Generator:
-                return findVariableNodeInGenerator(name);
+            case GenExp:
             case ListComp:
+            case DictComp:
+            case SetComp:
+                return findVariableNodeInGenerator(name);
             case Function:
                 return findVariableNodeLEGB(name);
             case Class:
@@ -414,11 +421,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     private StatementNode getWriteNode(String name, FrameSlot slot, ExpressionNode right) {
         if (isCellInCurrentScope(name)) {
-            return currentScope.getScopeKind() != ScopeInfo.ScopeKind.Generator
+            return !isInGeneratorScope()
                             ? factory.createWriteLocalCell(right, slot)
                             : WriteLocalCellNode.create(slot, ReadGeneratorFrameVariableNode.create(slot), right);
         }
-        return currentScope.getScopeKind() != ScopeInfo.ScopeKind.Generator
+        return !isInGeneratorScope()
                         ? factory.createWriteLocal(right, slot)
                         : WriteGeneratorFrameVariableNode.create(slot, right);
     }

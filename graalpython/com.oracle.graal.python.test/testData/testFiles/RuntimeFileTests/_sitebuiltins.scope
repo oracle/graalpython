@@ -44,7 +44,7 @@ Scope: []
             CellVars: [files, os]
             FreeVars: [__class__]
             Scope: generator1121
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [filename, os, files, dir, <return_val>]
                 CellVars: Empty
                 FreeVars: [files, os]
