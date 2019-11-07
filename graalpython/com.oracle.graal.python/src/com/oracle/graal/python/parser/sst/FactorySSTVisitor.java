@@ -876,12 +876,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         String funcname = "anonymous";
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.functionScope);
-        // environment.setDefaultArgumentNodes(defaultArgs);
-        // environment.setDefaultKwArgumentNodes(defaultKwArgs);
         /**
          * Parameters
          */
-        // Args args = visitArgs(varargslist, defaultArgs, defaultKwArgs);
         StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes());
         Signature signature = node.args == null ? Signature.EMPTY : node.args.getSignature();
 
@@ -903,10 +900,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             frameReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(lambdaBody, scopeEnvironment.getReturnSlot()));
         }
 
-        // StatementNode body = nodeFactory.createBlock(argumentLoads, frameReturn);
-        // StatementNode body = frameReturn;
-        // ReturnTargetNode returnTargetNode = new ReturnTargetNode(body,
-        // nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         ExpressionNode returnTargetNode;
         if (scopeEnvironment.isInGeneratorScope()) {
             returnTargetNode = new GeneratorReturnTargetNode(argumentNodes, frameReturn, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()),
@@ -946,21 +939,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                             scopeEnvironment.getExecutionCellSlots(), null);
             funcDef.assignSourceSection(returnTargetNode.getSourceSection());
         }
-        // if (scopeEnvironment.isInGeneratorScope()) {
-        // GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
-        // RootCallTarget ct = gtran.translate();
-        // funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, null, defaults,
-        // kwDefaults, ct, fd,
-        // scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-        // gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(),
-        // gtran.getNumOfGeneratorForNode(), null);
-        // } else {
-        // RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
-        // funcDef = new FunctionDefinitionNode(funcname, null, null, defaults, kwDefaults, ct,
-        // scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
-        // null);
-        // funcDef.assignSourceSection(returnTargetNode.getSourceSection());
-        // }
         scopeEnvironment.setCurrentScope(oldScope);
         return funcDef;
     }
