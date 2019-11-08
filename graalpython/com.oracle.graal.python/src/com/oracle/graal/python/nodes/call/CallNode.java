@@ -209,6 +209,8 @@ public abstract class CallNode extends PNodeWithContext {
                 if (func instanceof PFunction) {
                     arguments = createArgs.execute(method, args, keywords);
                     ct = ((PFunction) func).getCallTarget();
+                    PArguments.setClosure(arguments, ((PFunction)func).getClosure());
+                    PArguments.setGlobals(arguments, ((PFunction)func).getGlobals());
                 } else {
                     arguments = createArgs.execute(method, args, keywords);
                     ct = ((PBuiltinFunction) func).getCallTarget();
