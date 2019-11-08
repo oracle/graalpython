@@ -19,7 +19,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator21846
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [c, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -114,7 +114,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator9408
-                Kind: Generator
+                Kind: DictComp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty

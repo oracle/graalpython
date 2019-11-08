@@ -29,7 +29,7 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
         Scope: generator16114
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [conffile, <return_val>]
             CellVars: Empty
             FreeVars: Empty
@@ -109,7 +109,7 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
         Scope: generator7404
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [name, <return_val>]
             CellVars: Empty
             FreeVars: Empty

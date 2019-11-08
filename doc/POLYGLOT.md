@@ -25,12 +25,12 @@ polyglot.eval(string="1 + 1", language="ruby")
 
 It also works with the path to a file:
 ```python
-polyglot.eval(file="./my_ruby_file.rb", language="ruby")
+polyglot.eval(path="./my_ruby_file.rb", language="ruby")
 ```
 
 If you pass a file, you can also try to rely on the file-based language detection:
 ```python
-polyglot.eval(file="./my_ruby_file.rb")
+polyglot.eval(path="./my_ruby_file.rb")
 ```
 
 To export something from Python to other Polyglot languages so they can import
@@ -76,7 +76,7 @@ al.add(12)
 print(al) # prints [1, 12]
 ```
 
-In addition to the `type` builtin method, the `java` module, exposes the following 
+In addition to the `type` builtin method, the `java` module, exposes the following
 methods as well:
 
 Builtin                  | Specification
@@ -92,7 +92,7 @@ ArrayList = java.type('java.util.ArrayList')
 my_list = ArrayList()
 print(java.is_symbol(ArrayList))    # prints True
 print(java.is_symbol(my_list))      # prints False, my_list is not a Java host symbol
-print(java.is_object(ArrayList))    # prints True, symbols are also host objects 
+print(java.is_object(ArrayList))    # prints True, symbols are also host objects
 print(java.is_function(my_list.add))# prints True, the add method of ArrayList
-print(java.instanceof(my_list, ArrayList)) # prints True 
+print(java.instanceof(my_list, ArrayList)) # prints True
 ```

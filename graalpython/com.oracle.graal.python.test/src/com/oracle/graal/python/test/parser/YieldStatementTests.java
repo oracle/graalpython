@@ -363,4 +363,83 @@ public class YieldStatementTests extends ParserTestBase {
     public void syntaxEror05() throws Exception {
         checkSyntaxErrorMessageContains("def g(a:(yield)): pass", "'yield' outside function");
     }
+
+    @Test
+    public void yieldSyntaxError01() throws Exception {
+        checkSyntaxErrorMessageContains("yield x", "'yield' outside function");
+    }
+
+    // These tests pass CPython 3.8. In CPyhton 3.7 the bulk is deprecated, in CPython 3.6 the
+    // bahaviour is different.
+    // Occording CPython 3.8 the yieled expression cannot be used outside function and in
+    // comprehention.
+    @Test
+    public void yieldSyntaxError02() throws Exception {
+        checkSyntaxErrorMessageContains("[(yield x) for x in range(3)]", "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError03() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): [(yield x) for x in ()]", "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError04() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): [x for x in () if not (yield x)]",
+                        "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError05() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): [y for x in () for y in [(yield x)]]",
+                        "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError06() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): {(yield x) for x in ()}",
+                        "'yield' inside set comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError07() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): {(yield x): x for x in ()}",
+                        "'yield' inside dict comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError08() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): {x: (yield x) for x in ()}",
+                        "'yield' inside dict comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError09() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): ((yield x) for x in ())",
+                        "'yield' inside generator expression");
+    }
+
+    @Test
+    public void yieldSyntaxError10() throws Exception {
+        checkSyntaxErrorMessageContains("def g(): [(yield from x) for x in ()]",
+                        "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError11() throws Exception {
+        checkSyntaxErrorMessageContains("class C: [(yield x) for x in ()]",
+                        "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError12() throws Exception {
+        checkSyntaxErrorMessageContains("[(yield x) for x in ()]",
+                        "'yield' inside list comprehension");
+    }
+
+    @Test
+    public void yieldSyntaxError13() throws Exception {
+        checkSyntaxErrorMessageContains("class C: yield 1",
+                        "'yield' outside function");
+    }
 }
