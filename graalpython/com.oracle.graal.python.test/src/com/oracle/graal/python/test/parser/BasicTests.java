@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.test.parser;
 
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -878,6 +879,29 @@ public class BasicTests extends ParserTestBase {
     @Test
     public void spaceEnd() throws Exception {
         checkTreeResult("x=5 ");
+    }
+
+    @Test
+    public void isIdentifier() throws Exception {
+        PythonCore core = context.getCore();
+        PythonParser parser = core.getParser();
+        Assert.assertTrue(parser.isIdentifier(core, "hello"));
+        Assert.assertTrue(parser.isIdentifier(core, "_"));
+        Assert.assertTrue(parser.isIdentifier(core, "b0"));
+        Assert.assertTrue(parser.isIdentifier(core, "bc"));
+        Assert.assertTrue(parser.isIdentifier(core, "b_"));
+        Assert.assertTrue(parser.isIdentifier(core, "µ"));
+
+        Assert.assertFalse(parser.isIdentifier(core, " hello"));
+        Assert.assertFalse(parser.isIdentifier(core, "hello "));
+        Assert.assertFalse(parser.isIdentifier(core, "hel lo"));
+        Assert.assertFalse(parser.isIdentifier(core, "hel?o"));
+        Assert.assertFalse(parser.isIdentifier(core, "hel!o"));
+
+        Assert.assertFalse(parser.isIdentifier(core, " "));
+        Assert.assertFalse(parser.isIdentifier(core, "["));
+        Assert.assertFalse(parser.isIdentifier(core, "©"));
+        Assert.assertFalse(parser.isIdentifier(core, "0"));
     }
 
     private void checkScopeAndTree() throws Exception {

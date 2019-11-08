@@ -65,11 +65,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import org.antlr.v4.runtime.ParserRuleContext;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     public static String CLASS_VAR_PREFIX = "<>class";
+    public static String LAMBDA_NAME = "lambda";
 
     private final NodeFactory factory;
 
@@ -86,17 +86,13 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return currentScope;
     }
 
-    public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
-        return pushScope(ctx, kind, null);
-    }
-
-    public ScopeInfo pushScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
-        ScopeInfo newScope = new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, frameDescriptor, currentScope);
-        currentScope = newScope;
-        if (globalScope == null) {
-            globalScope = currentScope;
+    public ScopeInfo pushScope(String name, ScopeInfo.ScopeKind kind) {
+        if (kind == ScopeInfo.ScopeKind.Function && !name.equals(LAMBDA_NAME)) {
+            createLocal(getCurrentScope().getScopeKind() == ScopeInfo.ScopeKind.Class
+                            ? ScopeEnvironment.CLASS_VAR_PREFIX + name
+                            : name);
         }
-        return currentScope;
+        return pushScope(name, kind, null);
     }
 
     public ScopeInfo pushScope(String name, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
@@ -119,7 +115,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
                 if (localySeenVars != null) {
                     // remove the localy declared variable
-                    if (definingScopeKind == ScopeInfo.ScopeKind.Class && name.startsWith("<>class")) {
+                    if (definingScopeKind == ScopeInfo.ScopeKind.Class && name.startsWith(CLASS_VAR_PREFIX)) {
                         localySeenVars.remove(name.substring(7));
                     } else {
                         localySeenVars.remove(name);
@@ -152,12 +148,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                     if (usedInScopes.isEmpty()) {
                         unresolvedVars.remove(name);
                     }
-                } /*
-                   * else if (usedInScopes == null && definingScopeKind ==
-                   * ScopeInfo.ScopeKind.Class) { if (name.startsWith("<>class")) {
-                   * definingScope.getFrameDescriptor().removeFrameSlot(identifier); name =
-                   * name.substring(7); definingScope.createSlotIfNotPresent(name); } }
-                   */
+                }
             }
         }
 
@@ -182,7 +173,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             boolean copy = false;
             for (Object identifier : identifiers) {
                 String name = (String) identifier;
-                if (name.startsWith("<>class")) {
+                if (name.startsWith(CLASS_VAR_PREFIX)) {
                     definingScope.getFrameDescriptor().removeFrameSlot(identifier);
                     name = name.substring(7);
                     definingScope.createSlotIfNotPresent(name);
@@ -207,25 +198,9 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         globalScope.createSlotIfNotPresent(name);
     }
 
-    public void addLocalGlobals(String name) {
-        assert name != null : "name is null!";
-        createGlobal(name);
-        currentScope.addExplicitGlobalVariable(name);
-    }
-
-    public void addNonlocal(String name) {
-        assert name != null : "name is null!";
-        currentScope.addExplicitNonlocalVariable(name);
-    }
-
     public boolean atModuleLevel() {
         assert currentScope != null;
         return currentScope == globalScope;
-    }
-
-    public boolean atNonModuleLevel() {
-        assert currentScope != null;
-        return currentScope != globalScope;
     }
 
     public ScopeInfo.ScopeKind getScopeKind() {
@@ -251,10 +226,6 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public boolean isGlobal(String name) {
         assert name != null : "name is null!";
         return currentScope.isExplicitGlobalVariable(name);
-    }
-
-    public boolean isGlobaScope(ScopeInfo scope) {
-        return globalScope == scope;
     }
 
     public ScopeInfo getGlobalScope() {
@@ -394,14 +365,6 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             default:
                 throw new IllegalStateException("Unexpected scopeKind " + getScopeKind());
         }
-    }
-
-    public ReadNode findVariable(String name, ScopeInfo scope) {
-        ScopeInfo oldCurrent = currentScope;
-        currentScope = scope;
-        ReadNode result = findVariable(name);
-        currentScope = oldCurrent;
-        return result;
     }
 
     @Override

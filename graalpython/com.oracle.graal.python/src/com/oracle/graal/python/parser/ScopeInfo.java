@@ -289,19 +289,6 @@ public final class ScopeInfo {
         return kwDefaultArgumentNodes;
     }
 
-    public void createFrameSlotsForCellAndFreeVars() {
-        if (cellVars != null) {
-            cellVars.forEach((identifier) -> {
-                createSlotIfNotPresent(identifier);
-            });
-        }
-        if (freeVars != null) {
-            freeVars.forEach((identifier) -> {
-                createSlotIfNotPresent(identifier);
-            });
-        }
-    }
-
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();

@@ -348,7 +348,7 @@ public class FormatStringTests extends ParserTestBase {
     private void testFormatString(String text, String expected) throws Exception {
         VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(new Object[8], new FrameDescriptor());
 
-        Node parserResult = parseNew(text, "<fstringtest>", PythonParser.ParserMode.InlineEvaluation, frame);
+        Node parserResult = parse(text, "<fstringtest>", PythonParser.ParserMode.InlineEvaluation, frame);
 
         Assert.assertTrue("The source has to be just fstring", parserResult instanceof FormatStringLiteralNode);
         FormatStringLiteralNode fsl = (FormatStringLiteralNode) parserResult;

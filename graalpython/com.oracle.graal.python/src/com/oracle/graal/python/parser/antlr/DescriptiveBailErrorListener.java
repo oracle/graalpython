@@ -73,11 +73,6 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
             if (handleRecognitionException != null) {
                 throw handleRecognitionException;
             }
-        } else if (recognizer instanceof Python3NewParser) {
-            PIncompleteSourceException handleRecognitionException = handleRecognitionException(((Python3NewParser) recognizer).getExpectedTokens(), entireMessage, null, line);
-            if (handleRecognitionException != null) {
-                throw handleRecognitionException;
-            }
         }
         if (offendingSymbol instanceof Token) {
             throw new RuntimeException(entireMessage, new EmptyRecognitionException(entireMessage, recognizer, (Token) offendingSymbol));
@@ -86,8 +81,7 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
     }
 
     private static PIncompleteSourceException handleRecognitionException(IntervalSet et, String message, Throwable cause, int line) {
-        if (et.contains(Python3Parser.INDENT) || et.contains(Python3Parser.FINALLY) || et.contains(Python3Parser.EXCEPT) || et.contains(Python3Parser.NEWLINE) ||
-                        et.contains(Python3NewParser.INDENT) || et.contains(Python3NewParser.FINALLY) || et.contains(Python3NewParser.EXCEPT) || et.contains(Python3Parser.NEWLINE) && et.size() == 1) {
+        if (et.contains(Python3Parser.INDENT) || et.contains(Python3Parser.FINALLY) || et.contains(Python3Parser.EXCEPT) || et.contains(Python3Parser.NEWLINE) && et.size() == 1) {
             return new PIncompleteSourceException(message, cause, line);
         }
         return null;

@@ -78,16 +78,15 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import org.antlr.v4.runtime.ParserRuleContext;
 
-public final class PythonNodeFactory {
+public final class PythonSSTNodeFactory {
 
     private final NodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
 
-    public PythonNodeFactory(PythonParser.ParserErrorCallback errors, Source source) {
+    public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source) {
         this.errors = errors;
         this.nodeFactory = NodeFactory.create(errors.getLanguage());
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
@@ -308,37 +307,6 @@ public final class PythonNodeFactory {
             doc = sln.getValue();
         }
         return doc;
-    }
-
-    public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind) {
-        return createScope(ctx, kind, null);
-    }
-
-    public ScopeInfo createScope(String name, ScopeKind kind) {
-        if (kind == ScopeKind.Function && !name.equals("lambda")) {
-            scopeEnvironment.createLocal(scopeEnvironment.getCurrentScope().getScopeKind() == ScopeKind.Class
-                            ? ScopeEnvironment.CLASS_VAR_PREFIX + name
-                            : name);
-        }
-        return scopeEnvironment.pushScope(name, kind, null);
-    }
-
-    public ScopeInfo createScope(ParserRuleContext ctx, ScopeKind kind, FrameDescriptor locals) {
-        return scopeEnvironment.pushScope(ctx, kind, locals);
-    }
-
-    public void leaveScope() {
-        scopeEnvironment.popScope();
-    }
-
-    public ScopeInfo getCurrentScope() {
-        return scopeEnvironment.getCurrentScope();
-    }
-
-    public void leaveGeneratorScope(boolean scopeCreated) {
-        if (scopeCreated) {
-            leaveScope();
-        }
     }
 
     private SourceSection createSourceSection(int start, int stop) {
