@@ -1091,6 +1091,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
     public abstract static class DirectUpcallNode extends PNodeWithContext {
         public abstract Object execute(VirtualFrame frame, Object callable, Object[] args);
 
@@ -1659,7 +1660,7 @@ public abstract class CExtNodes {
             return getSpecialSingletonPtrNode.execute(lib.getDelegate(obj)) != null;
         }
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "1", replaces =  {"doNative", "doSpecial"})
         boolean doGeneric(PythonNativeWrapper obj,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,

@@ -205,11 +205,11 @@ inline void* native_to_java(PyObject* obj) {
 }
 
 __attribute__((always_inline))
-inline PyObject* native_to_java_slim(PyObject* type) {
-	if (!truffle_cannot_be_handle(type)) {
-        return (PyObject *)truffle_managed_from_handle(type);
+inline void* native_to_java_slim(PyObject* obj) {
+    if (!truffle_cannot_be_handle(obj)) {
+        return truffle_managed_from_handle(obj);
     }
-    return type;
+    return obj;
 }
 
 __attribute__((always_inline))

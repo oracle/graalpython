@@ -145,11 +145,14 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -199,6 +202,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -2767,5 +2771,105 @@ public class PythonCextBuiltins extends PythonBuiltins {
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
             return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
+    }
+
+    @Builtin(name = "PyObject_Call", parameterNames = {"callee", "args", "kwargs"})
+    @GenerateNodeFactory
+    @ReportPolymorphism
+    abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "kwargsLib.isNull(kwargsObj)")
+        Object doNoKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary kwargsLib,
+                        @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
+                        @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("callNodeNoKeywords") @Cached CallNode callNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
+            try {
+                Object callable = callableToJavaNode.execute(callableObj);
+                Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
+                return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
+            } catch (PException e) {
+                // getContext() acts as a branch profile
+                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(guards = {"!kwargsLib.isNull(kwargsObj)", "isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "1")
+        Object doEmptyKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary kwargsLib,
+                        @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
+                        @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
+                        @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("callNodeNoKeywords") @Cached CallNode callNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
+            try {
+                Object callable = callableToJavaNode.execute(callableObj);
+                Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
+                return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
+            } catch (PException e) {
+                // getContext() acts as a branch profile
+                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(replaces = {"doNoKeywords", "doEmptyKeywords"})
+        Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary argsLib,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary kwargsLib,
+                        @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
+                        @Cached("createBinaryProfile()") ConditionProfile argsIsNullProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile kwargsIsNullProfile,
+                        @Exclusive @Cached CallNode callNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
+            try {
+                Object callable = callableToJavaNode.execute(callableObj);
+                Object[] args;
+                PKeyword[] keywords;
+
+                // expand positional arguments
+                if (argsIsNullProfile.profile(argsLib.isNull(argsObj))) {
+                    args = new Object[0];
+                } else {
+                    args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
+                }
+
+                // expand keywords
+                if (kwargsIsNullProfile.profile(kwargsLib.isNull(kwargsObj))) {
+                    keywords = PKeyword.EMPTY_KEYWORDS;
+                } else {
+                    keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
+                }
+                return toSulongNode.execute(callNode.execute(frame, callable, args, keywords));
+            } catch (PException e) {
+                // getContext() acts as a branch profile
+                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        static boolean isEmptyDict(CExtNodes.AsPythonObjectNode asPythonObjectNode, HashingCollectionNodes.LenNode lenNode, Object kwargsObj) {
+            Object unwrapped = asPythonObjectNode.execute(kwargsObj);
+            if (unwrapped instanceof PDict) {
+                return lenNode.execute((PDict) unwrapped) == 0;
+            }
+            return false;
+        }
+
     }
 }

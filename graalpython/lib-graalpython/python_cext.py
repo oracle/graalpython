@@ -1062,11 +1062,6 @@ def PyObject_Size(obj):
 
 
 @may_raise
-def PyObject_Call(callee, args, kwargs):
-    return callee(*args, **kwargs)
-
-
-@may_raise
 def PyObject_CallMethod(rcvr, method, args):
     # TODO(fa) that seems to be a workaround
     if type(args) is tuple:
