@@ -1251,6 +1251,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaLongNode castToLongNode) {
             return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
         }
+
+        @Specialization
+        Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
+                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Shared("readNode") @Cached ReadFromChannelNode readNode,
+                        @Cached CastToJavaLongNode castToLongNode,
+                        @Cached CastToJavaIntNode castToIntNode) {
+            return readLong(frame, castToIntNode.execute(fd), castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+        }
     }
 
     @Builtin(name = "isatty", minNumOfPositionalArgs = 1)

@@ -56,15 +56,18 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.TruffleFile;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "mmap")
@@ -88,33 +91,40 @@ public class MMapModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "tagname", "access", "offset"}, constructsClass = PMMap)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MMapNode extends PythonBuiltinNode {
 
         private final BranchProfile invalidLengthProfile = BranchProfile.create();
 
         @Specialization(guards = {"isAnonymous(fd)", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doAnonymous(LazyPythonClass clazz, @SuppressWarnings("unused") int fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
+        PMMap doAnonymous(LazyPythonClass clazz, @SuppressWarnings("unused") long fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
                         @SuppressWarnings("unused") PNone offset) {
             checkLength(length);
             return factory().createMMap(clazz, new AnonymousMap(length), length, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doFile(LazyPythonClass clazz, int fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(LazyPythonClass clazz, long fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(offset)"})
-        PMMap doFile(LazyPythonClass clazz, int fd, int length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(LazyPythonClass clazz, long fd, int length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, access, 0);
         }
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
         @Specialization(guards = "fd >= 0")
-        PMMap doFile(LazyPythonClass clazz, int fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
+        PMMap doFile(LazyPythonClass clazz, long fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
             checkLength(length);
+            int ifd;
+            try {
+                ifd = PInt.intValueExact(fd);
+            } catch (ArithmeticException e) {
+                throw raise(ValueError, "invalid file descriptor");
+            }
 
-            String path = getContext().getResources().getFilePath(fd);
+            String path = getContext().getResources().getFilePath(ifd);
             TruffleFile truffleFile = getContext().getEnv().getPublicTruffleFile(path);
 
             // TODO(fa) correctly honor access flags
@@ -146,11 +156,11 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.OSError);
         }
 
-        protected static boolean isAnonymous(int fd) {
+        protected static boolean isAnonymous(long fd) {
             return fd == -1;
         }
 
-        protected static boolean isIllegal(int fd) {
+        protected static boolean isIllegal(long fd) {
             return fd < -1;
         }
 
@@ -219,6 +229,5 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             }
             return this;
         }
-
     }
 }
