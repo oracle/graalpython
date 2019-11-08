@@ -1872,7 +1872,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String doIt(PGenerator gen) {
-            return NodeUtil.printTreeToString(gen.getCallTarget().getRootNode());
+            return NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode());
         }
 
         @Specialization

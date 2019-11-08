@@ -126,6 +126,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         while (true) {
             if (!access.isActive(frame, flagSlot)) {
                 access.setActive(frame, flagSlot, true);
+                access.setLastYieldIndex(frame, yieldIndex);
                 throw new YieldException(_y);
             } else {
                 access.setActive(frame, flagSlot, false);

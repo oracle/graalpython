@@ -32,8 +32,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
 
-import org.tukaani.xz.FinishableOutputStream;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -147,6 +145,8 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+
+import org.tukaani.xz.FinishableOutputStream;
 
 @GenerateUncached
 public abstract class PythonObjectFactory extends Node {
@@ -527,9 +527,9 @@ public abstract class PythonObjectFactory extends Node {
      * Special objects: generators, proxies, references
      */
 
-    public PGenerator createGenerator(String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots, int numOfActiveFlags,
-                    int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTarget, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+    public PGenerator createGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+        return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode, this));
     }
 

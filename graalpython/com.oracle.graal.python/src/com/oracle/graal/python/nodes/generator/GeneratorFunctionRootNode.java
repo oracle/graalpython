@@ -49,13 +49,18 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
+    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final int numOfActiveFlags;
     private final int numOfGeneratorBlockNode;
@@ -81,8 +86,22 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         // TODO 'materialize' generator frame and create locals dict eagerly
-        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
+        if (callTargets == null) {
+            callTargets = createYieldTargets(callTarget);
+        }
+        return factory.createGenerator(getName(), callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
                         numOfGeneratorForNode);
+    }
+
+    public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        int numYields = NodeUtil.countNodes(callTarget.getRootNode(), (node) -> node instanceof AbstractYieldNode);
+        RootCallTarget[] callTargets = new RootCallTarget[numYields + 1];
+        callTargets[0] = callTarget;
+        for (int i = 1; i < callTargets.length; i++) {
+            callTargets[i] = Truffle.getRuntime().createCallTarget((RootNode) callTarget.getRootNode().copy());
+        }
+        return callTargets;
     }
 
     public RootNode getFunctionRootNode() {
