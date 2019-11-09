@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -493,7 +494,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] data = toBytes.execute(frame, pb);
-            byte[] result = new byte[DEF_BUF_SIZE];
+            byte[] result = new byte[Math.min(maxLen, DEF_BUF_SIZE)];
             byte[] decompressed = decompress(stream, maxLength, baos, data, result);
 
             return factory().createTuple(new Object[]{
@@ -501,6 +502,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                             stream.inflater.finished(),
                             stream.getRemaining()
             });
+        }
+
+        @Specialization
+        Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, long maxLen,
+                          @Cached CastToJavaIntNode castInt) {
+            return decompress(frame, stream, pb, castInt.execute(maxLen));
         }
 
         @TruffleBoundary
