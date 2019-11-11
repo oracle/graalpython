@@ -506,7 +506,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, long maxLen,
-                          @Cached CastToJavaIntNode castInt) {
+                        @Cached CastToJavaIntNode castInt) {
             return decompress(frame, stream, pb, castInt.execute(maxLen));
         }
 

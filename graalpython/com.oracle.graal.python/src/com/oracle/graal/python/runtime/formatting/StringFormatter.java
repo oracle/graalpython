@@ -224,7 +224,8 @@ public class StringFormatter {
                 }
                 // Last c=pop() is the closing ')' while indexKey is just after the opening '('
                 String tmp = formatText.substring(keyStart, index - 1);
-                // Look it up using this extent as the (right type of) key. The caller must have pushed the frame.
+                // Look it up using this extent as the (right type of) key. The caller must have
+                // pushed the frame.
                 this.args = getItemNode.executeObject(null, mapping, tmp);
             } else {
                 // Not a mapping key: next clause will re-read c.
