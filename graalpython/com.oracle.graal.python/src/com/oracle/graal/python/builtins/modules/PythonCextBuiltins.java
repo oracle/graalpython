@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFacto
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
@@ -98,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
@@ -2289,32 +2287,26 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
 
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
-        @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodesFactory.AsPythonObjectNodeGen.create();
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"})
         int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
                         @Cached("a") @SuppressWarnings("unused") PythonNativeWrapper cachedA,
                         @Cached("b") @SuppressWarnings("unused") PythonNativeWrapper cachedB,
-                        @Cached("isNativeSubtype(frame, a, b)") int result) {
+                        @Cached("doSlow(frame, a, b)") int result) {
             return result;
         }
 
         @Specialization(replaces = "doCached")
-        int doUncached(VirtualFrame frame, PythonNativeWrapper a, PythonNativeWrapper b) {
-            return isNativeSubtype(frame, a, b);
-        }
-
-        @Specialization
         int doGeneric(VirtualFrame frame, Object a, Object b,
-                        @Cached CExtNodes.ToJavaNode leftToJavaNode,
-                        @Cached CExtNodes.ToJavaNode rightToJavaNode) {
-            return isSubtypeNode.execute(frame, leftToJavaNode.execute(a), rightToJavaNode.execute(b)) ? 1 : 0;
+                        @Cached CExtNodes.AsPythonObjectNode leftToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode rightToJavaNode) {
+            Object ua = leftToJavaNode.execute(a);
+            Object ub = rightToJavaNode.execute(b);
+            return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
         }
 
-        protected int isNativeSubtype(VirtualFrame frame, PythonNativeWrapper a, PythonNativeWrapper b) {
-            assert a instanceof PythonClassNativeWrapper || a instanceof PythonClassInitNativeWrapper;
-            assert b instanceof PythonClassNativeWrapper || b instanceof PythonClassInitNativeWrapper;
-            return isSubtypeNode.execute(frame, asPythonObjectNode.execute(a), asPythonObjectNode.execute(b)) ? 1 : 0;
+        int doSlow(VirtualFrame frame, Object derived, Object cls) {
+            return doGeneric(frame, derived, cls, CExtNodes.AsPythonObjectNode.getUncached(), CExtNodes.AsPythonObjectNode.getUncached());
         }
     }
 
