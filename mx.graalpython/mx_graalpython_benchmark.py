@@ -278,13 +278,13 @@ class GraalPythonVm(GuestVm):
             dists += self._distributions
 
         if mx.suite("tools", fatalIfMissing=False):
-            dists.append('CHROMEINSPECTOR')
+            dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
             dists.append('SULONG')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
-        extra_polyglot_args += ["--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
+        extra_polyglot_args += ["--experimental-options", "--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):

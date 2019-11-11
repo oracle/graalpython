@@ -45,6 +45,7 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Byte;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Char;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Double;
+import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Empty;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Int;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.List;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Long;
@@ -194,23 +195,24 @@ public abstract class SequenceStorageNodes {
             ListStorageType rhsType = getElementTypeNode.execute(rhs);
             switch (getElementTypeNode.execute(lhs)) {
                 case Boolean:
-                    return rhsType == Boolean || rhsType == Uninitialized;
+                    return rhsType == Boolean || rhsType == Uninitialized || rhsType == Empty;
                 case Byte:
-                    return rhsType == Boolean || rhsType == Byte || rhsType == Uninitialized;
+                    return rhsType == Boolean || rhsType == Byte || rhsType == Uninitialized || rhsType == Empty;
                 case Int:
-                    return rhsType == Boolean || rhsType == ListStorageType.Byte || rhsType == ListStorageType.Int || rhsType == Uninitialized;
+                    return rhsType == Boolean || rhsType == ListStorageType.Byte || rhsType == ListStorageType.Int || rhsType == Uninitialized || rhsType == Empty;
                 case Long:
-                    return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized;
+                    return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
-                    return rhsType == Double || rhsType == Uninitialized;
+                    return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
                 case Char:
-                    return rhsType == Char || rhsType == Uninitialized;
+                    return rhsType == Char || rhsType == Uninitialized || rhsType == Empty;
                 case Tuple:
-                    return rhsType == Tuple || rhsType == Uninitialized;
+                    return rhsType == Tuple || rhsType == Uninitialized || rhsType == Empty;
                 case List:
-                    return rhsType == List || rhsType == Uninitialized;
+                    return rhsType == List || rhsType == Uninitialized || rhsType == Empty;
                 case Generic:
                     return true;
+                case Empty:
                 case Uninitialized:
                     return false;
             }
@@ -244,17 +246,18 @@ public abstract class SequenceStorageNodes {
                 case Byte:
                 case Int:
                 case Long:
-                    return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized;
+                    return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
-                    return rhsType == Double || rhsType == Uninitialized;
+                    return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
                 case Char:
-                    return rhsType == Char || rhsType == Uninitialized;
+                    return rhsType == Char || rhsType == Uninitialized || rhsType == Empty;
                 case Tuple:
-                    return rhsType == Tuple || rhsType == Uninitialized;
+                    return rhsType == Tuple || rhsType == Uninitialized || rhsType == Empty;
                 case List:
-                    return rhsType == List || rhsType == Uninitialized;
+                    return rhsType == List || rhsType == Uninitialized || rhsType == Empty;
                 case Generic:
                     return true;
+                case Empty:
                 case Uninitialized:
                     return false;
             }
@@ -2807,7 +2810,11 @@ public abstract class SequenceStorageNodes {
             return new TupleSequenceStorage();
         }
 
-        @Specialization
+        protected static boolean isKnownType(Object val) {
+            return val instanceof Byte || val instanceof Integer || val instanceof Long || val instanceof Double || val instanceof PList || val instanceof PTuple;
+        }
+
+        @Specialization(guards = "!isKnownType(val)")
         ObjectSequenceStorage doEmptyObject(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") Object val) {
             return new ObjectSequenceStorage(DEFAULT_CAPACITY);
         }
@@ -2920,12 +2927,18 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "s.getClass() == cachedClass")
         SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
+                        @Cached BranchProfile increaseCapacity,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Cached("create()") SetItemScalarNode setItemNode,
                         @Exclusive @Cached DoGeneralizationNode doGenNode) {
             BasicSequenceStorage profiled = cachedClass.cast(s);
             int len = profiled.length();
-            profiled.ensureCapacity(len + 1);
+            int newLen = len + 1;
+            int capacity = profiled.capacity();
+            if (newLen > capacity) {
+                increaseCapacity.enter();
+                profiled.ensureCapacity(len + 1);
+            }
             try {
                 setItemNode.execute(profiled, len, val);
                 profiled.setNewLength(len + 1);

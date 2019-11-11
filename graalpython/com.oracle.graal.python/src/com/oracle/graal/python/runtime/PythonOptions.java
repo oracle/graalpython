@@ -85,7 +85,7 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -I flag. Isolate from the users environment by not adding the cwd to the path", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> IsolateFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.") //
+    @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CAPI = new OptionKey<>("");
 
     @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
@@ -168,6 +168,9 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
     public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
+
+    @Option(category = OptionCategory.EXPERT, help = "Propagate append operations to lists created as literals back to where they were created, to inform overallocation to avoid having to grow them later.") //
+    public static final OptionKey<Boolean> OverallocateLiteralLists = new OptionKey<>(true);
 
     @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);

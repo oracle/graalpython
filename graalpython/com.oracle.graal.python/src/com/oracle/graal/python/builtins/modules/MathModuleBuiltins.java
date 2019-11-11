@@ -57,8 +57,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -182,11 +180,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Override
         public double count(double value) {
             checkMathDomainError(value < 0);
-            return op(value);
-        }
-
-        @TruffleBoundary
-        private static double op(double value) {
             return Math.sqrt(value);
         }
     }
@@ -196,7 +189,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ExpNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             double result = Math.exp(value);
             checkMathRangeError(Double.isFinite(value) && Double.isInfinite(result));
@@ -209,7 +201,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class Expm1Node extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             double result = Math.expm1(value);
             checkMathRangeError(Double.isFinite(value) && Double.isInfinite(result));
@@ -352,6 +343,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         20922789888000L, 355687428096000L, 6402373705728000L,
                         121645100408832000L, 2432902008176640000L};
 
+        @TruffleBoundary
         private BigInteger factorialPart(long start, long n) {
             long i;
             if (n <= 16) {
@@ -381,7 +373,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value >= SMALL_FACTORIALS.length"})
-        @TruffleBoundary
         public PInt factorialInt(int value) {
             return factory().createInt(factorialPart(1, value));
         }
@@ -397,7 +388,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value >= SMALL_FACTORIALS.length"})
-        @TruffleBoundary
         public PInt factorialLong(long value) {
             return factory().createInt(factorialPart(1, value));
         }
@@ -449,7 +439,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNaN(value)", "!isInfinite(value)",
                         "!isNegative(value)", "isInteger(value)", "!isOvf(value)"})
-        @TruffleBoundary
         public Object factorialDouble(double value) {
             if (value < SMALL_FACTORIALS.length) {
                 return SMALL_FACTORIALS[(int) value];
@@ -484,7 +473,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNaN(value.getValue())", "!isInfinite(value.getValue())",
                         "!isNegative(value.getValue())", "isInteger(value.getValue())", "!isOvf(value.getValue())"})
-        @TruffleBoundary
         public Object factorialPFL(PFloat value) {
             double pfValue = value.getValue();
             if (pfValue < SMALL_FACTORIALS.length) {
@@ -578,7 +566,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return BigDecimal.valueOf(Math.floor(value.getValue())).toBigInteger();
         }
 
-        @TruffleBoundary
         private static double floor(double value) {
             return Math.floor(value);
         }
@@ -923,6 +910,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return (int) result;
         }
 
+        @TruffleBoundary
         private static int makeInt(PInt x) {
             int result;
             BigInteger value = x.getValue();
@@ -965,13 +953,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         public double ldexpDPI(double mantissa, PInt exp) {
             return exceptInfinity(Math.scalb(mantissa, makeInt(exp)), mantissa);
         }
 
         @Specialization
-        @TruffleBoundary
         public double ldexpLPI(long mantissa, PInt exp) {
             return exceptInfinity(Math.scalb((double) mantissa, makeInt(exp)), mantissa);
         }
@@ -1066,13 +1052,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached CastToDoubleNode toFloat,
                         @Cached IsBuiltinClassProfile stopProfile) {
             Object iterator = getIterator.executeWith(frame, iterable);
-            PythonContext context = getContextRef().get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
-            try {
-                return fsum(iterator, next, toFloat, stopProfile);
-            } finally {
-                IndirectCallContext.exit(context, caughtException);
-            }
+            return fsum(frame, iterator, next, toFloat, stopProfile);
         }
 
         /*
@@ -1085,17 +1065,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        @TruffleBoundary
-        private double fsum(Object iterator, LookupAndCallUnaryNode next, CastToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
+        private double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next, CastToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
             double[] p = new double[arayLength];
             while (true) {
                 try {
-                    // NOTE: passing 'null' frame is fine because we take care of the global state
-                    // in the caller
-                    x = toFloat.execute(null, next.executeObject(null, iterator));
+                    x = toFloat.execute(frame, next.executeObject(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(stopProfile);
                     break;
@@ -1179,12 +1156,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     y = lo * 2.0;
                     x = hi + y;
                     yr = x - hi;
-                    if (BigDecimal.valueOf(y).compareTo(BigDecimal.valueOf(yr)) == 0) {
+                    if (compareAsBigDecimal(y, yr) == 0) {
                         hi = x;
                     }
                 }
             }
             return hi;
+        }
+
+        @TruffleBoundary
+        private static int compareAsBigDecimal(double y, double yr) {
+            return BigDecimal.valueOf(y).compareTo(BigDecimal.valueOf(yr));
         }
     }
 
@@ -1266,7 +1248,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class AcosNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(Double.isInfinite(value) || -1 > value || value > 1);
             return Math.acos(value);
@@ -1290,7 +1271,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(value < 1);
             return Math.log(value + Math.sqrt(value * value - 1.0));
@@ -1302,7 +1282,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class AsinNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(value < -1 || value > 1);
             return Math.asin(value);
@@ -1314,7 +1293,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class CosNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return Math.cos(value);
         }
@@ -1325,7 +1303,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class CoshNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             double result = Math.cosh(value);
             checkMathRangeError(Double.isInfinite(result) && Double.isFinite(value));
@@ -1338,7 +1315,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class SinNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return Math.sin(value);
         }
@@ -1349,7 +1325,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class SinhNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             double result = Math.sinh(value);
             checkMathRangeError(Double.isInfinite(result) && Double.isFinite(value));
@@ -1362,7 +1337,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class TanNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return Math.tan(value);
         }
@@ -1373,7 +1347,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class TanhNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return Math.tanh(value);
         }
@@ -1384,7 +1357,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class AtanNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return Math.atan(value);
         }
@@ -1395,7 +1367,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class AtanhNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             if (value == 0) {
                 return 0;
@@ -1412,7 +1383,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class AsinhNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             if (Double.isInfinite(value)) {
                 return value;
@@ -1683,7 +1653,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class Log1pNode extends MathDoubleUnaryBuiltinNode {
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             if (value == 0 || value == Double.POSITIVE_INFINITY || Double.isNaN(value)) {
                 return value;
@@ -1757,7 +1726,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             checkMathDomainError(value <= 0);
             return Math.log10(value);
@@ -1840,7 +1808,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return pow(left.doubleValue(), right);
         }
 
-        @TruffleBoundary
         @Specialization
         double pow(double left, double right) {
             double result = 0;
@@ -1977,7 +1944,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final double RAD_TO_DEG = 180.0 / Math.PI;
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return value * RAD_TO_DEG;
         }
@@ -1989,7 +1955,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final double DEG_TO_RAD = Math.PI / 180.0;
 
         @Override
-        @TruffleBoundary
         public double count(double value) {
             return value * DEG_TO_RAD;
         }
@@ -2002,7 +1967,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class HypotNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
         public double hypotDD(double x, double y) {
             double result = Math.hypot(x, y);
             if (Double.isInfinite(result) && Double.isFinite(x) && Double.isFinite(y)) {
@@ -2116,7 +2080,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double x) {
             double absx, cf;
 
@@ -2138,7 +2101,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ErfcNode extends ErfNode {
         // Adapted implementation from CPython
         @Override
-        @TruffleBoundary
         public double count(double x) {
             double absx, cf;
 
@@ -2253,7 +2215,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        @TruffleBoundary
         public double count(double x) {
             double absx, r, y, z, sqrtpow;
 
@@ -2341,7 +2302,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final double LOGPI = 1.144729885849400174143427351353058711647;
 
         @Override
-        @TruffleBoundary
         public double count(double x) {
             double r;
             double absx;

@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -410,6 +412,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;
                 }
+            }
+        } else if (value instanceof PList) {
+            ListLiteralNode node = ((PList) value).getOrigin();
+            if (node != null) {
+                return node.getSourceSection();
             }
         }
         return null;
