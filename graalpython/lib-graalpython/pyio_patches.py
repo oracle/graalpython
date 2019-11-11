@@ -94,3 +94,11 @@ sys.__stdout__ = sys.stdout
 sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf-8", line_buffering=True)
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
+
+
+# See comment in _pyio.py. This method isn't strictly necessary and is provided
+# on CPython for performance. Because it goes through memoryview, it is slower
+# for us due to the overhead of memoryview being in C and the warmup cost
+# associated with that. We remove it and rely on the (for us faster) base
+# implementation.
+del _pyio.BufferedReader._readinto

@@ -63,12 +63,16 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -360,6 +364,33 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvIntoNode extends PythonTernaryBuiltinNode {
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
             return SequenceStorageNodes.SetItemNode.create("cannot happen: non-byte store in socket.recv_into");
+        }
+
+        @Specialization
+        Object recvInto(VirtualFrame frame, PSocket socket, PMemoryView buffer, Object flags,
+                        @Cached("createBinaryProfile()") ConditionProfile byteStorage,
+                        @Cached CastToIndexNode cast,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
+                        @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
+            int bufferLen = cast.execute(frame, callLen.executeObject(frame, buffer));
+            byte[] targetBuffer = new byte[bufferLen];
+            ByteBuffer byteBuffer = ByteBuffer.wrap(targetBuffer);
+            int length;
+            try {
+                length = fillBuffer(socket, byteBuffer);
+            } catch (NotYetConnectedException e) {
+                throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
+            } catch (IOException e) {
+                throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+            }
+            for (int i = 0; i < length; i++) {
+                int b = targetBuffer[i];
+                if (b < 0) {
+                    b += 256;
+                }
+                setItem.execute(frame, buffer, i, (Object) b);
+            }
+            return length;
         }
 
         @Specialization
