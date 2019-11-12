@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -145,7 +146,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -503,13 +503,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object hash(VirtualFrame frame, Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHash,
-                        @Cached IsCallableNode isCallable,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                         @Cached CallUnaryMethodNode callUnary,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
                         @Cached IsInstanceNode isInstanceNode) {
             if (trueNode.executeBoolean(frame, lookupDirNode.execute(object))) {
                 Object hashAttr = lookupHash.execute(object);
-                if (!isCallable.execute(hashAttr)) {
+                if (!dataModelLibrary.isCallable(hashAttr)) {
                     throw raise(PythonErrorType.TypeError, "unhashable type: '%p'", object);
                 }
                 Object hashValue = callUnary.executeObject(frame, hashAttr, object);

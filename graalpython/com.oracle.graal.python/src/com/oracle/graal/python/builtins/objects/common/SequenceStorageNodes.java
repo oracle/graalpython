@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -115,7 +116,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -2384,7 +2384,6 @@ public abstract class SequenceStorageNodes {
         private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
         @Child private GetItemScalarNode getItemNode;
-        @Child private IsIndexNode isIndexNode;
         @Child private CastToIndexNode castToindexNode;
         @Child private RepeatNode recursive;
 
@@ -2559,10 +2558,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!isInt(times)")
+        @Specialization(guards = "!isInt(times)", limit = "1")
         SequenceStorage doNonInt(VirtualFrame frame, SequenceStorage s, Object times,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            int i = toIndex(frame, times, raiseNode);
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("times") PythonDataModelLibrary lib) {
+            int i = toIndex(frame, times, raiseNode, lib);
             if (recursive == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursive = insert(RepeatNodeGen.create());
@@ -2588,12 +2588,8 @@ public abstract class SequenceStorageNodes {
             return times instanceof Integer;
         }
 
-        private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode) {
-            if (isIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isIndexNode = insert(IsIndexNode.create());
-            }
-            if (isIndexNode.execute(times)) {
+        private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonDataModelLibrary lib) {
+            if (lib.canBeIndex(times)) {
                 if (castToindexNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castToindexNode = insert(CastToIndexNode.createOverflow());

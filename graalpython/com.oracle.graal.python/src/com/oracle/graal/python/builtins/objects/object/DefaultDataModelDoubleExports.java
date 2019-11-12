@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,60 +38,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
-
-/**
- * Equivalent to {@code PyIndex_Check}; tests if the object can be interpreted as integer.
- */
-public abstract class IsIndexNode extends PDataModelEmulationNode {
-
-    @Child private HasInheritedAttributeNode hasIndexAttrNode;
-
-    @Override
-    public abstract boolean execute(Object obj);
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") boolean range) {
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Double.class)
+final class DefaultDataModelDoubleExports {
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") Double value) {
         return true;
-    }
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") int array) {
-        return true;
-    }
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") long array) {
-        return true;
-    }
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") PInt array) {
-        return true;
-    }
-
-    @Fallback
-    public boolean isIterable(Object obj) {
-        return getHasIndexAttrNode().execute(obj);
-    }
-
-    private HasInheritedAttributeNode getHasIndexAttrNode() {
-        if (hasIndexAttrNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            hasIndexAttrNode = insert(HasInheritedAttributeNode.create(__INDEX__));
-        }
-        return hasIndexAttrNode;
-    }
-
-    public static IsIndexNode create() {
-        return IsIndexNodeGen.create();
     }
 }

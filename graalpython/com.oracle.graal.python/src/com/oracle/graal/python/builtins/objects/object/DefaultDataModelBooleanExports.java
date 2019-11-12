@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-@GenerateUncached
-public abstract class IsSequenceNode extends PDataModelEmulationNode {
-
-    @Specialization
-    public boolean isSequence(Object object,
-                    @Cached GetLazyClassNode getClassNode,
-                    @Cached IsSequenceTypeNode isSequenceTypeNode) {
-        return isSequenceTypeNode.execute(getClassNode.execute(object));
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Boolean.class)
+final class DefaultDataModelBooleanExports {
+    @ExportMessage
+    static boolean canBeIndex(@SuppressWarnings("unused") Boolean value) {
+        return true;
     }
 
-    public static IsSequenceNode create() {
-        return IsSequenceNodeGen.create();
-    }
-
-    public static IsSequenceNode getUncached() {
-        return IsSequenceNodeGen.getUncached();
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
+        return true;
     }
 }

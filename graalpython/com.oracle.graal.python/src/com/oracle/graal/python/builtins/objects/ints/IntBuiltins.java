@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -75,8 +76,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
-import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -2005,7 +2004,6 @@ public class IntBuiltins extends PythonBuiltins {
         @Child private BytesNodes.FromIteratorNode fromIteratorNode;
         @Child private GetIteratorNode getIteratorNode;
 
-        @Child private IsIterableNode isIterableNode;
         @Child private BytesNodes.ToBytesNode toBytesNode;
         @Child private LookupAndCallUnaryNode callBytesNode;
 
@@ -2172,13 +2170,15 @@ public class IntBuiltins extends PythonBuiltins {
         // rest objects
         @Specialization
         public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
-            return fromObject(frame, cl, object, byteorder, false, ctxRef);
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+            return fromObject(frame, cl, object, byteorder, false, ctxRef, dataModelLibrary);
         }
 
         @Specialization
         public Object fromObject(VirtualFrame frame, LazyPythonClass cl, PythonObject object, String byteorder, boolean signed,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
+                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
@@ -2191,11 +2191,7 @@ public class IntBuiltins extends PythonBuiltins {
                 BigInteger bi = createBigInteger(getToBytesNode().execute(frame, result), isBigEndian(byteorder), false);
                 return createIntObject(cl, bi);
             }
-            if (isIterableNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isIterableNode = insert(IsIterableNode.create());
-            }
-            if (PDataModelEmulationNode.check(isIterableNode, ctxRef, frame, object)) {
+            if (PythonDataModelLibrary.checkIsIterable(dataModelLibrary, ctxRef, frame, object, this)) {
                 byte[] bytes = getFromIteratorNode().execute(frame, getGetIteratorNode().executeWith(frame, object));
                 return compute(cl, bytes, byteorder, signed);
             }

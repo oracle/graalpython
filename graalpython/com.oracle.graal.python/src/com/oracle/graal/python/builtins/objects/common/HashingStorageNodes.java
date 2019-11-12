@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.LazyString;
@@ -92,7 +93,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -119,6 +119,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -209,7 +210,6 @@ public abstract class HashingStorageNodes {
     abstract static class DictStorageBaseNode extends com.oracle.truffle.api.nodes.Node {
         @Child private PRaiseNode raise;
         @Child private GetLazyClassNode getClassNode;
-        @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
         @Child private PassCaughtExceptionNode passExceptionNode;
 
@@ -243,14 +243,6 @@ public abstract class HashingStorageNodes {
         protected static Shape lookupShape(DynamicObject receiver) {
             CompilerAsserts.neverPartOfCompilation();
             return receiver.getShape();
-        }
-
-        protected boolean isHashable(VirtualFrame frame, Object key) {
-            if (isHashableNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isHashableNode = insert(IsHashableNode.create());
-            }
-            return isHashableNode.execute(frame, key);
         }
 
         protected PRaiseNode getRaise() {
@@ -511,11 +503,12 @@ public abstract class HashingStorageNodes {
             return false;
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
-        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, KeywordsStorage storage, Object key,
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
+        protected boolean contains(KeywordsStorage storage, Object key,
                         @Cached("createClassProfile()") ValueProfile keyTypeProfile,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupHash,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupStringHash) {
+                        @Cached LookupAttributeInMRONode.Dynamic lookupStringHash,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             Object profileKey = keyTypeProfile.profile(key);
             if (profileKey instanceof String) {
                 return storage.hasKey(profileKey, DEFAULT_EQIVALENCE);
@@ -618,9 +611,10 @@ public abstract class HashingStorageNodes {
             return false;
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
-        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
+        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -630,9 +624,10 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
-        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
+        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -642,23 +637,27 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
-        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, LocalsStorage storage, PString key) {
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
+        protected boolean contains(LocalsStorage storage, PString key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return storage.hasKey(key.getValue(), HashingStorage.DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
-        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, LocalsStorage storage, Object key) {
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
+        protected boolean contains(LocalsStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return storage.hasKey(key, HashingStorage.DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = "!isHashable(frame, key)")
-        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") EconomicMapStorage storage, Object key) {
+        @Specialization(guards = "!lib.isHashable(key)", limit = "1")
+        protected boolean doUnhashable(@SuppressWarnings("unused") EconomicMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             throw unhashable(key);
         }
 
-        @Specialization(guards = "!isHashable(frame, key)")
-        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashMapStorage storage, Object key) {
+        @Specialization(guards = "!lib.isHashable(key)", limit = "1")
+        protected boolean doUnhashable(@SuppressWarnings("unused") HashMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             throw unhashable(key);
         }
 
@@ -720,9 +719,10 @@ public abstract class HashingStorageNodes {
             return readUncached(storage, name);
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
-        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key) {
+        protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -732,9 +732,10 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
-        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key) {
+        protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -744,13 +745,15 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
-        protected boolean contains(@SuppressWarnings("unused") VirtualFrame frame, LocalsStorage storage, Object key) {
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
+        protected boolean contains(LocalsStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return storage.hasKey(key, HashingStorage.DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = "!isHashable(frame, key)")
-        protected boolean doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashMapStorage storage, Object key) {
+        @Specialization(guards = "!lib.isHashable(key)", limit = "1")
+        protected boolean doUnhashable(@SuppressWarnings("unused") HashMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             throw unhashable(key);
         }
 
@@ -822,9 +825,10 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value) {
+        protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             // immediately replace storage since empty storage is immutable
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
@@ -875,9 +879,10 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value) {
+        protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -903,9 +908,10 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value) {
+        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             HashingStorage newStorage = switchToHybridDictStorage(storage);
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
@@ -917,9 +923,10 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value) {
+        protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -931,9 +938,10 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value) {
+        protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             // immediately replace storage since keywords storage is immutable
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
             PythonContext context = getContextRef().get();
@@ -947,9 +955,10 @@ public abstract class HashingStorageNodes {
             return newStorage;
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value) {
+        protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -960,9 +969,10 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
-        protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value) {
+        protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -973,9 +983,10 @@ public abstract class HashingStorageNodes {
             }
         }
 
-        @Specialization(guards = "!isHashable(frame, key)")
+        @Specialization(guards = "!lib.isHashable(key)", limit = "1")
         @SuppressWarnings("unused")
-        protected HashingStorage doUnhashable(VirtualFrame frame, HashingStorage storage, Object key, Object value) {
+        protected HashingStorage doUnhashable(HashingStorage storage, Object key, Object value,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             throw unhashable(key);
         }
 
@@ -1166,10 +1177,11 @@ public abstract class HashingStorageNodes {
 
         public abstract Object execute(VirtualFrame frame, HashingStorage storage, Object key);
 
-        @Specialization(guards = "isHashable(frame, key)")
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("unused")
         Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode hashNode) {
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode hashNode,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             // n.b.: we need to call the __hash__ function here for the
             // side-effect to comply with Python semantics.
             hashNode.executeObject(frame, key);
@@ -1210,8 +1222,9 @@ public abstract class HashingStorageNodes {
         }
 
         // this must read from the non-dynamic object storage
-        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)"})
-        Object doDynamicStorage(@SuppressWarnings("unused") VirtualFrame frame, PythonObjectHybridDictStorage s, Object key) {
+        @Specialization(guards = {"!isString(key)", "lib.isHashable(key)"}, limit = "1")
+        Object doDynamicStorage(PythonObjectHybridDictStorage s, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return s.getItem(key, getEquivalence());
         }
 
@@ -1221,9 +1234,10 @@ public abstract class HashingStorageNodes {
 
         // any dynamic object storage that isn't hybridized cannot store
         // non-string keys
-        @Specialization(guards = {"!isString(key)", "isHashable(frame, key)", "!isPythonObjectHybridStorage(s)"})
+        @Specialization(guards = {"!isString(key)", "lib.isHashable(key)", "!isPythonObjectHybridStorage(s)"}, limit = "1")
         @SuppressWarnings("unused")
-        Object doDynamicStorage(VirtualFrame frame, DynamicObjectStorage s, Object key) {
+        Object doDynamicStorage(DynamicObjectStorage s, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return null;
         }
 
@@ -1237,9 +1251,10 @@ public abstract class HashingStorageNodes {
             return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("unused")
-        Object doKeywordsObject(VirtualFrame frame, KeywordsStorage storage, Object key) {
+        Object doKeywordsObject(KeywordsStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return null;
         }
 
@@ -1253,11 +1268,12 @@ public abstract class HashingStorageNodes {
             return storage.getItem(key.getValue(), DEFAULT_EQIVALENCE);
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         Object doLocalsObject(VirtualFrame frame, LocalsStorage storage, PString key,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupHash,
                         @Cached LookupAttributeInMRONode.Dynamic lookupStringHash,
-                        @Cached GetItemNode recursiveNode) {
+                        @Cached GetItemNode recursiveNode,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             if (lookupHash.execute(key, __HASH__) == lookupStringHash.execute(PythonBuiltinClassType.PString, __HASH__)) {
                 return recursiveNode.execute(frame, storage, key.getValue());
             }
@@ -1266,24 +1282,28 @@ public abstract class HashingStorageNodes {
             throw new RuntimeException("String subclasses with custom hash in dict not implemented.");
         }
 
-        @Specialization(guards = {"!isJavaString(key)", "isHashable(frame, key)"})
+        @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("unused")
-        Object doLocalsObject(VirtualFrame frame, LocalsStorage storage, Object key) {
+        Object doLocalsObject(LocalsStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return null;
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
-        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, EconomicMapStorage storage, Object key) {
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
+        Object doGeneric(EconomicMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return storage.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = "isHashable(frame, key)")
-        Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, HashMapStorage storage, Object key) {
+        @Specialization(guards = "lib.isHashable(key)", limit = "1")
+        Object doGeneric(HashMapStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             return storage.getItem(key, getEquivalence());
         }
 
-        @Specialization(guards = "!isHashable(frame, key)")
-        Object doUnhashable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") HashingStorage storage, Object key) {
+        @Specialization(guards = "!lib.isHashable(key)", limit = "1")
+        Object doUnhashable(@SuppressWarnings("unused") HashingStorage storage, Object key,
+                        @CachedLibrary("key") PythonDataModelLibrary lib) {
             throw unhashable(key);
         }
     }

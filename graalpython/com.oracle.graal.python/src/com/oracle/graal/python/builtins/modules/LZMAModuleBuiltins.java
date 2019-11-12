@@ -57,9 +57,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -82,6 +82,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+import com.oracle.truffle.api.library.CachedLibrary;
 import org.tukaani.xz.ARMOptions;
 import org.tukaani.xz.ARMThumbOptions;
 import org.tukaani.xz.DeltaOptions;
@@ -171,7 +172,6 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
     abstract static class LZMANode extends PythonBuiltinNode {
 
-        @Child private IsSequenceNode isSequenceNode;
         @Child private GetItemNode getItemNode;
         @Child private CastToIndexNode castToLongNode;
         @Child private BuiltinFunctions.LenNode lenNode;
@@ -195,18 +195,18 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         }
 
         // corresponds to 'parse_filter_chain_spec' in '_lzmamodule.c'
-        protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters) {
+        protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters, PythonDataModelLibrary library) {
             int n = len(frame, filters);
             FilterOptions[] optionsChain = new FilterOptions[n];
             for (int i = 0; i < n; i++) {
-                optionsChain[i] = convertLZMAFilter(frame, getItem(frame, filters, i));
+                optionsChain[i] = convertLZMAFilter(frame, getItem(frame, filters, i), library);
             }
             return optionsChain;
         }
 
         // corresponds to 'lzma_filter_converter' in '_lzmamodule.c'
-        private FilterOptions convertLZMAFilter(VirtualFrame frame, Object spec) {
-            if (!isSequence(frame, getContextRef(), spec)) {
+        private FilterOptions convertLZMAFilter(VirtualFrame frame, Object spec, PythonDataModelLibrary library) {
+            if (!isSequence(frame, getContextRef(), spec, library)) {
                 throw raise(PythonBuiltinClassType.TypeError, "Filter specifier must be a dict or dict-like object");
             }
 
@@ -252,15 +252,11 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean isSequence(VirtualFrame frame, ContextReference<PythonContext> contextRef, Object obj) {
-            if (isSequenceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSequenceNode = insert(IsSequenceNode.create());
-            }
+        private boolean isSequence(VirtualFrame frame, ContextReference<PythonContext> contextRef, Object obj, PythonDataModelLibrary library) {
             PythonContext context = contextRef.get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
-                return isSequenceNode.execute(obj);
+                return library.isSequence(obj);
             } finally {
                 IndirectCallContext.exit(context, caughtException);
             }
@@ -316,7 +312,8 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         PLZMACompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
                         @Cached CastToIndexNode castFormatToIntNode,
                         @Cached CastToIndexNode castCheckToIntNode,
-                        @Cached CastToIndexNode castToIntNode) {
+                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
 
             int format = FORMAT_XZ;
             int check = -1;
@@ -354,7 +351,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             xzOutputStream = createXZOutputStream(check, bos, lzmaOptions);
                         } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, dataModelLibrary);
                             xzOutputStream = createXZOutputStream(check, bos, optionsChain);
                         }
                         return factory().createLZMACompressor(cls, xzOutputStream, bos);
@@ -365,7 +362,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
                         } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, dataModelLibrary);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
                                 throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
                             }
@@ -378,7 +375,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
                         } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters);
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, dataModelLibrary);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
                                 throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
                             }
@@ -425,7 +422,6 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LZMADecompressorNode extends LZMANode {
 
-        @Child private IsSequenceNode isSequenceNode;
         @Child private GetItemNode getItemNode;
         @Child private CastToIndexNode castToLongNode;
         @Child private BuiltinFunctions.LenNode lenNode;

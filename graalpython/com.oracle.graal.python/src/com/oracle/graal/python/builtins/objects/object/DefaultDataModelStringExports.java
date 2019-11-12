@@ -38,36 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-
-@GenerateUncached
-public abstract class IsSequenceTypeNode extends PDataModelEmulationNode {
-
-    @Specialization
-    boolean isSequence(LazyPythonClass type,
-                    @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
-                    @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
-        if (lenProfile.profile(hasLenNode.execute(type, __LEN__) != PNone.NO_VALUE)) {
-            return getItemProfile.profile(hasGetItemNode.execute(type, __GETITEM__) != PNone.NO_VALUE);
-        }
-        return false;
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = String.class)
+final class DefaultDataModelStringExports {
+    @ExportMessage
+    static boolean isIterable(@SuppressWarnings("unused") String str) {
+        return true;
     }
 
-    @Specialization(guards = "!isClass(obj)")
-    boolean isSequence(@SuppressWarnings("unused") Object obj) {
-        return false;
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") String value) {
+        return true;
     }
 }

@@ -38,40 +38,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@GenerateUncached
-public abstract class IsMappingTypeNode extends PDataModelEmulationNode {
-
-    @Specialization
-    boolean isMapping(LazyPythonClass type,
-                    @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
-                    @Cached IsSequenceTypeNode isSequence,
-                    @Cached("createBinaryProfile()") ConditionProfile profile) {
-        if (isSequence.execute(type)) {
-            return profile.profile(hasKeysNode.execute(type, KEYS) != PNone.NO_VALUE &&
-                            hasItemsNode.execute(type, ITEMS) != PNone.NO_VALUE &&
-                            hasValuesNode.execute(type, VALUES) != PNone.NO_VALUE);
+@ExportLibrary(value = PythonTypeLibrary.class, receiverType = LazyPythonClass.class)
+final class DefaultTypeLazyPythonClassExports {
+    @ExportMessage
+    public static boolean isSequenceType(LazyPythonClass type,
+                    @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
+        if (lenProfile.profile(hasLenNode.execute(type, __LEN__) != PNone.NO_VALUE)) {
+            return getItemProfile.profile(hasGetItemNode.execute(type, __GETITEM__) != PNone.NO_VALUE);
         }
         return false;
     }
 
-    @Specialization(guards = "!isClass(obj)")
-    boolean isSequence(@SuppressWarnings("unused") Object obj) {
+    @ExportMessage
+    public static boolean isMappingType(LazyPythonClass type,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
+                    @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+        if (pythonTypeLibrary.isSequenceType(type)) {
+            return profile.profile(hasKeysNode.execute(type, KEYS) != PNone.NO_VALUE &&
+                            hasItemsNode.execute(type, ITEMS) != PNone.NO_VALUE &&
+                            hasValuesNode.execute(type, VALUES) != PNone.NO_VALUE);
+        }
         return false;
     }
 }

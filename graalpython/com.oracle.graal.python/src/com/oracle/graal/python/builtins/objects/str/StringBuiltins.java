@@ -687,7 +687,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return endNode;
         }
 
-        private SliceInfo computeSlice(VirtualFrame frame, int length, long start, long end) {
+        private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
             PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), 1);
             return tmpSlice.computeIndices(length);
         }
@@ -1989,7 +1989,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
-        public String create(VirtualFrame frame, String self, long width, String fill) {
+        public String create(@SuppressWarnings("unused") VirtualFrame frame, String self, long width, String fill) {
             return make(self, getCastToIndexNode().execute(width), fill);
         }
 
@@ -2121,7 +2121,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(VirtualFrame frame, String primary, long idx,
+        public String doString(@SuppressWarnings("unused") VirtualFrame frame, String primary, long idx,
                         @Cached("create()") CastToIndexNode castToIndex) {
             return doString(primary, castToIndex.execute(idx));
         }
