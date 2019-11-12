@@ -122,6 +122,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1998,86 +1999,95 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class ToByteArrayNode extends SequenceStorageBaseNode {
+    /**
+     * Use this node to get the internal byte array of the storage (if possible). It will avoid
+     * copying any data but this also means that the returned byte array may be larger than the
+     * number of actual elements. So, you must also consider the sequence storage's size.
+     */
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class GetInternalByteArrayNode extends PNodeWithContext {
 
-        @Child private GetItemScalarNode getItemNode;
-
-        private final boolean exact;
-
-        public ToByteArrayNode(boolean exact) {
-            this.exact = exact;
-        }
-
-        public abstract byte[] execute(VirtualFrame frame, SequenceStorage s);
+        public abstract byte[] execute(SequenceStorage s);
 
         @Specialization
-        byte[] doByteSequenceStorage(ByteSequenceStorage s) {
-            byte[] barr = s.getInternalByteArray();
-            if (exact) {
-                return exactCopy(barr, s.length());
-            }
-            return barr;
-
+        static byte[] doByteSequenceStorage(ByteSequenceStorage s) {
+            return s.getInternalByteArray();
         }
 
         @Specialization(guards = "isByteStorage(s)")
-        byte[] doNativeByte(NativeSequenceStorage s) {
+        static byte[] doNativeByte(NativeSequenceStorage s,
+                        @Shared("getItemNode") @Cached GetItemScalarNode getItemNode) {
             byte[] barr = new byte[s.length()];
             for (int i = 0; i < barr.length; i++) {
-                int elem = getGetItemNode().executeInt(s, i);
+                int elem = getItemNode.executeInt(s, i);
                 assert elem >= 0 && elem < 256;
                 barr[i] = (byte) elem;
             }
             return barr;
         }
 
-        @Specialization(guards = {"len(lenNode, s) == cachedLen", "cachedLen <= 32"})
+        @Specialization(guards = {"len(lenNode, s) == cachedLen", "cachedLen <= 32"}, limit = "1")
         @ExplodeLoop
-        byte[] doGenericLenCached(VirtualFrame frame, SequenceStorage s,
-                        @Cached CastToByteNode castToByteNode,
+        static byte[] doGenericLenCached(SequenceStorage s,
+                        @Shared("getItemNode") @Cached GetItemScalarNode getItemNode,
+                        @Cached CastToJavaByteNode castToByteNode,
                         @Cached @SuppressWarnings("unused") LenNode lenNode,
                         @Cached("len(lenNode, s)") int cachedLen) {
             byte[] barr = new byte[cachedLen];
             for (int i = 0; i < cachedLen; i++) {
-                barr[i] = castToByteNode.execute(frame, getGetItemNode().execute(s, i));
+                barr[i] = castToByteNode.execute(getItemNode.execute(s, i));
             }
             return barr;
         }
 
         @Specialization(replaces = "doGenericLenCached")
-        byte[] doGeneric(VirtualFrame frame, SequenceStorage s,
-                        @Cached CastToByteNode castToByteNode,
+        static byte[] doGeneric(SequenceStorage s,
+                        @Shared("getItemNode") @Cached GetItemScalarNode getItemNode,
+                        @Cached CastToJavaByteNode castToByteNode,
                         @Cached LenNode lenNode) {
             byte[] barr = new byte[lenNode.execute(s)];
             for (int i = 0; i < barr.length; i++) {
-                barr[i] = castToByteNode.execute(frame, getGetItemNode().execute(s, i));
+                barr[i] = castToByteNode.execute(getItemNode.execute(s, i));
             }
             return barr;
+        }
+
+        protected static int len(LenNode lenNode, SequenceStorage s) {
+            return lenNode.execute(s);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ToByteArrayNode extends Node {
+
+        public abstract byte[] execute(SequenceStorage s);
+
+        @Specialization
+        byte[] doByteSequenceStorage(ByteSequenceStorage s,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            byte[] bytes = GetInternalByteArrayNode.doByteSequenceStorage(s);
+            int storageLength = s.length();
+            if (profile.profile(storageLength != bytes.length)) {
+                return exactCopy(bytes, storageLength);
+            }
+            return bytes;
+        }
+
+        @Specialization(guards = "!isByteSequenceStorage(s)")
+        byte[] doOther(SequenceStorage s,
+                        @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
+            return getInternalByteArrayNode.execute(s);
         }
 
         private static byte[] exactCopy(byte[] barr, int len) {
             return Arrays.copyOf(barr, len);
         }
 
-        protected GetItemScalarNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemScalarNode.create());
-            }
-            return getItemNode;
+        static boolean isByteSequenceStorage(SequenceStorage s) {
+            return s instanceof ByteSequenceStorage;
         }
 
-        protected static int len(LenNode lenNode, SequenceStorage s) {
-            return lenNode.execute(s);
-        }
-
-        public static ToByteArrayNode create() {
-            return ToByteArrayNodeGen.create(true);
-        }
-
-        public static ToByteArrayNode create(boolean exact) {
-            return ToByteArrayNodeGen.create(exact);
-        }
     }
 
     abstract static class ConcatBaseNode extends SequenceStorageBaseNode {

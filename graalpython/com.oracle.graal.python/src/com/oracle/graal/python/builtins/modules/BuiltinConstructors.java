@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PythonBufferLibrary;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -192,6 +193,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -2686,33 +2688,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 14, maxNumOfPositionalArgs = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
-        @Specialization
-        Object call(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
-                        int nlocals, int stacksize, int flags,
-                        String codestring, PTuple constants, PTuple names,
-                        PTuple varnames, Object filename, Object name,
-                        int firstlineno, String lnotab,
-                        PTuple freevars, PTuple cellvars,
-                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
-            return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
-                            nlocals, stacksize, flags,
-                            toBytes(codestring), constants.getArray(), names.getArray(),
-                            varnames.getArray(), freevars.getArray(), cellvars.getArray(),
-                            getStringArg(filename), getStringArg(name), firstlineno,
-                            toBytes(lnotab));
-        }
 
-        @Specialization
+        // limit is 2 because we expect PBytes or String
+        @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
         Object call(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        PBytes codestring, PTuple constants, PTuple names,
+                        Object codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
-                        int firstlineno, PBytes lnotab,
+                        int firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
-            byte[] codeBytes = toByteArrayNode.execute(frame, codestring.getSequenceStorage());
-            byte[] lnotabBytes = toByteArrayNode.execute(frame, lnotab.getSequenceStorage());
+                        @CachedLibrary("codestring") PythonBufferLibrary codestringBufferLib,
+                        @CachedLibrary("lnotab") PythonBufferLibrary lnotabBufferLib,
+                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) throws UnsupportedMessageException {
+            byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
+            byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
 
             return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,

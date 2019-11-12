@@ -40,13 +40,55 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import com.oracle.graal.python.builtins.objects.bytes.PythonBufferLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferLibrary.class)
 public class PMemoryView extends PythonBuiltinObject {
+
+    static final String C_MEMORYVIEW = "__c_memoryview";
 
     public PMemoryView(LazyPythonClass cls, @SuppressWarnings("unused") Object obj) {
         super(cls);
     }
 
+    @ExportMessage
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Shared("readNativeMemoryViewNode") @Cached ReadAttributeFromDynamicObjectNode readNativeMemoryViewNode,
+                    @Shared("lenNode") @Cached LookupAndCallUnaryDynamicNode lenNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode) {
+        Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(this, C_MEMORYVIEW);
+        return castToIntNode.execute(lenNode.executeObject(nativeMemoryViewObject, SpecialMethodNames.__LEN__));
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(
+                    @Shared("readNativeMemoryViewNode") @Cached ReadAttributeFromDynamicObjectNode readNativeMemoryViewNode,
+                    @Shared("lenNode") @Cached LookupAndCallUnaryDynamicNode lenNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Cached PInteropSubscriptNode subscriptNode,
+                    @Cached CastToByteNode castToByteNode) {
+        Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(this, C_MEMORYVIEW);
+        int len = castToIntNode.execute(lenNode.executeObject(nativeMemoryViewObject, SpecialMethodNames.__LEN__));
+        byte[] data = new byte[len];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = castToByteNode.execute(null, subscriptNode.execute(nativeMemoryViewObject, i));
+        }
+        return data;
+    }
 }

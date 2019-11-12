@@ -472,7 +472,7 @@ public class SocketBuiltins extends PythonBuiltins {
             }
 
             try {
-                byte[] storageArray = toBytes.execute(frame, bytes.getSequenceStorage());
+                byte[] storageArray = toBytes.execute(bytes.getSequenceStorage());
                 ByteBuffer buffer = ByteBuffer.wrap(storageArray);
                 doWrite(socket, buffer);
                 return PNone.NONE;
@@ -496,7 +496,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
             try {
-                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(frame, bytes.getSequenceStorage()));
+                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(bytes.getSequenceStorage()));
                 doWrite(socket, buffer);
                 return PNone.NONE;
             } catch (IOException e) {

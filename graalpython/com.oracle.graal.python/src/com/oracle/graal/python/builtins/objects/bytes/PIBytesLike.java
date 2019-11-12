@@ -40,18 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import java.nio.ByteBuffer;
-
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
 public interface PIBytesLike {
-
     SequenceStorage getSequenceStorage();
-
-    default PIBytesLike createFromBytes(PythonObjectFactory factory, ByteBuffer bytes) {
-        return createFromBytes(factory, bytes.array());
-    }
-
-    PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes);
 }
