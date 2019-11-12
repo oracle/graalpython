@@ -844,14 +844,14 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
-        @Specialization
+        @Specialization(limit = "1")
         Object doExecute(Object receiver, Object[] arguments,
                         @Cached PTypeToForeignNode toForeign,
+                        @CachedLibrary("receiver") PythonDataModelLibrary dataModelLibrary,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
                         @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
-            Object isCallable = callAttrGetterNode.execute(receiver, SpecialMethodNames.__CALL__);
-            if (isCallable == PNone.NO_VALUE) {
+            if (!dataModelLibrary.isCallable(receiver)) {
                 throw UnsupportedMessageException.create();
             }
             Object[] convertedArgs = convertArgsNode.execute(arguments);
