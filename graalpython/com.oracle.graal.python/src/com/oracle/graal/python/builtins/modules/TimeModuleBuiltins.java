@@ -42,6 +42,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -51,10 +53,12 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -343,7 +347,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         public int[] checkStructtime(PTuple time) {
-            Object[] date = time.getArray();
+            CompilerAsserts.neverPartOfCompilation();
+            Object[] date = GetObjectArrayNodeGen.getUncached().execute(time);
             if (date.length < 9) {
                 throw raise(PythonBuiltinClassType.TypeError, "function takes at least 9 arguments (%d given)", date.length);
             }
@@ -642,12 +647,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MkTimeNode extends PythonUnaryBuiltinNode {
         private static final int ELEMENT_COUNT = 9;
-        @Child CastToIndexNode castInt = CastToIndexNode.create();
 
         @Specialization
         @ExplodeLoop
-        double mktime(VirtualFrame frame, PTuple tuple) {
-            Object[] items = tuple.getArray();
+        double mktime(VirtualFrame frame, PTuple tuple,
+                        @Cached CastToIndexNode castInt,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            Object[] items = getObjectArrayNode.execute(tuple);
             if (items.length != 9) {
                 throw raise(PythonBuiltinClassType.TypeError, "function takes exactly 9 arguments (%d given)", items.length);
             }

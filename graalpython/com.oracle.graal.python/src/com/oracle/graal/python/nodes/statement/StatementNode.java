@@ -59,6 +59,7 @@ public abstract class StatementNode extends PNode {
         return (tag == StandardTags.StatementTag.class) || (isTryBlock && tag == StandardTags.TryBlockTag.class) || super.hasTag(tag);
     }
 
+    @Override
     public Object getNodeObject() {
         if (isTryBlock) {
             if (this.getParent() instanceof TryExceptNode) {

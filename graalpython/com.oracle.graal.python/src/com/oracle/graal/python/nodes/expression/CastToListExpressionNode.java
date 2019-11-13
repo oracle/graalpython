@@ -43,7 +43,9 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -85,7 +87,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         Object result = execute(frame);
         if (getSequenceStorageNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getSequenceStorageNode = insert(GetSequenceStorageNode.create());
+            getSequenceStorageNode = insert(GetSequenceStorageNodeGen.create());
         }
         return getSequenceStorageNode.execute(result);
     }
@@ -127,8 +129,9 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization(replaces = "starredTupleCachedLength", guards = "cannotBeOverridden(getClass(v))")
         protected PList starredTuple(PTuple v,
-                        @Cached PythonObjectFactory factory) {
-            return factory.createList(v.getArray().clone());
+                        @Cached PythonObjectFactory factory,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            return factory.createList(getObjectArrayNode.execute(v).clone());
         }
 
         @Specialization(guards = "cannotBeOverridden(getClass(v))")

@@ -98,6 +98,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -187,6 +189,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1936,20 +1939,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, (PCell[]) closure.getArray());
+        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, (PCell[]) getObjectArrayNode.execute(closure));
         }
 
         @Specialization
-        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
+        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, defaultArgs.getArray(), null, null);
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, getObjectArrayNode.execute(defaultArgs), null, null);
         }
 
         @Specialization
-        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
+        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, defaultArgs.getArray(), null, (PCell[]) closure.getArray());
+            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, getObjectArrayNode.execute(defaultArgs), null, (PCell[]) getObjectArrayNode.execute(closure));
         }
 
         @Fallback
@@ -2003,6 +2009,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private ReadCallerFrameNode readCallerFrameNode;
         @Child private GetMroNode getMroNode;
         @Child private IsSubtypeNode isSubtypeNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
@@ -2077,7 +2084,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("try")
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass) {
 
-            Object[] array = bases.getArray();
+            Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
             if (array.length == 0) {
@@ -2361,7 +2368,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private LazyPythonClass calculate_metaclass(VirtualFrame frame, LazyPythonClass cls, PTuple bases, GetLazyClassNode getMetaclassNode) {
             LazyPythonClass winner = cls;
-            for (Object base : bases.getArray()) {
+            for (Object base : ensureGetObjectArrayNode().execute(bases)) {
                 LazyPythonClass typ = getMetaclassNode.execute(base);
                 if (isSubType(frame, winner, typ)) {
                     continue;
@@ -2451,6 +2458,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 castToStringNode = insert(CastToStringNode.create());
             }
             return castToStringNode;
+        }
+
+        private GetObjectArrayNode ensureGetObjectArrayNode() {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode;
         }
     }
 
@@ -2699,20 +2714,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple freevars, PTuple cellvars,
                         @CachedLibrary("codestring") PythonBufferLibrary codestringBufferLib,
                         @CachedLibrary("lnotab") PythonBufferLibrary lnotabBufferLib,
-                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) throws UnsupportedMessageException {
+                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
             byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
             byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
 
+            Object[] constantsArr = getObjectArrayNode.execute(constants);
+            Object[] namesArr = getObjectArrayNode.execute(names);
+            Object[] varnamesArr = getObjectArrayNode.execute(varnames);
+            Object[] freevarsArr = getObjectArrayNode.execute(freevars);
+            Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
+
             return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
-                            codeBytes, constants.getArray(), names.getArray(),
-                            varnames.getArray(), freevars.getArray(), cellvars.getArray(),
+                            codeBytes, constantsArr, namesArr,
+                            varnamesArr, freevarsArr, cellcarsArr,
                             getStringArg(filename), getStringArg(name), firstlineno,
                             lnotabBytes);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
+        @SuppressWarnings("unused")
         Object call(Object cls, Object argcount, Object kwonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
