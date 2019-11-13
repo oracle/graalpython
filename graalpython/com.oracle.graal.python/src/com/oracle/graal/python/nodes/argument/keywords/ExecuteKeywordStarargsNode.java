@@ -44,12 +44,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import java.util.Iterator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNodeGen.ExpandKeywordStarargsNodeGen;
@@ -78,28 +80,34 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    @ImportStatic(PythonOptions.class)
+    @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class ExpandKeywordStarargsNode extends Node {
 
         public abstract PKeyword[] executeWith(Object starargs);
 
         @Specialization
-        PKeyword[] doit(PKeyword[] starargs) {
+        static PKeyword[] doKeywordsArray(PKeyword[] starargs) {
             return starargs;
         }
 
-        @Specialization(guards = "isKeywordsStorage(starargs.getDictStorage())")
-        PKeyword[] doKeywordsStorage(PDict starargs) {
+        @Specialization(guards = "isKeywordsStorage(starargs)")
+        static PKeyword[] doKeywordsStorage(PDict starargs) {
             return ((KeywordsStorage) starargs.getDictStorage()).getStore();
         }
 
-        @Specialization(guards = "starargs.size() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
-        PKeyword[] cached(PDict starargs,
+        @Specialization(guards = "isEmptyStorage(starargs)")
+        static PKeyword[] doEmptyStorage(PDict starargs) {
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
+        @Specialization(guards = {"len(lenNode, starargs) == cachedLen", "cachedLen < 32"}, limit = "getVariableArgumentInlineCacheLimit()")
+        static PKeyword[] doDictCached(PDict starargs,
                         @Cached("starargs.size()") int cachedLen,
+                        @Cached @SuppressWarnings("unused") LenNode lenNode,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") BranchProfile errorProfile) {
+                        @Cached BranchProfile errorProfile) {
             try {
-                PKeyword[] keywords = new PKeyword[starargs.size()];
+                PKeyword[] keywords = new PKeyword[cachedLen];
                 copyKeywords(starargs, cachedLen, keywords);
                 return keywords;
             } catch (KeywordNotStringException e) {
@@ -108,7 +116,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
             }
         }
 
-        @TruffleBoundary(allowInlining = true)
+        @TruffleBoundary
         private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) throws KeywordNotStringException {
             Iterator<DictEntry> iterator = starargs.entries().iterator();
             for (int i = 0; i < cachedLen; i++) {
@@ -117,17 +125,33 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
             }
         }
 
-        @Specialization(replaces = "cached")
-        @TruffleBoundary
-        PKeyword[] uncached(PDict starargs,
+        @Specialization(replaces = "doDictCached")
+        static PKeyword[] doDict(PDict starargs,
+                        @Cached LenNode lenNode,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") BranchProfile errorProfile) {
-            return cached(starargs, starargs.size(), raise, errorProfile);
+                        @Cached BranchProfile errorProfile) {
+            return doDictCached(starargs, len(lenNode, starargs), lenNode, raise, errorProfile);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        PKeyword[] generic(Object starargs) {
+        @Specialization(guards = "!isDict(object)")
+        static PKeyword[] doNonMapping(Object object) {
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
+        @Specialization(replaces = {"doKeywordsArray", "doKeywordsStorage", "doEmptyStorage", "doDictCached", "doDict", "doNonMapping"})
+        static PKeyword[] doGeneric(Object kwargs,
+                        @Cached LenNode lenNode,
+                        @Cached PRaiseNode raise,
+                        @Cached BranchProfile errorProfile) {
+            if (kwargs instanceof PDict) {
+                PDict d = (PDict) kwargs;
+                if (isKeywordsStorage(d)) {
+                    return doKeywordsStorage(d);
+                } else if (isEmptyStorage(d)) {
+                    return doEmptyStorage(d);
+                }
+                return doDict(d, lenNode, raise, errorProfile);
+            }
             return PKeyword.EMPTY_KEYWORDS;
         }
 
@@ -140,8 +164,16 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
             throw new KeywordNotStringException();
         }
 
-        protected static boolean isKeywordsStorage(HashingStorage storage) {
-            return storage instanceof KeywordsStorage;
+        static boolean isKeywordsStorage(PDict dict) {
+            return dict.getDictStorage() instanceof KeywordsStorage;
+        }
+
+        static boolean isEmptyStorage(PDict dict) {
+            return dict.getDictStorage() instanceof EmptyStorage;
+        }
+
+        static int len(LenNode lenNode, PDict dict) {
+            return lenNode.execute(dict.getDictStorage());
         }
 
         private static final class KeywordNotStringException extends ControlFlowException {
