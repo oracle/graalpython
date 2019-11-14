@@ -48,8 +48,9 @@ public final class PString extends PImmutableSequence {
         if (value instanceof PCharSequence) {
             PCharSequence s = (PCharSequence) value;
             return s.materialize();
+        } else {
+            return (String) value;
         }
-        return value.toString();
     }
 
     public CharSequence getCharSequence() {
