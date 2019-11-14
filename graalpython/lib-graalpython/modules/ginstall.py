@@ -68,10 +68,11 @@ def warn(msg, *args, **kwargs):
 
 def get_module_name(package_name):
     non_standard_packages = {
-        'pyyaml':'pyaml',
-        'protobuf':'google.protobuf',
-        'python-dateutil':'dateutil',
-        'websocket-client':'websocket',
+        'pyyaml': 'pyaml',
+        'protobuf': 'google.protobuf',
+        'python-dateutil': 'dateutil',
+        'websocket-client': 'websocket',
+        'attrs': 'attr',
     }
     module_name = non_standard_packages.get(package_name, package_name)
     return  module_name.replace('-', '_')
