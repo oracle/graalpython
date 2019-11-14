@@ -2735,7 +2735,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (arg instanceof String) {
                 return (String) arg;
             } else if (arg instanceof PString) {
-                return ((PString) arg).toString();
+                return ((PString) arg).getValue();
             } else {
                 throw raise(SystemError, "bad argument to internal function");
             }
