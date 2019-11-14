@@ -388,8 +388,9 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean repr(PDict self) {
-            return self.size() > 0;
+        public boolean repr(PDict self,
+                        @Cached HashingCollectionNodes.LenNode lenNode) {
+            return lenNode.execute(self) > 0;
         }
     }
 
