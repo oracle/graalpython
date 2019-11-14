@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -167,7 +168,14 @@ public final class PCode extends PythonBuiltinObject {
 
     private static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
-        SourceSection src = funcRootNode.getSourceSection();
+        SourceSection src;
+        if (funcRootNode instanceof PRootNode) {
+            src = ((PRootNode) funcRootNode).getSourceSection();
+        } else {
+            // foreign root nodes might consider getting the source section slow-path
+            CompilerDirectives.transferToInterpreter();
+            src = funcRootNode.getSourceSection();
+        }
         if (src != null) {
             if (src.getSource().getPath() == null) {
                 return src.getSource().getName();

@@ -509,6 +509,7 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         protected static FrameSlot[] getSlots(FrameDescriptor fd) {
+            CompilerDirectives.transferToInterpreter();
             return fd.getSlots().toArray(new FrameSlot[0]);
         }
 
