@@ -57,6 +57,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class MroSequenceStorage extends TypedSequenceStorage {
 
+    private final String className;
     /**
      * This assumption will be invalidated whenever the mro changes.
      */
@@ -71,6 +72,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] values;
 
     public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
+        this.className = className;
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
@@ -78,6 +80,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public MroSequenceStorage(String className, int capacity) {
+        this.className = className;
         this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -164,7 +167,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public String getClassName() {
-        return lookupStableAssumption.getAssumption().getName();
+        return className;
     }
 
     @Override
