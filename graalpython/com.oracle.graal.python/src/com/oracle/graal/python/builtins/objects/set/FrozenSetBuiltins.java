@@ -109,8 +109,9 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PBaseSet self) {
-            return self.size();
+        public int len(PBaseSet self,
+                        @Cached HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getDictStorage());
         }
     }
 

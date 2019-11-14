@@ -188,8 +188,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PMappingproxy self) {
-            return self.getDictStorage().length();
+        public int len(PMappingproxy self,
+                        @Cached HashingStorageNodes.LenNode len) {
+            return len.execute(self.getDictStorage());
         }
     }
 

@@ -406,10 +406,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer) {
+        void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer,
+                        @Cached HashingStorageNodes.LenNode len) {
             writeByte(TYPE_DICT, version, buffer);
             HashingStorage storage = d.getDictStorage();
-            writeInt(storage.length(), version, buffer);
+            writeInt(len.execute(storage), version, buffer);
             for (DictEntry entry : storage.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
                 getRecursiveNode().execute(frame, entry.value, version, buffer);
@@ -437,10 +438,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer) {
+        void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
+                        @Cached HashingStorageNodes.LenNode lenNode) {
             writeByte(TYPE_SET, version, buffer);
             HashingStorage dictStorage = s.getDictStorage();
-            int len = dictStorage.length();
+            int len = lenNode.execute(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : dictStorage.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
@@ -448,10 +450,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer) {
+        void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer,
+                        @Cached HashingStorageNodes.LenNode lenNode) {
             writeByte(TYPE_FROZENSET, version, buffer);
             HashingStorage dictStorage = s.getDictStorage();
-            int len = dictStorage.length();
+            int len = lenNode.execute(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : dictStorage.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
