@@ -269,7 +269,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
                 } catch (IOException | RuntimeException e) {
                     PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
-                    PythonLanguage.getLogger().fine(() -> "Original error was: " + e);
+                    PythonLanguage.getLogger().severe(() -> "Original error was: " + e);
+                    e.printStackTrace();
                     throw raise(PythonErrorType.ImportError, CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
