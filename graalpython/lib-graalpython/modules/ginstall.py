@@ -78,7 +78,7 @@ def get_module_name(package_name):
     return  module_name.replace('-', '_')
 
 
-def pip_package(name=None):
+def pip_package(name=None, try_import=False):
     def decorator(func):
         def wrapper(*args, **kwargs):
             _name = name if name else func.__name__
@@ -89,10 +89,11 @@ def pip_package(name=None):
             except (ImportError, ModuleNotFoundError):
                 info("Installing required dependency: {} ... ", _name)
                 func(*args, **kwargs)
-                import site
-                site.main()
-                importlib.invalidate_caches()
-                importlib.import_module(module_name)
+                if try_import:
+                    import site
+                    site.main()
+                    importlib.invalidate_caches()
+                    importlib.import_module(module_name)
                 info("{} installed successfully", _name)
         return wrapper
     return decorator
