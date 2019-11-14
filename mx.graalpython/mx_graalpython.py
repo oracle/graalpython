@@ -1287,6 +1287,34 @@ class GraalpythonCAPIProject(mx.Project):
         return ret
 
 
+def checkout_find_version_for_graalvm(args):
+    """
+    A quick'n'dirty way to check out the revision of the project at the given
+    path to one that imports the same truffle/graal as we do. The assumption is
+    the such a version can be reached by following the HEAD^ links
+    """
+    path = args[0]
+    projectname = os.path.basename(args[0])
+    suite = os.path.join(path, "mx.%s" % projectname, "suite.py")
+    other_version = ""
+    for i in SUITE.suite_imports:
+        if i.name == "sulong":
+            needed_version = i.version
+            break
+    while needed_version != other_version:
+        SUITE.vc.git_command(path, ["checkout", "HEAD^"])
+        with open(suite) as f:
+            contents = f.read()
+            if PY3:
+                contents = contents.decode()
+            d = {}
+            exec(contents, d, d)
+            suites = d["suite"]["imports"]["suites"]
+            for suite in suites:
+                if suite["name"] == "compiler":
+                    other_version = suite["version"]
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -1304,6 +1332,7 @@ mx.update_commands(SUITE, {
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
+    'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],
