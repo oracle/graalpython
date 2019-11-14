@@ -929,8 +929,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(delete)")
-        public PByteArray translate(PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete) {
-            return factory().createByteArray(self.getSequenceStorage().copy());
+        public PByteArray translate(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone table, @SuppressWarnings("unused") PNone delete,
+                        @Cached BytesNodes.ToBytesNode toBytes) {
+            byte[] content = toBytes.execute(frame, self);
+            return factory().createByteArray(content);
         }
 
         @Specialization(guards = "!isNone(table)")
