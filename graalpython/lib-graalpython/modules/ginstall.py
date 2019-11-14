@@ -86,7 +86,7 @@ def pip_package(name=None):
                 module_name = get_module_name(_name)
                 importlib.import_module(module_name)
                 importlib.invalidate_caches()
-            except ImportError:
+            except (ImportError, ModuleNotFoundError):
                 info("Installing required dependency: {} ... ", _name)
                 func(*args, **kwargs)
                 import site
