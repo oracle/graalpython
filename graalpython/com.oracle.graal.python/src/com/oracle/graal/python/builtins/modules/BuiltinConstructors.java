@@ -1508,7 +1508,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         public PList listObject(Object cls, Object[] arguments, PKeyword[] keywords) {
-            CompilerAsserts.neverPartOfCompilation();
             throw raise(PythonBuiltinClassType.TypeError, "'cls' is not a type object (%p)", cls);
         }
     }
@@ -1772,8 +1771,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         public PSet listObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new RuntimeException("set does not support iterable object " + arg);
+            throw raise(PythonBuiltinClassType.TypeError, "set does not support iterable object %s", arg);
         }
     }
 
