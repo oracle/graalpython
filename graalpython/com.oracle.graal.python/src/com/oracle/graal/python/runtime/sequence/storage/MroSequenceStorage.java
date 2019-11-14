@@ -294,7 +294,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public void lookupChanged() {
-        CompilerAsserts.neverPartOfCompilation();
         for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
             for (Assumption assumption : list) {
                 assumption.invalidate();
@@ -304,7 +303,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public void lookupChanged(String msg) {
-        CompilerAsserts.neverPartOfCompilation();
         for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
             for (Assumption assumption : list) {
                 assumption.invalidate();
