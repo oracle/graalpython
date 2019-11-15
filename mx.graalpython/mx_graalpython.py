@@ -1301,11 +1301,17 @@ def checkout_find_version_for_graalvm(args):
         if i.name == "sulong":
             needed_version = i.version
             break
+    current_commit = SUITE.vc.tip(path)
     mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
     while needed_version != other_version:
         if other_version:
-            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", "HEAD"]).split()[0]
-            SUITE.vc.git_command(path, ["checkout", parent])
+            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", "HEAD"]).split()
+            if not parent:
+                mx.log("Got to oldest revision before finding appropriate commit, reverting to %s" % current_commit)
+                mx.vc.update(path, rev=current_commit)
+                return
+            parent = parent[0]
+            SUITE.vc.update(path, rev=parent)
         with open(suite) as f:
             contents = f.read()
             if not PY3:
