@@ -438,11 +438,6 @@ def get_patch(package):
     if os.path.exists(patch_file_path):
         return patch_file_path
 
-    print('No patch was found for')
-    print(os.path.join(
-        parent_folder, 'patches', "%s.patch" % package
-    ))
-
 def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env={}):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
