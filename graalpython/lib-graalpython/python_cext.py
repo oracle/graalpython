@@ -126,6 +126,7 @@ def PyModule_GetNameObject(module_obj):
 
 ##################### DICT
 
+@__builtin__
 def PyDict_New():
     return {}
 
@@ -869,9 +870,10 @@ def PyCapsule_GetName(obj):
     return obj.name
 
 
+@may_raise(-1)
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
-    return None
+    return 0
 
 
 @may_raise
