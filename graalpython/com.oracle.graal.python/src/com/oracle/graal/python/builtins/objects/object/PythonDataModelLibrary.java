@@ -204,7 +204,7 @@ public abstract class PythonDataModelLibrary extends Library {
         try {
             return library.isIterable(object);
         } finally {
-            IndirectCallContext.exit(context, caughtException);
+            IndirectCallContext.exit(frame, context, caughtException);
         }
     }
 }

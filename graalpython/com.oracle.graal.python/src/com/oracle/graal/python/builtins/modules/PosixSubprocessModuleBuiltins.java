@@ -107,7 +107,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
                                 preexec_fn);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 

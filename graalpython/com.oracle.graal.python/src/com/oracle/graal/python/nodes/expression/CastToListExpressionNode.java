@@ -148,7 +148,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
             try {
                 return constructListNode.execute(value);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -166,7 +166,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, "%s is not iterable", v);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 

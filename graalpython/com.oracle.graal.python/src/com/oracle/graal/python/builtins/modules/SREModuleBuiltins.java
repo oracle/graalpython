@@ -221,7 +221,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 // just re-throw
                 throw e;
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
     }
@@ -243,7 +243,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
     }

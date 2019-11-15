@@ -613,7 +613,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {
-                    ForeignCallContext.exit(context, savedExceptionState);
+                    ForeignCallContext.exit(frame, context, savedExceptionState);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");

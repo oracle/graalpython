@@ -1631,7 +1631,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
     }

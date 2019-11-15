@@ -740,7 +740,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return readObject(0);
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
 

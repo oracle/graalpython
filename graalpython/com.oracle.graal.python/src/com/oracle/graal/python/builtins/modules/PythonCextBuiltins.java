@@ -816,7 +816,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(ctx, savedExceptionState);
+                ForeignCallContext.exit(frame, ctx, savedExceptionState);
                 calleeContext.exit(frame, this);
             }
         }
@@ -2649,7 +2649,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return dataModelLibrary.isSequence(object);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
     }

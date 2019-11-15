@@ -178,7 +178,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 return run(moduleSpec, interop);
             } finally {
-                ForeignCallContext.exit(context, caughtException);
+                ForeignCallContext.exit(frame, context, caughtException);
             }
         }
 

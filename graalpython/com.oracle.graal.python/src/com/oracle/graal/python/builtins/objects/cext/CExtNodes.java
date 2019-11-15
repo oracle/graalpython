@@ -1328,7 +1328,7 @@ public abstract class CExtNodes {
                     throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
                 }
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
     }
@@ -1660,7 +1660,7 @@ public abstract class CExtNodes {
             return getSpecialSingletonPtrNode.execute(lib.getDelegate(obj)) != null;
         }
 
-        @Specialization(limit = "1", replaces =  {"doNative", "doSpecial"})
+        @Specialization(limit = "1", replaces = {"doNative", "doSpecial"})
         boolean doGeneric(PythonNativeWrapper obj,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,

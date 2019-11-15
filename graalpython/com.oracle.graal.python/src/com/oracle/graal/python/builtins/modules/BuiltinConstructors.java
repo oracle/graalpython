@@ -2196,7 +2196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    ForeignCallContext.exit(context, caughtException);
+                    ForeignCallContext.exit(frame, context, caughtException);
                 }
             }
 
@@ -2668,7 +2668,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, "first argument must be callable");
                 }
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
     }
@@ -2816,7 +2816,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 return library.isSequence(o);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
     }
