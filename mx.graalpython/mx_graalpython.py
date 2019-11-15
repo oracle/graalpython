@@ -1315,7 +1315,7 @@ def checkout_find_version_for_graalvm(args):
             suites = d["suite"]["imports"]["suites"]
             for suitedict in suites:
                 if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
-                    other_version = suite.get("version", "")
+                    other_version = suitedict.get("version", "")
                     if other_version:
                         break
 
