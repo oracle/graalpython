@@ -1301,6 +1301,7 @@ def checkout_find_version_for_graalvm(args):
         if i.name == "sulong":
             needed_version = i.version
             break
+    mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
     while needed_version != other_version:
         SUITE.vc.git_command(path, ["checkout", "HEAD^"])
         with open(suite) as f:
@@ -1311,8 +1312,10 @@ def checkout_find_version_for_graalvm(args):
             exec(contents, d, d)
             suites = d["suite"]["imports"]["suites"]
             for suite in suites:
-                if suite["name"] == "compiler":
-                    other_version = suite["version"]
+                if suite["name"] in ("compiler", "truffle", "regex", "sulong"):
+                    other_version = suite.get("version", "")
+                    if other_version:
+                        break
 
 
 # ----------------------------------------------------------------------------------------------------------------------
