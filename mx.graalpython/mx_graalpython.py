@@ -1303,7 +1303,7 @@ def checkout_find_version_for_graalvm(args):
             break
     mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
     while needed_version != other_version:
-        SUITE.vc.git_command(path, ["checkout", "HEAD~1"])
+        SUITE.vc.git_command(path, ["checkout", SUITE.vc.parent(path)])
         with open(suite) as f:
             contents = f.read()
             if not PY3:
@@ -1311,8 +1311,8 @@ def checkout_find_version_for_graalvm(args):
             d = {}
             exec(contents, d, d)
             suites = d["suite"]["imports"]["suites"]
-            for suite in suites:
-                if suite["name"] in ("compiler", "truffle", "regex", "sulong"):
+            for suitedict in suites:
+                if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
                     other_version = suite.get("version", "")
                     if other_version:
                         break
