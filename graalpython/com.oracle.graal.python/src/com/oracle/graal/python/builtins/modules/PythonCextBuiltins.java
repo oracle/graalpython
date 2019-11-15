@@ -166,6 +166,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.string.StringLenNode;
@@ -2011,24 +2012,38 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallCextNode extends PythonBuiltinNode {
+    abstract static class UpcallCextNode extends PythonVarargsBuiltinNode {
 
-        @Specialization
-        Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args,
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            Object[] argsWithoutSelf = new Object[arguments.length - 1];
+            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
+            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        @Specialization(guards = "isStringCallee(args)")
+        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, PKeyword[] kwargs,
                         @Cached CExtNodes.CextUpcallNode upcallNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(upcallNode.execute(frame, cextModule, name, args));
+            Object[] argsWithoutCallee = new Object[args.length - 1];
+            System.arraycopy(args, 1, argsWithoutCallee, 0, argsWithoutCallee.length);
+            return toSulongNode.execute(upcallNode.execute(frame, cextModule, (String)args[0], argsWithoutCallee));
         }
 
-        @Specialization(guards = "!isString(callable)")
-        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object callable, Object[] args,
+        @Specialization(guards = "!isStringCallee(args)")
+        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule,  Object[] args, PKeyword[] kwargs,
                         @Cached("create()") CExtNodes.DirectUpcallNode upcallNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(upcallNode.execute(frame, callable, args));
+            Object[] argsWithoutCallee = new Object[args.length - 1];
+            System.arraycopy(args, 1, argsWithoutCallee, 0, argsWithoutCallee.length);
+            return toSulongNode.execute(upcallNode.execute(frame, args[0], argsWithoutCallee));
         }
 
+        static boolean isStringCallee(Object[] args) {
+            return PGuards.isString(args[0]);
+        }
     }
 
     @Builtin(name = "PyTruffle_Cext_Upcall_d", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)

@@ -44,101 +44,138 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNodeFactory.CallTernaryMethodCachedNodeGen;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
+
+    private static final CallTernaryMethodUncachedNode UNCACHED = new CallTernaryMethodUncachedNode();
+
     public static CallTernaryMethodNode create() {
-        return CallTernaryMethodNodeGen.create();
+        return CallTernaryMethodCachedNodeGen.create();
+    }
+
+    public static CallTernaryMethodNode getUncached() {
+        return UNCACHED;
     }
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object arg1, int arg2, Object arg3);
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object arg1, Object arg2, Object arg3);
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
+    abstract static class CallTernaryMethodCachedNode extends CallTernaryMethodNode {
+
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object doBuiltinFunctionOIOCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                        @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
+                        @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doBuiltinFunctionOIOCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                        @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doBuiltinFunctionCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                        @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object doBuiltinMethodOIOCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, int arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                        @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                        @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object doBuiltinMethodCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                        @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                        @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doBuiltinMethodOIOCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, int arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                        @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                        @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doBuiltinMethodCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                        @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                        @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                        @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                        @Cached("getQuaternary(func.getFunction())") PythonQuaternaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
+        }
+
+        @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
+                        @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                        @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                        @Cached("getQuaternary(func.getFunction())") PythonQuaternaryBuiltinNode builtinNode) {
+            return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
+        }
+
+        @Specialization(replaces = {"doBuiltinFunctionOIOCached", "doBuiltinFunctionCached", "doBuiltinFunctionOIOCtCached", "doBuiltinFunctionCtCached", "doBuiltinMethodOIOCached",
+                        "doBuiltinMethodCached", "doBuiltinMethodOIOCtCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext", "callSelfMethod"})
+        static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+        }
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
-    }
+    static final class CallTernaryMethodUncachedNode extends CallTernaryMethodNode {
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
-    }
+        @Override
+        public Object execute(VirtualFrame frame, Object callable, Object arg1, int arg2, Object arg3) {
+            return CallTernaryMethodCachedNode.call(frame, callable, arg1, arg2, arg3, CallNode.getUncached());
+        }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
-    }
+        @Override
+        public Object execute(VirtualFrame frame, Object callable, Object arg1, Object arg2, Object arg3) {
+            return CallTernaryMethodCachedNode.call(frame, callable, arg1, arg2, arg3, CallNode.getUncached());
+        }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, int arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
-    }
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.MEGAMORPHIC;
+        }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
-    }
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, int arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getTernary(func.getFunction())") PythonTernaryBuiltinNode builtinNode) {
-        return builtinNode.execute(frame, arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getQuaternary(func.getFunction())") PythonQuaternaryBuiltinNode builtinNode) {
-        return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
-    }
-
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getQuaternary(func.getFunction())") PythonQuaternaryBuiltinNode builtinNode) {
-        return builtinNode.execute(frame, func.getSelf(), arg1, arg2, arg3);
-    }
-
-    @Specialization
-    Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
-                    @Cached("create()") CallNode callNode) {
-        return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
     }
 }

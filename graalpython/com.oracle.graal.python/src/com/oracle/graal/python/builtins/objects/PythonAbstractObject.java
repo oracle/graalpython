@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
@@ -90,6 +91,10 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -104,6 +109,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -840,22 +846,61 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @GenerateUncached
+    @ReportPolymorphism
     public abstract static class PExecuteNode extends Node {
 
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
-        @Specialization(limit = "1")
+        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)", "arguments.length == 1"})
+        Object doUnaryBuiltinMethod(Object receiver, Object[] arguments,
+                        @Exclusive @Cached PTypeToForeignNode toForeign,
+                        @Cached CallUnaryMethodNode callUnaryMethodNode,
+                        @Cached PForeignToPTypeNode fromForeign) {
+            return toForeign.executeConvert(callUnaryMethodNode.executeObject(null, receiver, fromForeign.executeConvert(arguments[0])));
+        }
+
+        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)", "arguments.length == 2"})
+        Object doBinaryBuiltinMethod(Object receiver, Object[] arguments,
+                        @Exclusive @Cached PTypeToForeignNode toForeign,
+                        @Cached CallBinaryMethodNode callBinaryMethodNode,
+                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            return toForeign.executeConvert(callBinaryMethodNode.executeObject(null, receiver, convertedArgs[0], convertedArgs[1]));
+        }
+
+        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)", "arguments.length == 3"})
+        Object doTernaryBuiltinMethod(Object receiver, Object[] arguments,
+                                      @Exclusive @Cached PTypeToForeignNode toForeign,
+                                      @Cached CallTernaryMethodNode callTernaryMethodNode,
+                                      @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            return toForeign.executeConvert(callTernaryMethodNode.execute(null, receiver, convertedArgs[0], convertedArgs[1], convertedArgs[2]));
+        }
+
+        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)"})
+        Object doVarargsBuiltinMethod(Object receiver, Object[] arguments,
+                        @Exclusive @Cached PTypeToForeignNode toForeign,
+                        @Cached CallVarargsMethodNode callVarargsMethodNode,
+                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            return toForeign.executeConvert(callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+        }
+
+        @Specialization(limit = "1", replaces = {"doUnaryBuiltinMethod", "doTernaryBuiltinMethod"})
         Object doExecute(Object receiver, Object[] arguments,
-                        @Cached PTypeToForeignNode toForeign,
+                        @Exclusive @Cached PTypeToForeignNode toForeign,
                         @CachedLibrary("receiver") PythonDataModelLibrary dataModelLibrary,
                         @Exclusive @Cached CallNode callNode,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                        @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
+                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
             if (!dataModelLibrary.isCallable(receiver)) {
                 throw UnsupportedMessageException.create();
             }
             Object[] convertedArgs = convertArgsNode.execute(arguments);
             return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
+        }
+
+        static boolean isBuiltinFunctionOrMethod(Object object) {
+            return object instanceof PBuiltinMethod || object instanceof PBuiltinFunction;
         }
 
         public static PExecuteNode create() {
@@ -864,6 +909,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public static PExecuteNode getUncached() {
             return PythonAbstractObjectFactory.PExecuteNodeGen.getUncached();
+        }
+
+        @Override
+        public Node copy() {
+            return create();
         }
     }
 
