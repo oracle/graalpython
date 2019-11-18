@@ -1259,6 +1259,8 @@ class GraalpythonCAPIProject(mx.Project):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
+        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
+            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
         super(GraalpythonCAPIProject, self).__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
