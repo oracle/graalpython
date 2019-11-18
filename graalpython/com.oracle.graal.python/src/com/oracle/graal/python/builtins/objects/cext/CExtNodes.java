@@ -995,27 +995,33 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class AllToJavaNode extends PNodeWithContext {
-        abstract Object[] execute(Object[] args);
+
+        final Object[] execute(Object[] args) {
+            return execute(args, 0);
+        }
+
+        abstract Object[] execute(Object[] args, int offset);
 
         @Specialization(guards = {"args.length == cachedLength", "cachedLength < 5"}, limit = "5")
         @ExplodeLoop
-        Object[] cached(Object[] args,
+        Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
                         @Cached("args.length") int cachedLength,
+                        @Cached("offset") int cachedOffset,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode) {
-            Object[] output = new Object[cachedLength];
-            for (int i = 0; i < cachedLength; i++) {
-                output[i] = toJavaNode.execute(args[i]);
+            Object[] output = new Object[cachedLength - cachedOffset];
+            for (int i = 0; i < cachedLength - cachedOffset; i++) {
+                output[i] = toJavaNode.execute(args[i + cachedOffset]);
             }
             return output;
         }
 
         @Specialization(replaces = "cached")
-        Object[] uncached(Object[] args,
+        Object[] uncached(Object[] args, int offset,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode) {
-            int len = args.length;
+            int len = args.length - offset;
             Object[] output = new Object[len];
             for (int i = 0; i < len; i++) {
-                output[i] = toJavaNode.execute(args[i]);
+                output[i] = toJavaNode.execute(args[i + offset]);
             }
             return output;
         }
@@ -1093,43 +1099,43 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
 
     public abstract static class DirectUpcallNode extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, Object callable, Object[] args);
-
-        @Specialization(guards = "args.length == 0")
-        Object upcall0(VirtualFrame frame, Object callable, @SuppressWarnings("unused") Object[] args,
-                        @Cached("create()") CallNode callNode) {
-            return callNode.execute(frame, callable, new Object[0], new PKeyword[0]);
-        }
+        public abstract Object execute(VirtualFrame frame, Object[] args);
 
         @Specialization(guards = "args.length == 1")
-        Object upcall1(VirtualFrame frame, Object callable, Object[] args,
-                        @Cached("create()") CallUnaryMethodNode callNode,
-                        @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
-            return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
+        Object upcall0(VirtualFrame frame, Object[] args,
+                        @Cached("create()") CallNode callNode) {
+            return callNode.execute(frame, args[0], new Object[0], new PKeyword[0]);
         }
 
         @Specialization(guards = "args.length == 2")
-        Object upcall2(VirtualFrame frame, Object callable, Object[] args,
-                        @Cached("create()") CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            return callNode.executeObject(frame, callable, converted[0], converted[1]);
+        Object upcall1(VirtualFrame frame, Object[] args,
+                        @Cached CallUnaryMethodNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode) {
+            return callNode.executeObject(frame, args[0], toJavaNode.execute(args[1]));
         }
 
         @Specialization(guards = "args.length == 3")
-        Object upcall3(VirtualFrame frame, Object callable, Object[] args,
-                        @Cached("create()") CallTernaryMethodNode callNode,
+        Object upcall2(VirtualFrame frame, Object[] args,
+                        @Cached CallBinaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
+            Object[] converted = allToJavaNode.execute(args, 1);
+            return callNode.executeObject(frame, args[0], converted[0], converted[1]);
+        }
+
+        @Specialization(guards = "args.length == 4")
+        Object upcall3(VirtualFrame frame, Object[] args,
+                        @Cached CallTernaryMethodNode callNode,
+                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
+            Object[] converted = allToJavaNode.execute(args, 1);
+            return callNode.execute(frame, args[0], converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
-        Object upcall(VirtualFrame frame, Object callable, Object[] args,
-                        @Cached("create()") CallNode callNode,
+        Object upcall(VirtualFrame frame, Object[] args,
+                        @Cached CallNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            return callNode.execute(frame, callable, converted, new PKeyword[0]);
+            Object[] converted = allToJavaNode.execute(args, 1);
+            return callNode.execute(frame, args[0], converted, new PKeyword[0]);
         }
 
         public static DirectUpcallNode create() {
@@ -1143,108 +1149,140 @@ public abstract class CExtNodes {
             return CextUpcallNodeGen.create();
         }
 
-        public abstract Object execute(VirtualFrame frame, Object cextModule, String name, Object[] args);
+        public abstract Object execute(VirtualFrame frame, Object cextModule, Object[] args);
 
-        @Specialization(guards = "args.length == 0")
-        Object upcall0(VirtualFrame frame, Object cextModule, String name, @SuppressWarnings("unused") Object[] args,
-                        @Cached("create()") CallNode callNode,
+        @Specialization(guards = "args.length == 1")
+        Object upcall0(VirtualFrame frame, Object cextModule, Object[] args,
+                        @Cached CallNode callNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object callable = getAttrNode.execute(cextModule, name);
+            assert args[0] instanceof String;
+            Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
         }
 
-        @Specialization(guards = "args.length == 1")
-        Object upcall1(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallUnaryMethodNode callNode,
-                        @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode,
-                        @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object callable = getAttrNode.execute(cextModule, name);
-            return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
-        }
-
         @Specialization(guards = "args.length == 2")
-        Object upcall2(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallBinaryMethodNode callNode,
-                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+        Object upcall1(VirtualFrame frame, Object cextModule, Object[] args,
+                        @Cached CallUnaryMethodNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode toJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name);
-            return callNode.executeObject(frame, callable, converted[0], converted[1]);
+            assert args[0] instanceof String;
+            Object callable = getAttrNode.execute(cextModule, args[0]);
+            return callNode.executeObject(frame, callable, toJavaNode.execute(args[1]));
         }
 
         @Specialization(guards = "args.length == 3")
-        Object upcall3(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallTernaryMethodNode callNode,
+        Object upcall2(VirtualFrame frame, Object cextModule, Object[] args,
+                        @Cached CallBinaryMethodNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name);
+            Object[] converted = allToJavaNode.execute(args, 1);
+            assert args[0] instanceof String;
+            Object callable = getAttrNode.execute(cextModule, args[0]);
+            return callNode.executeObject(frame, callable, converted[0], converted[1]);
+        }
+
+        @Specialization(guards = "args.length == 4")
+        Object upcall3(VirtualFrame frame, Object cextModule, Object[] args,
+                        @Cached CallTernaryMethodNode callNode,
+                        @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
+                        @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
+            Object[] converted = allToJavaNode.execute(args, 1);
+            assert args[0] instanceof String;
+            Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
-        Object upcall(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallNode callNode,
+        Object upcall(VirtualFrame frame, Object cextModule, Object[] args,
+                        @Cached CallNode callNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(cextModule, name);
+            Object[] converted = allToJavaNode.execute(args, 1);
+            assert args[0] instanceof String;
+            Object callable = getAttrNode.execute(cextModule, args[0]);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Specializes on the arity of the call and tries to do a builtin call if possible, otherwise a
+     * generic call is done. The arguments array must have at least two element: {@code args[0]} is
+     * the receiver (e.g. the module) and {@code args[1]} is the member to call.
+     */
     public abstract static class ObjectUpcallNode extends PNodeWithContext {
         public static ObjectUpcallNode create() {
             return ObjectUpcallNodeGen.create();
         }
 
-        public abstract Object execute(VirtualFrame frame, Object cextModule, String name, Object[] args);
+        /**
+         * The {@code args} array must contain the receiver at {@code args[0]} and the member at
+         * {@code args[1]}.
+         */
+        public abstract Object execute(VirtualFrame frame, Object[] args);
 
-        @Specialization(guards = "args.length == 0")
-        Object upcall0(VirtualFrame frame, Object cextModule, String name, @SuppressWarnings("unused") Object[] args,
-                        @Cached("create()") CallNode callNode,
+        @Specialization(guards = "args.length == 2")
+        Object upcall0(VirtualFrame frame, Object[] args,
+                        @Cached CallNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            Object receiver = receiverToJavaNode.execute(args[0]);
+            assert PGuards.isString(args[1]);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
         }
 
-        @Specialization(guards = "args.length == 1")
-        Object upcall1(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallUnaryMethodNode callNode,
-                        @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode,
+        @Specialization(guards = "args.length == 3")
+        Object upcall1(VirtualFrame frame, Object[] args,
+                        @Cached CallUnaryMethodNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode argToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
-            return callNode.executeObject(frame, callable, toJavaNode.execute(args[0]));
+            Object receiver = receiverToJavaNode.execute(args[0]);
+            assert PGuards.isString(args[1]);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            return callNode.executeObject(frame, callable, argToJavaNode.execute(args[2]));
         }
 
-        @Specialization(guards = "args.length == 2")
-        Object upcall2(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallBinaryMethodNode callNode,
+        @Specialization(guards = "args.length == 4")
+        Object upcall2(VirtualFrame frame, Object[] args,
+                        @Cached CallBinaryMethodNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            Object[] converted = allToJavaNode.execute(args, 2);
+            Object receiver = receiverToJavaNode.execute(args[0]);
+            assert PGuards.isString(args[1]);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
-        @Specialization(guards = "args.length == 3")
-        Object upcall3(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallTernaryMethodNode callNode,
+        @Specialization(guards = "args.length == 5")
+        Object upcall3(VirtualFrame frame, Object[] args,
+                        @Cached CallTernaryMethodNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            Object[] converted = allToJavaNode.execute(args, 2);
+            Object receiver = receiverToJavaNode.execute(args[0]);
+            assert PGuards.isString(args[1]);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
         @Specialization(replaces = {"upcall0", "upcall1", "upcall2", "upcall3"})
-        Object upcall(VirtualFrame frame, Object cextModule, String name, Object[] args,
-                        @Cached("create()") CallNode callNode,
+        Object upcall(VirtualFrame frame, Object[] args,
+                        @Cached CallNode callNode,
+                        @Cached CExtNodes.AsPythonObjectNode receiverToJavaNode,
                         @Shared("allToJavaNode") @Cached AllToJavaNode allToJavaNode,
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
-            Object[] converted = allToJavaNode.execute(args);
-            Object callable = getAttrNode.execute(frame, cextModule, name, PNone.NO_VALUE);
+            // we needs at least a receiver and a member name
+            assert args.length >= 2;
+            Object[] converted = allToJavaNode.execute(args, 2);
+            Object receiver = receiverToJavaNode.execute(args[0]);
+            assert PGuards.isString(args[1]);
+            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
     }
