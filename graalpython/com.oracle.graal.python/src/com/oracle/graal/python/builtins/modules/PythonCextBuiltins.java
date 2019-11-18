@@ -1930,16 +1930,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    private abstract static class UpcallLandingNode extends PythonVarargsBuiltinNode {
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
+        }
+    }
+
     @Builtin(name = "PyTruffle_Upcall", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
-        }
+    abstract static class UpcallNode extends UpcallLandingNode {
 
         @Specialization
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -1957,12 +1957,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Upcall_l", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallLNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, null, arguments, PKeyword.EMPTY_KEYWORDS);
-        }
+    abstract static class UpcallLNode extends UpcallLandingNode {
 
         @Specialization
         long upcall(VirtualFrame frame, Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -1981,12 +1976,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Upcall_d", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallDNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(frame, null, arguments, PKeyword.EMPTY_KEYWORDS);
-        }
+    abstract static class UpcallDNode extends UpcallLandingNode {
 
         @Specialization
         double upcall(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -2005,14 +1995,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Upcall_ptr", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallPtrNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
-        }
+    abstract static class UpcallPtrNode extends UpcallLandingNode {
 
         @Specialization
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -2031,14 +2014,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallCextNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
-        }
+    abstract static class UpcallCextNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -2062,15 +2038,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Cext_Upcall_d", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @ImportStatic(UpcallCextNode.class)
-    abstract static class UpcallCextDNode extends PythonVarargsBuiltinNode {
+    abstract static class UpcallCextDNode extends UpcallLandingNode {
         @Child private CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
-        }
 
         @Specialization(guards = "isStringCallee(args)")
         double upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -2088,15 +2057,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Cext_Upcall_l", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @ImportStatic(UpcallCextNode.class)
-    abstract static class UpcallCextLNode extends PythonVarargsBuiltinNode {
+    abstract static class UpcallCextLNode extends UpcallLandingNode {
         @Child private CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
-        }
 
         @Specialization(guards = "isStringCallee(args)")
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -2126,14 +2088,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Cext_Upcall_ptr", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @ImportStatic(UpcallCextNode.class)
-    abstract static class UpcallCextPtrNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            Object[] argsWithoutSelf = new Object[arguments.length - 1];
-            System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
-            return execute(frame, arguments[0], argsWithoutSelf, PKeyword.EMPTY_KEYWORDS);
-        }
+    abstract static class UpcallCextPtrNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,

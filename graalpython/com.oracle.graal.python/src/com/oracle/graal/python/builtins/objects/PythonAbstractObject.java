@@ -851,32 +851,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         public abstract Object execute(Object receiver, Object[] arguments) throws UnsupportedMessageException;
 
-        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)", "arguments.length == 1"})
-        Object doUnaryBuiltinMethod(Object receiver, Object[] arguments,
-                        @Exclusive @Cached PTypeToForeignNode toForeign,
-                        @Cached CallUnaryMethodNode callUnaryMethodNode,
-                        @Cached PForeignToPTypeNode fromForeign) {
-            return toForeign.executeConvert(callUnaryMethodNode.executeObject(null, receiver, fromForeign.executeConvert(arguments[0])));
-        }
-
-        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)", "arguments.length == 2"})
-        Object doBinaryBuiltinMethod(Object receiver, Object[] arguments,
-                        @Exclusive @Cached PTypeToForeignNode toForeign,
-                        @Cached CallBinaryMethodNode callBinaryMethodNode,
-                        @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
-            Object[] convertedArgs = convertArgsNode.execute(arguments);
-            return toForeign.executeConvert(callBinaryMethodNode.executeObject(null, receiver, convertedArgs[0], convertedArgs[1]));
-        }
-
-        @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)", "arguments.length == 3"})
-        Object doTernaryBuiltinMethod(Object receiver, Object[] arguments,
-                                      @Exclusive @Cached PTypeToForeignNode toForeign,
-                                      @Cached CallTernaryMethodNode callTernaryMethodNode,
-                                      @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) {
-            Object[] convertedArgs = convertArgsNode.execute(arguments);
-            return toForeign.executeConvert(callTernaryMethodNode.execute(null, receiver, convertedArgs[0], convertedArgs[1], convertedArgs[2]));
-        }
-
         @Specialization(guards = {"isBuiltinFunctionOrMethod(receiver)"})
         Object doVarargsBuiltinMethod(Object receiver, Object[] arguments,
                         @Exclusive @Cached PTypeToForeignNode toForeign,
@@ -886,7 +860,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return toForeign.executeConvert(callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS));
         }
 
-        @Specialization(limit = "1", replaces = {"doUnaryBuiltinMethod", "doTernaryBuiltinMethod"})
+        @Specialization(limit = "1", replaces = "doVarargsBuiltinMethod")
         Object doExecute(Object receiver, Object[] arguments,
                         @Exclusive @Cached PTypeToForeignNode toForeign,
                         @CachedLibrary("receiver") PythonDataModelLibrary dataModelLibrary,

@@ -164,7 +164,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
 
         @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (keywords.length != 0) {
                 throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
             }
