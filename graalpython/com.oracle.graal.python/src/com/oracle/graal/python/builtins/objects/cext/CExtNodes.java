@@ -118,6 +118,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1515,6 +1516,7 @@ public abstract class CExtNodes {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
         @Child private MaterializeFrameNode materializeNode;
+        @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
         private final Object errorResult;
@@ -1533,8 +1535,13 @@ public abstract class CExtNodes {
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                PythonContext context = getContext();
+                context.setCurrentException(e);
+                if (ensureFrameProfile().profile(frame == null)) {
+                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+                } else {
+                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                }
                 return errorResult;
             }
         }
@@ -1546,6 +1553,14 @@ public abstract class CExtNodes {
             }
             return materializeNode;
         }
+
+        private ConditionProfile ensureFrameProfile() {
+            if (frameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                frameProfile = ConditionProfile.createBinaryProfile();
+            }
+            return frameProfile;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1554,6 +1569,7 @@ public abstract class CExtNodes {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
         @Child private MaterializeFrameNode materializeNode;
+        @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
         private final Object errorResult;
@@ -1572,8 +1588,13 @@ public abstract class CExtNodes {
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                PythonContext context = getContext();
+                context.setCurrentException(e);
+                if (ensureFrameProfile().profile(frame == null)) {
+                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+                } else {
+                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                }
                 return errorResult;
             }
         }
@@ -1585,6 +1606,14 @@ public abstract class CExtNodes {
             }
             return materializeNode;
         }
+
+        private ConditionProfile ensureFrameProfile() {
+            if (frameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                frameProfile = ConditionProfile.createBinaryProfile();
+            }
+            return frameProfile;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1593,6 +1622,7 @@ public abstract class CExtNodes {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
         @Child private MaterializeFrameNode materializeNode;
+        @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
         private final Object errorResult;
@@ -1611,8 +1641,13 @@ public abstract class CExtNodes {
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                PythonContext context = getContext();
+                context.setCurrentException(e);
+                if (ensureFrameProfile().profile(frame == null)) {
+                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+                } else {
+                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                }
                 return errorResult;
             }
         }
@@ -1624,6 +1659,14 @@ public abstract class CExtNodes {
             }
             return materializeNode;
         }
+
+        private ConditionProfile ensureFrameProfile() {
+            if (frameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                frameProfile = ConditionProfile.createBinaryProfile();
+            }
+            return frameProfile;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1633,6 +1676,7 @@ public abstract class CExtNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
         @Child private MaterializeFrameNode materializeNode;
+        @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
         private final Object errorResult;
@@ -1653,8 +1697,13 @@ public abstract class CExtNodes {
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                getContext().setCurrentException(e);
-                e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                PythonContext context = getContext();
+                context.setCurrentException(e);
+                if (ensureFrameProfile().profile(frame == null)) {
+                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+                } else {
+                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
+                }
                 return errorResult;
             }
         }
@@ -1665,6 +1714,14 @@ public abstract class CExtNodes {
                 materializeNode = insert(MaterializeFrameNodeGen.create());
             }
             return materializeNode;
+        }
+
+        private ConditionProfile ensureFrameProfile() {
+            if (frameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                frameProfile = ConditionProfile.createBinaryProfile();
+            }
+            return frameProfile;
         }
 
         @Override
