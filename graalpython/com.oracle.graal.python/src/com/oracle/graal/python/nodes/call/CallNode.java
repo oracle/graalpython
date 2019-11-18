@@ -72,12 +72,14 @@ import com.oracle.truffle.api.nodes.NodeCost;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
 public abstract class CallNode extends PNodeWithContext {
+    private static final CallNode UNCACHED = new UncachedCallNode();
+
     public static CallNode create() {
         return CachedCallNodeGen.create();
     }
 
     public static CallNode getUncached() {
-        return new UncachedCallNode();
+        return UNCACHED;
     }
 
     public abstract Object execute(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords);

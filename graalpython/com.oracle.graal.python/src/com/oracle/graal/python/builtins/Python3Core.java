@@ -176,6 +176,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -664,6 +665,7 @@ public final class Python3Core implements PythonCore {
 
     @Override
     public RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+        CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
             public SourceSection getSourceSection() {

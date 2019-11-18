@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -110,6 +111,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
+            CompilerDirectives.transferToInterpreter();
             AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage(), callable, arguments, keywords);
             getContext().registerShutdownHook(callable, Truffle.getRuntime().createCallTarget(atExitCallTarget));
             return callable;
