@@ -1340,7 +1340,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         Frame: [2,<return_val>,Illegal]
                       TernaryArithmeticExpression SourceSection: [2608,2614]`a ** b`
                         LookupAndCallTernaryNodeGen SourceSection: None
-                          CallTernaryMethodNodeGen SourceSection: None
+                          CallTernaryMethodCachedNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2608,2609]`a`
                           Frame: [0,a,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
