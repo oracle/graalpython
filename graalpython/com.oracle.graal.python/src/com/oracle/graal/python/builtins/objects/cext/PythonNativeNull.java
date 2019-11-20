@@ -47,12 +47,14 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 /**
  * A simple wrapper around native {@code NULL}.
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(ReferenceLibrary.class)
 public class PythonNativeNull implements TruffleObject {
     private Object ptr;
 
@@ -69,9 +71,9 @@ public class PythonNativeNull implements TruffleObject {
         return true;
     }
 
-    @ExportMessage
+    @ExportMessage(limit = "1")
     long asPointer(
-                    @CachedLibrary(limit = "1") InteropLibrary ptrInteropLib) throws UnsupportedMessageException {
+                    @CachedLibrary("this.getPtr()") InteropLibrary ptrInteropLib) throws UnsupportedMessageException {
         return ptrInteropLib.asPointer(getPtr());
     }
 
@@ -91,5 +93,11 @@ public class PythonNativeNull implements TruffleObject {
     @SuppressWarnings("static-method")
     public Object getNativeType() {
         return null;
+    }
+
+    @ExportMessage(limit = "1")
+    boolean isSame(Object other,
+                    @CachedLibrary("this.getPtr()") ReferenceLibrary delegateLib) {
+        return delegateLib.isSame(ptr, other);
     }
 }
