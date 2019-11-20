@@ -2796,6 +2796,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Shared("callNodeNoKeywords") @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
@@ -2805,7 +2806,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                PythonContext context = getContext();
+                PFrame.Reference ref = getCurrentFrameInfo(frame, context, nullFrameProfile);
+                NativeBuiltin.transformToNative(context, ref, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
@@ -2816,9 +2819,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
                         @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
-                        @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
-                        @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Shared("callNodeNoKeywords") @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
@@ -2828,7 +2832,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                PythonContext context = getContext();
+                PFrame.Reference ref = getCurrentFrameInfo(frame, context, nullFrameProfile);
+                NativeBuiltin.transformToNative(context, ref, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
@@ -2844,6 +2850,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached("createBinaryProfile()") ConditionProfile argsIsNullProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwargsIsNullProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Exclusive @Cached CallNode callNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
@@ -2869,7 +2876,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return toSulongNode.execute(callNode.execute(frame, callable, args, keywords));
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                PythonContext context = getContext();
+                PFrame.Reference ref = getCurrentFrameInfo(frame, context, nullFrameProfile);
+                NativeBuiltin.transformToNative(context, ref, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
@@ -2880,6 +2889,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return lenNode.execute((PDict) unwrapped) == 0;
             }
             return false;
+        }
+
+        private static PFrame.Reference getCurrentFrameInfo(VirtualFrame frame, PythonContext context, ConditionProfile nullFrameProfile) {
+            return nullFrameProfile.profile(frame == null) ? context.peekTopFrameInfo() : PArguments.getCurrentFrameInfo(frame);
         }
 
     }
