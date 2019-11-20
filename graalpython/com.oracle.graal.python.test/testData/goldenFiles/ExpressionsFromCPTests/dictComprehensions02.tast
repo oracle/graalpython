@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                         PythonObjectFactoryNodeGen SourceSection: None
                         TernaryArithmeticExpression SourceSection: [1,5]`x**2`
                           LookupAndCallTernaryNodeGen SourceSection: None
-                            CallTernaryMethodNodeGen SourceSection: None
+                            CallTernaryMethodCachedNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

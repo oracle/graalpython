@@ -97,6 +97,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -1102,6 +1104,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private TypeBuiltins.InstanceCheckNode typeInstanceCheckNode = TypeBuiltins.InstanceCheckNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         public static IsInstanceNode create() {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
@@ -1127,7 +1130,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         boolean isInstanceTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsInstanceNode isInstanceNode) {
-            Object[] array = clsTuple.getArray();
+            Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
                 if (isInstanceNode.executeWith(frame, instance, cls)) {
@@ -1140,7 +1143,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = "isInstanceTupleConstantLen")
         boolean isInstance(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("create()") IsInstanceNode instanceNode) {
-            for (Object cls : clsTuple.getArray()) {
+            for (Object cls : getArray(clsTuple)) {
                 if (instanceNode.executeWith(frame, instance, cls)) {
                     return true;
                 }
@@ -1160,6 +1163,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             return lenNode.execute(t.getSequenceStorage());
         }
+
+        private Object[] getArray(PTuple tuple) {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode.execute(tuple);
+        }
     }
 
     // issubclass(class, classinfo)
@@ -1170,6 +1181,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         public static IsSubClassNode create() {
             return BuiltinFunctionsFactory.IsSubClassNodeFactory.create();
@@ -1187,7 +1199,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public boolean isSubclassTupleConstantLen(VirtualFrame frame, Object derived, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
-            Object[] array = clsTuple.getArray();
+            Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
                 if (isSubclassNode.executeWith(frame, derived, cls)) {
@@ -1200,7 +1212,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = "isSubclassTupleConstantLen")
         public boolean isSubclass(VirtualFrame frame, Object derived, PTuple clsTuple,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
-            for (Object cls : clsTuple.getArray()) {
+            for (Object cls : getArray(clsTuple)) {
                 if (isSubclassNode.executeWith(frame, derived, cls)) {
                     return true;
                 }
@@ -1219,6 +1231,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 lenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return lenNode.execute(t.getSequenceStorage());
+        }
+
+        private Object[] getArray(PTuple tuple) {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode.execute(tuple);
         }
     }
 

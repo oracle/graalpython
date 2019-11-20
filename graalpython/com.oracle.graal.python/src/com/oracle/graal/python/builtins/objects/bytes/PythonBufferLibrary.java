@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,29 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
+import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
+import com.oracle.truffle.api.library.Library;
 
-public interface PIBytesLike {
-    SequenceStorage getSequenceStorage();
+@GenerateLibrary
+@DefaultExport(DefaultBufferStringExports.class)
+@SuppressWarnings("unused")
+public abstract class PythonBufferLibrary extends Library {
+
+    @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
+    public boolean isBuffer(Object receiver) {
+        return false;
+    }
+
+    @Abstract(ifExported = "getBufferBytes")
+    public int getBufferLength(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @Abstract(ifExported = "getBufferLength")
+    public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
 }

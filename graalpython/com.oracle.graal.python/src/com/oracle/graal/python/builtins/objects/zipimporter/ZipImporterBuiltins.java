@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -479,7 +480,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
     public abstract static class GetDataNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         public PBytes doit(PZipImporter self, String pathname) {
             if (self.getPrefix() == null) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
@@ -498,11 +499,12 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             if (tocEntry == null) {
                 throw raise(PythonErrorType.OSError, "%s", pathname);
             }
-            long fileSize = (long) tocEntry.getArray()[3];
+            Object[] tocEntries = GetObjectArrayNodeGen.getUncached().execute(tocEntry);
+            long fileSize = (long) tocEntries[3];
             if (fileSize < 0) {
                 throw raise(PythonErrorType.ZipImportError, "negative data size");
             }
-            long streamPosition = (long) tocEntry.getArray()[6];
+            long streamPosition = (long) tocEntries[6];
             ZipInputStream zis = null;
             TruffleFile tfile = getContext().getEnv().getPublicTruffleFile(archive);
             try (InputStream in = tfile.newInputStream(StandardOpenOption.READ)) {

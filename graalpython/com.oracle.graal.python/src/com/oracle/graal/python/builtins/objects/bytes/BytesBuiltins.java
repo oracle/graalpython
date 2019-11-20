@@ -346,9 +346,9 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBytes join(VirtualFrame frame, PBytes bytes, Object iterable,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(frame, bytes.getSequenceStorage()), iterable));
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached BytesNodes.BytesJoinNode bytesJoinNode) {
+            return factory().createBytes(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback

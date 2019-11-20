@@ -54,6 +54,8 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -74,6 +76,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -386,9 +389,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePTuple(VirtualFrame frame, PTuple t, int version, DataOutputStream buffer) {
+        void handlePTuple(VirtualFrame frame, PTuple t, int version, DataOutputStream buffer,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
             writeByte(TYPE_TUPLE, version, buffer);
-            Object[] items = t.getArray();
+            Object[] items = getObjectArrayNode.execute(t);
             writeInt(items.length, version, buffer);
             for (int i = 0; i < items.length; i++) {
                 getRecursiveNode().execute(frame, items[i], version, buffer);
@@ -568,11 +572,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int stacksize = readInt();
             int flags = readInt();
             byte[] codestring = readBytes();
-            Object[] constants = ((PTuple) readObject(depth + 1)).getArray();
-            Object[] names = ((PTuple) readObject(depth + 1)).getArray();
-            Object[] varnames = ((PTuple) readObject(depth + 1)).getArray();
-            Object[] freevars = ((PTuple) readObject(depth + 1)).getArray();
-            Object[] cellvars = ((PTuple) readObject(depth + 1)).getArray();
+            Object[] constants = getArray((PTuple) readObject(depth + 1));
+            Object[] names = getArray((PTuple) readObject(depth + 1));
+            Object[] varnames = getArray((PTuple) readObject(depth + 1));
+            Object[] freevars = getArray((PTuple) readObject(depth + 1));
+            Object[] cellvars = getArray((PTuple) readObject(depth + 1));
             String filename = ((String) readObject(depth + 1));
             String name = ((String) readObject(depth + 1));
             int firstlineno = readInt();
@@ -655,6 +659,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(newStorage);
         }
 
+        private static Object[] getArray(PTuple tuple) {
+            CompilerAsserts.neverPartOfCompilation();
+            return GetObjectArrayNodeGen.getUncached().execute(tuple);
+
+        }
+
         @TruffleBoundary
         private Object readObject(int depth) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
@@ -733,7 +743,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             try {
                 return readObject(0);
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
 

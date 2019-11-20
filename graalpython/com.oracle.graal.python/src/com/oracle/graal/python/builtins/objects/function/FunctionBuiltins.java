@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -149,8 +150,9 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setDefaults(PFunction self, PTuple defaults) {
-            self.setDefaults(defaults.getArray());
+        Object setDefaults(PFunction self, PTuple defaults,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            self.setDefaults(getObjectArrayNode.execute(defaults));
             return PNone.NONE;
         }
 

@@ -410,7 +410,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                     selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
             return container;
         }

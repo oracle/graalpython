@@ -113,7 +113,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     static class DynamicUncached extends Dynamic {
-        private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncached();
+        private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncachedForceType();
         private final GetMroStorageNode getMroNode = GetMroStorageNode.getUncached();
 
         @Override

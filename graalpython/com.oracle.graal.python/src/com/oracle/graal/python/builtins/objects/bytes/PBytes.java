@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -27,8 +27,8 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -36,7 +36,11 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferLibrary.class)
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
@@ -102,8 +106,20 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         return store.hashCode();
     }
 
-    @Override
-    public PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes) {
-        return factory.createBytes(bytes);
+    @ExportMessage
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(store);
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(
+                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+        return toByteArrayNode.execute(store);
     }
 }

@@ -40,11 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
+import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 
+import com.oracle.graal.python.builtins.objects.bytes.PythonBufferLibrary;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins.InternalLenNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferLibrary.class)
 public final class PMMap extends PythonObject {
 
     private final SeekableByteChannel mappedByteBuffer;
@@ -69,4 +81,53 @@ public final class PMMap extends PythonObject {
     public long getOffset() {
         return offset;
     }
+
+    @ExportMessage
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Shared("lenNode") @Cached InternalLenNode lenNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode) {
+        return castToIntNode.execute(lenNode.execute(this));
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(
+                    @Shared("lenNode") @Cached InternalLenNode lenNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @Cached ReadFromChannelNode readNode) {
+
+        try {
+            int len = getBufferLength(lenNode, castToIntNode);
+
+            // save current position
+            long oldPos = PMMap.position(mappedByteBuffer);
+
+            PMMap.position(mappedByteBuffer, 0);
+            ByteSequenceStorage s = readNode.execute(mappedByteBuffer, len);
+            return s.getInternalByteArray();
+        } catch (IOException e) {
+            // TODO(fa) how to handle?
+            return null;
+        }
+    }
+
+    @TruffleBoundary
+    static long position(SeekableByteChannel ch) throws IOException {
+        return ch.position();
+    }
+
+    @TruffleBoundary
+    static void position(SeekableByteChannel ch, long offset) throws IOException {
+        ch.position(offset);
+    }
+
+    @TruffleBoundary
+    static long size(SeekableByteChannel ch) throws IOException {
+        return ch.size();
+    }
+
 }

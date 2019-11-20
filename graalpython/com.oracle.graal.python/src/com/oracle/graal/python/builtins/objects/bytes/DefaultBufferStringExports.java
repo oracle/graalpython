@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,26 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public interface PIBytesLike {
-    SequenceStorage getSequenceStorage();
+@ExportLibrary(value = PythonBufferLibrary.class, receiverType = String.class)
+final class DefaultBufferStringExports {
+    @ExportMessage
+    static boolean isBuffer(@SuppressWarnings("unused") String str) {
+        return true;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static int getBufferLength(@SuppressWarnings("unused") String str) {
+        return getBufferBytes(str).length;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static byte[] getBufferBytes(String str) {
+        return str.getBytes();
+    }
 }

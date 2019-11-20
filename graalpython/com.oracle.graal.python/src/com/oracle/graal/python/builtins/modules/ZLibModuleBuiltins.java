@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -538,7 +539,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
             if (toArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toArrayNode;
         }
@@ -559,18 +560,18 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone level) {
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
 
         @Specialization
-        public PBytes doit(VirtualFrame frame, PIBytesLike data, long level,
+        public PBytes doit(PIBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
                 throw raise(ZLibError, "Bad compression level");
             }
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, (int) level));
         }
 
@@ -590,7 +591,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
             if (toArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toArrayNode;
         }
@@ -629,8 +630,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, MAX_WBITS, DEF_BUF_SIZE));
         }
 
@@ -645,7 +646,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, "bufsize must be non-negative");
             }
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
         }
 

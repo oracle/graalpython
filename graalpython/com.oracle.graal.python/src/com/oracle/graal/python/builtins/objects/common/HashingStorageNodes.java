@@ -588,7 +588,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.hasKey(name, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -620,7 +620,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.hasKey(key, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -633,7 +633,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.hasKey(key, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -728,7 +728,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.hasKey(key, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -741,7 +741,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.hasKey(key, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -808,7 +808,7 @@ public abstract class HashingStorageNodes {
             try {
                 return ensureDynamicObjectSetItemNode.execute(switchToFastDictStorage(storage), key, value);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -821,7 +821,7 @@ public abstract class HashingStorageNodes {
             try {
                 return ensureDynamicObjectSetItemNode.execute(switchToFastDictStorage(storage), cast(key), value);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -837,7 +837,7 @@ public abstract class HashingStorageNodes {
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -849,7 +849,7 @@ public abstract class HashingStorageNodes {
             try {
                 return ensureDynamicObjectSetItemNode.execute(storage, key, value);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -861,7 +861,7 @@ public abstract class HashingStorageNodes {
             try {
                 return ensureDynamicObjectSetItemNode.execute(storage, cast(key), value);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -890,7 +890,7 @@ public abstract class HashingStorageNodes {
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -918,7 +918,7 @@ public abstract class HashingStorageNodes {
             try {
                 newStorage.setItem(key, value, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
             return newStorage;
         }
@@ -934,7 +934,7 @@ public abstract class HashingStorageNodes {
                 newStorage.setItem(key, value, getEquivalence());
                 return newStorage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -950,7 +950,7 @@ public abstract class HashingStorageNodes {
                 newStorage.addAll(storage, getEquivalence());
                 newStorage.setItem(key, value, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
             return newStorage;
         }
@@ -965,7 +965,7 @@ public abstract class HashingStorageNodes {
                 storage.setItem(key, value, getEquivalence());
                 return storage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -979,7 +979,7 @@ public abstract class HashingStorageNodes {
                 storage.setItem(key, value, getEquivalence());
                 return storage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1368,7 +1368,7 @@ public abstract class HashingStorageNodes {
                 try {
                     return equalsGeneric(selfStorage, other);
                 } finally {
-                    IndirectCallContext.exit(context, caughtException);
+                    IndirectCallContext.exit(frame, context, caughtException);
                 }
             }
             return false;
@@ -1382,7 +1382,7 @@ public abstract class HashingStorageNodes {
             try {
                 return equalsGeneric(selfStorage, other);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1590,7 +1590,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.remove(key, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1602,7 +1602,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.remove(key, getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1634,7 +1634,7 @@ public abstract class HashingStorageNodes {
             try {
                 return storage.copy(getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1707,7 +1707,7 @@ public abstract class HashingStorageNodes {
                 }
                 return newStorage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1722,7 +1722,7 @@ public abstract class HashingStorageNodes {
                 newStorage.addAll(right, getEquivalence());
                 return newStorage;
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -1868,7 +1868,7 @@ public abstract class HashingStorageNodes {
                 try {
                     return leftClass.cast(left).copy(getEquivalence());
                 } finally {
-                    IndirectCallContext.exit(context, caughtException);
+                    IndirectCallContext.exit(frame, context, caughtException);
                 }
             }
             neitherEmpty.enter();
@@ -1890,7 +1890,7 @@ public abstract class HashingStorageNodes {
             try {
                 return left.copy(getEquivalence());
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 

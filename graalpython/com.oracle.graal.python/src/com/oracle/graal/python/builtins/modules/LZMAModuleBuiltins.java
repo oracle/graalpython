@@ -258,7 +258,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             try {
                 return library.isSequence(obj);
             } finally {
-                IndirectCallContext.exit(context, caughtException);
+                IndirectCallContext.exit(frame, context, caughtException);
             }
         }
 

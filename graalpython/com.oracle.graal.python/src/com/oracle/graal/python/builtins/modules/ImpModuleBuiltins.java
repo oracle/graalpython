@@ -46,6 +46,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -178,7 +180,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 return run(moduleSpec, interop);
             } finally {
-                ForeignCallContext.exit(context, caughtException);
+                ForeignCallContext.exit(frame, context, caughtException);
             }
         }
 
@@ -214,6 +216,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
+                PythonLanguage.getLogger().severe(() -> String.format("cannot load C extension '%s'", path));
+                logJavaException(e);
                 throw raise(ImportError, "cannot load %s: %m", path, e);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
@@ -288,6 +292,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        private static void logJavaException(Exception e) {
+            PythonLanguage.getLogger().fine(() -> String.format("Original error was: %s\n%s", e, getJavaStacktrace(e)));
+        }
+
+        @TruffleBoundary
+        private static String getJavaStacktrace(Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            return sw.toString();
+        }
+
         private SetItemNode getSetItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -323,6 +339,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         ((PythonObject) pythonCause).setAttribute(__CAUSE__, ((PException) e).getExceptionObject());
                     }
                     pythonCause = ((PException) e).getExceptionObject();
+                } else {
+                    logJavaException(e);
                 }
                 if (cause.getMessage() != null) {
                     sb.append(", ");

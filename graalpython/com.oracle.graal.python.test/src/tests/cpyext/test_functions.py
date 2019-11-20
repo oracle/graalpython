@@ -52,7 +52,15 @@ class CallableIter:
         cur = self.idx
         self.idx += 1
         return cur
-        
+
+
+def kw_fun(a, b=0, c=0):
+    return {"a": a, "b": b, "c": c}
+
+
+def kwonly_fun(**kwargs):
+    return kwargs
+
 
 class TestPyObject(CPyExtTestCase):
 
@@ -112,17 +120,32 @@ class TestPyObject(CPyExtTestCase):
         arguments=["PyObject* op", "PyTypeObject* type"],
         resultspec="i",
     )
+
     __PyObject_Call_ARGS = (
             (len, ((1, 2, 3),), {}),
             (sum, ((0, 1, 2),), {}),
             (format, (object(),), {"format_spec": ""}),
+            (sum, ("hello, world",), {}),
+            (kw_fun, (123,), {"c": 456, "b": 789}),
+            (kwonly_fun, tuple(), {"x": 456, "y": 789}),
+            (sum, ("hello, world",), None),
+            (kwonly_fun, tuple(), None),
         )
 
     test_PyObject_Call = CPyExtFunction(
-        lambda args: args[0](*args[1], **args[2]),
+        lambda args: args[0](*args[1], **args[2]) if args[2] else args[0](*args[1], **dict()),
         lambda: TestPyObject.__PyObject_Call_ARGS,
+        code='''#include <stdio.h>
+        PyObject * wrap_PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs) {
+            if(kwargs == Py_None) {
+                return PyObject_Call(callable, args, NULL);
+            }
+            return PyObject_Call(callable, args, kwargs);
+        }
+        ''',
         arguments=["PyObject* callable", "PyObject* callargs", "PyObject* kwargs"],
         argspec="OOO",
+        callfunction="wrap_PyObject_Call",
     )
     test_PyObject_CallObject = CPyExtFunction(
         lambda args: args[0](*args[1]),

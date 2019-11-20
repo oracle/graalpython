@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -153,9 +155,9 @@ public class RandomBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        public PNone setstate(PRandom random, PTuple tuple) {
-            Object[] arr = tuple.getArray();
+        public PNone setstate(PRandom random, PTuple tuple,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            Object[] arr = getObjectArrayNode.execute(tuple);
             if (arr.length == 1) {
                 Object object = arr[0];
                 if (object instanceof Long) {

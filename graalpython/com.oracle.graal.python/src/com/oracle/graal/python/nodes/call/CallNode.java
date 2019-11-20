@@ -64,13 +64,16 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
+@ReportPolymorphism
 public abstract class CallNode extends PNodeWithContext {
     private static final CallNode UNCACHED = new UncachedCallNode();
 
@@ -92,18 +95,6 @@ public abstract class CallNode extends PNodeWithContext {
         @Child private CreateArgumentsNode createArguments = CreateArgumentsNode.create();
         @Child private CallDispatchNode dispatch = CallDispatchNode.create();
 
-        @Specialization(guards = {"!isCallable(callableObject) || isClass(callableObject)"})
-        protected Object specialCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                        @Cached PRaiseNode raise,
-                        @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                        @Cached("create()") CallVarargsMethodNode callCallNode) {
-            Object call = callAttrGetterNode.execute(callableObject);
-            if (call == PNone.NO_VALUE) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
-            }
-            return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
-        }
-
         private CreateArgumentsNode ensureCreateArguments() {
             if (createArguments == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -120,24 +111,36 @@ public abstract class CallNode extends PNodeWithContext {
             return dispatch;
         }
 
+        @Specialization(guards = "!isCallable(callableObject) || isClass(callableObject)")
+        protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+                        @Cached PRaiseNode raise,
+                        @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                        @Cached("create()") CallVarargsMethodNode callCallNode) {
+            Object call = callAttrGetterNode.execute(callableObject);
+            if (call == PNone.NO_VALUE) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object is not callable", callableObject);
+            }
+            return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments), keywords);
+        }
+
         @Specialization
         protected Object decoratedMethodCall(VirtualFrame frame, PDecoratedMethod callable, Object[] arguments, PKeyword[] keywords,
                         @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
-            return specialCall(frame, callable.getCallable(), arguments, keywords, raise, callAttrGetterNode, callCallNode);
-        }
-
-        @Specialization(guards = "isPFunction(callable.getFunction())")
-        protected Object methodCallDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
-            // functions must be called directly otherwise the call stack is incorrect
-            return ensureDispatch().executeCall(frame, (PFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
+            return doGeneric(frame, callable.getCallable(), arguments, keywords, raise, callAttrGetterNode, callCallNode);
         }
 
         @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
         protected Object methodCallBuiltinDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
             // functions must be called directly otherwise the call stack is incorrect
             return ensureDispatch().executeCall(frame, (PBuiltinFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
+        }
+
+        @Specialization(guards = "isPFunction(callable.getFunction())", replaces = "methodCallBuiltinDirect")
+        protected Object methodCallDirect(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
+            // functions must be called directly otherwise the call stack is incorrect
+            return ensureDispatch().executeCall(frame, (PFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
         }
 
         @Specialization(guards = "isPFunction(callable.getFunction())")
@@ -153,7 +156,7 @@ public abstract class CallNode extends PNodeWithContext {
             return ensureDispatch().executeCall(frame, (PBuiltinFunction) cachedCallable.getFunction(), ensureCreateArguments().execute(cachedCallable, arguments, keywords));
         }
 
-        @Specialization(guards = "isPBuiltinFunction(callable.getFunction())")
+        @Specialization(guards = "isPBuiltinFunction(callable.getFunction())", replaces = "builtinMethodCallBuiltinDirectCached")
         protected Object builtinMethodCallBuiltinDirect(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
             // functions must be called directly otherwise the call stack is incorrect
             return ensureDispatch().executeCall(frame, (PBuiltinFunction) callable.getFunction(), ensureCreateArguments().execute(callable, arguments, keywords));
@@ -164,7 +167,7 @@ public abstract class CallNode extends PNodeWithContext {
                         @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
-            return specialCall(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+            return doGeneric(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
         }
 
         @Specialization(guards = "!isFunction(callable.getFunction())")
@@ -172,7 +175,7 @@ public abstract class CallNode extends PNodeWithContext {
                         @Cached PRaiseNode raise,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
                         @Cached("create()") CallVarargsMethodNode callCallNode) {
-            return specialCall(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+            return doGeneric(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
         }
 
         @Specialization
@@ -183,6 +186,41 @@ public abstract class CallNode extends PNodeWithContext {
         @Specialization
         protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords) {
             return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(callable, arguments, keywords));
+        }
+
+        @Specialization(replaces = {"doObjectAndType", "decoratedMethodCall", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallDirect", "builtinMethodCallBuiltinDirectCached",
+                        "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall"})
+        protected Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+                        @Cached PRaiseNode raise,
+                        @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                        @Cached("create()") CallVarargsMethodNode callCallNode) {
+            if (callableObject instanceof PFunction) {
+                return functionCall(frame, (PFunction) callableObject, arguments, keywords);
+            } else if (callableObject instanceof PBuiltinFunction) {
+                return builtinFunctionCall(frame, (PBuiltinFunction) callableObject, arguments, keywords);
+            } else if (callableObject instanceof PMethod) {
+                PMethod method = (PMethod) callableObject;
+                Object func = method.getFunction();
+                if (func instanceof PFunction) {
+                    return methodCallDirect(frame, method, arguments, keywords);
+                } else if (func instanceof PBuiltinFunction) {
+                    return methodCallBuiltinDirect(frame, method, arguments, keywords);
+                }
+            } else if (callableObject instanceof PBuiltinMethod) {
+                PBuiltinMethod method = (PBuiltinMethod) callableObject;
+                Object func = method.getFunction();
+                if (func instanceof PFunction) {
+                    return builtinMethodCallDirect(frame, method, arguments, keywords);
+                } else if (func instanceof PBuiltinFunction) {
+                    return builtinMethodCallBuiltinDirect(frame, method, arguments, keywords);
+                }
+            }
+            return doObjectAndType(frame, callableObject, arguments, keywords, raise, callAttrGetterNode, callCallNode);
+        }
+
+        @Override
+        public Node copy() {
+            return CachedCallNodeGen.create();
         }
     }
 
@@ -211,6 +249,8 @@ public abstract class CallNode extends PNodeWithContext {
                 if (func instanceof PFunction) {
                     arguments = createArgs.execute(method, args, keywords);
                     ct = ((PFunction) func).getCallTarget();
+                    PArguments.setClosure(arguments, ((PFunction) func).getClosure());
+                    PArguments.setGlobals(arguments, ((PFunction) func).getGlobals());
                 } else {
                     arguments = createArgs.execute(method, args, keywords);
                     ct = ((PBuiltinFunction) func).getCallTarget();

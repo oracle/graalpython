@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -125,9 +126,9 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BindNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object bind(PSocket socket, PTuple address) {
-            Object[] hostAndPort = address.getArray();
+        Object bind(PSocket socket, PTuple address,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            Object[] hostAndPort = getObjectArrayNode.execute(address);
 
             int port = (int) hostAndPort[1];
 
@@ -179,18 +180,23 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConnectNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object connect(PSocket socket, PTuple address) {
-            Object[] hostAndPort = address.getArray();
+        Object connect(PSocket socket, PTuple address,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            Object[] hostAndPort = getObjectArrayNode.execute(address);
             try {
-                InetSocketAddress socketAddress = new InetSocketAddress((String) hostAndPort[0], (Integer) hostAndPort[1]);
-                SocketChannel channel = SocketChannel.open();
-                channel.connect(socketAddress);
-                socket.setSocket(channel);
+                doConnect(socket, hostAndPort);
                 return PNone.NONE;
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
+        }
+
+        @TruffleBoundary
+        private static void doConnect(PSocket socket, Object[] hostAndPort) throws IOException {
+            InetSocketAddress socketAddress = new InetSocketAddress((String) hostAndPort[0], (Integer) hostAndPort[1]);
+            SocketChannel channel = SocketChannel.open();
+            channel.connect(socketAddress);
+            socket.setSocket(channel);
         }
     }
 
@@ -472,7 +478,7 @@ public class SocketBuiltins extends PythonBuiltins {
             }
 
             try {
-                byte[] storageArray = toBytes.execute(frame, bytes.getSequenceStorage());
+                byte[] storageArray = toBytes.execute(bytes.getSequenceStorage());
                 ByteBuffer buffer = ByteBuffer.wrap(storageArray);
                 doWrite(socket, buffer);
                 return PNone.NONE;
@@ -496,7 +502,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
             try {
-                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(frame, bytes.getSequenceStorage()));
+                ByteBuffer buffer = ByteBuffer.wrap(toBytes.execute(bytes.getSequenceStorage()));
                 doWrite(socket, buffer);
                 return PNone.NONE;
             } catch (IOException e) {

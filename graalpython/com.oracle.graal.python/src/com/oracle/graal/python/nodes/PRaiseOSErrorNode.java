@@ -53,25 +53,28 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
+@GenerateUncached
 @ImportStatic(PGuards.class)
 public abstract class PRaiseOSErrorNode extends Node {
 
-    public abstract PException execute(VirtualFrame frame, Object[] arguments);
+    public abstract PException execute(Frame frame, Object[] arguments);
 
-    public final PException raiseOSError(VirtualFrame frame, int errno) {
+    public final PException raiseOSError(Frame frame, int errno) {
         return execute(frame, new Object[]{errno});
     }
 
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror) {
+    public final PException raiseOSError(Frame frame, OSErrorEnum oserror) {
         return execute(frame, new Object[]{oserror.getNumber(), oserror.getMessage()});
     }
 
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
+    public final PException raiseOSError(Frame frame, OSErrorEnum oserror, Exception e) {
         return raiseOSError(frame, oserror, getMessage(e));
     }
 
@@ -80,11 +83,11 @@ public abstract class PRaiseOSErrorNode extends Node {
         return e.getMessage();
     }
 
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
+    public final PException raiseOSError(Frame frame, OSErrorEnum oserror, String filename) {
         return execute(frame, new Object[]{oserror.getNumber(), oserror.getMessage(), filename});
     }
 
-    public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename, String filename2) {
+    public final PException raiseOSError(Frame frame, OSErrorEnum oserror, String filename, String filename2) {
         return execute(frame, new Object[]{oserror.getNumber(), oserror.getMessage(), filename, PNone.NONE, filename2});
     }
 

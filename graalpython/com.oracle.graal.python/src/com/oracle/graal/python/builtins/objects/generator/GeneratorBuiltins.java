@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -179,8 +180,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
-                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object[] array = val.getArray();
+                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            Object[] array = getObjectArrayNode.execute(val);
             Object[] args = new Object[array.length + 1];
             System.arraycopy(array, 0, args, 1, array.length);
             args[0] = typ;

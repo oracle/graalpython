@@ -302,12 +302,12 @@ public class TestParserTranslator {
     @Test
     public void parseLiteralTuple() {
         PTuple tuple = literalAs("(1, 2)", TupleLiteralNode.class, PTuple.class);
-        assertArrayEquals(new Object[]{1, 2}, tuple.getArray());
+        assertArrayEquals(new Object[]{1, 2}, tuple.getSequenceStorage().getInternalArray());
         literalAs("(1)", IntegerLiteralNode.class, Integer.class);
         tuple = literalAs("(1,)", TupleLiteralNode.class, PTuple.class);
-        assertArrayEquals(new Object[]{1}, tuple.getArray());
+        assertArrayEquals(new Object[]{1}, tuple.getSequenceStorage().getInternalArray());
         tuple = literalAs("()", TupleLiteralNode.class, PTuple.class);
-        assertArrayEquals(new Object[0], tuple.getArray());
+        assertArrayEquals(new Object[0], tuple.getSequenceStorage().getInternalArray());
     }
 
     @Test
