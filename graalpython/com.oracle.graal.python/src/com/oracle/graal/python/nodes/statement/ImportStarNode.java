@@ -116,6 +116,7 @@ public class ImportStarNode extends AbstractImportNode {
                     writeAttribute(frame, globals, attrName, attr);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
+                CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException(e);
             }
         } else {
