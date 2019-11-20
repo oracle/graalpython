@@ -45,11 +45,15 @@ public final class PString extends PImmutableSequence {
     }
 
     public String getValue() {
-        if (value instanceof PCharSequence) {
-            PCharSequence s = (PCharSequence) value;
+        return PString.getValue(value);
+    }
+
+    public static String getValue(CharSequence charSequence) {
+        if (charSequence instanceof PCharSequence) {
+            PCharSequence s = (PCharSequence) charSequence;
             return s.materialize();
         } else {
-            return (String) value;
+            return (String) charSequence;
         }
     }
 
