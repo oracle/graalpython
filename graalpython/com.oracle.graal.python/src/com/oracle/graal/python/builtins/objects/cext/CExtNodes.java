@@ -68,9 +68,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerN
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -97,8 +100,6 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -131,6 +132,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -1515,7 +1517,7 @@ public abstract class CExtNodes {
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
-        @Child private MaterializeFrameNode materializeNode;
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
@@ -1534,32 +1536,18 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{argument});
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
-                // getContext() acts as a branch profile
-                PythonContext context = getContext();
-                context.setCurrentException(e);
-                if (ensureFrameProfile().profile(frame == null)) {
-                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-                } else {
-                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
-                }
+                // transformExceptionToNativeNode acts as a branch profile
+                ensureTransformExceptionToNativeNode().execute(frame, e);
                 return errorResult;
             }
         }
 
-        private MaterializeFrameNode ensureMaterializeNode() {
-            if (materializeNode == null) {
+        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
+            if (transformExceptionToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create());
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
-            return materializeNode;
-        }
-
-        private ConditionProfile ensureFrameProfile() {
-            if (frameProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                frameProfile = ConditionProfile.createBinaryProfile();
-            }
-            return frameProfile;
+            return transformExceptionToNativeNode;
         }
     }
 
@@ -1568,7 +1556,7 @@ public abstract class CExtNodes {
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
-        @Child private MaterializeFrameNode materializeNode;
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
@@ -1587,32 +1575,18 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2});
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
-                // getContext() acts as a branch profile
-                PythonContext context = getContext();
-                context.setCurrentException(e);
-                if (ensureFrameProfile().profile(frame == null)) {
-                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-                } else {
-                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
-                }
+                // transformExceptionToNativeNode acts as a branch profile
+                ensureTransformExceptionToNativeNode().execute(frame, e);
                 return errorResult;
             }
         }
 
-        private MaterializeFrameNode ensureMaterializeNode() {
-            if (materializeNode == null) {
+        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
+            if (transformExceptionToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create());
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
-            return materializeNode;
-        }
-
-        private ConditionProfile ensureFrameProfile() {
-            if (frameProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                frameProfile = ConditionProfile.createBinaryProfile();
-            }
-            return frameProfile;
+            return transformExceptionToNativeNode;
         }
     }
 
@@ -1621,7 +1595,7 @@ public abstract class CExtNodes {
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private InvokeNode invokeNode;
-        @Child private MaterializeFrameNode materializeNode;
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
@@ -1640,32 +1614,18 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2, arg3});
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
-                // getContext() acts as a branch profile
-                PythonContext context = getContext();
-                context.setCurrentException(e);
-                if (ensureFrameProfile().profile(frame == null)) {
-                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-                } else {
-                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
-                }
+                // transformExceptionToNativeNode acts as a branch profile
+                ensureTransformExceptionToNativeNode().execute(frame, e);
                 return errorResult;
             }
         }
 
-        private MaterializeFrameNode ensureMaterializeNode() {
-            if (materializeNode == null) {
+        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
+            if (transformExceptionToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create());
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
-            return materializeNode;
-        }
-
-        private ConditionProfile ensureFrameProfile() {
-            if (frameProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                frameProfile = ConditionProfile.createBinaryProfile();
-            }
-            return frameProfile;
+            return transformExceptionToNativeNode;
         }
     }
 
@@ -1675,7 +1635,7 @@ public abstract class CExtNodes {
         @Child private InvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private MaterializeFrameNode materializeNode;
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
         private final PFunction func;
@@ -1696,32 +1656,18 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(func, args);
                 return invokeNode.execute(frame, arguments);
             } catch (PException e) {
-                // getContext() acts as a branch profile
-                PythonContext context = getContext();
-                context.setCurrentException(e);
-                if (ensureFrameProfile().profile(frame == null)) {
-                    e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-                } else {
-                    e.getExceptionObject().reifyException(ensureMaterializeNode().execute(frame, this, true, false), factory());
-                }
+                // transformExceptionToNativeNode acts as a branch profile
+                ensureTransformExceptionToNativeNode().execute(frame, e);
                 return errorResult;
             }
         }
 
-        private MaterializeFrameNode ensureMaterializeNode() {
-            if (materializeNode == null) {
+        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
+            if (transformExceptionToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeNode = insert(MaterializeFrameNodeGen.create());
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
-            return materializeNode;
-        }
-
-        private ConditionProfile ensureFrameProfile() {
-            if (frameProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                frameProfile = ConditionProfile.createBinaryProfile();
-            }
-            return frameProfile;
+            return transformExceptionToNativeNode;
         }
 
         @Override
@@ -1977,6 +1923,82 @@ public abstract class CExtNodes {
             }
 
             return PNone.NO_VALUE;
+        }
+    }
+
+    /**
+     * Use this node to transform an exception to native if a Python exception was thrown during an
+     * upcall and before returning to native code. This node will reify the exception appropriately
+     * and register the exception as the current exception.
+     */
+    @GenerateUncached
+    public abstract static class TransformExceptionToNativeNode extends Node {
+
+        public abstract void execute(Frame frame, PException e);
+
+        @Specialization(guards = "frame != null")
+        void doWithFrame(Frame frame, PException e,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            transformToNative(context, PArguments.getCurrentFrameInfo(frame), e);
+        }
+
+        @Specialization(guards = "frame == null")
+        void doWithoutFrame(@SuppressWarnings("unused") Frame frame, PException e,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            transformToNative(context, context.peekTopFrameInfo(), e);
+        }
+
+        @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
+        void doGeneric(Frame frame, PException e,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            PFrame.Reference ref = frame == null ? context.peekTopFrameInfo() : PArguments.getCurrentFrameInfo(frame);
+            transformToNative(context, ref, e);
+        }
+
+        public static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p) {
+            p.getExceptionObject().reifyException(frameInfo);
+            context.setCurrentException(p);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class PRaiseNativeNode extends Node {
+
+        public final int raiseInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+            return executeInt(frame, errorValue, errType, format, arguments);
+        }
+
+        public final Object raise(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+            return execute(frame, errorValue, errType, format, arguments);
+        }
+
+        public abstract Object execute(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
+
+        public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
+
+        @Specialization
+        int doInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
+            return errorValue;
+        }
+
+        @Specialization
+        Object doObject(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            raiseNative(frame, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
+            return errorValue;
+        }
+
+        public static void raiseNative(Frame frame, PythonBuiltinClassType errType, String format, Object[] arguments, PRaiseNode raiseNode,
+                        TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                throw raiseNode.execute(errType, PNone.NO_VALUE, format, arguments);
+            } catch (PException p) {
+                transformExceptionToNativeNode.execute(frame, p);
+            }
         }
     }
 }

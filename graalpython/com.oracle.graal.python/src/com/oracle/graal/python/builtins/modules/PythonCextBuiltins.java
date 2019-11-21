@@ -89,9 +89,13 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFacto
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
@@ -429,13 +433,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyErrRestoreNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object run(VirtualFrame frame, PNone typ, PNone val, PNone tb) {
+        Object run(PNone typ, PNone val, PNone tb) {
             getContext().setCurrentException(null);
             return PNone.NONE;
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
+        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
             val.setTraceback(tb);
             assert tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
             if (val.getException() != null) {
@@ -486,7 +490,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
         Object run(Object errorMarker,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
                 PBaseException exceptionObject = currentException.getExceptionObject();
@@ -878,30 +882,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     abstract static class NativeBuiltin extends PythonBuiltinNode {
 
+        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
+        @Child private PRaiseNativeNode raiseNativeNode;
+
         protected void transformToNative(VirtualFrame frame, PException p) {
-            NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), p);
-        }
-
-        protected static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p) {
-            p.getExceptionObject().reifyException(frameInfo);
-            context.setCurrentException(p);
-        }
-
-        protected <T> T raiseNative(VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
-            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
-        }
-
-        protected static <T> T raiseNative(PythonBuiltinBaseNode n, VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
-            return NativeBuiltin.raiseNative(n, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
-        }
-
-        protected static <T> T raiseNative(PythonBuiltinBaseNode n, PFrame.Reference frameInfo, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
-            try {
-                throw n.raise(errType, fmt, args);
-            } catch (PException p) {
-                NativeBuiltin.transformToNative(n.getContext(), frameInfo, p);
-                return defaultValue;
+            if (transformExceptionToNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
+            transformExceptionToNativeNode.execute(frame, p);
+        }
+
+        protected Object raiseNative(VirtualFrame frame, Object defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
+            return ensureRaiseNativeNode().execute(frame, defaultValue, errType, fmt, args);
         }
 
         protected Object raiseBadArgument(VirtualFrame frame, Object errorMarker) {
@@ -916,6 +909,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary(allowInlining = true)
         protected static ByteBuffer wrap(byte[] data, int offset, int length) {
             return ByteBuffer.wrap(data, offset, length);
+        }
+
+        private PRaiseNativeNode ensureRaiseNativeNode() {
+            if (raiseNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNativeNode = insert(PRaiseNativeNodeGen.create());
+            }
+            return raiseNativeNode;
         }
     }
 
@@ -977,6 +978,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class TrufflePInt_AsPrimitive extends PythonTernaryBuiltinNode {
+
+        @Child private PRaiseNativeNode raiseNativeNode;
 
         public abstract Object executeWith(VirtualFrame frame, Object o, int signed, long targetTypeSize);
 
@@ -1065,19 +1068,23 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
         int doGeneric(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean signed, @SuppressWarnings("unused") int targetTypeSize) {
-            return raiseNative(frame, -1, PythonErrorType.TypeError, "an integer is required", obj);
+            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.TypeError, "an integer is required", obj);
         }
 
         private int raiseTooLarge(VirtualFrame frame, long targetTypeSize) {
-            return raiseNative(frame, -1, PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
+            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
         }
 
         private Integer raiseUnsupportedSize(VirtualFrame frame, long targetTypeSize) {
-            return raiseNative(frame, -1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
-        private <T> T raiseNative(VirtualFrame frame, T defaultValue, PythonBuiltinClassType errType, String fmt, Object... args) {
-            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), defaultValue, errType, fmt, args);
+        private PRaiseNativeNode ensureRaiseNativeNode() {
+            if (raiseNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNativeNode = insert(PRaiseNativeNodeGen.create());
+            }
+            return raiseNativeNode;
         }
     }
 
@@ -1945,11 +1952,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return toSulongNode.execute(upcallNode.execute(frame, args));
             } catch (PException e) {
-                getContext().setCurrentException(e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return toSulongNode.execute(getNativeNullNode.execute(cextModule));
             }
         }
@@ -1961,14 +1969,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         long upcall(VirtualFrame frame, Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached BranchProfile errorProfile,
                         @Cached CExtNodes.AsLong asLongNode,
-                        @Cached CExtNodes.ObjectUpcallNode upcallNode) {
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return asLongNode.execute(upcallNode.execute(frame, args));
             } catch (PException e) {
-                errorProfile.enter();
-                getContext().setCurrentException(e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return -1;
             }
         }
@@ -1980,14 +1987,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         double upcall(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached BranchProfile errorProfile,
                         @Cached CExtNodes.AsDouble asDoubleNode,
-                        @Cached CExtNodes.ObjectUpcallNode upcallNode) {
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 return asDoubleNode.execute(frame, upcallNode.execute(frame, args));
             } catch (PException e) {
-                errorProfile.enter();
-                getContext().setCurrentException(e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return -1.0;
             }
         }
@@ -1999,14 +2005,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached BranchProfile errorProfile,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return upcallNode.execute(frame, args);
             } catch (PException e) {
-                errorProfile.enter();
-                getContext().setCurrentException(e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return getNativeNullNode.execute(cextModule);
             }
         }
@@ -2491,21 +2496,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         int add(VirtualFrame frame, PBaseSet self, Object o,
-                        @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
+                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 setItemNode.execute(frame, self, o, PNone.NO_VALUE);
             } catch (PException e) {
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return -1;
             }
             return 0;
         }
 
-        @Fallback
-        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o) {
-            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), -1, SystemError, "expected a set object, not %p", self);
+        @Specialization(guards = "!isAnySet(self)")
+        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, "expected a set object, not %p", self);
         }
-
     }
 
     @Builtin(name = "_PyBytes_Resize", minNumOfPositionalArgs = 2)
@@ -2514,10 +2520,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         int resize(VirtualFrame frame, PBytes self, long newSizeL,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create()") CastToIndexNode castToIndexNode,
-                        @Cached("create()") CastToByteNode castToByteNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached CastToIndexNode castToIndexNode,
+                        @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
             int newSize = castToIndexNode.execute(newSizeL);
@@ -2530,9 +2536,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return 0;
         }
 
-        @Fallback
-        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o) {
-            return NativeBuiltin.raiseNative(this, PArguments.getCurrentFrameInfo(frame), -1, SystemError, "expected a set object, not %p", self);
+        @Specialization(guards = "!isBytes(self)")
+        int add(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object o,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, "expected a set object, not %p", self);
         }
 
     }
@@ -2796,16 +2803,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Shared("callNodeNoKeywords") @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
                 return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
@@ -2816,19 +2825,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
                         @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
-                        @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
-                        @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Shared("callNodeNoKeywords") @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
                 return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
@@ -2844,10 +2855,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached("createBinaryProfile()") ConditionProfile argsIsNullProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwargsIsNullProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Exclusive @Cached CallNode callNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode) {
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args;
@@ -2869,7 +2882,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return toSulongNode.execute(callNode.execute(frame, callable, args, keywords));
             } catch (PException e) {
                 // getContext() acts as a branch profile
-                NativeBuiltin.transformToNative(getContext(), PArguments.getCurrentFrameInfo(frame), e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
@@ -2881,6 +2894,5 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             return false;
         }
-
     }
 }

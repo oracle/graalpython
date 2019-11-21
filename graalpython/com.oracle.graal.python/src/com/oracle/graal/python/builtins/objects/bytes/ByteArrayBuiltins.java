@@ -730,7 +730,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonBuiltinNode {
+    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isEmptyStorage(byteArray)")
         public boolean doEmpty(@SuppressWarnings("unused") PByteArray byteArray) {
             return false;
