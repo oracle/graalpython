@@ -1705,15 +1705,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public int sumInt(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, 0, false);
+            return sumIntInternal(frame, arg1, 0);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public int sumInt(VirtualFrame frame, Object arg1, int start) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, start, true);
+            return sumIntInternal(frame, arg1, start);
         }
 
-        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, boolean firstValProvided) throws UnexpectedResultException {
+        private int sumIntInternal(VirtualFrame frame, Object arg1, int start) throws UnexpectedResultException {
             Object iterator = iter.executeWith(frame, arg1);
             int value = start;
             while (true) {
@@ -1724,7 +1724,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(errorProfile1);
                     return value;
                 } catch (UnexpectedResultException e) {
-                    Object newValue = firstValProvided || value != start ? add.executeObject(frame, value, e.getResult()) : e.getResult();
+                    Object newValue = add.executeObject(frame, value, e.getResult());
                     throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, errorProfile2));
                 }
                 try {
@@ -1737,15 +1737,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public double sumDouble(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, 0, false);
+            return sumDoubleInternal(frame, arg1, 0);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public double sumDouble(VirtualFrame frame, Object arg1, double start) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, start, true);
+            return sumDoubleInternal(frame, arg1, start);
         }
 
-        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, boolean firstValProvided) throws UnexpectedResultException {
+        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start) throws UnexpectedResultException {
             Object iterator = iter.executeWith(frame, arg1);
             double value = start;
             while (true) {
@@ -1756,7 +1756,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(errorProfile1);
                     return value;
                 } catch (UnexpectedResultException e) {
-                    Object newValue = firstValProvided || value != start ? add.executeObject(frame, value, e.getResult()) : e.getResult();
+                    Object newValue = add.executeObject(frame, value, e.getResult());
                     throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, errorProfile2));
                 }
                 try {
