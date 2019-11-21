@@ -95,7 +95,6 @@ import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -959,33 +958,11 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonBuiltinNode {
-        @Specialization(guards = "isEmptyStorage(list)")
-        public boolean doPListEmpty(@SuppressWarnings("unused") PList list) {
-            return false;
-        }
-
-        @Specialization(guards = "isIntStorage(primary)")
-        public boolean doPListInt(PList primary) {
-            IntSequenceStorage store = (IntSequenceStorage) primary.getSequenceStorage();
-            return store.length() != 0;
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        public boolean doPListDouble(PList primary) {
-            DoubleSequenceStorage store = (DoubleSequenceStorage) primary.getSequenceStorage();
-            return store.length() != 0;
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        public boolean doPListObject(PList primary) {
-            ObjectSequenceStorage store = (ObjectSequenceStorage) primary.getSequenceStorage();
-            return store.length() != 0;
-        }
+    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         boolean doPList(PList operand,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(operand.getSequenceStorage()) != 0;
         }
 
