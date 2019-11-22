@@ -685,27 +685,26 @@ public abstract class ListNodes {
 
         @Specialization
         public void appendObjectGeneric(PList list, Object value,
-                        @Cached SequenceStorageNodes.AppendNode appendInInterpreterNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached(value = "flagContainer(false)", uncached = "flagContainer(true)", dimensions = 1) boolean[] triedToCompile,
                         @Cached BranchProfile updateStoreProfile) {
-            if (CompilerDirectives.inInterpreter() && !triedToCompile[0] && list.getOrigin() != null) {
-                SequenceStorage newStore = appendInInterpreterNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
-                list.setSequenceStorage(newStore);
+            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+            if (CompilerDirectives.inInterpreter()) {
                 if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
                     list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
                 }
+                list.setSequenceStorage(newStore);
             } else {
-                if (!triedToCompile[0]) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    triedToCompile[0] = true;
-                }
-                SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 if (list.getSequenceStorage() != newStore) {
                     updateStoreProfile.enter();
                     list.setSequenceStorage(newStore);
                 }
             }
+        }
+
+        @Override
+        public Node copy() {
+            return AppendNode.create();
         }
 
         public static AppendNode create() {

@@ -2924,6 +2924,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "s.getClass() == cachedClass")
         SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Cached BranchProfile increaseCapacity,
+                        @Cached BranchProfile generalization,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Cached("create()") SetItemScalarNode setItemNode,
                         @Exclusive @Cached DoGeneralizationNode doGenNode) {
@@ -2932,7 +2933,9 @@ public abstract class SequenceStorageNodes {
             int newLen = len + 1;
             int capacity = profiled.capacity();
             if (newLen > capacity) {
-                increaseCapacity.enter();
+                if (CompilerDirectives.inCompiledCode()) {
+                    increaseCapacity.enter();
+                }
                 profiled.ensureCapacity(len + 1);
             }
             try {
@@ -2940,6 +2943,9 @@ public abstract class SequenceStorageNodes {
                 profiled.setNewLength(len + 1);
                 return profiled;
             } catch (SequenceStoreException e) {
+                if (CompilerDirectives.inCompiledCode()) {
+                    generalization.enter();
+                }
                 SequenceStorage generalized = doGenNode.execute(genNodeSupplier, profiled, e.getIndicationValue());
                 generalized.ensureCapacity(len + 1);
                 try {
