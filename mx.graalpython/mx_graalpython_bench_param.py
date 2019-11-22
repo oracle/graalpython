@@ -137,6 +137,7 @@ MESO_BENCHMARKS = {
     'sieve': ITER_15 + ['100000'],
     'image-magix': ITER_10 + ['10000'],
     'parrot-b2': ITER_10 + ['200'],
+    'deltablue': ITER_10 + ['10000'],
     # 'threadring': ITER_10 + ['100'],  # TODO: provide itertools cycle implementation
     # 'regexdna': ITER_10 + [],  #  TODO: provide proper input for this benchmark
     # 'knucleotide': ITER_10 + [],  #  TODO: provide proper input for this benchmark
