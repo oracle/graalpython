@@ -387,3 +387,10 @@ if sys.implementation.name == "graalpython":
                 del ArrayList.bar
             except AttributeError as e:
                 assert "@" not in str(e) # the @ from Java's default toString
+
+    def test_java_import_star():
+        if sys.graal_python_jython_emulation_enabled:
+            d = {}
+            exec("from java.util.logging.Logger import *", globals=d, locals=d)
+            assert "getGlobal" in d
+            assert d["getGlobal"]().getName() == d["GLOBAL_LOGGER_NAME"]
