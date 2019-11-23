@@ -471,8 +471,19 @@ int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, str
 }
 
 
-typedef struct { void *ptr; } VoidPtr;
-typedef struct { VoidPtr *content; } VoidPtrPtr;
+typedef union {
+	void *ptr;
+	double d;
+	int64_t i64;
+	int32_t i32;
+	int16_t i16;
+	int8_t i8;
+	uint64_t u64;
+	uint32_t u32;
+	uint16_t u16;
+	uint8_t u8;
+} OutType;
+typedef struct { OutType *content; } VoidPtrPtr;
 POLYGLOT_DECLARE_TYPE(VoidPtrPtr);
 
 typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, void** varargs);
@@ -499,7 +510,7 @@ int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
     for (int i = 2; i < __poly_argc; i++) {
         __poly_args[i - 2] = polyglot_get_arg(i);
     }
-    return ((parseargs_func)_jls__PyTruffle_Arg_ParseTupleAndKeywords)(native_to_java_slim(args), NULL, polyglot_from_string(format, SRC_CS), NULL, polyglot_from_VoidPtr_array(__poly_args, __poly_argc - 2));
+    return ((parseargs_func)_jls__PyTruffle_Arg_ParseTupleAndKeywords)(native_to_java_slim(args), NULL, polyglot_from_string(format, SRC_CS), NULL, polyglot_from_VoidPtrPtr_array(__poly_args, __poly_argc - 2));
 }
 
 int PyArg_VaParse(PyObject *args, const char *format, va_list va) {

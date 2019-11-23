@@ -2068,12 +2068,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(UpcallCextNode.class)
     abstract static class UpcallCextLNode extends UpcallLandingNode {
-        @Child private CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
 
         @Specialization(guards = "isStringCallee(args)")
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
-                        @Cached CExtNodes.CextUpcallNode upcallNode) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
+                        @Cached CExtNodes.CextUpcallNode upcallNode,
+                        @Shared("asLong") @Cached CExtNodes.AsLong asLongNode) {
             Object result = upcallNode.execute(frame, cextModule, args);
             if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
                 return ((PythonNativeVoidPtr) result).object;
@@ -2084,8 +2084,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isStringCallee(args)")
         Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
-                        @Cached CExtNodes.DirectUpcallNode upcallNode) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
+                        @Cached CExtNodes.DirectUpcallNode upcallNode,
+                        @Shared("asLong") @Cached CExtNodes.AsLong asLongNode) {
             Object result = upcallNode.execute(frame, args);
             if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
                 return ((PythonNativeVoidPtr) result).object;
@@ -2175,10 +2176,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "to_long", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsLong extends PythonUnaryBuiltinNode {
-        @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
-
         @Specialization
-        long doIt(Object object) {
+        long doIt(Object object,
+                        @Cached CExtNodes.AsLong asLongNode) {
             return asLongNode.execute(object);
         }
     }

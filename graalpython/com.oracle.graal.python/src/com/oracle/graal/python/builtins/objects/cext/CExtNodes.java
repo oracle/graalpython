@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
@@ -1388,6 +1387,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class AsLong extends PNodeWithContext {
         public abstract long execute(boolean arg);
 
@@ -1453,13 +1453,14 @@ public abstract class CExtNodes {
             return recursive.execute(lib.getDelegate(value));
         }
 
-        @Fallback
-        long runGeneric(Object value) {
-            return CastToIndexNode.getUncached().execute(null, value);
+        @Specialization(guards = "!isNativeWrapper(value)")
+        long runGeneric(Object value,
+                        @Cached CastToIndexNode castToIndexNode) {
+            return castToIndexNode.execute(null, value);
         }
 
-        public static AsLong create() {
-            return AsLongNodeGen.create();
+        static boolean isNativeWrapper(Object object) {
+            return object instanceof PythonNativeWrapper;
         }
     }
 
@@ -2035,7 +2036,6 @@ public abstract class CExtNodes {
                         @Cached(value = "format", allowUncached = true) String cachedFormat,
                         @CachedLibrary("varargs") InteropLibrary varargsLib,
                         @Cached ToJavaNode varargsToJavaNode,
-                        @CachedLibrary(limit = "2") InteropLibrary outVarLib,
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
@@ -2044,11 +2044,11 @@ public abstract class CExtNodes {
                         @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
                         @Cached GetLazyClassNode getClassNode,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached WriteOutVarNode writeOutVarNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode,
-                                getDictStorageNode, getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+                doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode,
+                                getDictStorageNode, getDictItemNode, isSubtypeNode, getClassNode, writeOutVarNode, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 CompilerAsserts.neverPartOfCompilation();
@@ -2069,11 +2069,11 @@ public abstract class CExtNodes {
                         @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
                         @Cached GetLazyClassNode getClassNode,
-                        @Cached ToSulongNode toSulongNode,
+                        @Cached WriteOutVarNode writeOutVarNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingLoop(argv, kwds, format, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
-                                getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+                doParsingLoop(argv, kwds, format, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
+                                getDictItemNode, isSubtypeNode, getClassNode, writeOutVarNode, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 CompilerAsserts.neverPartOfCompilation();
@@ -2085,7 +2085,6 @@ public abstract class CExtNodes {
         private static void doParsingExploded(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
-                        InteropLibrary outVarLib,
                         ExecuteConverterNode executeConverterNode,
                         SequenceNodes.LenNode lenNode,
                         GetSequenceStorageNode getSequenceStorageNode,
@@ -2094,22 +2093,21 @@ public abstract class CExtNodes {
                         HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         IsSubtypeWithoutFrameNode isSubtypeNode,
                         GetLazyClassNode getClassNode,
-                        ToSulongNode toSulongNode,
+                        WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
             CompilerAsserts.partialEvaluationConstant(format.length());
             ParserState state = new ParserState();
             state.v = new PositionalArgStack(argv, null);
             for (int i = 0; i < format.length(); i++) {
-                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
-                                getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
+                                getDictItemNode, isSubtypeNode, getClassNode, writeOutVarNode, raiseNode);
             }
         }
 
         private static void doParsingLoop(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
-                        InteropLibrary outVarLib,
                         ExecuteConverterNode executeConverterNode,
                         SequenceNodes.LenNode lenNode,
                         GetSequenceStorageNode getSequenceStorageNode,
@@ -2118,21 +2116,20 @@ public abstract class CExtNodes {
                         HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         IsSubtypeWithoutFrameNode isSubtypeNode,
                         GetLazyClassNode getClassNode,
-                        ToSulongNode toSulongNode,
+                        WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
             ParserState state = new ParserState();
             state.v = new PositionalArgStack(argv, null);
             for (int i = 0; i < format.length(); i++) {
-                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
-                                getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
+                                getDictItemNode, isSubtypeNode, getClassNode, writeOutVarNode, raiseNode);
             }
         }
 
         private static void convertArg(ParserState state, Object kwds, String format, int format_idx, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
-                        InteropLibrary outVarLib,
                         ExecuteConverterNode executeConverterNode,
                         SequenceNodes.LenNode lenNode,
                         GetSequenceStorageNode getSequenceStorageNode,
@@ -2141,7 +2138,7 @@ public abstract class CExtNodes {
                         HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         IsSubtypeWithoutFrameNode isSubtypeNode,
                         GetLazyClassNode getClassNode,
-                        ToSulongNode toSulongNode,
+                        WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             Object arg;
             char c = format.charAt(format_idx);
@@ -2170,6 +2167,11 @@ public abstract class CExtNodes {
                 case 'H':
                     break;
                 case 'i':
+                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                        writeOutVarNode.writeInt(varargs, state.out_index, arg);
+                    }
+                    state.out_index++;
                     break;
                 case 'I':
                     break;
@@ -2205,7 +2207,7 @@ public abstract class CExtNodes {
                                 raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "expected object of type %s, got %p", typeObject, arg);
                                 throw ParseArgumentsException.raise();
                             }
-                            PyTruffle_WriteOut(varargsLib, outVarLib, varargs, state.out_index, arg, toSulongNode);
+                            writeOutVarNode.writeObject(varargs, state.out_index, arg);
                         }
                         state.out_index++;
                     } else if (isLookahead(format, format_idx, '&')) {
@@ -2219,7 +2221,7 @@ public abstract class CExtNodes {
                         state.out_index++;
                     } else {
                         if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
-                            PyTruffle_WriteOut(varargsLib, outVarLib, varargs, state.out_index, arg, toSulongNode);
+                            writeOutVarNode.writeObject(varargs, state.out_index, arg);
                         }
                         state.out_index++;
                     }
@@ -2299,18 +2301,6 @@ public abstract class CExtNodes {
 
         private static boolean PyTruffle_SkipOptionalArg(Object arg, boolean optional) {
             return arg == null && optional;
-        }
-
-        private static void PyTruffle_WriteOut(InteropLibrary varargsLib, InteropLibrary outVarLib, Object varargs, int out_index, Object value, ToSulongNode toSulongNode)
-                        throws InteropException {
-            try {
-                Object outVarPtr = varargsLib.readArrayElement(varargs, out_index);
-                Object outVar = outVarLib.readMember(outVarPtr, "content");
-                outVarLib.writeMember(outVar, "ptr", toSulongNode.execute(value));
-            } catch (InvalidArrayIndexException | UnsupportedMessageException | UnsupportedTypeException | UnknownIdentifierException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e;
-            }
         }
 
         private static Object PyTruffleVaArg(Object varargs, int out_index, InteropLibrary varargsLib, ToJavaNode toJavaNode) throws InvalidArrayIndexException, UnsupportedMessageException {
@@ -2404,6 +2394,76 @@ public abstract class CExtNodes {
                 raiseNode.raiseInt(null, 0, PythonBuiltinClassType.TypeError, "converter function failed to set an error on failure");
             }
             throw ParseArgumentsException.raise();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class WriteOutVarNode extends Node {
+        static final int TYPE_I8 = 0;
+        static final int TYPE_I16 = 1;
+        static final int TYPE_I32 = 2;
+        static final int TYPE_I64 = 3;
+        static final int TYPE_DOUBLE = 4;
+        static final int TYPE_VOIDPTR = 5;
+
+        public final void writeByte(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_I8, value);
+        }
+
+        public final void writeShort(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_I16, value);
+        }
+
+        public final void writeInt(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_I32, value);
+        }
+
+        public final void writeLong(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_I64, value);
+        }
+
+        public final void writeDouble(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_DOUBLE, value);
+        }
+
+        public final void writeObject(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_VOIDPTR, value);
+        }
+
+        public abstract void execute(Object varargs, int outIndex, int accessType, Object value) throws InteropException;
+
+        @Specialization(guards = "accessType == TYPE_I32", limit = "1")
+        void doInt(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, Object value,
+                        @CachedLibrary("varargs") InteropLibrary varargsLib,
+                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
+                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib,
+                        @Cached AsLong asLong) throws InteropException {
+            doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, "i8", asLong.execute(value));
+        }
+
+        @Specialization(guards = "accessType == TYPE_VOIDPTR", limit = "1")
+        void doObject(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, Object value,
+                        @CachedLibrary("varargs") InteropLibrary varargsLib,
+                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
+                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib,
+                        @Cached ToSulongNode toSulongNode) throws InteropException {
+            doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, "ptr", toSulongNode.execute(value));
+        }
+
+        private static void doAccess(InteropLibrary varargsLib, InteropLibrary outVarPtrLib, InteropLibrary outVarLib, Object varargs, int outIndex, String accessor, Object value)
+                        throws InteropException {
+            try {
+                Object outVarPtr = varargsLib.readArrayElement(varargs, outIndex);
+                Object outVar = outVarPtrLib.readMember(outVarPtr, "content");
+                outVarLib.writeMember(outVar, accessor, value);
+            } catch (InvalidArrayIndexException | UnsupportedMessageException | UnsupportedTypeException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e;
+            }
+        }
+
+        static boolean isI8(String accessor) {
+            return "i8".equals(accessor);
         }
     }
 
