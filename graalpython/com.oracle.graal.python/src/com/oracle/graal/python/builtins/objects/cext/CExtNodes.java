@@ -70,7 +70,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCom
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeFactory.ToJavaCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -80,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -100,6 +106,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -118,9 +125,11 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -130,17 +139,21 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -1972,6 +1985,14 @@ public abstract class CExtNodes {
             return execute(frame, errorValue, errType, format, arguments);
         }
 
+        public final int raiseIntWithoutFrame(int errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+            return executeInt(null, errorValue, errType, format, arguments);
+        }
+
+        public final Object raiseWithoutFrame(Object errorValue, PythonBuiltinClassType errType, String format, Object... arguments) {
+            return execute(null, errorValue, errType, format, arguments);
+        }
+
         public abstract Object execute(Frame frame, Object errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
 
         public abstract int executeInt(Frame frame, int errorValue, PythonBuiltinClassType errType, String format, Object[] arguments);
@@ -1999,6 +2020,399 @@ public abstract class CExtNodes {
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, p);
             }
+        }
+    }
+
+    @GenerateUncached
+    @ReportPolymorphism
+    @ImportStatic(PGuards.class)
+    public abstract static class ParseTupleAndKeywordsNode extends Node {
+
+        public abstract int execute(Object argv, Object kwds, Object format, Object kwdnames, Object varargs);
+
+        @Specialization(guards = {"isDictOrNull(kwds)", "cachedFormat.equals(format)", "cachedFormat.length() <= 8"}, limit = "5")
+        int doSpecial(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
+                        @Cached(value = "format", allowUncached = true) String cachedFormat,
+                        @CachedLibrary("varargs") InteropLibrary varargsLib,
+                        @Cached ToJavaNode varargsToJavaNode,
+                        @CachedLibrary(limit = "2") InteropLibrary outVarLib,
+                        @Cached ExecuteConverterNode executeConverterNode,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
+                        @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                        @Cached GetLazyClassNode getClassNode,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PRaiseNativeNode raiseNode) {
+            try {
+                doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode,
+                                getDictStorageNode, getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+                return 1;
+            } catch (InteropException | ParseArgumentsException e) {
+                CompilerAsserts.neverPartOfCompilation();
+                return 0;
+            }
+        }
+
+        @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial", limit = "1")
+        int doGeneric(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
+                        @CachedLibrary("varargs") InteropLibrary varargsLib,
+                        @Cached ToJavaNode varargsToJavaNode,
+                        @CachedLibrary(limit = "2") InteropLibrary outVarLib,
+                        @Cached ExecuteConverterNode executeConverterNode,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
+                        @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                        @Cached GetLazyClassNode getClassNode,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached PRaiseNativeNode raiseNode) {
+            try {
+                doParsingLoop(argv, kwds, format, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
+                                getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+                return 1;
+            } catch (InteropException | ParseArgumentsException e) {
+                CompilerAsserts.neverPartOfCompilation();
+                return 0;
+            }
+        }
+
+        @ExplodeLoop
+        private static void doParsingExploded(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
+                        InteropLibrary varargsLib,
+                        ToJavaNode varargsToJavaNode,
+                        InteropLibrary outVarLib,
+                        ExecuteConverterNode executeConverterNode,
+                        SequenceNodes.LenNode lenNode,
+                        GetSequenceStorageNode getSequenceStorageNode,
+                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        HashingStorageNodes.GetItemInteropNode getDictItemNode,
+                        IsSubtypeWithoutFrameNode isSubtypeNode,
+                        GetLazyClassNode getClassNode,
+                        ToSulongNode toSulongNode,
+                        PRaiseNativeNode raiseNode)
+                        throws InteropException, ParseArgumentsException {
+            CompilerAsserts.partialEvaluationConstant(format.length());
+            ParserState state = new ParserState();
+            state.v = new PositionalArgStack(argv, null);
+            for (int i = 0; i < format.length(); i++) {
+                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
+                                getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+            }
+        }
+
+        private static void doParsingLoop(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
+                        InteropLibrary varargsLib,
+                        ToJavaNode varargsToJavaNode,
+                        InteropLibrary outVarLib,
+                        ExecuteConverterNode executeConverterNode,
+                        SequenceNodes.LenNode lenNode,
+                        GetSequenceStorageNode getSequenceStorageNode,
+                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        HashingStorageNodes.GetItemInteropNode getDictItemNode,
+                        IsSubtypeWithoutFrameNode isSubtypeNode,
+                        GetLazyClassNode getClassNode,
+                        ToSulongNode toSulongNode,
+                        PRaiseNativeNode raiseNode)
+                        throws InteropException, ParseArgumentsException {
+            ParserState state = new ParserState();
+            state.v = new PositionalArgStack(argv, null);
+            for (int i = 0; i < format.length(); i++) {
+                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, outVarLib, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
+                                getDictItemNode, isSubtypeNode, getClassNode, toSulongNode, raiseNode);
+            }
+        }
+
+        private static void convertArg(ParserState state, Object kwds, String format, int format_idx, Object[] kwdnames, Object varargs,
+                        InteropLibrary varargsLib,
+                        ToJavaNode varargsToJavaNode,
+                        InteropLibrary outVarLib,
+                        ExecuteConverterNode executeConverterNode,
+                        SequenceNodes.LenNode lenNode,
+                        GetSequenceStorageNode getSequenceStorageNode,
+                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        HashingStorageNodes.GetItemInteropNode getDictItemNode,
+                        IsSubtypeWithoutFrameNode isSubtypeNode,
+                        GetLazyClassNode getClassNode,
+                        ToSulongNode toSulongNode,
+                        PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+            Object arg;
+            char c = format.charAt(format_idx);
+            switch (c) {
+                case 's':
+                case 'z':
+                case 'y':
+                    break;
+                case 'S':
+                    break;
+                case 'Y':
+                    break;
+                case 'u':
+                case 'Z':
+                    break;
+                case 'U':
+                    break;
+                case 'e':
+                    break;
+                case 'b':
+                    break;
+                case 'B':
+                    break;
+                case 'h':
+                    break;
+                case 'H':
+                    break;
+                case 'i':
+                    break;
+                case 'I':
+                    break;
+                case 'l':
+                    break;
+                case 'k':
+                    break;
+                case 'L':
+                    break;
+                case 'K':
+                    break;
+                case 'n':
+                    break;
+                case 'c':
+                    break;
+                case 'C':
+                    break;
+                case 'f':
+                    break;
+                case 'd':
+                    break;
+                case 'D':
+                    break;
+                case 'O':
+                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    if (isLookahead(format, format_idx, '!')) {
+// format_idx++;
+                        if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                            Object typeObject = PyTruffleVaArg(varargs, state.out_index, varargsLib, varargsToJavaNode);
+                            state.out_index++;
+                            assert PGuards.isClass(typeObject);
+                            if (!isSubtypeNode.executeWithGlobalState(getClassNode.execute(arg), typeObject)) {
+                                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "expected object of type %s, got %p", typeObject, arg);
+                                throw ParseArgumentsException.raise();
+                            }
+                            PyTruffle_WriteOut(varargsLib, outVarLib, varargs, state.out_index, arg, toSulongNode);
+                        }
+                        state.out_index++;
+                    } else if (isLookahead(format, format_idx, '&')) {
+// format_idx++;
+                        Object converter = PyTruffleVaArg(varargs, state.out_index, varargsLib, varargsToJavaNode);
+                        state.out_index++;
+                        if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                            Object output = PyTruffleVaArg(varargs, state.out_index, varargsLib, varargsToJavaNode);
+                            executeConverterNode.execute(state.out_index, converter, arg, output);
+                        }
+                        state.out_index++;
+                    } else {
+                        if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                            PyTruffle_WriteOut(varargsLib, outVarLib, varargs, state.out_index, arg, toSulongNode);
+                        }
+                        state.out_index++;
+                    }
+                    break;
+                case 'w': /* "w*": memory buffer, read-write access */
+                    break;
+                case 'p':
+                    break;
+                case '(':
+                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    if (PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                        state.out_index++;
+                    } else {
+                        // n.b.: there is a small gap in this check: In theory, there could be
+                        // native subclass of tuple. But since we do not support this anyway, the
+                        // instanceof test is just the most efficient way to do it.
+                        if (!(arg instanceof PTuple)) {
+                            raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "expected tuple, got %p", arg);
+                            throw ParseArgumentsException.raise();
+                        }
+                        PTuple nestedArgv = (PTuple) arg;
+                        state.v = new PositionalArgStack(nestedArgv, state.v);
+                    }
+                    break;
+                case ')':
+                    break;
+                case '|':
+                    break;
+                case '$':
+                    break;
+                case '!':
+                case '&':
+                    // always skip '!' and '&' because these will be handled in the look-ahead of
+                    // the major specifiers like 'O'
+                    break;
+                case ':':
+                    // TODO: adapt error message based on string after this
+                    return;
+                case ';':
+                    // TODO: adapt error message based on string after this
+                    return;
+                default:
+                    raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "unrecognized format char in arguments parsing: %c", c);
+                    throw ParseArgumentsException.raise();
+            }
+        }
+
+        static Object getArg(PositionalArgStack p, Object kwds, Object[] kwdnames, boolean keywords_only,
+                        SequenceNodes.LenNode lenNode,
+                        GetSequenceStorageNode getSequenceStorageNode,
+                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        HashingStorageNodes.GetItemInteropNode getDictItemNode) {
+            Object out = null;
+            if (!keywords_only) {
+                int l = lenNode.execute(p.argv);
+                if (p.argnum < l) {
+                    out = getItemNode.execute(getSequenceStorageNode.execute(p.argv), p.argnum);
+                }
+            }
+            // only the bottom argstack can have keyword names
+            if (kwds != null && out == null && p.prev == null && kwdnames != null) {
+                Object kwdname = kwdnames[p.argnum];
+                if (kwdname != null) {
+                    // the cast to PDict is safe because either it is null or a PDict (ensured by
+                    // the guards)
+                    out = getDictItemNode.executeWithGlobalState(getDictStorageNode.execute((PDict) kwds), kwdname);
+                }
+            }
+            p.argnum++;
+            return out;
+        }
+
+        private static boolean isLookahead(String format, int format_idx, char expected) {
+            return format_idx + 1 < format.length() && format.charAt(format_idx + 1) == expected;
+        }
+
+        private static boolean PyTruffle_SkipOptionalArg(Object arg, boolean optional) {
+            return arg == null && optional;
+        }
+
+        private static void PyTruffle_WriteOut(InteropLibrary varargsLib, InteropLibrary outVarLib, Object varargs, int out_index, Object value, ToSulongNode toSulongNode)
+                        throws InteropException {
+            try {
+                Object outVarPtr = varargsLib.readArrayElement(varargs, out_index);
+                Object outVar = outVarLib.readMember(outVarPtr, "content");
+                outVarLib.writeMember(outVar, "ptr", toSulongNode.execute(value));
+            } catch (InvalidArrayIndexException | UnsupportedMessageException | UnsupportedTypeException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e;
+            }
+        }
+
+        private static Object PyTruffleVaArg(Object varargs, int out_index, InteropLibrary varargsLib, ToJavaNode toJavaNode) throws InvalidArrayIndexException, UnsupportedMessageException {
+            try {
+                return toJavaNode.execute(varargsLib.readArrayElement(varargs, out_index));
+            } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e;
+            }
+        }
+
+        @ValueType
+        private static final class ParserState {
+            private int out_index;
+            private boolean rest_optional;
+            private boolean rest_keywords_only;
+            private PositionalArgStack v;
+        }
+
+        @ValueType
+        private static final class PositionalArgStack {
+            private final PTuple argv;
+            private int argnum;
+            private final PositionalArgStack prev;
+
+            PositionalArgStack(PTuple argv, PositionalArgStack prev) {
+                this.argv = argv;
+                this.prev = prev;
+            }
+        }
+
+        static boolean isDictOrNull(Object object) {
+            return object == null || object instanceof PDict;
+        }
+    }
+
+    @GenerateUncached
+    abstract static class ExecuteConverterNode extends Node {
+
+        public abstract void execute(int index, Object converter, Object inputArgument, Object outputArgument) throws ParseArgumentsException;
+
+        @Specialization(guards = "cachedIndex == index", limit = "3")
+        static void doExecuteConverterCached(@SuppressWarnings("unused") int index, Object converter, Object inputArgument, Object outputArgument,
+                        @Cached(value = "index", allowUncached = true) int cachedIndex,
+                        @CachedLibrary("converter") InteropLibrary converterLib,
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Exclusive @Cached PRaiseNativeNode raiseNode,
+                        @Exclusive @Cached ConverterCheckResultNode checkResultNode) throws ParseArgumentsException {
+            try {
+                Object result = converterLib.execute(converter, toSulongNode.execute(inputArgument), outputArgument);
+                if (resultLib.fitsInInt(result)) {
+                    checkResultNode.execute(resultLib.asInt(result));
+                    return;
+                }
+                CompilerDirectives.transferToInterpreter();
+                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, "calling argument converter failed; unexpected return value %s", result);
+            } catch (UnsupportedTypeException e) {
+                CompilerDirectives.transferToInterpreter();
+                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, "calling argument converter failed; incompatible parameters '%s'", e.getSuppliedValues());
+            } catch (ArityException e) {
+                CompilerDirectives.transferToInterpreter();
+                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, "calling argument converter failed; expected %d but got %d parameters.", e.getExpectedArity(),
+                                e.getActualArity());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, "argument converted is not executable");
+            }
+            throw ParseArgumentsException.raise();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class ConverterCheckResultNode extends Node {
+
+        public abstract void execute(int statusCode) throws ParseArgumentsException;
+
+        @Specialization(guards = "statusCode != 0")
+        static void doSuccess(@SuppressWarnings("unused") int statusCode) {
+            // all fine
+        }
+
+        @Specialization(guards = "statusCode == 0")
+        static void doError(int statusCode,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
+            PException currentException = context.getCurrentException();
+            boolean errOccurred = currentException != null;
+            if (!errOccurred) {
+                // converter should have set exception
+                raiseNode.raiseInt(null, 0, PythonBuiltinClassType.TypeError, "converter function failed to set an error on failure");
+            }
+            throw ParseArgumentsException.raise();
+        }
+    }
+
+    static final class ParseArgumentsException extends ControlFlowException {
+        private static final long serialVersionUID = 1L;
+
+        static ParseArgumentsException raise() {
+            CompilerDirectives.transferToInterpreter();
+            throw new ParseArgumentsException();
         }
     }
 }

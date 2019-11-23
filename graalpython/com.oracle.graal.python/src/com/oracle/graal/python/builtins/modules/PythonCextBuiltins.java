@@ -70,9 +70,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -178,6 +178,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
@@ -229,6 +230,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @CoreFunctions(defineModule = PythonCextBuiltins.PYTHON_CEXT)
 @GenerateNodeFactory
@@ -2916,6 +2918,72 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return lenNode.execute((PDict) unwrapped) == 0;
             }
             return false;
+        }
+    }
+
+    @Builtin(name = "_PyTruffle_Arg_ParseTupleAndKeywords", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class ParseTupleAndKeywordsNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        @Specialization(guards = "arguments.length == 5", limit = "2")
+        int doConvert(VirtualFrame frame, Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
+                        @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
+                        @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
+                        @Cached("createIdentityProfile()") ValueProfile kwdnamesProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
+                        @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+            Object argv = argvToJavaNode.execute(arguments[0]);
+            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
+
+            // force 'format' to be a String
+            String format = castToStringNode.execute(arguments[2]);
+            String functionName = null;
+
+            // trim off function name
+            int colonIdx = format.indexOf(":");
+            if (functionNameProfile.profile(colonIdx != -1)) {
+                format = format.substring(0, colonIdx);
+                // use 'colonIdx+1' because we do not want to include the colon
+                functionName = format.substring(colonIdx + 1);
+            }
+
+            // sort out if kwds is native NULL
+            Object nativeKwds = arguments[1];
+            Object kwds;
+            if (kwdsRefLib.isSame(nativeKwds, nativeNull)) {
+                kwds = null;
+            } else {
+                kwds = kwdsToJavaNode.execute(nativeKwds);
+            }
+
+            // sort out if kwdnames is native NULL
+            Object nativeKwdnames = arguments[3];
+            Object kwdnames;
+            if (kwdnamesRefLib.isSame(nativeKwdnames, nativeNull)) {
+                kwdnames = new Object[0];
+            } else {
+                kwdnames = kwdsToJavaNode.execute(nativeKwdnames);
+            }
+            return parseTupleAndKeywordsNode.execute(argv, kwdsProfile.profile(kwds), format, kwdnamesProfile.profile(kwdnames), arguments[4]);
+        }
+
+        static Object getKwds(Object[] arguments) {
+            return arguments[1];
+        }
+
+        static Object getKwdnames(Object[] arguments) {
+            return arguments[3];
         }
     }
 }

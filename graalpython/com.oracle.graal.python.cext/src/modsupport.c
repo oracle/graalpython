@@ -470,16 +470,36 @@ int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, str
     return result;
 }
 
+
+typedef struct { void *ptr; } VoidPtr;
+typedef struct { VoidPtr *content; } VoidPtrPtr;
+POLYGLOT_DECLARE_TYPE(VoidPtrPtr);
+
+typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, void** varargs);
+
+UPCALL_ID(_PyTruffle_Arg_ParseTupleAndKeywords)
 NO_INLINE
 int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
-    CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, args, NULL, format, NULL);
-    return result;
+//    CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, args, NULL, format, NULL);
+    int __poly_argc = polyglot_get_arg_count();
+    int __poly_args_s = sizeof(void*) * (__poly_argc - 2);
+    void **__poly_args = truffle_managed_malloc(__poly_args_s);
+    for (int i = 2; i < __poly_argc; i++) {
+        __poly_args[i - 2] = polyglot_get_arg(i);
+    }
+    return ((parseargs_func)_jls__PyTruffle_Arg_ParseTupleAndKeywords)(native_to_java_slim(args), NULL, polyglot_from_string(format, SRC_CS), NULL, polyglot_from_VoidPtrPtr_array(__poly_args, __poly_argc - 2));
 }
 
 NO_INLINE
 int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
-    CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, args, NULL, format, NULL);
-    return result;
+//    CallWithPolyglotArgs(int result, format, 2, _PyTruffleArg_ParseTupleAndKeywords, args, NULL, format, NULL);
+    int __poly_argc = polyglot_get_arg_count();
+    int __poly_args_s = sizeof(void*) * (__poly_argc - 2);
+    void **__poly_args = truffle_managed_malloc(__poly_args_s);
+    for (int i = 2; i < __poly_argc; i++) {
+        __poly_args[i - 2] = polyglot_get_arg(i);
+    }
+    return ((parseargs_func)_jls__PyTruffle_Arg_ParseTupleAndKeywords)(native_to_java_slim(args), NULL, polyglot_from_string(format, SRC_CS), NULL, polyglot_from_VoidPtr_array(__poly_args, __poly_argc - 2));
 }
 
 int PyArg_VaParse(PyObject *args, const char *format, va_list va) {
