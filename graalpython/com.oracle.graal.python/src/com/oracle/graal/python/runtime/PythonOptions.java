@@ -100,9 +100,6 @@ public final class PythonOptions {
     @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, help = "Use new experimental parser.") //
-    public static final OptionKey<Boolean> UseExperimentalParser = new OptionKey<>(true);
-
     @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
 

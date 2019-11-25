@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2019, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -38,6 +38,8 @@ grammar Python3;
 tokens { INDENT, DEDENT }
 
 @lexer::members {
+  // new version with semantic actions in parser
+
   // A queue where extra tokens are pushed on (see the NEWLINE lexer rule).
   private java.util.LinkedList<Token> tokens = new java.util.LinkedList<>();
   // The stack that keeps track of the indentation level.
@@ -58,7 +60,6 @@ tokens { INDENT, DEDENT }
   @Override
   public Token nextToken() {
     Token next = super.nextToken();
-
     // Check if the end-of-file is ahead to insert any missing DEDENTS and a NEWLINE.
     if (next.getType() == EOF && !expandedEOF) {
       expandedEOF = true;
@@ -80,9 +81,7 @@ tokens { INDENT, DEDENT }
       }
 
       // Put the EOF back on the token stream.
-      this.emit(next);
-
-      next = super.nextToken();
+      this.emit(commonToken(Python3Parser.EOF, "<EOF>"));
     }
 
     if (next.getChannel() == Token.DEFAULT_CHANNEL) {
@@ -139,134 +138,1337 @@ tokens { INDENT, DEDENT }
   }
 }
 
+@parser::header
+{
+import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.statement.ExceptNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.parser.PythonSSTNodeFactory;
+import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.parser.sst.*;
+
+import com.oracle.graal.python.parser.sst.SSTNode;
+
+import com.oracle.truffle.api.frame.FrameDescriptor;
+
+import java.util.Arrays;
+}
+
+
+@parser::members {
+	private PythonSSTNodeFactory factory;
+	private ScopeEnvironment scopeEnvironment;
+	boolean containsBreak;
+	boolean containsContinue;
+	
+	public final boolean startLoopBreak() {
+		try {
+			return containsBreak;
+		} finally {
+			containsBreak = false;
+		}
+	}
+	
+	public final boolean startLoopContinue() {
+		try {
+			return containsContinue;
+		} finally {
+			containsContinue = false;
+		}
+	}
+	
+	private Object[] stack = new Object[8];
+	private int stackIndex;
+	
+	public final int start() {
+		return stackIndex;
+	}
+	
+	public final void push(Object value) {
+		if (stackIndex >= stack.length) {
+			stack = Arrays.copyOf(stack, stack.length * 2);
+		}
+		stack[stackIndex++] = value;
+	}
+	
+	public final Object[] getArray(int start) {
+		try {
+			return Arrays.copyOfRange(stack, start, stackIndex);
+		} finally {
+			stackIndex = start;
+		}
+	}
+
+	public final <T> T[] getArray(int start, Class<? extends T[]> clazz) {
+		try {
+			return Arrays.copyOfRange(stack, start, stackIndex, clazz);
+		} finally {
+			stackIndex = start;
+		}
+	}
+
+	private String[] stringStack = new String[8];
+	private int stringStackIndex;
+	
+	public final int stringStart() {
+		return stringStackIndex;
+	}
+	
+	public final void pushString(String value) {
+		if (stringStackIndex >= stringStack.length) {
+			stringStack = Arrays.copyOf(stringStack, stringStack.length * 2);
+		}
+		stringStack[stringStackIndex++] = value;
+	}
+	
+	public final String[] getStringArray(int start) {
+		try {
+			return Arrays.copyOfRange(stringStack, start, stringStackIndex);
+		} finally {
+			stringStackIndex = start;
+		}
+	}
+    
+
+        public void setFactory(PythonSSTNodeFactory factory) {
+            this.factory = factory;
+            scopeEnvironment = factory.getScopeEnvironment();
+        }
+
+    private static class PythonRecognitionException extends RecognitionException{
+        static final long serialVersionUID = 1L;
+            
+        public PythonRecognitionException(String message, Recognizer<?, ?> recognizer, IntStream input, ParserRuleContext ctx, Token offendingToken) {
+            super(message, recognizer, input, ctx);
+            setOffendingToken(offendingToken);
+        }
+
+    }
+
+    private int getStartIndex(RuleNode node) { 
+        return ((ParserRuleContext) node).getStart().getStartIndex();
+    }
+
+    private int getStartIndex(Token token) {
+        return token.getStartIndex();
+    }
+
+    private int getStopIndex(RuleNode node) {
+        // add 1 to fit truffle source sections
+        return ((ParserRuleContext) node).getStop().getStopIndex() + 1;
+    }
+
+    private int getStopIndex(Token token) {
+        int stopIndex;
+        if (token.getType() != NEWLINE) {
+            stopIndex = token.getStopIndex();
+        } else {
+            // We don't have to have new lines in the source section
+            int tokenIndex = token.getTokenIndex();
+            Token tmp = token;
+            while(tmp.getType() == NEWLINE && tokenIndex > 0) {
+                tmp = getTokenStream().get(--tokenIndex);
+            }
+            stopIndex = tmp.getStopIndex();
+        }
+        // add 1 to fit truffle source sections
+        return stopIndex + 1;
+    }
+
+    /** Get the last offset of the context */
+    private int getLastIndex(ParserRuleContext ctx) {
+    	// ignores ctx
+        return getStopIndex(this._input.get(this._input.index() - 1));
+    }
+}
+
 /*
  * parser rules
  */
 
-single_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: NEWLINE | simple_stmt | compound_stmt NEWLINE;
-file_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: (NEWLINE | stmt)* EOF;
-eval_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: testlist NEWLINE* EOF;
+single_input [boolean interactive, FrameDescriptor curInlineLocals] returns [ SSTNode result ]
+locals
+[ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
+:
+	{
+	    if (!$interactive && $curInlineLocals != null) {
+                ScopeInfo functionScope = scopeEnvironment.pushScope("<single_input>", ScopeInfo.ScopeKind.Function, $curInlineLocals);
+                functionScope.setHasAnnotations(true);
+            } else {
+                scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module);
+            }
+	}
+	{ int start = start(); }
+	(
+		NEWLINE
+		| simple_stmt
+		| compound_stmt NEWLINE
+	)
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
+	{
+            if ($interactive || $curInlineLocals != null) {
+               scopeEnvironment.popScope();
+            }
+	}
+;
 
-decorator: '@' dotted_name ( '(' (arglist)? ')' )? NEWLINE;
-decorators: decorator+;
-decorated: decorators (classdef | funcdef | async_funcdef);
+file_input returns [ SSTNode result ]
+locals
+[ com.oracle.graal.python.parser.ScopeInfo scope, ArrayList<StatementNode> list ]
+:
+	{  _localctx.scope = scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); }
+	{ int start = start(); }
+	(
+		NEWLINE
+		| stmt
+	)* EOF
+	{ 
+            Token stopToken = $stmt.stop;
+            $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), 
+                stopToken != null ?  getStopIndex(stopToken) : getLastIndex($ctx)); }
+	{ 
+           scopeEnvironment.popScope(); 
+        }
+;
+
+eval_input returns [SSTNode result]
+locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
+:
+	{ scopeEnvironment.pushScope(_localctx.toString(), ScopeInfo.ScopeKind.Module); }
+	testlist NEWLINE* EOF
+	{ $result = $testlist.result; }
+	{scopeEnvironment.popScope(); }
+;
+
+decorator:
+    { ArgListBuilder args = null ;}
+    '@' dotted_name ( '(' arglist ')' {args = $arglist.result; })? NEWLINE
+    {   
+        String dottedName = $dotted_name.result;
+        if (dottedName.contains(".")) {
+            factory.getScopeEnvironment().addSeenVar(dottedName.split("\\.")[0]);
+        } else {
+            factory.getScopeEnvironment().addSeenVar(dottedName);
+        }
+        push( new DecoratorSSTNode(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+    }
+;
+
+decorators returns [DecoratorSSTNode[] result]: 
+    {int start = start();}
+    decorator+
+    {$result = getArray(start, DecoratorSSTNode[].class);}
+;
+
+decorated: 
+    { SSTNode decor; }
+    decorators 
+        (
+            classdef | 
+            funcdef | 
+            async_funcdef 
+        )
+    { stack[stackIndex-1] = new DecoratedSSTNode($decorators.result, (SSTNode)stack[stackIndex-1], getStartIndex($ctx), getLastIndex($ctx)); }
+;
 
 async_funcdef: ASYNC funcdef;
-funcdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'def' NAME parameters ('->' test)? ':' suite;
+funcdef
+:
+	'def' n=NAME parameters
+	(
+		'->' test
+	)? ':' 
+	{ 
+            String name = $n.getText(); 
+            ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
+            String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
+            ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
+            functionScope.setHasAnnotations(true);
+            $parameters.result.defineParamsInScope(functionScope); 
+        }
+	s = suite
+	{ 
+            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, $s.result, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+           scopeEnvironment.popScope();
+            push(funcDef);
+        }
+;
 
-parameters: '(' (typedargslist)? ')';
-typedargslist: (defparameter (',' defparameter)* (',' (
-        splatparameter (',' defparameter)* (',' (kwargsparameter (',')?)?)?
-      | kwargsparameter (',')?)?)?
-  | splatparameter (',' defparameter)* (',' (kwargsparameter (',')?)?)?
-  | kwargsparameter (',')?);
-tfpdef: NAME (':' test)?;
-defparameter: tfpdef ('=' test)?;
-splatparameter: '*' (tfpdef)?;
-kwargsparameter: '**' tfpdef;
-varargslist: (vdefparameter (',' vdefparameter)* (',' (
-        vsplatparameter (',' vdefparameter)* (',' (vkwargsparameter (',')?)?)?
-      | vkwargsparameter (',')?)?)?
-  | vsplatparameter (',' vdefparameter)* (',' (vkwargsparameter (',')?)?)?
-  | vkwargsparameter (',')?
-);
-vfpdef: NAME;
-vdefparameter: vfpdef ('=' test)?;
-vsplatparameter: '*' (vfpdef)?;
-vkwargsparameter: '**' vfpdef;
+parameters returns [ArgDefListBuilder result]
+:       { ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
+	'(' typedargslist[args]? ')'
+        { $result = args; }
+;
 
-stmt: simple_stmt | compound_stmt;
-simple_stmt: small_stmt (';' small_stmt)* (';')? NEWLINE;
-small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
-             import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
-expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
-                     (normassign)*);
-normassign: '=' (yield_expr | testlist_star_expr);
-annassign: ':' test ('=' test)?;
-testlist_star_expr: (test|star_expr) (',' (test|star_expr))* (',')?;
+typedargslist [ArgDefListBuilder args]
+:
+    (
+	defparameter[args] ( ',' defparameter[args] )*
+            ( ',' 
+                ( splatparameter[args]	
+                    ( ',' defparameter[args])*
+                    ( ',' ( kwargsparameter[args] ','? )?
+		    )?
+                    | kwargsparameter[args] ','?
+		)?
+            )?
+	| splatparameter[args]
+            ( ',' defparameter[args])*
+            ( ',' ( kwargsparameter[args] ','? )?
+            )?
+	| kwargsparameter[args] ','?
+    )
+;
+  
+defparameter [ArgDefListBuilder args]
+:
+	NAME
+	{ SSTNode type = null; SSTNode defValue = null; }
+	( ':' test { type = $test.result; } )?
+	( '=' test { defValue = $test.result; } )?
+	{ 
+            if (defValue == null && args.hasDefaultParameter() && !args.hasSplat()) {
+                throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
+            }
+            args.addParam($NAME.text, type, defValue); 
+            
+        }
+;
+
+splatparameter [ArgDefListBuilder args]
+:
+	'*'
+	{ String name = null; SSTNode type = null; }
+	(
+		NAME { name = $NAME.text; }
+		( ':' test { type = $test.result; } )?
+	)?
+	{ args.addSplat(name, type); }
+;
+
+kwargsparameter [ArgDefListBuilder args]
+:
+	'**' NAME
+	{ SSTNode type = null; }
+	( ':' test { type = $test.result; } )?
+	{ args.addKwargs($NAME.text, type); }
+;
+
+varargslist returns [ArgDefListBuilder result]
+:
+	{ ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
+	(
+		vdefparameter[args]
+		(
+			',' vdefparameter[args]
+		)*
+		(
+			','
+			(
+				vsplatparameter[args]
+				(
+					',' vdefparameter[args]
+				)*
+				(
+					','
+					(
+						vkwargsparameter[args] ','?
+					)?
+				)?
+				| vkwargsparameter[args] ','?
+			)?
+		)?
+		| vsplatparameter[args]
+		(
+			',' vdefparameter[args]
+		)*
+		(
+			','
+			(
+				vkwargsparameter[args] ','?
+			)?
+		)?
+		| vkwargsparameter[args] ','?
+	)
+	{ $result = args; }
+;
+
+vdefparameter [ArgDefListBuilder args]
+:
+	NAME
+	{ SSTNode defValue = null; }
+	( '=' test { defValue = $test.result; } )?
+	{ args.addParam($NAME.text, null, defValue);}
+;
+
+vsplatparameter [ArgDefListBuilder args]
+:
+	'*'
+	{ String name = null; }
+	( NAME { name = $NAME.text; } )?
+	{ args.addSplat(name, null);}
+;
+
+vkwargsparameter [ArgDefListBuilder args]
+:
+	'**' NAME
+	{args.addKwargs($NAME.text, null);}
+;
+
+stmt
+:
+	simple_stmt | compound_stmt
+;
+
+simple_stmt
+:
+	small_stmt ( ';' small_stmt )* ';'? NEWLINE
+;
+
+small_stmt
+:
+	expr_stmt
+	| del_stmt
+	| p='pass'
+            { 
+                int start = $p.getStartIndex(); 
+                push(new SimpleSSTNode(SimpleSSTNode.Type.PASS, start, start + 4 ));
+            }
+	| flow_stmt
+	| import_stmt
+	| global_stmt
+	| nonlocal_stmt
+	| assert_stmt
+;
+
+expr_stmt
+:       lhs=testlist_star_expr
+	{ SSTNode rhs = null; 
+          int rhsStopIndex = 0;
+        }
+	(
+		':' t=test
+		(
+			'=' test { rhs = $test.result;}
+		)?
+		{ 
+                    rhsStopIndex = getStopIndex($test.stop);
+                    if (rhs == null) {
+                        rhs = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  -1, -1);
+                    }
+                    push(factory.createAnnAssignment($lhs.result, $t.result, rhs, getStartIndex($ctx), rhsStopIndex)); 
+                }
+		|
+		augassign
+		(
+			yield_expr { rhs = $yield_expr.result; rhsStopIndex = getStopIndex($yield_expr.stop);}
+			|
+			testlist { rhs = $testlist.result; rhsStopIndex = getStopIndex($testlist.stop);}
+		)
+		{ push(factory.createAugAssignment($lhs.result, $augassign.text, rhs, getStartIndex($ctx), rhsStopIndex));}
+		|
+		{ int start = start(); }
+		{ SSTNode value = $lhs.result; }
+		(
+			'='
+			{ push(value); }
+			(
+				yield_expr { value = $yield_expr.result; rhsStopIndex = getStopIndex($yield_expr.stop); }
+				|
+				testlist_star_expr { value = $testlist_star_expr.result; rhsStopIndex = getStopIndex($testlist_star_expr.stop);}
+			)
+		)*
+		{ 
+                    if (value instanceof StarSSTNode) {
+                        throw new PythonRecognitionException("can't use starred expression here", this, _input, $ctx, $ctx.start);
+                    }
+                    if (start == start()) {
+                        push(new ExpressionStatementSSTNode(value));
+                    } else {
+                        SSTNode[] lhs = getArray(start, SSTNode[].class);
+                        if (lhs.length == 1 && lhs[0] instanceof StarSSTNode) {
+                            throw new PythonRecognitionException("starred assignment target must be in a list or tuple", this, _input, $ctx, $ctx.start);
+                        }
+                        push(factory.createAssignment(lhs, value, getStartIndex(_localctx), rhsStopIndex));
+                    }
+                }
+	)
+;
+
+testlist_star_expr returns [SSTNode result]
+:
+	
+	(
+		test { $result = $test.result; }
+		| star_expr {  $result = $star_expr.result; }
+	)
+	(
+                { 
+                    int start = start(); 
+                    push($result);
+                }
+		','
+		(
+			(
+				test { push($test.result); }
+				| star_expr { push($star_expr.result); }
+			)
+			(
+				','
+				(
+					test { push($test.result); }
+					| star_expr { push($star_expr.result); }
+				)
+			)*
+			','?
+		)?
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PTuple, getStartIndex($ctx), getLastIndex($ctx)); }
+	)?
+;
+
 augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=');
 // For normal and annotated assignments, additional restrictions enforced by the interpreter
-del_stmt: 'del' exprlist;
-pass_stmt: 'pass';
-flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt;
-break_stmt: 'break';
-continue_stmt: 'continue';
-return_stmt: 'return' (testlist)?;
-yield_stmt: yield_expr;
-raise_stmt: 'raise' (test ('from' test)?)?;
-import_stmt: import_name | import_from;
-import_name: 'import' dotted_as_names;
+
+del_stmt
+:
+	'del' exprlist
+	{ push(new DelSSTNode($exprlist.result, getStartIndex($ctx), getStopIndex($exprlist.stop))); }
+;
+
+flow_stmt
+:
+	b='break' 
+	{ 
+            push(new SimpleSSTNode(SimpleSSTNode.Type.BREAK, getStartIndex($b), getStopIndex($b)));
+            containsBreak = true; 
+        }
+	| c='continue'
+	{ 
+            push(new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, getStartIndex($c), getStopIndex($c)));
+            containsContinue = true; 
+        }
+	| return_stmt
+	| raise_stmt
+	| yield_stmt
+;
+
+return_stmt
+:
+	'return'
+	{ SSTNode value = null; }
+	( testlist { value = $testlist.result; } )?
+	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getLastIndex($ctx)));}
+;
+
+yield_stmt
+:
+	yield_expr
+	{ push(new ExpressionStatementSSTNode($yield_expr.result)); }
+;
+
+raise_stmt
+:
+	{ SSTNode value = null; SSTNode from = null; }
+	'raise'
+	(
+		test
+		{ value = $test.result; }
+		( 'from' test { from = $test.result; } )?
+	)?
+	{ push(new RaiseSSTNode(value, from, getStartIndex($ctx), getLastIndex($ctx))); }
+; 
+
+import_stmt
+:
+	import_name
+	| import_from
+;
+
+import_name
+:
+	'import' dotted_as_names
+;
+
+import_from 
 // note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
-import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
-              'import' ('*' | '(' import_as_names ')' | import_as_names));
-import_as_name: NAME ('as' NAME)?;
-dotted_as_name: dotted_name ('as' NAME)?;
-import_as_names: import_as_name (',' import_as_name)* (',')?;
-dotted_as_names: dotted_as_name (',' dotted_as_name)*;
-dotted_name: NAME ('.' NAME)*;
-global_stmt: 'global' NAME (',' NAME)*;
-nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
-assert_stmt: 'assert' test (',' test)?;
+:
+	'from'
+	{ String name = ""; }
+	(
+		( '.' { name += '.'; } | '...' { name += "..."; } )* dotted_name { name += $dotted_name.result; }
+		|
+		( '.' { name += '.'; } | '...' { name += "..."; } )+
+	)
+	'import'
+	{ String[][] asNames = null; }
+	(
+		'*'
+		| '(' import_as_names { asNames = $import_as_names.result; } ')'
+		| import_as_names { asNames = $import_as_names.result; } 
+	)
+	{ push(factory.createImportFrom(name, asNames, getStartIndex($ctx), getLastIndex($ctx))); }
+;
+              
+import_as_name returns [String[] result] /* the first is name, the second as name */
+:
+	n=NAME
+	{ String asName = null; }
+	( 'as' NAME { asName = $NAME.text; } )?
+	{ $result = new String[]{$n.text, asName}; }
+;
 
-compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt;
+import_as_names returns [String[][] result]
+:
+	{ int start = start(); }
+	import_as_name { push($import_as_name.result); } ( ',' import_as_name { push($import_as_name.result); } )* ','?
+	{ $result = getArray(start, String[][].class); }
+;
+
+dotted_name returns [String result]
+:
+	NAME { $result = $NAME.text; } ( '.' NAME { $result = $result + "." + $NAME.text; } )*
+;
+dotted_as_name
+:
+	dotted_name
+	(
+		'as' NAME 
+		{ push(factory.createImport($dotted_name.result, $NAME.text, getStartIndex($ctx), getLastIndex($ctx)));}
+		|
+		{ push(factory.createImport($dotted_name.result, null, getStartIndex($ctx), getLastIndex($ctx)));}
+	)
+;
+dotted_as_names
+:
+	dotted_as_name
+	(
+		',' dotted_as_name
+	)*
+;
+
+global_stmt
+:
+	{ int start = stringStart(); }
+	'global' NAME
+	{ pushString($NAME.text); }
+	(
+		',' NAME
+		{ pushString($NAME.text); }
+	)*
+	{ push(factory.registerGlobal(getStringArray(start), getStartIndex($ctx), getLastIndex($ctx))); }
+;
+
+nonlocal_stmt
+:
+	{ int start = stringStart(); }
+	'nonlocal' NAME
+	{ pushString($NAME.text); }
+	(
+		',' NAME
+		{ pushString($NAME.text); }
+	)*
+	{ push(factory.registerNonLocal(getStringArray(start), getStartIndex($ctx), getLastIndex($ctx))); }
+;
+
+assert_stmt
+:
+	'assert' e=test
+	{ SSTNode message = null; }
+	(
+		',' test
+		{ message = $test.result; }
+	)?
+	{ push(new AssertSSTNode($e.result, message, getStartIndex($ctx), getLastIndex($ctx))); }
+;
+
+compound_stmt
+:
+	if_stmt 
+	| while_stmt 
+	| for_stmt
+	| try_stmt
+	| with_stmt
+	| funcdef
+	| classdef
+	| decorated
+	| async_stmt
+;
+
 async_stmt: ASYNC (funcdef | with_stmt | for_stmt);
-if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ('else' ':' suite)?;
-while_stmt: 'while' test ':' suite ('else' ':' suite)?;
-for_stmt: 'for' exprlist 'in' testlist ':' suite ('else' ':' suite)?;
-try_stmt: ('try' ':' suite
-           ((except_clause ':' suite)+
-            ('else' ':' suite)?
-            ('finally' ':' suite)? |
-           'finally' ':' suite));
-with_stmt: 'with' with_item (',' with_item)*  ':' suite;
-with_item: test ('as' expr)?;
-// NB compile.c makes sure that the default except clause is last
-except_clause: 'except' (test ('as' NAME)?)?;
-suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT;
+if_stmt
+:
+	'if' if_test=test ':' if_suite=suite elif_stmt
+	{ push(new IfSSTNode($if_test.result, $if_suite.result, $elif_stmt.result, getStartIndex($ctx), getStopIndex($elif_stmt.stop)));}
+	
+;
+elif_stmt returns [SSTNode result]
+:
+	'elif' test ':' suite
+	elif_stmt
+	{ $result = new IfSSTNode($test.result, $suite.result, $elif_stmt.result, -1, -1); }
+	|
+	'else' ':' suite
+	{ $result = $suite.result; }
+	|
+	{ $result = null; }
+;
 
-test: or_test ('if' or_test 'else' test)? | lambdef;
-test_nocond: or_test | lambdef_nocond;
-lambdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'lambda' (varargslist)? ':' lambdef_body;
-lambdef_body: test;
-lambdef_nocond locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'lambda' (varargslist)? ':' lambdef_nocond_body;
-lambdef_nocond_body: test_nocond;
-or_test: and_test ('or' and_test)*;
-and_test: not_test ('and' not_test)*;
-not_test: 'not' not_test | comparison;
-comparison: expr (comp_op expr)*;
+while_stmt
+:
+	'while' test ':' 
+	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
+	suite
+	{ 
+            WhileSSTNode result = new WhileSSTNode($test.result, $suite.result, containsContinue, containsBreak, getStartIndex($ctx),getStopIndex($suite.stop)); 
+            containsContinue = cFlag;
+            containsBreak = bFlag;
+        }
+	(
+		'else' ':' suite 
+                { 
+                    result.setElse($suite.result); 
+                    result.setEndOffset(getStopIndex($suite.stop));
+                }
+	)?
+	{ 
+            push(result);
+        }
+;
+
+for_stmt
+:
+	'for' exprlist 'in' testlist ':'
+	{ boolean bFlag = startLoopBreak(); boolean cFlag = startLoopContinue(); }
+	suite
+	{ 
+            ForSSTNode result = factory.createForSSTNode($exprlist.result, $testlist.result, $suite.result, containsContinue, getStartIndex($ctx),getStopIndex($suite.stop));
+            result.setContainsBreak(containsBreak);
+            containsContinue = cFlag;
+            containsBreak = bFlag;
+        }
+	(
+		'else' ':' suite 
+                { 
+                    result.setElse($suite.result); 
+                    result.setEndOffset(getStopIndex($suite.stop));
+                }
+	)?
+	{  
+            push(result);
+        }
+;
+
+try_stmt
+:
+	'try' ':' body=suite
+	{ int start = start(); }
+	{ 
+            SSTNode elseStatement = null; 
+            SSTNode finallyStatement = null; 
+        }
+	(
+		( except_clause 
+                    { push($except_clause.result); } )+
+		( 'else' ':' suite { elseStatement = $suite.result; } )?
+	)?
+	( 'finally' ':' suite { finallyStatement = $suite.result; } )?
+	{ push(new TrySSTNode($body.result, getArray(start, ExceptSSTNode[].class), elseStatement, finallyStatement, getStartIndex($ctx), getLastIndex($ctx))); }
+;
+
+except_clause returns [SSTNode result]
+:
+	'except'
+	{ SSTNode testNode = null; String asName = null; }
+	(
+		test { testNode = $test.result; }
+		( 'as' NAME 
+                    { 
+                        asName = $NAME.text; 
+                        factory.getScopeEnvironment().createLocal(asName);
+                    } 
+                )?
+	)?
+	':'
+	suite
+	{ $result = new ExceptSSTNode(testNode, asName, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop)); }
+;
+
+with_stmt
+:
+	'with' with_item
+	{ 
+            $with_item.result.setStartOffset(getStartIndex($ctx));
+            push($with_item.result); 
+        }
+;
+
+with_item returns [SSTNode result]
+:
+	test
+	{ SSTNode asName = null; }
+	( 'as' expr { asName = $expr.result; } )?
+	{ SSTNode sub; }
+	(
+		',' with_item
+		{ sub = $with_item.result; }
+		| ':' suite
+		{ sub = $suite.result; }
+	)
+	{ $result = factory.createWith($test.result, asName, sub, -1, getLastIndex($ctx)); }
+;
+
+// NB compile.c makes sure that the default except clause is last
+
+suite returns [SSTNode result] locals [ArrayList<SSTNode> list]
+:
+	{ int start = start(); }
+	(
+		simple_stmt
+		| NEWLINE INDENT stmt+ DEDENT
+	)
+	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class));}
+;
+
+test returns [SSTNode result]
+:
+	or_test { $result = $or_test.result; }
+	(
+		'if' condition=or_test 'else' elTest=test
+		{ $result = new TernaryIfSSTNode($condition.result, $result, $elTest.result, getStartIndex($ctx), getLastIndex($ctx));}
+	)?
+	| lambdef { $result = $lambdef.result; }
+;
+
+test_nocond returns [SSTNode result]
+:
+	or_test { $result = $or_test.result; }
+	| lambdef_nocond { $result = $lambdef_nocond.result; }
+;
+
+lambdef returns [SSTNode result]
+:
+	
+	'lambda'
+	{ ArgDefListBuilder args = null; }
+	(
+		varargslist { args = $varargslist.result; }
+	)? 
+        {
+            ScopeInfo functionScope = scopeEnvironment.pushScope(ScopeEnvironment.LAMBDA_NAME, ScopeInfo.ScopeKind.Function); 
+            functionScope.setHasAnnotations(true);
+            if (args != null) {
+                args.defineParamsInScope(functionScope);
+            }
+        }
+	':'
+	test
+	{ scopeEnvironment.popScope(); }
+	{ $result = new LambdaSSTNode(functionScope, args, $test.result, getStartIndex($ctx), getLastIndex($ctx)); }
+;
+
+lambdef_nocond returns [SSTNode result]
+:
+	'lambda'
+	{ ArgDefListBuilder args = null; }
+	(
+		varargslist { args = $varargslist.result;}
+	)?
+        {
+            ScopeInfo functionScope = scopeEnvironment.pushScope(ScopeEnvironment.LAMBDA_NAME, ScopeInfo.ScopeKind.Function); 
+            functionScope.setHasAnnotations(true);
+            if (args != null) {
+                args.defineParamsInScope(functionScope);
+            }
+        }
+	':'
+	test_nocond
+	{ scopeEnvironment.popScope(); }
+	{ $result = new LambdaSSTNode(functionScope, args, $test_nocond.result, getStartIndex($ctx), getLastIndex($ctx)); }
+;
+
+or_test returns [SSTNode result]
+:
+	first=and_test
+	(
+		{ int start = start(); }
+		{ push($first.result); }
+		( 'or' and_test { push($and_test.result); } )+
+		{ $result = new OrSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), getLastIndex($ctx)); }
+		|
+		{ $result = $first.result; }
+	)
+;
+
+and_test returns [SSTNode result]
+:
+	first=not_test
+	(
+		{ int start = start(); }
+		{ push($first.result); }
+		( 'and' not_test { push($not_test.result); } )+
+		{ $result = new AndSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx), getLastIndex($ctx)); }
+		|
+		{ $result = $first.result; }
+	)
+;
+
+not_test returns [SSTNode result]
+:
+	'not' not_test
+	{ $result = new NotSSTNode($not_test.result, getStartIndex($ctx), getLastIndex($ctx)); }
+	| comparison
+	{ $result = $comparison.result; }
+;
+
+comparison returns [SSTNode result]
+:
+	first=expr
+	(
+            { int start = start(); int stringStart = stringStart(); }
+            ( comp_op expr { pushString($comp_op.result); push($expr.result); } )+
+            { $result = new ComparisonSSTNode($first.result, getStringArray(stringStart), getArray(start, SSTNode[].class), getStartIndex($ctx), getStopIndex($expr.stop)); }
+            |
+            { $result = $first.result; }
+	)
+;
+
 // <> isn't actually a valid comparison operator in Python. It's here for the
 // sake of a __future__ import described in PEP 401 (which really works :-)
-comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not';
-star_expr: '*' expr;
-expr: xor_expr ('|' xor_expr)*;
-xor_expr: and_expr ('^' and_expr)*;
-and_expr: shift_expr ('&' shift_expr)*;
-shift_expr: arith_expr (('<<'|'>>') arith_expr)*;
-arith_expr: term (('+'|'-') term)*;
-term: factor (('*'|'@'|'/'|'%'|'//') factor)*;
-factor: ('+'|'-'|'~') factor | power;
-power: atom_expr ('**' factor)?;
-atom_expr: (AWAIT)? atom trailer*;
-atom: ('(' (yield_expr|testlist_comp)? ')' |
-       '[' (testlist_comp)? ']' |
-       '{' (dictorsetmaker)? '}' |
-       NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False');
-testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* (',')? );
-trailer: '(' (arglist)? ')' | '[' subscriptlist ']' | '.' NAME;
-subscriptlist: subscript (',' subscript)* (',')?;
-subscript: test | (test)? ':' (test)? (sliceop)?;
-sliceop: ':' (test)?;
-exprlist: (expr|star_expr) (',' (expr|star_expr))* (',')?;
-testlist: test (',' test)* (',')?;
-dictorsetmaker: dictmaker | setmaker;
-dictmaker: ((test ':' test | '**' expr)
-                   (comp_for | (',' (test ':' test | '**' expr))* (',')?));
-setmaker: ((test | star_expr)
-                   (comp_for | (',' (test | star_expr))* (',')?));
+comp_op returns [String result]
+:
+	'<' { $result = "<"; }
+	| '>' { $result = ">"; }
+	| '==' { $result = "=="; }
+	| '>=' { $result = ">="; }
+	| '<=' { $result = "<="; }
+	| '<>' { $result = "<>"; }
+	| '!=' { $result = "!="; }
+	| 'in' { $result = "in"; }
+	| 'not' 'in' { $result = "notin"; }
+	| 'is' { $result = "is"; }
+	| 'is' 'not' { $result = "isnot"; }
+;
 
-classdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'class' NAME ('(' arglist? ')')? ':' suite;
+star_expr returns [SSTNode result]: '*' expr { $result = new StarSSTNode($expr.result, getStartIndex($ctx), getLastIndex($ctx));};
 
-arglist: argument (',' argument)*  (',')?;
+expr returns [SSTNode result]
+:
+	xor_expr { $result = $xor_expr.result; }
+	(
+		'|' xor_expr { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.Or, $result, $xor_expr.result, getStartIndex($ctx), getStopIndex($xor_expr.stop));}
+	)*
+;
+
+xor_expr returns [SSTNode result]
+:
+	and_expr { $result = $and_expr.result; }
+	(
+		'^' and_expr { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.Xor, $result, $and_expr.result, getStartIndex($ctx), getStopIndex($and_expr.stop)); }
+	)*
+;
+
+and_expr returns [SSTNode result]
+:
+	shift_expr { $result = $shift_expr.result; }
+	(
+		'&' shift_expr { $result = new BinaryArithmeticSSTNode(BinaryArithmetic.And, $result, $shift_expr.result, getStartIndex($ctx), getStopIndex($shift_expr.stop)); }
+	)*
+;
+
+shift_expr returns [SSTNode result]
+:
+	arith_expr { $result = $arith_expr.result; }
+	(
+		{ BinaryArithmetic arithmetic; }
+		( '<<' { arithmetic = BinaryArithmetic.LShift; } | '>>' { arithmetic = BinaryArithmetic.RShift; } )
+		arith_expr { $result = new BinaryArithmeticSSTNode(arithmetic, $result, $arith_expr.result, getStartIndex($ctx), getStopIndex($arith_expr.stop));}
+	)*
+;
+
+arith_expr returns [SSTNode result]
+:
+	term { $result = $term.result; }
+	(
+		{ BinaryArithmetic arithmetic; }
+		( '+' { arithmetic = BinaryArithmetic.Add; } | '-' { arithmetic = BinaryArithmetic.Sub; } )
+		term { $result = new BinaryArithmeticSSTNode(arithmetic, $result, $term.result, getStartIndex($ctx), getStopIndex($term.stop)); }
+	)*
+;
+
+term returns [SSTNode result]
+:
+	factor { $result = $factor.result; }
+	(
+		{ BinaryArithmetic arithmetic; }
+		( '*' { arithmetic = BinaryArithmetic.Mul; } | '@' { arithmetic = BinaryArithmetic.MatMul; } | '/' { arithmetic = BinaryArithmetic.TrueDiv; } 
+			| '%' { arithmetic = BinaryArithmetic.Mod; } | '//' { arithmetic = BinaryArithmetic.FloorDiv; } )
+		factor { $result = new BinaryArithmeticSSTNode(arithmetic, $result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
+	)*
+;
+
+factor returns [SSTNode result]
+:
+	{ 
+            UnaryArithmetic arithmetic; 
+            boolean isNeg = false;
+        }
+	( '+' { arithmetic = UnaryArithmetic.Pos; } | m='-' { arithmetic = UnaryArithmetic.Neg; isNeg = true; } | '~' { arithmetic = UnaryArithmetic.Invert; } )
+	factor 
+            { 
+                assert _localctx.factor != null;
+                SSTNode fResult = $factor.result;
+                if (isNeg && fResult instanceof NumberLiteralSSTNode) {
+                    if (((NumberLiteralSSTNode)fResult).isNegative()) {
+                        // solving cases like --2
+                        $result =  new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex($ctx), getStopIndex($factor.stop)); 
+                    } else {
+                        ((NumberLiteralSSTNode)fResult).setIsNegative(true);
+                        fResult.setStartOffset($m.getStartIndex());
+                        $result =  fResult;
+                    }
+                } else {
+                    $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 
+                }
+            }
+	| power { $result = $power.result; }
+;
+
+power returns [SSTNode result]
+:
+	atom_expr { $result = $atom_expr.result; }
+	(
+		'**' factor { $result = new TernaryArithmeticSSTNode($result, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); }
+	)?
+;
+
+atom_expr returns [SSTNode result]
+:
+	( AWAIT )? // 'await' is ignored for now 
+	atom
+	{ $result = $atom.result; }
+	(
+		'(' arglist CloseB=')' { $result = new CallSSTNode($result, $arglist.result, getStartIndex($ctx), $CloseB.getStopIndex() + 1);}
+		| '[' subscriptlist c=']' { $result = new SubscriptSSTNode($result, $subscriptlist.result, getStartIndex($ctx), $c.getStopIndex() + 1);}
+		| '.' NAME 
+                {   
+                    assert $NAME != null;
+                    $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
+                }
+	)*
+;
+
+atom returns [SSTNode result]
+:
+	'('
+	(
+		yield_expr
+		{ $result = $yield_expr.result; }
+		|
+		setlisttuplemaker[PythonBuiltinClassType.PTuple, PythonBuiltinClassType.PGenerator]
+		{ $result = $setlisttuplemaker.result; }
+		|
+		{ $result = new CollectionSSTNode(new SSTNode[0], PythonBuiltinClassType.PTuple, -1, -1); }
+	)
+	cp = ')' 
+        {   
+            if ($result instanceof CollectionSSTNode) {
+                $result.setStartOffset(getStartIndex($ctx)); 
+                $result.setEndOffset($cp.getStopIndex() + 1); 
+            }
+        }
+	|
+	startIndex = '['
+        
+	(
+		setlisttuplemaker[PythonBuiltinClassType.PList, PythonBuiltinClassType.PList]
+		{ $result = $setlisttuplemaker.result; }
+		|
+		{ $result = new CollectionSSTNode(new SSTNode[0], PythonBuiltinClassType.PList, -1, -1);}
+	)
+	endIndex = ']' 
+        {
+            if (!($result instanceof ForComprehensionSSTNode)) {
+                $result.setStartOffset($startIndex.getStartIndex());
+                $result.setEndOffset($endIndex.getStopIndex() + 1);
+            }
+        }
+	|
+	startIndex = '{'
+	(
+		dictmaker // dictmaker cannot be empty
+		{ $result = $dictmaker.result; }
+		|
+		setlisttuplemaker[PythonBuiltinClassType.PSet, PythonBuiltinClassType.PSet]
+		{ $result = $setlisttuplemaker.result; }
+		|
+		{ $result =  new CollectionSSTNode(new SSTNode[0], PythonBuiltinClassType.PDict, -1, -1);}
+	)
+	endIndex = '}' 
+        {
+            if (!($result instanceof ForComprehensionSSTNode)) {
+                $result.setStartOffset($startIndex.getStartIndex());
+                $result.setEndOffset($endIndex.getStopIndex() + 1);
+            }
+        }
+	| NAME 
+            {   
+                String text = $NAME.text;
+                $result = text != null ? factory.createVariableLookup(text,  $NAME.getStartIndex(), $NAME.getStopIndex() + 1) : null; 
+            }
+	| DECIMAL_INTEGER 
+            { 
+                String text = $DECIMAL_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 0, 10, $DECIMAL_INTEGER.getStartIndex(), $DECIMAL_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| OCT_INTEGER 
+            { 
+                String text = $OCT_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 2, 8, $OCT_INTEGER.getStartIndex(), $OCT_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| HEX_INTEGER 
+            { 
+                String text = $HEX_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 2, 16, $HEX_INTEGER.getStartIndex(), $HEX_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| BIN_INTEGER 
+            { 
+                String text = $BIN_INTEGER.text;
+                $result = text != null ? new NumberLiteralSSTNode(text, 2, 2, $BIN_INTEGER.getStartIndex(), $BIN_INTEGER.getStopIndex() + 1) : null; 
+            }
+	| FLOAT_NUMBER 
+            {   
+                String text = $FLOAT_NUMBER.text;
+                $result = text != null ? new FloatLiteralSSTNode(text, false, $FLOAT_NUMBER.getStartIndex(), $FLOAT_NUMBER.getStopIndex() + 1) : null; 
+            }
+	| IMAG_NUMBER 
+            { 
+                String text = $IMAG_NUMBER.text;
+                $result = text != null ? new FloatLiteralSSTNode(text, true, $IMAG_NUMBER.getStartIndex(), $IMAG_NUMBER.getStopIndex() + 1) : null; 
+            }
+	| { int start = stringStart(); } ( STRING { pushString($STRING.text); } )+ { $result = new StringLiteralSSTNode(getStringArray(start), getStartIndex($ctx), getStopIndex($STRING)); }
+	| t='...' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS,  start, start + 3);}
+	| t='None' { int start = $t.getStartIndex(); $result = new SimpleSSTNode(SimpleSSTNode.Type.NONE,  start, start + 4);}
+	| t='True' { int start = $t.getStartIndex(); $result = new BooleanLiteralSSTNode(true,  start, start + 4); }
+	| t='False' { int start = $t.getStartIndex(); $result = new BooleanLiteralSSTNode(false, start, start + 5); }
+;
+
+
+subscriptlist returns [SSTNode result]
+:
+	subscript
+	{ $result = $subscript.result; }
+	(
+		// a "," implies that a tuple should be created
+		{ int start = start(); push($result); }
+		','
+		(
+			subscript { push($subscript.result); }
+			( ',' subscript { push($subscript.result); } )*
+			','?
+		)?
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PTuple, getStartIndex($ctx), getLastIndex($ctx));}
+	)?
+;
+
+subscript returns [SSTNode result]
+:
+	test
+	{ $result = $test.result; }
+	|
+	{ SSTNode sliceStart = null; SSTNode sliceEnd = null; SSTNode sliceStep = null; }
+	( test { sliceStart = $test.result; } )?
+	':'
+	( test { sliceEnd = $test.result; } )?
+	(
+		':'
+		( test { sliceStep = $test.result; } )?
+	)?
+	{ $result = new SliceSSTNode(sliceStart, sliceEnd, sliceStep, getStartIndex($ctx), getLastIndex($ctx)); }
+;
+
+exprlist returns [SSTNode[] result]
+:
+	{ int start = start(); }
+	(
+		expr { push($expr.result); }
+		| star_expr { push($star_expr.result); }
+	)
+	(
+		','
+		(
+			expr { push($expr.result); }
+			| star_expr { push($star_expr.result); }
+		)
+	)*
+	(
+		','
+	)?
+	{ $result = getArray(start, SSTNode[].class); }
+;
+
+testlist returns [SSTNode result]
+:
+	test
+	{ $result = $test.result; }
+	(
+		// a "," implies that a tuple should be created
+		{ int start = start(); push($result); }
+		','
+		(
+			test { push($test.result); }
+			( ',' test { push($test.result); } )*
+			','?
+		)?
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PTuple, getStartIndex($ctx), getLastIndex($ctx));}
+	)?
+;
+
+dictmaker returns [SSTNode result]
+:
+	
+	(
+            { 
+                SSTNode value; 
+                SSTNode name;
+                ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.DictComp);
+                generator.setHasAnnotations(true);
+                
+            }
+            (
+		n=test ':' v=test
+		{ name = $n.result; value = $v.result; }
+		| '**' expr
+		{ name = null; value = $expr.result; }
+            )
+            comp_for[value, name, PythonBuiltinClassType.PDict, 0]
+            { 
+                $result = $comp_for.result;
+               scopeEnvironment.popScope();
+            }
+            
+        )
+        |
+	(
+            { 
+                SSTNode value; 
+                SSTNode name;
+            }
+            (
+		n=test ':' v=test
+		{ name = $n.result; value = $v.result; }
+		| '**' expr
+		{ name = null; value = $expr.result; }
+            )
+		
+		{ int start = start(); push(name); push(value); }
+		(
+			','
+			(
+				n=test ':' v=test
+				{ push($n.result); push($v.result); }
+				| '**' expr
+				{ push(null); push($expr.result); }
+			)
+		)*
+		','?
+		{ $result = new CollectionSSTNode(getArray(start, SSTNode[].class), PythonBuiltinClassType.PDict, -1, -1); }
+	)
+;
+
+setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType] returns [SSTNode result]
+:
+	
+	(   { 
+                SSTNode value; 
+                ScopeInfo.ScopeKind scopeKind;
+                switch (compType) {
+                    case PList: scopeKind = ScopeInfo.ScopeKind.ListComp; break;
+                    case PDict: scopeKind = ScopeInfo.ScopeKind.DictComp; break;
+                    case PSet: scopeKind = ScopeInfo.ScopeKind.SetComp; break;
+                    default: scopeKind = ScopeInfo.ScopeKind.GenExp;
+                }
+                ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), scopeKind); 
+                generator.setHasAnnotations(true);
+            }
+            (
+		test { value = $test.result; }
+		|
+		star_expr { value = $star_expr.result; }
+            ) comp_for[value, null, $compType, 0]
+            { 
+                $result = $comp_for.result; 
+                scopeEnvironment.popScope();
+            }
+	)
+        |
+	(   { SSTNode value; }
+            (
+		test { value = $test.result; }
+		|
+		star_expr { value = $star_expr.result; }
+            )
+		{ int start = start(); push(value); }
+		(
+			','
+			(
+				test { push($test.result); }
+				|
+				star_expr { push($star_expr.result); }
+			)
+		)*
+		{ boolean comma = false; }
+		(',' { comma = true; } )?
+		{ 
+                    SSTNode[] items = getArray(start, SSTNode[].class);
+                    if ($type == PythonBuiltinClassType.PTuple && items.length == 1 && !comma) {
+                        $result = items[0];
+                    } else {
+                        $result = new CollectionSSTNode(items, $type, -1, -1); 
+                    }
+                }
+	)
+;
+
+classdef
+locals [ com.oracle.graal.python.parser.ScopeInfo scope ]
+:
+	
+	'class' NAME
+	{ ArgListBuilder baseClasses = null; }
+	( '(' arglist ')' { baseClasses = $arglist.result; } )?
+        {
+            // we need to create the scope here to resolve base classes in the outer scope
+            factory.getScopeEnvironment().createLocal($NAME.text);
+            ScopeInfo classScope = scopeEnvironment.pushScope($NAME.text, ScopeInfo.ScopeKind.Class); 
+        }
+	':' suite
+	{ push(factory.createClassDefinition($NAME.text, baseClasses, $suite.result, getStartIndex($ctx), getStopIndex($suite.stop))); }
+	{scopeEnvironment.popScope(); }
+;
+
+arglist returns [ArgListBuilder result]
+:
+	{ ArgListBuilder args = new ArgListBuilder(); }
+	(
+		argument[args]
+		(
+			',' argument[args]
+		)*
+		(
+			','
+		)?
+	)?
+	{ $result = args; }
+;
 
 // The reason that keywords are test nodes instead of NAME is that using NAME
 // results in an ambiguity. ast.c makes sure it's a NAME.
@@ -277,20 +1479,129 @@ arglist: argument (',' argument)*  (',')?;
 // Illegal combinations and orderings are blocked in ast.c:
 // multiple (test comp_for) arguments are blocked; keyword unpackings
 // that precede iterable unpackings are blocked; etc.
-argument: ( test (comp_for)? |
-            test '=' test |
-            '**' test |
-            '*' test );
 
-comp_iter: comp_for | comp_if;
-comp_for locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: (ASYNC)? 'for' exprlist 'in' or_test (comp_iter)?;
-comp_if: 'if' test_nocond (comp_iter)?;
+argument [ArgListBuilder args] returns [SSTNode result]
+:               {
+                    ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.GenExp); 
+                    generator.setHasAnnotations(true);
+                }
+		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]
+                {
+                    args.addArg($comp_for.result);
+                   scopeEnvironment.popScope();
+                }
+	|
+                { String name = getCurrentToken().getText();
+                  if (getCurrentToken().getType() != NAME) {
+                    throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                  }
+                  // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
+                  boolean isNameAsVariableInScope = scopeEnvironment.getCurrentScope().getSeenVars() == null ? false : scopeEnvironment.getCurrentScope().getSeenVars().contains(name);
+                }
+		n=test 
+                {
+                    if (!((((ArgumentContext)_localctx).n).result instanceof VarLookupSSTNode)) {
+                        throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+                    }
+                    if (!isNameAsVariableInScope && scopeEnvironment.getCurrentScope().getSeenVars().contains(name)) {
+                        scopeEnvironment.getCurrentScope().getSeenVars().remove(name);
+                    }
+                } 
+                    '=' test 
+                    { 
+                        args.addNamedArg(name, $test.result); 
+                    }
+	|
+		test {  
+                        if (args.hasNameArg()) {
+                            throw new PythonRecognitionException("positional argument follows keyword argument", this, _input, _localctx, getCurrentToken());
+                        }
+                        if (args.hasKwArg()) {
+                            throw new PythonRecognitionException("positional argument follows keyword argument unpacking", this, _input, _localctx, getCurrentToken());
+                        }
+                        args.addArg($test.result); 
+                    }
+	|
+		'**' test { args.addKwArg($test.result); }
+	|
+		'*' test { 
+                        if (args.hasKwArg()) {
+                            throw new PythonRecognitionException("iterable argument unpacking follows keyword argument unpacking", this, _input, _localctx, getCurrentToken());
+                        }
+                        args.addStarArg($test.result); 
+                    }
+;
+
+comp_for
+[SSTNode target, SSTNode name, PythonBuiltinClassType resultType, int level]
+returns [SSTNode result]
+:
+	{ 
+            if (target instanceof StarSSTNode) {
+                throw new PythonRecognitionException("iterable unpacking cannot be used in comprehension", this, _input, $ctx, $ctx.start);
+            }
+            boolean scopeCreated = true; 
+            boolean async = false; 
+        }
+	(
+		ASYNC { async = true; }
+	)?
+	{ 
+            SSTNode iterator; 
+            SSTNode[] variables;
+            int lineNumber;
+        }
+	f = 'for' exprlist 'in' 
+            {
+                ScopeInfo currentScope = null;
+                if (level == 0) {
+                    currentScope = scopeEnvironment.getCurrentScope();
+                    factory.getScopeEnvironment().setCurrentScope(currentScope.getParent());
+                }
+            }
+                or_test    
+	{   
+            if (level == 0) {
+                factory.getScopeEnvironment().setCurrentScope(currentScope);
+            }
+            lineNumber = $f.getLine();
+            iterator = $or_test.result; 
+            variables = $exprlist.result;
+        }
+	
+	{ int start = start(); }
+	(
+		'if' test_nocond { push($test_nocond.result); }
+	) *
+	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
+	
+	(
+            comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
+            { 
+                iterator = $comp_for.result; 
+            }
+	)?
+	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, getStartIndex($f), getLastIndex(_localctx)); }
+;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
 encoding_decl: NAME;
 
-yield_expr: 'yield' (yield_arg)?;
-yield_arg: 'from' test | testlist;
+yield_expr 
+returns [SSTNode result] 
+:   
+    { 
+        SSTNode value = null;
+        boolean isFrom = false; 
+    }
+    'yield' 
+        (
+            'from' test {value = $test.result; isFrom = true;}
+            |
+            testlist { value = $testlist.result; }
+        )?
+        { $result = factory.createYieldExpressionSSTNode(value, isFrom, getStartIndex($ctx), getLastIndex($ctx)); }
+;
 
 /*
  * lexer rules
@@ -299,19 +1610,6 @@ yield_arg: 'from' test | testlist;
 STRING
  : STRING_LITERAL
  | BYTES_LITERAL
- ;
-
-NUMBER
- : INTEGER
- | FLOAT_NUMBER
- | IMAG_NUMBER
- ;
-
-INTEGER
- : DECIMAL_INTEGER
- | OCT_INTEGER
- | HEX_INTEGER
- | BIN_INTEGER
  ;
 
 DEF : 'def';
@@ -409,25 +1707,25 @@ BYTES_LITERAL
  : ( [bB] | ( [bB] [rR] ) | ( [rR] [bB] ) ) ( SHORT_BYTES | LONG_BYTES )
  ;
 
-/// decimalinteger ::=  nonzerodigit digit* | "0"+
+/// decimalinteger 
 DECIMAL_INTEGER
- : NON_ZERO_DIGIT DECIMAL_DIGIT*
- | '0'+
+ : NON_ZERO_DIGIT DIGIT* (['_'] DIGIT+)*
+ | '0'+ (['_']'0'+)*
  ;
 
-/// octinteger     ::=  "0" ("o" | "O") octdigit+
+/// octinteger    
 OCT_INTEGER
- : '0' [oO] OCT_DIGIT+
+ : '0' [oO] (OCT_DIGIT | (['_'] OCT_DIGIT+))+
  ;
 
-/// hexinteger     ::=  "0" ("x" | "X") hexdigit+
+/// hexinteger
 HEX_INTEGER
- : '0' [xX] HEX_DIGIT+
+ : '0' [xX] (HEX_DIGIT | (['_'] HEX_DIGIT+))+
  ;
 
-/// bininteger     ::=  "0" ("b" | "B") bindigit+
+/// bininteger
 BIN_INTEGER
- : '0' [bB] BIN_DIGIT+
+ : '0' [bB] (BIN_DIGIT | (['_'] BIN_DIGIT+))+
  ;
 
 /// floatnumber   ::=  pointfloat | exponentfloat
@@ -541,24 +1839,19 @@ fragment DIGIT
  : [0-9]
  ;
 
-/// decimal integer digit    ::=  "0"..."9"
-fragment DECIMAL_DIGIT
- : [0-9_]
- ;
-
 /// octdigit       ::=  "0"..."7"
 fragment OCT_DIGIT
- : [0-7_]
+ : [0-7]
  ;
 
 /// hexdigit       ::=  digit | "a"..."f" | "A"..."F"
 fragment HEX_DIGIT
- : [0-9a-fA-F_]
+ : [0-9a-fA-F]
  ;
 
 /// bindigit       ::=  "0" | "1"
 fragment BIN_DIGIT
- : [01_]
+ : [01]
  ;
 
 /// pointfloat    ::=  [intpart] fraction | intpart "."
@@ -572,19 +1865,19 @@ fragment EXPONENT_FLOAT
  : ( INT_PART | POINT_FLOAT ) EXPONENT
  ;
 
-/// intpart       ::=  digit+
+/// intpart
 fragment INT_PART
- : DIGIT+
+ : DIGIT+ (['_'] DIGIT+)*
  ;
 
-/// fraction      ::=  "." digit+
+/// fraction
 fragment FRACTION
- : '.' DIGIT+
+ : '.' INT_PART
  ;
 
 /// exponent      ::=  ("e" | "E") ["+" | "-"] digit+
 fragment EXPONENT
- : [eE] [+-]? DIGIT+
+ : [eE] [+-]? INT_PART
  ;
 
 /// shortbytes     ::=  "'" shortbytesitem* "'" | '"' shortbytesitem* '"'
