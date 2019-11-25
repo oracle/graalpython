@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import posix
 import sys
 import _frozen_importlib
 
@@ -161,6 +162,53 @@ class JavaImportFinder:
                    return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
                 else:
                     return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
+
+
+if sys.graal_python_jython_emulation_enabled:
+    class JarImportLoader:
+        def __init__(self, jarpath, zippath):
+            self.jarpath = jarpath
+            self.zippath = zippath
+
+        def create_module(self, spec):
+            newmod = _frozen_importlib._new_module(spec.name)
+            newmod.__path__ = "%s!%s" % (self.jarpath, self.zippath)
+            return newmod
+
+        def exec_module(self, module):
+            import zipfile
+            with zipfile.ZipFile(self.jarpath) as z:
+                code = z.read(self.zippath)
+            exec(code, module.__dict__)
+
+
+    class JarImportFinder:
+        def __init__(self):
+            self.namelist_cache = {}
+
+        def find_spec(self, fullname, path, target=None):
+            for path in sys.path:
+                if ".jar!" in path:
+                    jarfile, _, zippath = path.partition("!")
+                    file_to_find = "%s/%s.py" % (zippath, fullname.replace(".", "/"))
+                    init_to_find = "%s/%s/__init__.py" % (zippath, fullname.replace(".", "/"))
+                    old_mtime, namelist = self.namelist_cache.get(jarfile, (None, None))
+                    try:
+                        mtime = posix.stat(jarfile).st_mtime
+                    except OSError:
+                        mtime = -1
+                    if namelist is None or mtime > old_mtime:
+                        import zipfile
+                        with zipfile.ZipFile(jarfile) as z:
+                            namelist = z.namelist()
+                            self.namelist_cache[jarfile] = (mtime, namelist)
+                    if file_to_find in namelist:
+                        return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(jarfile, file_to_find), is_package=False)
+                    elif init_to_find in namelist:
+                        return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(jarfile, init_to_find), is_package=True)
+
+
+    sys.meta_path.append(JarImportFinder())
 
 
 sys.meta_path.append(JavaImportFinder())
