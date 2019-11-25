@@ -44,9 +44,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -56,6 +56,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -69,13 +70,16 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class IsSubtypeNode extends PNodeWithContext {
-    private final ConditionProfile builtinType = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile builtinClass = ConditionProfile.createBinaryProfile();
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
     @Child private GetMroStorageNode getMroNode;
     @Child private IsSameTypeNode isSameTypeNode;
     @Child private PRaiseNode raise;
+
+    private final ConditionProfile builtinType = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile builtinClass = ConditionProfile.createBinaryProfile();
+
+    @CompilationFinal private ConditionProfile builtinClassIsSubtypeProfile;
 
     private final ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
@@ -94,7 +98,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         if (offset >= 0) {
             // we can only do this for classes where all MRO entries have only a
             // single base
-            assert TypeNodes.GetBaseClassesNode.doSlowPath(derivedMroAry[offset]).length == 1;
+            assert GetBaseClassesNodeGen.getUncached().execute(derivedMroAry[offset]).length == 1;
             return isSameType(derivedMroAry[offset], base);
         } else {
             return false;
@@ -220,6 +224,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isSubtypeOfVariableTypeCached"
     })
     boolean issubTypeGeneric(LazyPythonClass derived, LazyPythonClass cls) {
+        // a builtin class will never be a subclass of a non-builtin class
+        if (profileBuiltinClassIsSubtype(derived, cls)) {
+            return false;
+        }
         for (PythonAbstractClass n : getMro(derived).getInternalClassArray()) {
             if (isSameType(n, cls)) {
                 return true;
@@ -260,6 +268,18 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
             isSameTypeNode = insert(IsSameTypeNodeGen.create());
         }
         return isSameTypeNode.execute(left, right);
+    }
+
+    private static boolean isBuiltinClass(LazyPythonClass cls) {
+        return cls instanceof PythonBuiltinClass || cls instanceof PythonBuiltinClassType;
+    }
+
+    private boolean profileBuiltinClassIsSubtype(LazyPythonClass derived, LazyPythonClass cls) {
+        if (builtinClassIsSubtypeProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            builtinClassIsSubtypeProfile = ConditionProfile.createBinaryProfile();
+        }
+        return builtinClassIsSubtypeProfile.profile(isBuiltinClass(derived) && !isBuiltinClass(cls));
     }
 
     public static IsSubtypeNode create() {

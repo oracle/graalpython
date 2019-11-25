@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.complex;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
@@ -61,7 +62,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 
 import java.util.List;
 
@@ -518,7 +518,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
-    abstract static class BoolNode extends PythonBuiltinNode {
+    abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean bool(PComplex self) {
             return self.getReal() != 0.0 || self.getImag() != 0.0;

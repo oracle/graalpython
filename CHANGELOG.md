@@ -3,6 +3,11 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 20.0.0
+
+* Jython Compatiblity: Implement `from JavaType import *` to import all static members of a Java class
+* Jython Compatiblity: Implement importing Python code from inside JAR files by adding `path/to/jarfile.jar!path/inside/jar` to `sys.path`
+
 ## Version 19.3.0
 
 * Implement `gc.{enable,disable,isenabled}` as stubs

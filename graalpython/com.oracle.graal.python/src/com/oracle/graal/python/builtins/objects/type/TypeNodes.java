@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
@@ -490,6 +490,7 @@ public abstract class TypeNodes {
 
     }
 
+    @GenerateUncached
     @ImportStatic(NativeMemberNames.class)
     public abstract static class GetBaseClassesNode extends PNodeWithContext {
 
@@ -497,22 +498,22 @@ public abstract class TypeNodes {
         public abstract PythonAbstractClass[] execute(Object obj);
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(PythonManagedClass obj) {
+        static PythonAbstractClass[] doPythonClass(PythonManagedClass obj) {
             return obj.getBaseClasses();
         }
 
         @Specialization
-        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj,
+        static PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getBaseClasses();
         }
 
         @Specialization
-        PythonAbstractClass[] doNative(PythonNativeClass obj,
+        static PythonAbstractClass[] doNative(PythonNativeClass obj,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
-                        @Cached("createToArray()") SequenceStorageNodes.ToArrayNode toArrayNode) {
+                        @Cached GetInternalObjectArrayNode toArrayNode) {
             Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMemberNames.TP_BASES));
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
@@ -525,35 +526,6 @@ public abstract class TypeNodes {
             throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide bases");
         }
 
-        @TruffleBoundary
-        public static PythonAbstractClass[] doSlowPath(Object obj) {
-            if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getBaseClasses();
-            } else if (obj instanceof PythonBuiltinClassType) {
-                return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getBaseClasses();
-            } else if (PGuards.isNativeClass(obj)) {
-                Object basesObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_BASES);
-                if (!(basesObj instanceof PTuple)) {
-                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "invalid type of tp_bases (was %p)", basesObj);
-                }
-                PTuple basesTuple = (PTuple) basesObj;
-                try {
-                    return cast(SequenceStorageNodes.ToArrayNode.doSlowPath(basesTuple.getSequenceStorage()));
-                } catch (ClassCastException e) {
-                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "unsupported object in 'tp_bases' (msg: %m)", e);
-                }
-            }
-            throw new IllegalStateException("unknown type " + obj.getClass().getName());
-        }
-
-        protected static SequenceStorageNodes.ToArrayNode createToArray() {
-            return SequenceStorageNodes.ToArrayNode.create(false);
-        }
-
-        public static GetBaseClassesNode create() {
-            return GetBaseClassesNodeGen.create();
-        }
-
         // TODO: get rid of this
         private static PythonAbstractClass[] cast(Object[] arr) {
             PythonAbstractClass[] bases = new PythonAbstractClass[arr.length];
@@ -562,7 +534,6 @@ public abstract class TypeNodes {
             }
             return bases;
         }
-
     }
 
     @ImportStatic(NativeMemberNames.class)
@@ -698,7 +669,7 @@ public abstract class TypeNodes {
 
             PythonAbstractClass[] currentMRO = null;
 
-            PythonAbstractClass[] baseClasses = GetBaseClassesNode.doSlowPath(cls);
+            PythonAbstractClass[] baseClasses = GetBaseClassesNodeGen.getUncached().execute(cls);
             if (baseClasses.length == 0) {
                 currentMRO = new PythonAbstractClass[]{cls};
             } else if (baseClasses.length == 1) {

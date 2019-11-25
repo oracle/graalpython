@@ -1259,6 +1259,8 @@ class GraalpythonCAPIProject(mx.Project):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
+        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
+            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
         super(GraalpythonCAPIProject, self).__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
@@ -1287,6 +1289,45 @@ class GraalpythonCAPIProject(mx.Project):
         return ret
 
 
+def checkout_find_version_for_graalvm(args):
+    """
+    A quick'n'dirty way to check out the revision of the project at the given
+    path to one that imports the same truffle/graal as we do. The assumption is
+    the such a version can be reached by following the HEAD^ links
+    """
+    path = args[0]
+    projectname = os.path.basename(args[0])
+    suite = os.path.join(path, "mx.%s" % projectname, "suite.py")
+    other_version = ""
+    for i in SUITE.suite_imports:
+        if i.name == "sulong":
+            needed_version = i.version
+            break
+    current_commit = SUITE.vc.tip(path)
+    mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
+    while needed_version != other_version:
+        if other_version:
+            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", "HEAD"]).split()
+            if not parent:
+                mx.log("Got to oldest revision before finding appropriate commit, reverting to %s" % current_commit)
+                mx.vc.update(path, rev=current_commit)
+                return
+            parent = parent[0]
+            SUITE.vc.update(path, rev=parent)
+        with open(suite) as f:
+            contents = f.read()
+            if not PY3:
+                contents = contents.decode()
+            d = {}
+            exec(contents, d, d)
+            suites = d["suite"]["imports"]["suites"]
+            for suitedict in suites:
+                if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
+                    other_version = suitedict.get("version", "")
+                    if other_version:
+                        break
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -1304,6 +1345,7 @@ mx.update_commands(SUITE, {
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
+    'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],

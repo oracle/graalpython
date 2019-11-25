@@ -84,12 +84,13 @@ public final class SetLiteralNode extends LiteralNode {
     }
 
     private HashingStorage addAllElement(VirtualFrame frame, HashingStorage setStorage, SequenceStorage sequenceStorage) {
+        HashingStorage storage = setStorage;
         int n = ensureLenNode().execute(sequenceStorage);
         for (int i = 0; i < n; i++) {
             Object element = ensureGetItemNode().execute(frame, sequenceStorage, i);
-            setStorage = ensureSetItemNode().execute(frame, setStorage, element, PNone.NO_VALUE);
+            storage = ensureSetItemNode().execute(frame, storage, element, PNone.NO_VALUE);
         }
-        return setStorage;
+        return storage;
     }
 
     @ExplodeLoop

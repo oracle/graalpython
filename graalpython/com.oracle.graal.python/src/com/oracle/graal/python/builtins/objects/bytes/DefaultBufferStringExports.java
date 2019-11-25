@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,30 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-
-public abstract class IsContextManagerNode extends PDataModelEmulationNode {
-    @Child private HasInheritedAttributeNode hasEnterNode = HasInheritedAttributeNode.create(__ENTER__);
-    @Child private HasInheritedAttributeNode hasExitNode = HasInheritedAttributeNode.create(__EXIT__);
-
-    private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
-
-    @Override
-    public abstract boolean execute(Object obj);
-
-    @Specialization
-    public boolean isContextManager(Object object) {
-        return profile.profile(hasEnterNode.execute(object) && hasExitNode.execute(object));
+@ExportLibrary(value = PythonBufferLibrary.class, receiverType = String.class)
+final class DefaultBufferStringExports {
+    @ExportMessage
+    static boolean isBuffer(@SuppressWarnings("unused") String str) {
+        return true;
     }
 
-    public static IsContextManagerNode create() {
-        return IsContextManagerNodeGen.create();
+    @ExportMessage
+    @TruffleBoundary
+    static int getBufferLength(@SuppressWarnings("unused") String str) {
+        return getBufferBytes(str).length;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static byte[] getBufferBytes(String str) {
+        return str.getBytes();
     }
 }

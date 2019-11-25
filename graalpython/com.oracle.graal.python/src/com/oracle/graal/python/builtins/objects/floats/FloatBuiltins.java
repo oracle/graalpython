@@ -1361,15 +1361,17 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object[] countIt(double manitssa, int exponent) {
-            for (int i = 0; i < 300 && Double.compare(manitssa, Math.floor(manitssa)) != 0; i++) {
-                manitssa *= 2.0;
-                exponent--;
+            double m = manitssa;
+            int e = exponent;
+            for (int i = 0; i < 300 && Double.compare(m, Math.floor(m)) != 0; i++) {
+                m *= 2.0;
+                e--;
             }
 
-            BigInteger numerator = BigInteger.valueOf((new Double(manitssa)).longValue());
+            BigInteger numerator = BigInteger.valueOf((new Double(m)).longValue());
             BigInteger denominator = BigInteger.ONE;
-            BigInteger py_exponent = denominator.shiftLeft(Math.abs(exponent));
-            if (exponent > 0) {
+            BigInteger py_exponent = denominator.shiftLeft(Math.abs(e));
+            if (e > 0) {
                 numerator = numerator.multiply(py_exponent);
             } else {
                 denominator = py_exponent;

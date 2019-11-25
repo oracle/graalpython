@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetSequenceStorageNodeFactory.GetSequenceStorageCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -88,49 +87,43 @@ public abstract class SequenceNodes {
         }
     }
 
-    // TODO qualified name is a workaround for a DSL bug
-    public abstract static class GetSequenceStorageNode extends com.oracle.truffle.api.nodes.Node {
+    @GenerateUncached
+    public abstract static class GetSequenceStorageNode extends Node {
 
         public abstract SequenceStorage execute(Object seq);
 
-        abstract static class GetSequenceStorageCachedNode extends GetSequenceStorageNode {
-            @Specialization(guards = {"seq.getClass() == cachedClass"})
-            static SequenceStorage doWithStorage(PSequence seq,
-                            @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
-                return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
-            }
-
-            @Specialization(replaces = "doWithStorage")
-            static SequenceStorage doUncached(PSequence seq) {
-                return seq.getSequenceStorage();
-            }
-
-            @Specialization
-            static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException("cannot get sequence storage of non-sequence object");
-            }
+        @Specialization(guards = {"seq.getClass() == cachedClass"})
+        static SequenceStorage doSequenceCached(PSequence seq,
+                        @Cached("seq.getClass()") Class<? extends PSequence> cachedClass) {
+            return CompilerDirectives.castExact(seq, cachedClass).getSequenceStorage();
         }
 
-        private static final class GetSequenceStorageUncachedNode extends GetSequenceStorageNode {
-            private static final GetSequenceStorageUncachedNode INSTANCE = new GetSequenceStorageUncachedNode();
-
-            @Override
-            public SequenceStorage execute(Object seq) {
-                if (seq instanceof PSequence) {
-                    return GetSequenceStorageCachedNode.doUncached((PSequence) seq);
-                }
-                return GetSequenceStorageCachedNode.doFallback(seq);
-            }
+        @Specialization(replaces = "doSequenceCached")
+        static SequenceStorage doSequence(PSequence seq) {
+            return seq.getSequenceStorage();
         }
 
-        public static GetSequenceStorageNode create() {
-            return GetSequenceStorageCachedNodeGen.create();
+        @Specialization(guards = "!isPSequence(seq)")
+        static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("cannot get sequence storage of non-sequence object");
         }
 
-        public static GetSequenceStorageNode getUncached() {
-            return GetSequenceStorageUncachedNode.INSTANCE;
+        static boolean isPSequence(Object object) {
+            return object instanceof PSequence;
         }
     }
 
+    @GenerateUncached
+    public abstract static class GetObjectArrayNode extends Node {
+
+        public abstract Object[] execute(Object seq);
+
+        @Specialization
+        static Object[] doGeneric(Object seq,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
+            return toArrayNode.execute(getSequenceStorageNode.execute(seq));
+        }
+    }
 }

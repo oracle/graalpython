@@ -145,7 +145,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             Object[] argsWithoutSelf = new Object[arguments.length - 1];
             System.arraycopy(arguments, 1, argsWithoutSelf, 0, argsWithoutSelf.length);
             return execute(frame, arguments[0], argsWithoutSelf, keywords);

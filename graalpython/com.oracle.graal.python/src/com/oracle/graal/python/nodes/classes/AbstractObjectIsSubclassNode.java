@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -72,14 +74,15 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     boolean isSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
-                    @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
+                    @Cached AbstractObjectIsSubclassNode isSubclassNode,
+                    @Exclusive @Cached GetObjectArrayNode getObjectArrayNode) {
         // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
         PTuple bases = getBasesNode.execute(frame, cachedDerived);
         if (bases == null || isEmpty(bases)) {
             return false;
         }
 
-        for (Object baseCls : bases.getArray()) {
+        for (Object baseCls : getObjectArrayNode.execute(bases)) {
             if (isSubclassNode.execute(frame, baseCls, cachedCls)) {
                 return true;
             }
@@ -89,7 +92,8 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     @Specialization(replaces = {"isSubclass", "isSameClass"})
     boolean isSubclassGeneric(VirtualFrame frame, Object derived, Object cls,
-                    @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
+                    @Exclusive @Cached AbstractObjectIsSubclassNode isSubclassNode,
+                    @Exclusive @Cached GetObjectArrayNode getObjectArrayNode) {
         if (derived == cls) {
             return true;
         }
@@ -99,7 +103,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
             return false;
         }
 
-        for (Object baseCls : bases.getArray()) {
+        for (Object baseCls : getObjectArrayNode.execute(bases)) {
             if (isSubclassNode.execute(frame, baseCls, cls)) {
                 return true;
             }

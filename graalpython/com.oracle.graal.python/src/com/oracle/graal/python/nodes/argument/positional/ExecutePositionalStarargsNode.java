@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -69,23 +70,24 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(VirtualFrame frame, Object starargs);
 
     @Specialization
-    static Object[] starargs(Object[] starargs) {
+    static Object[] doObjectArray(Object[] starargs) {
         return starargs;
     }
 
     @Specialization
-    static Object[] starargs(PTuple starargs) {
-        return starargs.getArray();
-    }
-
-    @Specialization
-    static Object[] starargs(PList starargs,
-                    @Cached SequenceStorageNodes.ToArrayNode toArray) {
+    static Object[] doTuple(PTuple starargs,
+                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
         return toArray.execute(starargs.getSequenceStorage());
     }
 
     @Specialization
-    static Object[] starargs(PDict starargs) {
+    static Object[] doList(PList starargs,
+                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+        return toArray.execute(starargs.getSequenceStorage());
+    }
+
+    @Specialization
+    static Object[] doDict(PDict starargs) {
         int length = starargs.size();
         Object[] args = new Object[length];
         Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
@@ -97,7 +99,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    static Object[] starargs(PSet starargs) {
+    static Object[] doSet(PSet starargs) {
         int length = starargs.size();
         Object[] args = new Object[length];
         Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
@@ -109,7 +111,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    static Object[] starargs(@SuppressWarnings("unused") PNone none) {
+    static Object[] doNone(@SuppressWarnings("unused") PNone none) {
         return new Object[0];
     }
 
@@ -154,37 +156,34 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
         @Specialization
         static Object[] starargs(Object[] starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+            return ExecutePositionalStarargsNode.doObjectArray(starargs);
         }
 
         @Specialization
-        static Object[] starargs(PTuple starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+        static Object[] doTuple(PTuple starargs,
+                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+            return ExecutePositionalStarargsNode.doTuple(starargs, toArray);
         }
 
         @Specialization
-        static Object[] starargs(PList starargs) {
-            int length = starargs.getSequenceStorage().length();
-            Object[] internalArray = starargs.getSequenceStorage().getInternalArray();
-            if (internalArray.length != length) {
-                return starargs.getSequenceStorage().getCopyOfInternalArray();
-            }
-            return internalArray;
+        static Object[] doList(PList starargs,
+                        @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArray) {
+            return ExecutePositionalStarargsNode.doList(starargs, toArray);
         }
 
         @Specialization
-        static Object[] starargs(PDict starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+        static Object[] doDict(PDict starargs) {
+            return ExecutePositionalStarargsNode.doDict(starargs);
         }
 
         @Specialization
-        static Object[] starargs(PSet starargs) {
-            return ExecutePositionalStarargsNode.starargs(starargs);
+        static Object[] doSet(PSet starargs) {
+            return ExecutePositionalStarargsNode.doSet(starargs);
         }
 
         @Specialization
         static Object[] starargs(@SuppressWarnings("unused") PNone none) {
-            return ExecutePositionalStarargsNode.starargs(none);
+            return ExecutePositionalStarargsNode.doNone(none);
         }
 
         @Specialization

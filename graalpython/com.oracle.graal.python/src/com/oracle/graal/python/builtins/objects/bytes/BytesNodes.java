@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNode
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -150,20 +151,20 @@ public abstract class BytesNodes {
         public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization
-        byte[] doBytes(VirtualFrame frame, PBytes bytes,
+        byte[] doBytes(PBytes bytes,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(frame, bytes, exceptionProfile);
+            return doBytesLike(bytes, exceptionProfile);
         }
 
         @Specialization
-        byte[] doByteArray(VirtualFrame frame, PByteArray byteArray,
+        byte[] doByteArray(PByteArray byteArray,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(frame, byteArray, exceptionProfile);
+            return doBytesLike(byteArray, exceptionProfile);
         }
 
-        private byte[] doBytesLike(VirtualFrame frame, PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
+        private byte[] doBytesLike(PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
             try {
-                return getToByteArrayNode().execute(frame, bytes.getSequenceStorage());
+                return getToByteArrayNode().execute(bytes.getSequenceStorage());
             } catch (PException e) {
                 e.expect(TypeError, exceptionProfile);
                 return doError(bytes);
@@ -185,7 +186,7 @@ public abstract class BytesNodes {
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toByteArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toByteArrayNode;
         }
@@ -373,7 +374,7 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, Object iterator);
 
-        public SequenceStorageNodes.AppendNode getAppendByteNode() {
+        private SequenceStorageNodes.AppendNode getAppendByteNode() {
             if (appendByteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 appendByteNode = insert(SequenceStorageNodes.AppendNode.create());

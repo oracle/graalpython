@@ -125,6 +125,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     private void writeSequenceStorage(VirtualFrame frame, SequenceStorage sequenceStorage, SequenceStorageNodes.LenNode lenNode, SequenceStorageNodes.GetItemNode getItemNode) {
         int len = lenNode.execute(sequenceStorage);
         if (len > slots.length) {
+            CompilerDirectives.transferToInterpreter();
             throw getCore().raiseInvalidSyntax(getEncapsulatingSourceSection().getSource(), getEncapsulatingSourceSection(), "too many values to unpack (expected %d)", slots.length);
         } else if (len < slots.length) {
             throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);

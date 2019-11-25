@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,9 +46,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 /**
- * Subclasses must override {@link #varArgExecute(VirtualFrame, Object[], PKeyword[])} to call the
- * e.g. {@link #execute(VirtualFrame, Object, Object[], PKeyword[])} or whatever is right for them,
- * otherwise they will never be on the direct call path.
+ * Subclasses must override {@link #varArgExecute(VirtualFrame, Object, Object[], PKeyword[])} to
+ * call the e.g. {@link #execute(VirtualFrame, Object, Object[], PKeyword[])} or whatever is right
+ * for them, otherwise they will never be on the direct call path.
  */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
     public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
@@ -58,7 +58,8 @@ public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
     /**
      * {@code frame} may be null. This function must not be called "execute"
      */
-    public Object varArgExecute(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords)
+    @SuppressWarnings("unused")
+    public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords)
                     throws VarargsBuiltinDirectInvocationNotSupported {
         throw new VarargsBuiltinDirectInvocationNotSupported();
     }

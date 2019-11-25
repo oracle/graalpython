@@ -205,11 +205,19 @@ inline void* native_to_java(PyObject* obj) {
 }
 
 __attribute__((always_inline))
-inline void* native_type_to_java(PyTypeObject* type) {
-	if (!truffle_cannot_be_handle(type)) {
-        return (void *)resolve_handle(cache, (uint64_t)type);
+inline void* native_to_java_slim(PyObject* obj) {
+    if (!truffle_cannot_be_handle(obj)) {
+        return truffle_managed_from_handle(obj);
     }
-    return (void *)type;
+    return obj;
+}
+
+__attribute__((always_inline))
+inline PyTypeObject* native_type_to_java(PyTypeObject* type) {
+	if (!truffle_cannot_be_handle(type)) {
+        return (PyTypeObject *)truffle_managed_from_handle(type);
+    }
+    return type;
 }
 
 extern void* to_java(PyObject* obj);

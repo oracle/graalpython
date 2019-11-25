@@ -38,36 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
+import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
+import com.oracle.truffle.api.library.Library;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+@GenerateLibrary
+@DefaultExport(DefaultBufferStringExports.class)
+@SuppressWarnings("unused")
+public abstract class PythonBufferLibrary extends Library {
 
-@GenerateUncached
-public abstract class IsSequenceTypeNode extends PDataModelEmulationNode {
-
-    @Specialization
-    boolean isSequence(LazyPythonClass type,
-                    @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
-                    @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
-        if (lenProfile.profile(hasLenNode.execute(type, __LEN__) != PNone.NO_VALUE)) {
-            return getItemProfile.profile(hasGetItemNode.execute(type, __GETITEM__) != PNone.NO_VALUE);
-        }
+    @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
+    public boolean isBuffer(Object receiver) {
         return false;
     }
 
-    @Specialization(guards = "!isClass(obj)")
-    boolean isSequence(@SuppressWarnings("unused") Object obj) {
-        return false;
+    @Abstract(ifExported = "getBufferBytes")
+    public int getBufferLength(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @Abstract(ifExported = "getBufferLength")
+    public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
     }
 }

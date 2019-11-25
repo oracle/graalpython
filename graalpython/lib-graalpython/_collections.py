@@ -560,7 +560,7 @@ class _DequeIter(object):
         self.index = dq.leftindex
         self.counter = dq.len
         self.lock = dq._getlock()
-        assert self.index > 0
+        assert self.index >= 0
 
     def __iter__(self):
         return self
@@ -592,7 +592,7 @@ class _DequeRevIter(object):
         self.index = dq.rightindex
         self.counter = dq.len
         self.lock = dq._getlock()
-        assert self.index > 0
+        assert self.index >= 0
 
     def __iter__(self):
         return self

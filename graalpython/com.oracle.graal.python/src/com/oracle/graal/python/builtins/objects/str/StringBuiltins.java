@@ -72,6 +72,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
@@ -465,8 +467,9 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StartsWithNode extends PythonBuiltinNode {
 
-        private @Child CastToIndexNode startNode;
-        private @Child CastToIndexNode endNode;
+        @Child private CastToIndexNode startNode;
+        @Child private CastToIndexNode endNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         private CastToIndexNode getStartNode() {
             if (startNode == null) {
@@ -520,7 +523,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private boolean doIt(String self, PTuple prefix, int start, int end) {
-            for (Object o : prefix.getArray()) {
+            for (Object o : ensureGetObjectArrayNode().execute(prefix)) {
                 if (o instanceof String) {
                     if (doIt(self, (String) o, start, end)) {
                         return true;
@@ -534,6 +537,14 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
             }
             return false;
+        }
+
+        private GetObjectArrayNode ensureGetObjectArrayNode() {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode;
         }
 
         @Specialization
@@ -643,8 +654,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object endsWith(String self, PTuple prefix) {
-            for (Object o : prefix.getArray()) {
+        public Object endsWith(String self, PTuple prefix,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            for (Object o : getObjectArrayNode.execute(prefix)) {
                 if (o instanceof String) {
                     if (self.endsWith((String) o)) {
                         return true;
@@ -687,7 +699,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return endNode;
         }
 
-        private SliceInfo computeSlice(VirtualFrame frame, int length, long start, long end) {
+        private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
             PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), 1);
             return tmpSlice.computeIndices(length);
         }
@@ -1619,7 +1631,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
     }
@@ -1989,7 +2001,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
-        public String create(VirtualFrame frame, String self, long width, String fill) {
+        public String create(@SuppressWarnings("unused") VirtualFrame frame, String self, long width, String fill) {
             return make(self, getCastToIndexNode().execute(width), fill);
         }
 
@@ -2121,7 +2133,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(VirtualFrame frame, String primary, long idx,
+        public String doString(@SuppressWarnings("unused") VirtualFrame frame, String primary, long idx,
                         @Cached("create()") CastToIndexNode castToIndex) {
             return doString(primary, castToIndex.execute(idx));
         }

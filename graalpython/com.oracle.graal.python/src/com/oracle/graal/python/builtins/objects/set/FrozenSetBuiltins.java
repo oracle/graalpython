@@ -109,8 +109,9 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PBaseSet self) {
-            return self.size();
+        public int len(PBaseSet self,
+                        @Cached HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getDictStorage());
         }
     }
 
@@ -409,7 +410,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                     selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
             return container;
         }
@@ -600,7 +601,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         protected static long HASH_UNSET = -1;
 
         @Specialization(guards = {"self.getHash() != HASH_UNSET"})
-        public long getHash(VirtualFrame frame, PFrozenSet self) {
+        public long getHash(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self) {
             return self.getHash();
         }
 

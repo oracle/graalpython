@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,57 +38,78 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MathGuards;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @GenerateUncached
-@ImportStatic(PGuards.class)
-public abstract class IsCallableNode extends PDataModelEmulationNode {
+@ImportStatic(MathGuards.class)
+public abstract class CastToJavaByteNode extends PNodeWithContext {
 
-    @Specialization(guards = {"!isCallable(callable) || isClass(callable)"})
-    protected static boolean isSpecialCallable(Object callable,
-                    @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode) {
-        Object call = callAttrGetterNode.execute(callable, __CALL__);
-        return PGuards.isCallable(call);
-    }
+    public abstract byte execute(byte x);
 
-    @Specialization
-    protected static boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
-        return true;
-    }
+    public abstract byte execute(int x);
+
+    public abstract byte execute(long x);
+
+    public abstract byte execute(Object x);
 
     @Specialization
-    protected static boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
-        return true;
+    byte fromByte(byte x) {
+        return x;
     }
 
-    @Specialization
-    protected static boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
-        return true;
+    @Specialization(rewriteOn = ArithmeticException.class)
+    byte fromInt(int x) {
+        return PInt.byteValueExact(x);
     }
 
-    @Specialization
-    protected static boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
-        return true;
+    @Specialization(rewriteOn = ArithmeticException.class)
+    byte fromLong(long x) {
+        return PInt.byteValueExact(x);
     }
 
-    public static IsCallableNode create() {
-        return IsCallableNodeGen.create();
+    @Specialization(rewriteOn = ArithmeticException.class)
+    byte fromPInt(PInt x) {
+        return x.byteValueExact();
     }
 
-    public static IsCallableNode getUncached() {
-        return IsCallableNodeGen.getUncached();
+    @Specialization(replaces = "fromInt")
+    byte fromIntErr(int x,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        try {
+            return PInt.byteValueExact(x);
+        } catch (ArithmeticException e) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+        }
+    }
+
+    @Specialization(replaces = "fromLong")
+    byte fromLongErr(long x,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        try {
+            return PInt.byteValueExact(x);
+        } catch (ArithmeticException e) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+        }
+    }
+
+    @Specialization(replaces = "fromPInt")
+    byte fromPIntErr(PInt x,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        try {
+            return x.byteValueExact();
+        } catch (ArithmeticException e) {
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,51 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public abstract class IsHashableNode extends PDataModelEmulationNode {
-
-    @Override
-    public final boolean execute(Object obj) {
-        return execute(null, obj);
-    }
-
-    public abstract boolean execute(VirtualFrame frame, Object obj);
-
-    protected static boolean isDouble(Object object) {
-        return object instanceof Double || PGuards.isPFloat(object);
-    }
-
-    @Specialization(guards = "isString(object)")
-    protected boolean isHashableString(@SuppressWarnings("unused") Object object) {
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Long.class)
+final class DefaultDataModelLongExports {
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") Long value) {
         return true;
     }
 
-    @Specialization(guards = "isInteger(object)")
-    protected boolean isHashableInt(@SuppressWarnings("unused") Object object) {
+    @ExportMessage
+    static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
         return true;
-    }
-
-    @Specialization(guards = "isDouble(object)")
-    protected boolean isHashableGeneric(@SuppressWarnings("unused") Object object) {
-        return true;
-    }
-
-    @Specialization
-    protected boolean isHashableGeneric(Object object,
-                    @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHashAttributeNode,
-                    @Cached IsCallableNode isCallableNode) {
-        Object hashAttr = lookupHashAttributeNode.execute(object);
-        return isCallableNode.execute(hashAttr);
-    }
-
-    public static IsHashableNode create() {
-        return IsHashableNodeGen.create();
     }
 }

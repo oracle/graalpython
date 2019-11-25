@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonTypeLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -124,7 +125,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
-import com.oracle.graal.python.nodes.datamodel.IsSequenceTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -405,9 +405,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_MAPPING, key)")
         Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached IsSequenceTypeNode isSequenceTypeNode,
+                        @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            if (isSequenceTypeNode.execute(object)) {
+            if (pythonTypeLibrary.isSequenceType(object)) {
                 return new PyMappingMethodsWrapper(object);
             } else {
                 return toSulongNode.execute(PNone.NO_VALUE);

@@ -97,6 +97,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -108,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -145,7 +148,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttri
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -503,13 +505,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object hash(VirtualFrame frame, Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHash,
-                        @Cached IsCallableNode isCallable,
+                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
                         @Cached CallUnaryMethodNode callUnary,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
                         @Cached IsInstanceNode isInstanceNode) {
             if (trueNode.executeBoolean(frame, lookupDirNode.execute(object))) {
                 Object hashAttr = lookupHash.execute(object);
-                if (!isCallable.execute(hashAttr)) {
+                if (!dataModelLibrary.isCallable(hashAttr)) {
                     throw raise(PythonErrorType.TypeError, "unhashable type: '%p'", object);
                 }
                 Object hashValue = callUnary.executeObject(frame, hashAttr, object);
@@ -1102,6 +1104,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private TypeBuiltins.InstanceCheckNode typeInstanceCheckNode = TypeBuiltins.InstanceCheckNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         public static IsInstanceNode create() {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
@@ -1127,7 +1130,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         boolean isInstanceTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsInstanceNode isInstanceNode) {
-            Object[] array = clsTuple.getArray();
+            Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
                 if (isInstanceNode.executeWith(frame, instance, cls)) {
@@ -1140,7 +1143,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = "isInstanceTupleConstantLen")
         boolean isInstance(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("create()") IsInstanceNode instanceNode) {
-            for (Object cls : clsTuple.getArray()) {
+            for (Object cls : getArray(clsTuple)) {
                 if (instanceNode.executeWith(frame, instance, cls)) {
                     return true;
                 }
@@ -1160,6 +1163,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             return lenNode.execute(t.getSequenceStorage());
         }
+
+        private Object[] getArray(PTuple tuple) {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode.execute(tuple);
+        }
     }
 
     // issubclass(class, classinfo)
@@ -1170,6 +1181,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
 
         public static IsSubClassNode create() {
             return BuiltinFunctionsFactory.IsSubClassNodeFactory.create();
@@ -1187,7 +1199,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public boolean isSubclassTupleConstantLen(VirtualFrame frame, Object derived, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
-            Object[] array = clsTuple.getArray();
+            Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
                 if (isSubclassNode.executeWith(frame, derived, cls)) {
@@ -1200,7 +1212,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = "isSubclassTupleConstantLen")
         public boolean isSubclass(VirtualFrame frame, Object derived, PTuple clsTuple,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
-            for (Object cls : clsTuple.getArray()) {
+            for (Object cls : getArray(clsTuple)) {
                 if (isSubclassNode.executeWith(frame, derived, cls)) {
                     return true;
                 }
@@ -1219,6 +1231,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 lenNode = insert(SequenceStorageNodes.LenNode.create());
             }
             return lenNode.execute(t.getSequenceStorage());
+        }
+
+        private Object[] getArray(PTuple tuple) {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode.execute(tuple);
         }
     }
 
@@ -1685,15 +1705,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public int sumInt(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, 0, false);
+            return sumIntInternal(frame, arg1, 0);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public int sumInt(VirtualFrame frame, Object arg1, int start) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, start, true);
+            return sumIntInternal(frame, arg1, start);
         }
 
-        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, boolean firstValProvided) throws UnexpectedResultException {
+        private int sumIntInternal(VirtualFrame frame, Object arg1, int start) throws UnexpectedResultException {
             Object iterator = iter.executeWith(frame, arg1);
             int value = start;
             while (true) {
@@ -1704,7 +1724,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(errorProfile1);
                     return value;
                 } catch (UnexpectedResultException e) {
-                    Object newValue = firstValProvided || value != start ? add.executeObject(frame, value, e.getResult()) : e.getResult();
+                    Object newValue = add.executeObject(frame, value, e.getResult());
                     throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, errorProfile2));
                 }
                 try {
@@ -1717,15 +1737,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public double sumDouble(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, 0, false);
+            return sumDoubleInternal(frame, arg1, 0);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         public double sumDouble(VirtualFrame frame, Object arg1, double start) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, start, true);
+            return sumDoubleInternal(frame, arg1, start);
         }
 
-        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, boolean firstValProvided) throws UnexpectedResultException {
+        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start) throws UnexpectedResultException {
             Object iterator = iter.executeWith(frame, arg1);
             double value = start;
             while (true) {
@@ -1736,7 +1756,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     e.expectStopIteration(errorProfile1);
                     return value;
                 } catch (UnexpectedResultException e) {
-                    Object newValue = firstValProvided || value != start ? add.executeObject(frame, value, e.getResult()) : e.getResult();
+                    Object newValue = add.executeObject(frame, value, e.getResult());
                     throw new UnexpectedResultException(iterateGeneric(frame, iterator, newValue, errorProfile2));
                 }
                 try {

@@ -43,6 +43,10 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
         this.length = length;
     }
 
+    public final int capacity() {
+        return capacity;
+    }
+
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);

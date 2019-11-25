@@ -88,8 +88,8 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization
-    Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3,
-                    @Cached("create()") CallNode callNode) {
-        return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+    Object call(VirtualFrame frame, Object func, Object arg1, Object arg2, Object arg3, Object arg4,
+                    @Cached CallNode callNode) {
+        return callNode.execute(frame, func, new Object[]{arg1, arg2, arg3, arg4}, PKeyword.EMPTY_KEYWORDS);
     }
 }

@@ -153,7 +153,7 @@ public abstract class AbstractImportNode extends StatementNode {
         });
     }
 
-    private boolean emulateJython() {
+    protected boolean emulateJython() {
         if (emulateJython == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             emulateJython = PythonOptions.getFlag(getContext(), PythonOptions.EmulateJython);

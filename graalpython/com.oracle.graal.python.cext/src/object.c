@@ -186,12 +186,8 @@ PyObject* PyObject_Repr(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));
 }
 
-UPCALL_ID(PyObject_Call);
 PyObject* PyObject_Call(PyObject* callable, PyObject* args, PyObject* kwargs) {
-    if (kwargs == NULL) {
-        kwargs = PyDict_New();
-    }
-    return UPCALL_CEXT_O(_jls_PyObject_Call, native_to_java(callable), native_to_java(args), native_to_java(kwargs));
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java_slim(callable), native_to_java_slim(args), native_to_java_slim(kwargs));
 }
 
 PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
@@ -309,10 +305,7 @@ PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, Py_ssiz
 	for(i=0; i < nargs; i++) {
 		PyTuple_SetItem(targs, i, args[i]);
 	}
-    if (kwargs == NULL) {
-        kwargs = PyDict_New();
-    }
-    return UPCALL_CEXT_O(_jls_PyObject_Call, native_to_java(func), native_to_java(targs), native_to_java(kwargs));
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java_slim(func), native_to_java_slim(targs), native_to_java_slim(kwargs));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {

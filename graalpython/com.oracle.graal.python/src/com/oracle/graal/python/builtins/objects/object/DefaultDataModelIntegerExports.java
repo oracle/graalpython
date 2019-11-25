@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,30 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-@ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class PDataModelEmulationNode extends PNodeWithContext {
+@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Integer.class)
+final class DefaultDataModelIntegerExports {
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") Integer value) {
+        return true;
+    }
 
-    public abstract boolean execute(Object object);
-
-    public static boolean check(PDataModelEmulationNode isMapping, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object obj) {
-        PythonContext context = contextRef.get();
-        PException caughtException = IndirectCallContext.enter(frame, context, isMapping);
-        try {
-            return isMapping.execute(obj);
-        } finally {
-            IndirectCallContext.exit(context, caughtException);
-        }
+    @ExportMessage
+    static boolean canBeIndex(@SuppressWarnings("unused") Integer value) {
+        return true;
     }
 }

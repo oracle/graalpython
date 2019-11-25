@@ -48,28 +48,53 @@ import importlib
 import sys
 
 
+WARNING = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+
+
+def info(msg, *args, **kwargs):
+    print(BOLD + msg.format(*args, **kwargs) + ENDC)
+
+
+def error(msg, *args, **kwargs):
+    print(FAIL + msg.format(*args, **kwargs) + ENDC)
+
+
+def warn(msg, *args, **kwargs):
+    print(WARNING + msg.format(*args, **kwargs) + ENDC)
+
+
 def get_module_name(package_name):
     non_standard_packages = {
-        'pyyaml':'pyaml',
-        'protobuf':'google.protobuf',
-        'python-dateutil':'dateutil',
-        'websocket-client':'websocket',
+        'pyyaml': 'pyaml',
+        'protobuf': 'google.protobuf',
+        'python-dateutil': 'dateutil',
+        'websocket-client': 'websocket',
+        'attrs': 'attr',
     }
     module_name = non_standard_packages.get(package_name, package_name)
     return  module_name.replace('-', '_')
 
 
-def pip_package(name=None):
+def pip_package(name=None, try_import=False):
     def decorator(func):
         def wrapper(*args, **kwargs):
             _name = name if name else func.__name__
             try:
                 module_name = get_module_name(_name)
                 importlib.import_module(module_name)
-                del sys.modules[module_name]
-            except ImportError:
-                print("Installing required dependency: {}".format(_name))
+                importlib.invalidate_caches()
+            except (ImportError, ModuleNotFoundError):
+                info("Installing required dependency: {} ... ", _name)
                 func(*args, **kwargs)
+                if try_import:
+                    import site
+                    site.main()
+                    importlib.invalidate_caches()
+                    importlib.import_module(module_name)
+                info("{} installed successfully", _name)
         return wrapper
     return decorator
 
@@ -215,6 +240,7 @@ index 66d8530..8bb2ab6 100644
     @pip_package()
     def pluggy(**kwargs):
         zipp(**kwargs)
+        importlib_metadata(**kwargs)
         install_from_pypi("pluggy==0.12.0", **kwargs)
 
     @pip_package()
@@ -1500,7 +1526,7 @@ KNOWN_PACKAGES = known_packages()
 
 
 def xit(msg, status=-1):
-    print(msg)
+    error(msg)
     exit(-1)
 
 
@@ -1643,12 +1669,12 @@ def main(argv):
                 if s.endswith("site-packages"):
                     user_site = s
                     break
-        print("Installed packages:")
+        info("Installed packages:")
         for p in sys.path:
             if p.startswith(user_site):
-                print(p[len(user_site) + 1:])
+                info(p[len(user_site) + 1:])
     elif args.command == "uninstall":
-        print("WARNING: I will only delete the package folder, proper uninstallation is not supported at this time.")
+        warn("WARNING: I will only delete the package folder, proper uninstallation is not supported at this time.")
         user_site = site.getusersitepackages()
         for pkg in args.package.split(","):
             deleted = False
@@ -1664,7 +1690,7 @@ def main(argv):
                         deleted = True
                         break
             if deleted:
-                print("Deleted %s" % p)
+                info("Deleted {}", p)
             else:
                 xit("Unknown package: '%s'" % pkg)
     elif args.command == "install":

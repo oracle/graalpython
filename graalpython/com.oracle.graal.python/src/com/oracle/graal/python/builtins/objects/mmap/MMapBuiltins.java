@@ -104,6 +104,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -115,20 +116,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public class MMapBuiltins extends PythonBuiltins {
 
     protected interface MMapBaseNode {
-        @TruffleBoundary
-        default long position(SeekableByteChannel ch) throws IOException {
-            return ch.position();
-        }
-
-        @TruffleBoundary
-        default void position(SeekableByteChannel ch, long offset) throws IOException {
-            ch.position(offset);
-        }
-
-        @TruffleBoundary
-        default long size(SeekableByteChannel ch) throws IOException {
-            return ch.size();
-        }
     }
 
     protected interface ByteReadingNode extends MMapBaseNode {
@@ -263,18 +250,18 @@ public class MMapBuiltins extends PythonBuiltins {
 
             try {
                 long i = castToLongNode.execute(idxObj);
-                long len = lenNode.execute(frame, self);
+                long len = lenNode.execute(self);
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
 
                 // save current position
-                long oldPos = position(channel);
+                long oldPos = PMMap.position(channel);
 
-                position(channel, idx);
+                PMMap.position(channel, idx);
                 int res = readByteNode.execute(channel) & 0xFF;
 
                 // restore position
-                position(channel, oldPos);
+                PMMap.position(channel, oldPos);
 
                 return res;
 
@@ -288,18 +275,18 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadFromChannelNode readNode,
                         @Cached("create()") InternalLenNode lenNode) {
             try {
-                long len = lenNode.execute(frame, self);
+                long len = lenNode.execute(self);
                 SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
                 SeekableByteChannel channel = self.getChannel();
 
                 // save current position
-                long oldPos = position(channel);
+                long oldPos = PMMap.position(channel);
 
-                position(channel, info.start);
+                PMMap.position(channel, info.start);
                 ByteSequenceStorage s = readNode.execute(channel, info.length);
 
                 // restore position
-                position(channel, oldPos);
+                PMMap.position(channel, oldPos);
 
                 return factory().createBytes(s);
             } catch (IOException e) {
@@ -327,7 +314,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
             try {
                 long i = castToLongNode.execute(idxObj);
-                long len = lenNode.execute(frame, self);
+                long len = lenNode.execute(self);
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
 
@@ -336,13 +323,13 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
 
                 // save current position
-                long oldPos = position(channel);
+                long oldPos = PMMap.position(channel);
 
-                position(channel, idx);
+                PMMap.position(channel, idx);
                 writeByteNode.execute(channel, castToByteNode.execute(frame, val));
 
                 // restore position
-                position(channel, oldPos);
+                PMMap.position(channel, oldPos);
 
                 return PNone.NONE;
 
@@ -359,7 +346,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile) {
 
             try {
-                long len = lenNode.execute(frame, self);
+                long len = lenNode.execute(self);
                 SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
                 SeekableByteChannel channel = self.getChannel();
 
@@ -368,13 +355,13 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
 
                 // save current position
-                long oldPos = position(channel);
+                long oldPos = PMMap.position(channel);
 
-                position(channel, info.start);
+                PMMap.position(channel, info.start);
                 writeNode.execute(frame, channel, getStorageNode.execute(val), info.length);
 
                 // restore position
-                position(channel, oldPos);
+                PMMap.position(channel, oldPos);
 
                 return PNone.NONE;
 
@@ -394,7 +381,7 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization
         long len(VirtualFrame frame, PMMap self,
                         @Cached("create()") InternalLenNode lenNode) {
-            return lenNode.execute(frame, self);
+            return lenNode.execute(self);
         }
     }
 
@@ -457,7 +444,7 @@ public class MMapBuiltins extends PythonBuiltins {
         @Specialization
         long size(VirtualFrame frame, PMMap self,
                         @Cached("create()") InternalLenNode lenNode) {
-            return lenNode.execute(frame, self);
+            return lenNode.execute(self);
         }
     }
 
@@ -468,7 +455,7 @@ public class MMapBuiltins extends PythonBuiltins {
         long readline(VirtualFrame frame, PMMap self) {
             try {
                 SeekableByteChannel channel = self.getChannel();
-                return position(channel) - self.getOffset();
+                return PMMap.position(channel) - self.getOffset();
             } catch (IOException e) {
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
@@ -539,7 +526,7 @@ public class MMapBuiltins extends PythonBuiltins {
                             appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
                         } else {
                             // recover correct position (i.e. number of remaining bytes in buffer)
-                            position(channel, position(channel) - buf.remaining() - 1);
+                            PMMap.position(channel, PMMap.position(channel) - buf.remaining() - 1);
                             break outer;
                         }
                     }
@@ -597,7 +584,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 SeekableByteChannel channel = self.getChannel();
                 long size;
                 if (self.getLength() == 0) {
-                    size = size(channel) - self.getOffset();
+                    size = PMMap.size(channel) - self.getOffset();
                 } else {
                     size = self.getLength();
                 }
@@ -608,7 +595,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         where = dist;
                         break;
                     case 1: /* relative to current position */
-                        where = position(channel) + dist;
+                        where = PMMap.position(channel) + dist;
                         break;
                     case 2: /* relative to end */
                         where = size + dist;
@@ -621,7 +608,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     errorProfile.enter();
                     throw raise(PythonBuiltinClassType.ValueError, "seek out of range");
                 }
-                position(channel, where);
+                PMMap.position(channel, where);
                 return PNone.NONE;
             } catch (IOException e) {
                 errorProfile.enter();
@@ -653,7 +640,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
                 SeekableByteChannel channel = primary.getChannel();
-                long len1 = size(channel);
+                long len1 = PMMap.size(channel);
 
                 SequenceStorage needle = sub.getSequenceStorage();
                 int len2 = needle.length();
@@ -673,7 +660,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 // TODO implement a more efficient algorithm
                 outer: for (long i = start; i < end; i++) {
                     // TODO(fa) don't seek but use circular buffer
-                    position(channel, i);
+                    PMMap.position(channel, i);
                     for (int j = 0; j < len2; j++) {
                         int hb = readByteNode.execute(channel);
                         int nb = getGetRightItemNode().executeInt(frame, needle, j);
@@ -695,7 +682,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
                 SeekableByteChannel channel = primary.getChannel();
-                long len1 = size(channel);
+                long len1 = PMMap.size(channel);
 
                 long s = castToLong(starting, 0);
                 long e = castToLong(ending, len1);
@@ -703,7 +690,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long start = s < 0 ? s + len1 : s;
                 long end = Math.max(e < 0 ? e + len1 : e, len1);
 
-                position(channel, start);
+                PMMap.position(channel, start);
 
                 for (long i = start; i < end; i++) {
                     int hb = readByteNode.execute(channel);
@@ -740,35 +727,36 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateUncached
     abstract static class InternalLenNode extends PNodeWithContext implements MMapBaseNode {
 
-        public abstract long execute(VirtualFrame frame, PMMap self);
+        public abstract long execute(PMMap self);
 
         @Specialization(guards = "self.getLength() == 0")
-        long doFull(VirtualFrame frame, PMMap self,
+        long doFull(PMMap self,
                         @Cached PRaiseOSErrorNode raise,
                         @Cached("create()") BranchProfile profile) {
             try {
-                return size(self.getChannel()) - self.getOffset();
+                return PMMap.size(self.getChannel()) - self.getOffset();
             } catch (IOException e) {
                 profile.enter();
-                throw raise.raiseOSError(frame, OSErrorEnum.EIO, e);
+                throw raise.raiseOSError(null, OSErrorEnum.EIO, e);
             }
         }
 
         @Specialization(guards = "self.getLength() > 0")
-        long doWindow(@SuppressWarnings("unused") VirtualFrame frame, PMMap self) {
+        long doWindow(PMMap self) {
             return self.getLength();
         }
 
         @Specialization
-        long doGeneric(VirtualFrame frame, PMMap self,
+        long doGeneric(PMMap self,
                         @Cached PRaiseOSErrorNode raise) {
             if (self.getLength() == 0) {
                 try {
-                    return size(self.getChannel()) - self.getOffset();
+                    return PMMap.size(self.getChannel()) - self.getOffset();
                 } catch (IOException e) {
-                    throw raise.raiseOSError(frame, OSErrorEnum.EIO, e);
+                    throw raise.raiseOSError(null, OSErrorEnum.EIO, e);
                 }
             }
             return self.getLength();
