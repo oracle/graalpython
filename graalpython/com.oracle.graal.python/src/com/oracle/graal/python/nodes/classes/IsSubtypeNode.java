@@ -64,6 +64,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -105,16 +106,15 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
     }
 
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected boolean isInMro(LazyPythonClass cls, MroSequenceStorage mro, int sz) {
-        boolean matched = false;
         PythonAbstractClass[] mroAry = mro.getInternalClassArray();
         for (int i = 0; i < sz; i++) {
             if (isSameType(mroAry[i], cls)) {
-                matched = true;
+                return true;
             }
         }
-        return matched;
+        return false;
     }
 
     protected PythonBuiltinClassType getType(LazyPythonClass cls) {

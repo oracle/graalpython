@@ -141,7 +141,6 @@ public class FormatStringLiteralNode extends LiteralNode {
         return result.toString();
     }
 
-    @ExplodeLoop
     private void parse(VirtualFrame frame) {
         // create tokens
         tokens = createTokens(this, values, true);
@@ -252,7 +251,7 @@ public class FormatStringLiteralNode extends LiteralNode {
      * node.value[token[1]] token[3] - end of the text in the node.value[token[1]] token[4] - only
      * for expressions. It's count how many tokens follow as tokens of format specifier. So the next
      * expression or string is not the next token, but the next token + token[4]
-     * 
+     *
      * @param node it's needed for raising syntax errors
      * @param values this part of text will be parsed
      * @param topLevel if there is called recursion on topLevel = false, then the syntax error is

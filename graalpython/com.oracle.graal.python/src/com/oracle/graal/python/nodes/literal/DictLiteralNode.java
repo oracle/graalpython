@@ -77,14 +77,12 @@ public final class DictLiteralNode extends LiteralNode {
     @ExplodeLoop
     private HashingStorage evalAndSetValues(VirtualFrame frame, HashingStorage dictStorage, Keys evalKeys) {
         HashingStorage storage = dictStorage;
+        if (setItemNode == null && values.length > 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setItemNode = insert(SetItemNode.create());
+        }
         for (int i = 0; i < values.length; i++) {
             final Object val = values[i].execute(frame);
-
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(SetItemNode.create());
-            }
-
             storage = setItemNode.execute(frame, storage, evalKeys.keys[i], val);
         }
         return storage;

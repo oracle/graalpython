@@ -103,7 +103,7 @@ public abstract class NativeCAPISymbols {
         }
     }
 
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public static boolean isValid(String name) {
         for (int i = 0; i < values.length; i++) {
             if (values[i].equals(name)) {

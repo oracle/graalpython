@@ -44,11 +44,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public class ImportFromNode extends AbstractImportNode {
     private final String importee;
     private final int level;
-    private final String[] fromlist;
+    @CompilationFinal(dimensions = 1) private final String[] fromlist;
     @Children private final WriteNode[] aslist;
     @Child private GetAttributeNode getName;
     @Child private GetItemNode getItem;
@@ -92,7 +93,7 @@ public class ImportFromNode extends AbstractImportNode {
     }
 
     @Override
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
         Object importedModule = importModule(frame, importee, globals, fromlist, level);

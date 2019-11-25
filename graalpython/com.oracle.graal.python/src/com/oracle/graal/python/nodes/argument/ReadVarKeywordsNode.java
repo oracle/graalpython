@@ -38,6 +38,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
@@ -91,7 +92,6 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     }
 
     @Specialization(guards = {"getKwargLen(frame) == cachedLen", "cachedLen == 0"}, limit = "1")
-    @ExplodeLoop
     Object noKeywordArgs(@SuppressWarnings("unused") VirtualFrame frame,
                     @SuppressWarnings("unused") @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
         return returnValue(PKeyword.EMPTY_KEYWORDS);
@@ -108,15 +108,7 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
         for (int j = 0; j < cachedLen; j++) {
             PKeyword keyword = keywordArguments[j];
             String kwName = keyword.getName();
-            boolean kwFound = false;
-            for (String name : keywordNames) {
-                if (kwName.equals(name)) {
-                    // Note: rather than skipping the rest of the loop,
-                    // to properly explode the loop in this case, we want
-                    // constant iteration count
-                    kwFound = true;
-                }
-            }
+            boolean kwFound = searchKeyword(kwName);
             if (!kwFound) {
                 remArguments[i] = keyword;
                 i++;
@@ -127,6 +119,16 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
         } else {
             return returnValue(remArguments);
         }
+    }
+
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    private boolean searchKeyword(String kwName) {
+        for (String name : keywordNames) {
+            if (kwName.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Specialization(replaces = "extractKwargs")
