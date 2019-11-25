@@ -70,9 +70,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
@@ -1974,7 +1975,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         long upcall(VirtualFrame frame, Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached CExtNodes.AsLong asLongNode,
+                        @Cached CExtNodes.CastToNativeLongNode asLongNode,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -2073,7 +2074,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
                         @Cached CExtNodes.CextUpcallNode upcallNode,
-                        @Shared("asLong") @Cached CExtNodes.AsLong asLongNode) {
+                        @Shared("asLong") @Cached CExtNodes.CastToNativeLongNode asLongNode) {
             Object result = upcallNode.execute(frame, cextModule, args);
             if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
                 return ((PythonNativeVoidPtr) result).object;
@@ -2086,7 +2087,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
                         @Cached CExtNodes.DirectUpcallNode upcallNode,
-                        @Shared("asLong") @Cached CExtNodes.AsLong asLongNode) {
+                        @Shared("asLong") @Cached CExtNodes.CastToNativeLongNode asLongNode) {
             Object result = upcallNode.execute(frame, args);
             if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
                 return ((PythonNativeVoidPtr) result).object;
@@ -2177,20 +2178,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AsLong extends PythonUnaryBuiltinNode {
         @Specialization
-        long doIt(Object object,
-                        @Cached CExtNodes.AsLong asLongNode) {
-            return asLongNode.execute(object);
+        long doIt(VirtualFrame frame, Object object,
+                        @Cached CExtNodes.CastToNativeLongNode asLongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return asLongNode.execute(object);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
         }
     }
 
     @Builtin(name = "to_double", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsDouble extends PythonUnaryBuiltinNode {
-        @Child private CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
-
         @Specialization
-        double doIt(VirtualFrame frame, Object object) {
-            return asDoubleNode.execute(frame, object);
+        double doIt(Object object,
+                    @Cached CExtNodes.AsDouble asDoubleNode) {
+            return asDoubleNode.execute(object);
         }
     }
 
@@ -2942,7 +2948,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+                        @Cached CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
             Object argv = argvToJavaNode.execute(arguments[0]);
             Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
 
