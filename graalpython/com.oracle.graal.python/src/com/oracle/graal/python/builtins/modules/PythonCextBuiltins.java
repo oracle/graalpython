@@ -2796,43 +2796,41 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "kwargsLib.isNull(kwargsObj)")
-        Object doNoKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
-                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
-                        @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
-                        @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
-                        @Shared("callNodeNoKeywords") @Cached CallNode callNode,
+        @Specialization(guards = {"argsLib.isNull(argsObj)", "kwargsLib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
+        Object doNoArgsAndNoKeywords(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
+                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
+                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
-                Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
-                return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
+                return toSulongNode.execute(callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
-                // getContext() acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
             }
         }
 
-        @Specialization(guards = {"!kwargsLib.isNull(kwargsObj)", "isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "1")
-        Object doEmptyKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
-                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
-                        @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+        @Specialization(guards = {"!argsLib.isNull(argsObj)", "kwargsLib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
+        Object doNoKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
+                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
+                        @Cached ExecutePositionalStarargsNode expandArgsNode,
+                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
                         @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
-                        @Shared("callNodeNoKeywords") @Cached CallNode callNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
@@ -2844,23 +2842,45 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(replaces = {"doNoKeywords", "doEmptyKeywords"})
-        Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
-                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary argsLib,
-                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary kwargsLib,
-                        @Shared("expandArgsNode") @Cached ExecutePositionalStarargsNode expandArgsNode,
+        @Specialization(guards = {"argsLib.isNull(argsObj)", "!kwargsLib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
+        Object doNoArgs(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
+                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Shared("callableToJavaNode") @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
+                        @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CallNode callNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                PKeyword[] keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
+                Object callable = callableToJavaNode.execute(callableObj);
+                return toSulongNode.execute(callNode.execute(frame, callable, new Object[0], keywords));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return nullToSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(replaces = {"doNoArgsAndNoKeywords", "doNoKeywords", "doNoArgs"}, limit = "3")
+        Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
+                        @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
+                        @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
+                        @Cached ExecutePositionalStarargsNode expandArgsNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached("createBinaryProfile()") ConditionProfile argsIsNullProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwargsIsNullProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile nullFrameProfile,
                         @Exclusive @Cached CallNode callNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached CExtNodes.ToSulongNode nullToSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args;
