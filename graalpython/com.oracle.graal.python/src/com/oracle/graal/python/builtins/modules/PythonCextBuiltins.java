@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWr
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
@@ -1993,11 +1994,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         double upcall(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached CExtNodes.AsDouble asDoubleNode,
+                        @Cached CastToJavaDoubleNode castToDoubleNode,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return asDoubleNode.execute(frame, upcallNode.execute(frame, args));
+                return castToDoubleNode.execute(upcallNode.execute(frame, args));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1.0;
@@ -2050,18 +2051,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(UpcallCextNode.class)
     abstract static class UpcallCextDNode extends UpcallLandingNode {
-        @Child private CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
 
         @Specialization(guards = "isStringCallee(args)")
         double upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached CExtNodes.CextUpcallNode upcallNode) {
-            return asDoubleNode.execute(frame, upcallNode.execute(frame, cextModule, args));
+                        @Cached CExtNodes.CextUpcallNode upcallNode,
+                      @Shared("castToDoubleNode") @Cached CastToJavaDoubleNode castToDoubleNode) {
+            return castToDoubleNode.execute(upcallNode.execute(frame, cextModule, args));
         }
 
         @Specialization(guards = "!isStringCallee(args)")
         double doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached CExtNodes.DirectUpcallNode upcallNode) {
-            return asDoubleNode.execute(frame, upcallNode.execute(frame, args));
+                        @Cached CExtNodes.DirectUpcallNode upcallNode,
+                        @Shared("castToDoubleNode") @Cached CastToJavaDoubleNode castToDoubleNode) {
+            return castToDoubleNode.execute(upcallNode.execute(frame, args));
         }
     }
 
@@ -2195,8 +2197,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class AsDouble extends PythonUnaryBuiltinNode {
         @Specialization
         double doIt(Object object,
-                    @Cached CExtNodes.AsDouble asDoubleNode) {
-            return asDoubleNode.execute(object);
+                        @Cached CastToJavaDoubleNode castToDoubleNode) {
+            return castToDoubleNode.execute(object);
         }
     }
 
@@ -2427,7 +2429,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyFloat_AsDouble", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyFloat_AsDouble extends NativeBuiltin {
+    abstract static class PyFloat_AsDouble extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "!object.isDouble()")
         double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
@@ -2442,18 +2444,26 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(rewriteOn = PException.class)
         double doGeneric(VirtualFrame frame, Object object,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Shared("asDoubleNode") @Cached CExtNodes.AsDouble asDoubleNode) {
-            return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
+                        @Shared("asDoubleNode") @Cached CExtNodes.AsNativeDoubleNode asDoubleNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            PException exceptionState = IndirectCallContext.enter(frame, context, this);
+            try {
+                return asDoubleNode.execute(asPythonObjectNode.execute(object));
+            } finally {
+                IndirectCallContext.exit(frame, context, exceptionState);
+            }
         }
 
         @Specialization(replaces = "doGeneric")
         double doGenericErr(VirtualFrame frame, Object object,
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Shared("asDoubleNode") @Cached CExtNodes.AsDouble asDoubleNode) {
+                        @Shared("asDoubleNode") @Cached CExtNodes.AsNativeDoubleNode asDoubleNode,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return doGeneric(frame, object, asPythonObjectNode, asDoubleNode);
+                return doGeneric(frame, object, asPythonObjectNode, asDoubleNode, context);
             } catch (PException e) {
-                transformToNative(frame, e);
+                transformExceptionToNativeNode.execute(frame, e);
                 return -1.0;
             }
         }

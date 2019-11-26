@@ -1288,9 +1288,16 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Casts a Python object to a Java double value without doing any coercion, i.e., it does not
+     * call any magic method like {@code __float__}.<br/>
+     * The semantics is like a Java type cast and therefore lossy.<br/>
+     * As an optimization, this node can also unwrap {@code PrimitiveNativeWrapper} instances to
+     * avoid eager and explicit conversion.
+     */
     @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
-    public abstract static class AsDouble extends PNodeWithContext {
+    public abstract static class CastToJavaDoubleNode extends PNodeWithContext {
         public abstract double execute(boolean arg);
 
         public abstract double execute(int arg);
@@ -1340,28 +1347,92 @@ public abstract class CExtNodes {
         double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
+    }
 
-        // TODO: this should just use the builtin constructor node so we don't duplicate the corner
-        // cases
+    /**
+     * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
+     * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
+     * functions and does coercion and may raise a Python exception if coercion fails.
+     */
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class AsNativeDoubleNode extends PNodeWithContext {
+        public abstract double execute(boolean arg);
+
+        public abstract double execute(int arg);
+
+        public abstract double execute(long arg);
+
+        public abstract double execute(double arg);
+
+        public abstract double execute(Object arg);
+
+        @Specialization
+        double doBooleam(boolean value) {
+            return value ? 1.0 : 0.0;
+        }
+
+        @Specialization
+        double doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        double doLong(long value) {
+            return value;
+        }
+
+        @Specialization
+        double doDouble(double value) {
+            return value;
+        }
+
+        @Specialization
+        double doPInt(PInt value) {
+            return value.doubleValue();
+        }
+
+        @Specialization
+        double doPFloat(PFloat value) {
+            return value.getValue();
+        }
+
+        @Specialization(guards = "!object.isDouble()")
+        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+            return object.getLong();
+        }
+
+        @Specialization(guards = "object.isDouble()")
+        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+            return object.getDouble();
+        }
+
         @Specialization
         double runGeneric(PythonAbstractObject value,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
+                        @Cached GetLazyClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile classProfile,
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached PRaiseNode raiseNode) {
-            if (PGuards.isPFloat(value)) {
-                return ((PFloat) value).getValue();
-            }
             Object result = callFloatFunc.executeObject(value, __FLOAT__);
-            if (PGuards.isPFloat(result)) {
-                return ((PFloat) result).getValue();
-            } else if (result instanceof Double) {
-                return (double) result;
-            } else {
-                throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
+            // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses of
+            // PFloat
+            if (classProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PFloat)) {
+                return castToJavaDoubleNode.execute(result);
             }
+            throw raiseNode.raise(PythonErrorType.TypeError, "%p.%s returned non-float (type %p)", value, __FLOAT__, result);
         }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Casts a Python object to a Java long value without doing any coercion, i.e., it does not call
+     * any magic method like {@code __index__} or {@code __int__}.<br/>
+     * The semantics is like a Java type cast and therefore lossy.<br/>
+     * As an optimization, this node can also unwrap {@code PrimitiveNativeWrapper} instances to
+     * avoid eager and explicit conversion.
+     */
     @GenerateUncached
     public abstract static class CastToNativeLongNode extends PNodeWithContext {
         public abstract long execute(boolean arg);
@@ -1434,19 +1505,14 @@ public abstract class CExtNodes {
             return recursive.execute(lib.getDelegate(value));
         }
 
-        @Specialization(guards = "!isNativeWrapper(value)")
-        long runGeneric(Object value,
-                        @Cached CastToIndexNode castToIndexNode) {
-            return castToIndexNode.execute(null, value);
-        }
-
         static boolean isNativeWrapper(Object object) {
             return object instanceof PythonNativeWrapper;
         }
     }
 
     /**
-     * Converts a Python object (i.e. {@code PyObject*}) to a C primitive value.<br/>
+     * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
+     * {@code long}).<br/>
      * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
      * coercion and may raise a Python exception if coercion fails.
      */
