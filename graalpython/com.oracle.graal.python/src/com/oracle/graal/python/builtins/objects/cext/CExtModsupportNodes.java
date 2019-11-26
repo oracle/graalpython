@@ -127,10 +127,10 @@ public abstract class CExtModsupportNodes {
                         PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
             CompilerAsserts.partialEvaluationConstant(format.length());
-            ParserState state = new ParserState();
-            state.v = new PositionalArgStack(argv, null);
+            ParserState state = new ParserState(new PositionalArgStack(argv, null));
             for (int i = 0; i < format.length(); i++) {
-                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode,
+                state = convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode,
+                                asDoubleNode,
                                 transformExceptionToNativeNode, writeOutVarNode, raiseNode);
             }
         }
@@ -148,15 +148,15 @@ public abstract class CExtModsupportNodes {
                         WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
-            ParserState state = new ParserState();
-            state.v = new PositionalArgStack(argv, null);
+            ParserState state = new ParserState(new PositionalArgStack(argv, null));
             for (int i = 0; i < format.length(); i++) {
-                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode,
+                state = convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode,
+                                asDoubleNode,
                                 transformExceptionToNativeNode, writeOutVarNode, raiseNode);
             }
         }
 
-        private static void convertArg(ParserState state, Object kwds, String format, int format_idx, Object[] kwdnames, Object varargs,
+        private static ParserState convertArg(ParserState state, Object kwds, String format, int format_idx, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
                         GetArgNode getArgNode,
@@ -209,8 +209,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'B':
                     // C type: unsigned char
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
@@ -224,8 +223,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'h':
                     // C type: signed short int
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
@@ -249,8 +247,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'H':
                     // C type: short int sized bitfield
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
@@ -264,8 +261,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'i':
                     // C type: signed int
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
@@ -289,8 +285,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'I':
                     // C type: int sized bitfield
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
@@ -303,8 +298,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'l':
                 case 'k':
                 case 'L':
@@ -320,16 +314,14 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'c':
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
 
                         writeOutVarNode.writeInt8(varargs, state.out_index, (float) asDoubleNode.execute(arg));
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'C':
                     break;
                 case 'f':
@@ -337,15 +329,13 @@ public abstract class CExtModsupportNodes {
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         writeOutVarNode.writeFloat(varargs, state.out_index, (float) asDoubleNode.execute(arg));
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'd':
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         writeOutVarNode.writeFloat(varargs, state.out_index, asDoubleNode.execute(arg));
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case 'D':
                     // TODO implement complex case
                     raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "converting complex arguments not implemented, yet");
@@ -356,7 +346,7 @@ public abstract class CExtModsupportNodes {
 // format_idx++;
                         if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                             Object typeObject = PyTruffleVaArg(varargs, state.out_index, varargsLib, varargsToJavaNode);
-                            state.out_index++;
+                            state = state.incrementOutIndex();
                             assert PGuards.isClass(typeObject);
                             if (!isSubtypeNode.executeWithGlobalState(getClassNode.execute(arg), typeObject)) {
                                 raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "expected object of type %s, got %p", typeObject, arg);
@@ -364,23 +354,20 @@ public abstract class CExtModsupportNodes {
                             }
                             writeOutVarNode.writeObject(varargs, state.out_index, arg);
                         }
-                        state.out_index++;
                     } else if (isLookahead(format, format_idx, '&')) {
 // format_idx++;
                         Object converter = PyTruffleVaArg(varargs, state.out_index, varargsLib, varargsToJavaNode);
-                        state.out_index++;
+                        state = state.incrementOutIndex();
                         if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                             Object output = PyTruffleVaArg(varargs, state.out_index, varargsLib, varargsToJavaNode);
                             executeConverterNode.execute(state.out_index, converter, arg, output);
                         }
-                        state.out_index++;
                     } else {
                         if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                             writeOutVarNode.writeObject(varargs, state.out_index, arg);
                         }
-                        state.out_index++;
                     }
-                    break;
+                    return state.incrementOutIndex();
                 case 'w': /* "w*": memory buffer, read-write access */
                     break;
                 case 'p':
@@ -388,12 +375,11 @@ public abstract class CExtModsupportNodes {
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         writeOutVarNode.writeInt32(varargs, state.out_index, castToBoolean(arg));
                     }
-                    state.out_index++;
-                    break;
+                    return state.incrementOutIndex();
                 case '(':
                     arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
-                        state.out_index++;
+                        return state.incrementOutIndex();
                     } else {
                         // n.b.: there is a small gap in this check: In theory, there could be
                         // native subclass of tuple. But since we do not support this anyway, the
@@ -403,7 +389,7 @@ public abstract class CExtModsupportNodes {
                             throw ParseArgumentsException.raise();
                         }
                         PTuple nestedArgv = (PTuple) arg;
-                        state.v = new PositionalArgStack(nestedArgv, state.v);
+                        state = state.open(new PositionalArgStack(nestedArgv, state.v));
                     }
                     break;
                 case ')':
@@ -411,15 +397,13 @@ public abstract class CExtModsupportNodes {
                         raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, "')' without '(' in argument parsing");
                         throw ParseArgumentsException.raise();
                     } else {
-                        state.v = state.v.prev;
+                        state = state.close();
                     }
                     break;
                 case '|':
-                    state.rest_optional = true;
-                    break;
+                    return state.restOptional();
                 case '$':
-                    state.rest_keywords_only = true;
-                    break;
+                    return state.restKeywordsOnly();
                 case '!':
                 case '&':
                     // always skip '!' and '&' because these will be handled in the look-ahead of
@@ -428,15 +412,16 @@ public abstract class CExtModsupportNodes {
                 case ':':
                     // TODO: adapt error message based on string after this
                     assert false : "got ':' but this should be trimmed from the format string";
-                    return;
+                    return state;
                 case ';':
                     // TODO: adapt error message based on string after this
                     assert false : "got ';' but this should be trimmed from the format string";
-                    return;
+                    return state;
                 default:
                     raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "unrecognized format char in arguments parsing: %c", c);
                     throw ParseArgumentsException.raise();
             }
+            return state;
         }
 
         private static boolean isLookahead(String format, int format_idx, char expected) {
@@ -462,11 +447,43 @@ public abstract class CExtModsupportNodes {
         }
 
         @ValueType
-        private static final class ParserState {
-            private int out_index;
-            private boolean rest_optional;
-            private boolean rest_keywords_only;
-            private PositionalArgStack v;
+        static final class ParserState {
+            private final int out_index;
+            private final boolean rest_optional;
+            private final boolean rest_keywords_only;
+            private final PositionalArgStack v;
+
+            ParserState(PositionalArgStack v) {
+                this(0, false, false, v);
+            }
+
+            private ParserState(int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v) {
+                this.out_index = outIndex;
+                this.rest_optional = restOptional;
+                this.rest_keywords_only = restKeywordsOnly;
+                this.v = v;
+            }
+
+            ParserState incrementOutIndex() {
+                return new ParserState(out_index + 1, rest_optional, rest_keywords_only, v);
+            }
+
+            ParserState restOptional() {
+                return new ParserState(out_index, true, rest_keywords_only, v);
+            }
+
+            ParserState restKeywordsOnly() {
+                return new ParserState(out_index, rest_optional, true, v);
+            }
+
+            ParserState open(PositionalArgStack nestedArgs) {
+                return new ParserState(out_index, rest_optional, true, nestedArgs);
+            }
+
+            ParserState close() {
+                return new ParserState(out_index, rest_optional, true, v.prev);
+            }
+
         }
 
         static boolean isDictOrNull(Object object) {
