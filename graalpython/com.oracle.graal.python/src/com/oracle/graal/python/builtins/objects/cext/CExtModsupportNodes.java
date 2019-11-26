@@ -2,7 +2,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsDouble;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
@@ -59,6 +59,7 @@ public abstract class CExtModsupportNodes {
                         @Cached(value = "format", allowUncached = true) String cachedFormat,
                         @CachedLibrary("varargs") InteropLibrary varargsLib,
                         @Cached ToJavaNode varargsToJavaNode,
+                        @Cached GetArgNode getArgNode,
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
@@ -68,13 +69,13 @@ public abstract class CExtModsupportNodes {
                         @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
-                        @Cached AsDouble asDoubleNode,
+                        @Cached AsNativeDoubleNode asDoubleNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached WriteOutVarNode writeOutVarNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode,
-                                getDictStorageNode, getDictItemNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode, transformExceptionToNativeNode, writeOutVarNode, raiseNode);
+                doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode,
+                                asDoubleNode, transformExceptionToNativeNode, writeOutVarNode, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 CompilerAsserts.neverPartOfCompilation();
@@ -87,6 +88,7 @@ public abstract class CExtModsupportNodes {
                         @CachedLibrary("varargs") InteropLibrary varargsLib,
                         @Cached ToJavaNode varargsToJavaNode,
                         @CachedLibrary(limit = "2") InteropLibrary outVarLib,
+                        @Cached GetArgNode getArgNode,
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
@@ -96,13 +98,13 @@ public abstract class CExtModsupportNodes {
                         @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
-                        @Cached AsDouble asDoubleNode,
+                        @Cached AsNativeDoubleNode asDoubleNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached WriteOutVarNode writeOutVarNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingLoop(argv, kwds, format, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
-                                getDictItemNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode, transformExceptionToNativeNode, writeOutVarNode, raiseNode);
+                doParsingLoop(argv, kwds, format, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode,
+                                transformExceptionToNativeNode, writeOutVarNode, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 CompilerAsserts.neverPartOfCompilation();
@@ -114,16 +116,12 @@ public abstract class CExtModsupportNodes {
         private static void doParsingExploded(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
+                        GetArgNode getArgNode,
                         ExecuteConverterNode executeConverterNode,
-                        SequenceNodes.LenNode lenNode,
-                        GetSequenceStorageNode getSequenceStorageNode,
-                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         IsSubtypeWithoutFrameNode isSubtypeNode,
                         GetLazyClassNode getClassNode,
                         AsNativePrimitiveNode asNativePrimitiveNode,
-                        AsDouble asDoubleNode,
+                        AsNativeDoubleNode asDoubleNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode,
                         WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode)
@@ -132,24 +130,20 @@ public abstract class CExtModsupportNodes {
             ParserState state = new ParserState();
             state.v = new PositionalArgStack(argv, null);
             for (int i = 0; i < format.length(); i++) {
-                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
-                                getDictItemNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode, transformExceptionToNativeNode, writeOutVarNode, raiseNode);
+                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode,
+                                transformExceptionToNativeNode, writeOutVarNode, raiseNode);
             }
         }
 
         private static void doParsingLoop(PTuple argv, Object kwds, String format, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
+                        GetArgNode getArgNode,
                         ExecuteConverterNode executeConverterNode,
-                        SequenceNodes.LenNode lenNode,
-                        GetSequenceStorageNode getSequenceStorageNode,
-                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         IsSubtypeWithoutFrameNode isSubtypeNode,
                         GetLazyClassNode getClassNode,
                         AsNativePrimitiveNode asNativePrimitiveNode,
-                        AsDouble asDoubleNode,
+                        AsNativeDoubleNode asDoubleNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode,
                         WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode)
@@ -157,24 +151,20 @@ public abstract class CExtModsupportNodes {
             ParserState state = new ParserState();
             state.v = new PositionalArgStack(argv, null);
             for (int i = 0; i < format.length(); i++) {
-                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, executeConverterNode, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode,
-                                getDictItemNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode, transformExceptionToNativeNode, writeOutVarNode, raiseNode);
+                convertArg(state, kwds, format, i, kwdnames, varargs, varargsLib, varargsToJavaNode, getArgNode, executeConverterNode, isSubtypeNode, getClassNode, asNativePrimitiveNode, asDoubleNode,
+                                transformExceptionToNativeNode, writeOutVarNode, raiseNode);
             }
         }
 
         private static void convertArg(ParserState state, Object kwds, String format, int format_idx, Object[] kwdnames, Object varargs,
                         InteropLibrary varargsLib,
                         ToJavaNode varargsToJavaNode,
+                        GetArgNode getArgNode,
                         ExecuteConverterNode executeConverterNode,
-                        SequenceNodes.LenNode lenNode,
-                        GetSequenceStorageNode getSequenceStorageNode,
-                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         IsSubtypeWithoutFrameNode isSubtypeNode,
                         GetLazyClassNode getClassNode,
                         AsNativePrimitiveNode asNativePrimitiveNode,
-                        AsDouble asDoubleNode,
+                        AsNativeDoubleNode asDoubleNode,
                         TransformExceptionToNativeNode transformExceptionToNativeNode,
                         WriteOutVarNode writeOutVarNode,
                         PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -198,7 +188,7 @@ public abstract class CExtModsupportNodes {
                     break;
                 case 'b':
                     // C type: unsigned char
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
                             long ival = asNativePrimitiveNode.toInt64(arg);
@@ -223,7 +213,7 @@ public abstract class CExtModsupportNodes {
                     break;
                 case 'B':
                     // C type: unsigned char
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
                             long ival = asNativePrimitiveNode.toInt64(arg);
@@ -238,7 +228,7 @@ public abstract class CExtModsupportNodes {
                     break;
                 case 'h':
                     // C type: signed short int
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
                             long ival = asNativePrimitiveNode.toInt64(arg);
@@ -263,7 +253,7 @@ public abstract class CExtModsupportNodes {
                     break;
                 case 'H':
                     // C type: short int sized bitfield
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
                             long ival = asNativePrimitiveNode.toInt64(arg);
@@ -278,7 +268,7 @@ public abstract class CExtModsupportNodes {
                     break;
                 case 'i':
                     // C type: signed int
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
                             long ival = asNativePrimitiveNode.toInt64(arg);
@@ -303,7 +293,7 @@ public abstract class CExtModsupportNodes {
                     break;
                 case 'I':
                     // C type: int sized bitfield
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
                             writeOutVarNode.writeUInt32(varargs, state.out_index, asNativePrimitiveNode.toInt64(arg));
@@ -321,11 +311,9 @@ public abstract class CExtModsupportNodes {
                 case 'K':
                 case 'n':
                     // C type: signed short int
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         try {
-                            // TODO(fa) This should use a node that casts to Java long and does
-                            // coercion by calling '__index__'
                             writeOutVarNode.writeInt64(varargs, state.out_index, asNativePrimitiveNode.toInt64(arg));
                         } catch (PException e) {
                             transformExceptionToNativeNode.execute(null, e);
@@ -335,18 +323,24 @@ public abstract class CExtModsupportNodes {
                     state.out_index++;
                     break;
                 case 'c':
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
+                    if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+
+                        writeOutVarNode.writeInt8(varargs, state.out_index, (float) asDoubleNode.execute(arg));
+                    }
+                    state.out_index++;
                     break;
                 case 'C':
                     break;
                 case 'f':
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         writeOutVarNode.writeFloat(varargs, state.out_index, (float) asDoubleNode.execute(arg));
                     }
                     state.out_index++;
                     break;
                 case 'd':
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         writeOutVarNode.writeFloat(varargs, state.out_index, asDoubleNode.execute(arg));
                     }
@@ -357,7 +351,7 @@ public abstract class CExtModsupportNodes {
                     raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.TypeError, "converting complex arguments not implemented, yet");
                     throw ParseArgumentsException.raise();
                 case 'O':
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (isLookahead(format, format_idx, '!')) {
 // format_idx++;
                         if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
@@ -390,14 +384,14 @@ public abstract class CExtModsupportNodes {
                 case 'w': /* "w*": memory buffer, read-write access */
                     break;
                 case 'p':
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         writeOutVarNode.writeInt32(varargs, state.out_index, castToBoolean(arg));
                     }
                     state.out_index++;
                     break;
                 case '(':
-                    arg = getArg(state.v, kwds, kwdnames, state.rest_keywords_only, lenNode, getSequenceStorageNode, getItemNode, getDictStorageNode, getDictItemNode);
+                    arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
                     if (PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
                         state.out_index++;
                     } else {
@@ -445,32 +439,6 @@ public abstract class CExtModsupportNodes {
             }
         }
 
-        static Object getArg(PositionalArgStack p, Object kwds, Object[] kwdnames, boolean keywords_only,
-                        SequenceNodes.LenNode lenNode,
-                        GetSequenceStorageNode getSequenceStorageNode,
-                        SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        HashingStorageNodes.GetItemInteropNode getDictItemNode) {
-            Object out = null;
-            if (!keywords_only) {
-                int l = lenNode.execute(p.argv);
-                if (p.argnum < l) {
-                    out = getItemNode.execute(getSequenceStorageNode.execute(p.argv), p.argnum);
-                }
-            }
-            // only the bottom argstack can have keyword names
-            if (kwds != null && out == null && p.prev == null && kwdnames != null) {
-                Object kwdname = kwdnames[p.argnum];
-                if (kwdname != null) {
-                    // the cast to PDict is safe because either it is null or a PDict (ensured by
-                    // the guards)
-                    out = getDictItemNode.executeWithGlobalState(getDictStorageNode.execute((PDict) kwds), kwdname);
-                }
-            }
-            p.argnum++;
-            return out;
-        }
-
         private static boolean isLookahead(String format, int format_idx, char expected) {
             return format_idx + 1 < format.length() && format.charAt(format_idx + 1) == expected;
         }
@@ -501,20 +469,54 @@ public abstract class CExtModsupportNodes {
             private PositionalArgStack v;
         }
 
-        @ValueType
-        private static final class PositionalArgStack {
-            private final PTuple argv;
-            private int argnum;
-            private final PositionalArgStack prev;
-
-            PositionalArgStack(PTuple argv, PositionalArgStack prev) {
-                this.argv = argv;
-                this.prev = prev;
-            }
-        }
-
         static boolean isDictOrNull(Object object) {
             return object == null || object instanceof PDict;
+        }
+    }
+
+    @ValueType
+    static final class PositionalArgStack {
+        private final PTuple argv;
+        private int argnum;
+        private final PositionalArgStack prev;
+
+        PositionalArgStack(PTuple argv, PositionalArgStack prev) {
+            this.argv = argv;
+            this.prev = prev;
+        }
+    }
+
+    @GenerateUncached
+    abstract static class GetArgNode extends Node {
+
+        public abstract Object execute(PositionalArgStack p, Object kwds, Object[] kwdnames, boolean keywords_only);
+
+        @Specialization
+        Object doGeneric(PositionalArgStack p, Object kwds, Object[] kwdnames, boolean keywords_only,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
+                        @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode) {
+
+            Object out = null;
+            if (!keywords_only) {
+                int l = lenNode.execute(p.argv);
+                if (p.argnum < l) {
+                    out = getItemNode.execute(getSequenceStorageNode.execute(p.argv), p.argnum);
+                }
+            }
+            // only the bottom argstack can have keyword names
+            if (kwds != null && out == null && p.prev == null && kwdnames != null) {
+                Object kwdname = kwdnames[p.argnum];
+                if (kwdname != null) {
+                    // the cast to PDict is safe because either it is null or a PDict (ensured by
+                    // the guards)
+                    out = getDictItemNode.executeWithGlobalState(getDictStorageNode.execute((PDict) kwds), kwdname);
+                }
+            }
+            p.argnum++;
+            return out;
         }
     }
 
