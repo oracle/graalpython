@@ -26,12 +26,18 @@ from __future__ import print_function
 
 import contextlib
 import glob
+import json
 import os
 import platform
 import re
 import shutil
 import sys
+PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
+if PY3:
+    import urllib.request as urllib_request
+else:
+    import urllib2 as urllib_request
 from argparse import ArgumentParser
 
 import mx
@@ -40,6 +46,7 @@ import mx_gate
 import mx_unittest
 import mx_sdk
 import mx_subst
+import mx_urlrewrites
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
@@ -57,8 +64,6 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 
-# compatibility between Python versions
-PY3 = sys.version_info[0] == 3
 if PY3:
     raw_input = input # pylint: disable=redefined-builtin;
 
@@ -830,6 +835,40 @@ def python_checkcopyrights(args):
     finally:
         os.unlink(listfilename)
 
+    _python_checkpatchfiles()
+
+
+def _python_checkpatchfiles():
+    listfilename = tempfile.mktemp()
+    # additionally, we want to check if the packages we are patching all have a permissive license
+    with open(listfilename, "w") as listfile:
+        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
+    try:
+        pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        with open(listfilename, "r") as listfile:
+            content = listfile.read()
+        patchfile_pattern = re.compile("lib-graalpython/patches/(.*)\.patch")
+        allowed_licenses = ["MIT", "BSD", "MIT license"]
+        for line in content.split("\n"):
+            match = patchfile_pattern.search(line)
+            if match:
+                package_name = match.group(1)
+                package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
+                mx.logv("Checking " + package_url)
+                response = urllib_request.urlopen(package_url)
+                try:
+                    data = json.loads(response.read())
+                    data_license = data["info"]["license"]
+                    if data_license not in allowed_licenses:
+                        mx.abort(("The license for the original project %r is %r. We cannot include " +
+                                  "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
+                except Exception as e:
+                    mx.abort("Error getting %r.\n%r" % (package_url, e))
+                finally:
+                    if response:
+                        response.close()
+    finally:
+        os.unlink(listfilename)
 
 def import_python_sources(args):
     "Update the inlined files from PyPy and CPython"
