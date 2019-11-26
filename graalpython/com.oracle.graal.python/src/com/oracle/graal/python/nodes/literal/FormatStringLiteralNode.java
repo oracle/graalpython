@@ -41,16 +41,16 @@
 
 package com.oracle.graal.python.nodes.literal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import java.util.ArrayList;
-import java.util.List;
 
 public class FormatStringLiteralNode extends LiteralNode {
 
