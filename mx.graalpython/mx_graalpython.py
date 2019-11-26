@@ -763,6 +763,12 @@ def update_import(name, rev="origin/master", callback=None):
 
 def update_import_cmd(args):
     """Update our mx or overlay imports"""
+    try:
+        args.remove("--no-pull")
+    except ValueError:
+        rev = "origin/master"
+    else:
+        rev = "HEAD"
     if not args:
         args = ["truffle"]
     if "overlay" in args:
@@ -801,7 +807,7 @@ def update_import_cmd(args):
     else:
         callback = None
     for name in set(args):
-        update_import(name, callback=callback)
+        update_import(name, rev=rev, callback=callback)
 
 
 def python_style_checks(args):
@@ -1378,7 +1384,7 @@ mx.update_commands(SUITE, {
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
-    'python-update-import': [update_import_cmd, '[import-name, default: truffle]'],
+    'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
