@@ -1496,6 +1496,11 @@ public abstract class CExtNodes {
                         @Cached IsBuiltinClassProfile classProfile,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached PRaiseNode raiseNode) {
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it is a float object, use the value and do *NOT* call '__float__'.
+            if(PGuards.isPFloat(value)) {
+                return ((PFloat)value).getValue();
+            }
+
             Object result = callFloatFunc.executeObject(value, __FLOAT__);
             // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses of
             // PFloat
