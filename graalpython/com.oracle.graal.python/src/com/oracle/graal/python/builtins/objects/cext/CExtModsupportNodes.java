@@ -689,10 +689,12 @@ public abstract class CExtModsupportNodes {
                 } else if (arg instanceof PByteArray) {
                     s = ((PByteArray) arg).getSequenceStorage();
                 }
+
                 if (s != null && lenNode.execute(s) == 1) {
                     writeOutVarNode.writeInt8(varargs, state.out_index, getItemNode.execute(s, 0));
+                } else {
+                    throw raise(raiseNode, TypeError, "must be a byte string of length 1, not %p", arg);
                 }
-                throw raise(raiseNode, TypeError, "must be a byte string of length 1, not %p", arg);
             }
             return state.incrementOutIndex();
         }
