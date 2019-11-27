@@ -606,6 +606,50 @@ public abstract class CExtModsupportNodes {
             return state.incrementOutIndex();
         }
 
+        @Specialization(guards = "c == FORMAT_LOWER_L")
+        static ParserState doSignedLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
+
+            // C type: long
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
+            if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                try {
+                    writeOutVarNode.writeInt64(varargs, state.out_index, asNativePrimitiveNode.toInt64(arg));
+                } catch (PException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    transformExceptionToNativeNode.execute(null, e);
+                    throw ParseArgumentsException.raise();
+                }
+            }
+            return state.incrementOutIndex();
+        }
+
+        @Specialization(guards = "c == FORMAT_UPPER_L")
+        static ParserState doUnsignedLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
+
+            // C type: unsigned long
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
+            if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                try {
+                    writeOutVarNode.writeUInt64(varargs, state.out_index, asNativePrimitiveNode.toUInt64(arg));
+                } catch (PException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    transformExceptionToNativeNode.execute(null, e);
+                    throw ParseArgumentsException.raise();
+                }
+            }
+            return state.incrementOutIndex();
+        }
+
         @Specialization(guards = "c == FORMAT_LOWER_N")
         static ParserState doPySsizeT(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
                         Object[] kwdnames, Object varargs,
