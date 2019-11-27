@@ -31,7 +31,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -39,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
+
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
@@ -482,7 +485,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
             assert inputFile != null;
-            src = Source.newBuilder(getLanguageId(), new File(inputFile)).mimeType(MIME_TYPE).build();
+            String mimeType = "";
+            try {
+                mimeType = Files.probeContentType(Paths.get(inputFile));
+            } catch (IOException e) {
+            }
+            File f = new File(inputFile);
+            if (f.isFile() && (mimeType == null || !mimeType.equals("application/zip"))) {
+                src = Source.newBuilder(getLanguageId(), f).mimeType(MIME_TYPE).build();
+            } else {
+                String runMod = String.format("import sys; sys.path.insert(0, '%s'); import runpy; runpy._run_module_as_main('__main__', False)", inputFile);
+                src = Source.newBuilder(getLanguageId(), runMod, "<string>").build();
+            }
         }
         context.eval(src);
     }

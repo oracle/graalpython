@@ -249,6 +249,7 @@ public final class Python3Core implements PythonCore {
                         "pwd",
                         "resource",
                         "_contextvars",
+                        "pip_hook",
                         "_lzma"));
         // must be last
         coreFiles.add("final_patches");
