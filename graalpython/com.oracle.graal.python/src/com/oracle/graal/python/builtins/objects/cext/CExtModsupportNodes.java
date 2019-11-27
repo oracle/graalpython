@@ -653,14 +653,11 @@ public abstract class CExtModsupportNodes {
                         Object[] kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativeDoubleNode asDoubleNode,
-                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
             if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
-                // TODO implement complex case
                 writeOutVarNode.writeDouble(varargs, state.out_index, asDoubleNode.execute(arg));
-                throw raise(raiseNode, TypeError, "converting complex arguments not implemented, yet");
             }
             return state.incrementOutIndex();
         }
