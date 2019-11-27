@@ -48,9 +48,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodesFactory.ConvertArgNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
@@ -68,6 +70,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -221,8 +224,10 @@ public abstract class CExtModsupportNodes {
                     return state.restKeywordsOnly();
                 case '!':
                 case '&':
-                    // always skip '!' and '&' because these will be handled in the look-ahead of
-                    // the major specifiers like 'O'
+                case '*':
+                case '#':
+                    // always skip '!', '&', '*', and '#' because these will be handled in the
+                    // look-ahead of the major specifiers like 'O' or 's'
                     return state;
                 case ':':
                     // TODO: adapt error message based on string after this
@@ -341,6 +346,64 @@ public abstract class CExtModsupportNodes {
     @ImportStatic(ParseTupleAndKeywordsNode.class)
     abstract static class ConvertArgNode extends Node {
         public abstract ParserState execute(ParserState state, Object kwds, char c, String format, int format_idx, Object[] kwdnames, Object varargs) throws InteropException, ParseArgumentsException;
+
+        static boolean isCStringSpecifier(char c) {
+            return c == ParseTupleAndKeywordsNode.FORMAT_LOWER_S || c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z || c == ParseTupleAndKeywordsNode.FORMAT_UPPER_U;
+        }
+
+        @Specialization(guards = "isCStringSpecifier(c)")
+        static ParserState doCString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Cached GetVaArgsNode getVaArgNode,
+                        @Cached AsCharPointerNode asCharPointerNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached StringLenNode stringLenNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
+            boolean z = c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z;
+            if (isLookahead(format, format_idx, '*')) {
+                /* format_idx++; */
+                // 's*' or 'z*'
+                if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                    Object pybuffer = getVaArgNode.execute(varargs, state.out_index);
+                    // TODO(fa) create Py_buffer
+                }
+            } else if (isLookahead(format, format_idx, '#')) {
+                /* format_idx++; */
+                // 's#' or 'z#'
+                if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                    if (z && PGuards.isPNone(arg)) {
+                        writeOutVarNode.writeObject(varargs, state.out_index, getNativeNullNode.execute());
+                        state = state.incrementOutIndex();
+                        writeOutVarNode.writeInt32(varargs, state.out_index, 0);
+                    } else if (PGuards.isString(arg)) {
+                        // TODO(fa) we could use CStringWrapper to do the copying lazily
+                        writeOutVarNode.writePointer(varargs, state.out_index, asCharPointerNode.execute(arg));
+                        state = state.incrementOutIndex();
+                        writeOutVarNode.writeInt32(varargs, state.out_index, stringLenNode.execute(arg));
+                    } else {
+                        throw raise(raiseNode, TypeError, "expected %s, got %p", z ? "str or None" : "str", arg);
+                    }
+                }
+            } else {
+                // 's' or 'z'
+                if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                    if (z && PGuards.isPNone(arg)) {
+                        writeOutVarNode.writeObject(varargs, state.out_index, getNativeNullNode.execute());
+                    } else if (PGuards.isString(arg)) {
+                        // TODO(fa) we could use CStringWrapper to do the copying lazily
+                        writeOutVarNode.writePointer(varargs, state.out_index, asCharPointerNode.execute(arg));
+                    } else {
+                        throw raise(raiseNode, TypeError, "expected %s, got %p", z ? "str or None" : "str", arg);
+                    }
+                }
+            }
+            return state.incrementOutIndex();
+        }
 
         @Specialization(guards = "c == FORMAT_LOWER_B")
         static ParserState doUnsignedByte(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
@@ -778,9 +841,10 @@ public abstract class CExtModsupportNodes {
         static final int TYPE_DOUBLE = 8;
         static final int TYPE_FLOAT = 9;
         static final int TYPE_VOIDPTR = 10;
-        static final int TYPE_COMPLEX = 11;
+        static final int TYPE_OBJECT = 11;
+        static final int TYPE_COMPLEX = 12;
 
-        private static final String[] MAP = new String[]{"i8", "i16", "i32", "i64", "u8", "i16", "u32", "u64", "d", "f", "ptr", "c"};
+        private static final String[] MAP = new String[]{"i8", "i16", "i32", "i64", "u8", "i16", "u32", "u64", "d", "f", "ptr", "ptr", "c"};
 
         public final void writeUInt8(Object varargs, int outIndex, Object value) throws InteropException {
             execute(varargs, outIndex, TYPE_U8, value);
@@ -822,7 +886,19 @@ public abstract class CExtModsupportNodes {
             execute(varargs, outIndex, TYPE_DOUBLE, value);
         }
 
+        /**
+         * Use this method to write an object (e.g. some Python object) which needs to be wrapped
+         * into a native wrapper.
+         */
         public final void writeObject(Object varargs, int outIndex, Object value) throws InteropException {
+            execute(varargs, outIndex, TYPE_OBJECT, value);
+        }
+
+        /**
+         * Use this method if the object (pointer) to write is already a Sulong object (e.g. an LLVM
+         * pointer or a native wrapper) and does not need to be wrapped.
+         */
+        public final void writePointer(Object varargs, int outIndex, Object value) throws InteropException {
             execute(varargs, outIndex, TYPE_VOIDPTR, value);
         }
 
@@ -843,6 +919,14 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "accessType == TYPE_VOIDPTR", limit = "1")
+        static void doPointer(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, Object value,
+                        @CachedLibrary("varargs") InteropLibrary varargsLib,
+                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
+                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib) throws InteropException {
+            doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, MAP[accessType], value);
+        }
+
+        @Specialization(guards = "accessType == TYPE_OBJECT", limit = "1")
         static void doObject(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, Object value,
                         @CachedLibrary("varargs") InteropLibrary varargsLib,
                         @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
