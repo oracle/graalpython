@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_WHCAR_SIZE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 
 import java.util.List;
@@ -70,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -1284,6 +1286,86 @@ public abstract class CExtNodes {
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Converts a Python object to a
+     * {@link com.oracle.graal.python.builtins.objects.complex.PComplex} .<br/>
+     * This node is, for example, used to implement {@code PyComplex_AsCComplex} and does coercion
+     * and may raise a Python exception if coercion fails.
+     */
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class AsNativeComplexNode extends PNodeWithContext {
+        public abstract PComplex execute(boolean arg);
+
+        public abstract PComplex execute(int arg);
+
+        public abstract PComplex execute(long arg);
+
+        public abstract PComplex execute(double arg);
+
+        public abstract PComplex execute(Object arg);
+
+        @Specialization
+        PComplex doPComplex(PComplex value) {
+            return value;
+        }
+
+        @Specialization
+        PComplex doBoolean(boolean value,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createComplex(value ? 1.0 : 0.0, 0.0);
+        }
+
+        @Specialization
+        PComplex doInt(int value,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createComplex(value, 0.0);
+        }
+
+        @Specialization
+        PComplex doLong(long value,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createComplex(value, 0.0);
+        }
+
+        @Specialization
+        PComplex doDouble(double value,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createComplex(value, 0.0);
+        }
+
+        @Specialization
+        PComplex doPInt(PInt value,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createComplex(value.doubleValue(), 0.0);
+        }
+
+        @Specialization
+        PComplex doPFloat(PFloat value,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createComplex(value.getValue(), 0.0);
+        }
+
+        @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
+        PComplex runGeneric(Object value,
+                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
+                        @Cached AsNativeDoubleNode asDoubleNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
+            Object result = callFloatFunc.executeObject(value, __COMPLEX__);
+            // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
+            // of PComplex
+            if (result == PNone.NO_VALUE) {
+                throw raiseNode.raise(PythonErrorType.TypeError, "__complex__ returned non-complex (type %p)", value);
+            } else if (result instanceof PComplex) {
+                return (PComplex) result;
+            }
+            return factory.createComplex(asDoubleNode.execute(value), 0.0);
         }
     }
 

@@ -482,6 +482,7 @@ typedef union {
 	uint32_t u32;
 	uint16_t u16;
 	uint8_t u8;
+	Py_complex c;
 } OutVar;
 typedef struct { OutVar *content; } OutVarPtr;
 POLYGLOT_DECLARE_TYPE(OutVarPtr);
