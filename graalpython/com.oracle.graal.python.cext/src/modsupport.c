@@ -55,6 +55,28 @@ static int getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg) {
     return 0;
 }
 
+int get_buffer_r(PyObject *arg, Py_buffer *view) {
+    if (PyObject_GetBuffer(arg, view, PyBUF_SIMPLE) != 0) {
+        return -1;
+    }
+    if (!PyBuffer_IsContiguous(view, 'C')) {
+        PyBuffer_Release(view);
+        return -2;
+    }
+    return 0;
+}
+
+int get_buffer_rw(PyObject *arg, Py_buffer *view) {
+    if (PyObject_GetBuffer(arg, view, PyBUF_WRITABLE) != 0) {
+        return -1;
+    }
+    if (!PyBuffer_IsContiguous(view, 'C')) {
+        PyBuffer_Release(view);
+        return -2;
+    }
+    return 0;
+}
+
 typedef struct _positional_argstack {
     PyObject* argv;
     int argnum;

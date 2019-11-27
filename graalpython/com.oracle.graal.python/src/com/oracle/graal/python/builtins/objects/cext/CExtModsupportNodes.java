@@ -41,7 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BUFFER_R;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BUFFER_RW;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -53,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
@@ -351,6 +355,42 @@ public abstract class CExtModsupportNodes {
             return c == ParseTupleAndKeywordsNode.FORMAT_LOWER_S || c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z || c == ParseTupleAndKeywordsNode.FORMAT_UPPER_U;
         }
 
+        @Specialization(guards = "c == FORMAT_LOWER_Y")
+        static ParserState doBufferR(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Cached GetVaArgsNode getVaArgNode,
+                        @Cached AsCharPointerNode asCharPointerNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached StringLenNode stringLenNode,
+                        @Cached PCallCapiFunction callGetBufferRwNode,
+                        @Cached ToSulongNode argToSulongNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
+            if (isLookahead(format, format_idx, '*')) {
+                /* format_idx++; */
+                // 'y*'; output to 'Py_buffer*'
+                if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                    Object pybufferPtr = getVaArgNode.execute(varargs, state.out_index);
+                    getbuffer(callGetBufferRwNode, argToSulongNode, raiseNode, arg, pybufferPtr, true);
+                }
+            } else {
+                // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
+                // 'get_buffer_r' and output the buffer's data pointer
+                Object destDataPtr = getVaArgNode.execute(varargs, state.out_index);
+                if (isLookahead(format, format_idx, '#')) {
+                    /* format_idx++; */
+                    // 'y#'
+                    // TODO(fa) additionally store size
+                    Object pybufferPtr = getVaArgNode.execute(varargs, state.out_index);
+                    state = state.incrementOutIndex();
+                }
+            }
+            return state.incrementOutIndex();
+        }
+
         @Specialization(guards = "isCStringSpecifier(c)")
         static ParserState doCString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
                         Object[] kwdnames, Object varargs,
@@ -360,7 +400,6 @@ public abstract class CExtModsupportNodes {
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached StringLenNode stringLenNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
@@ -684,13 +723,14 @@ public abstract class CExtModsupportNodes {
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                        @Cached ToJavaNode typeToJavaNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
             if (isLookahead(format, format_idx, '!')) {
                 /* format_idx++; */
                 if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
-                    Object typeObject = getVaArgNode.execute(varargs, state.out_index);
+                    Object typeObject = typeToJavaNode.execute(getVaArgNode.execute(varargs, state.out_index));
                     state = state.incrementOutIndex();
                     assert PGuards.isClass(typeObject);
                     if (!isSubtypeNode.executeWithGlobalState(getClassNode.execute(arg), typeObject)) {
@@ -713,6 +753,41 @@ public abstract class CExtModsupportNodes {
                 }
             }
             return state.incrementOutIndex();
+        }
+
+        @Specialization(guards = "c == FORMAT_LOWER_W")
+        static ParserState doBufferRW(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Cached GetVaArgsNode getVaArgNode,
+                        @Cached PCallCapiFunction callGetBufferRwNode,
+                        @Cached ToSulongNode argToSulongNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
+            if (!isLookahead(format, format_idx, '*')) {
+                throw raise(raiseNode, TypeError, "invalid use of 'w' format character");
+
+            }
+            if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
+                Object pybufferPtr = getVaArgNode.execute(varargs, state.out_index);
+                getbuffer(callGetBufferRwNode, argToSulongNode, raiseNode, arg, pybufferPtr, false);
+            }
+            return state.incrementOutIndex();
+        }
+
+        private static void getbuffer(PCallCapiFunction callGetBufferRwNode, ToSulongNode argToSulongNode, PRaiseNativeNode raiseNode, Object arg, Object pybufferPtr, boolean readOnly)
+                        throws ParseArgumentsException {
+            String funName = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
+            Object rc = callGetBufferRwNode.call(funName, argToSulongNode.execute(arg), pybufferPtr);
+            if (!(rc instanceof Number)) {
+                throw raise(raiseNode, SystemError, "%s returned an unexpected return code; expected 'int' but was %s", funName, rc.getClass());
+            }
+            int i = ((Number) rc).intValue();
+            if (i == -1) {
+                throw raise(raiseNode, TypeError, "read-write bytes-like object");
+            } else if (i == -2) {
+                throw raise(raiseNode, TypeError, "contiguous buffer");
+            }
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_P")
@@ -974,9 +1049,10 @@ public abstract class CExtModsupportNodes {
         @Specialization(limit = "1")
         static Object doGetVaArg(Object varargs, int out_index,
                         @CachedLibrary("varargs") InteropLibrary varargsLib,
-                        @Cached ToJavaNode toJavaNode) throws InteropException {
+                        @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib) throws InteropException {
             try {
-                return toJavaNode.execute(varargsLib.readArrayElement(varargs, out_index));
+                Object outVarPtr = varargsLib.readArrayElement(varargs, out_index);
+                return outVarPtrLib.readMember(outVarPtr, "content");
             } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw e;
