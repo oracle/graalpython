@@ -473,6 +473,7 @@ int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, str
 
 typedef union {
 	void *ptr;
+	float f;
 	double d;
 	int64_t i64;
 	int32_t i32;

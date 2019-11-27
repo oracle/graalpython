@@ -45,6 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodesFactory.ConvertArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
@@ -66,8 +68,10 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -526,18 +530,23 @@ public abstract class CExtModsupportNodes {
         static ParserState doByteFromBytesOrBytearray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format,
                         @SuppressWarnings("unused") int format_idx, Object[] kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
-            // TODO
 
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.rest_keywords_only);
             if (!PyTruffle_SkipOptionalArg(arg, state.rest_optional)) {
-
-                // TODO
-// writeOutVarNode.writeInt8(varargs, state.out_index, (float) asDoubleNode.execute(arg));
+                SequenceStorage s = null;
+                if (arg instanceof PBytes) {
+                    s = ((PBytes) arg).getSequenceStorage();
+                } else if (arg instanceof PByteArray) {
+                    s = ((PByteArray) arg).getSequenceStorage();
+                }
+                if (s != null && lenNode.execute(s) == 1) {
+                    writeOutVarNode.writeInt8(varargs, state.out_index, getItemNode.execute(s, 0));
+                }
+                throw raise(raiseNode, TypeError, "must be a byte string of length 1, not %p", arg);
             }
             return state.incrementOutIndex();
         }
