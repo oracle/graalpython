@@ -854,7 +854,7 @@ def _python_checkpatchfiles():
             if match:
                 package_name = match.group(1)
                 package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
-                mx.logv("Checking " + package_url)
+                mx.log("Checking license of patchfile for " + package_url)
                 response = urllib_request.urlopen(package_url)
                 try:
                     data = json.loads(response.read())
