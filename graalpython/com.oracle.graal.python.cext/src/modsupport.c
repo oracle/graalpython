@@ -96,7 +96,11 @@ typedef struct { OutVar *content; } OutVarPtr;
 
 POLYGLOT_DECLARE_TYPE(OutVarPtr);
 
-typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, void** varargs);
+typedef char* CharPtr;
+POLYGLOT_DECLARE_TYPE(CharPtr);
+
+
+typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format, void* kwdnames, void* varargs);
 
 static parseargs_func PyTruffle_Arg_ParseTupleAndKeywords;
 
@@ -108,10 +112,23 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {              
 #define CallParseTupleAndKeywordsWithPolyglotArgs(__res__, __offset__, __args__, __kwds__, __fmt__, __kwdnames__) \
     int __poly_argc = polyglot_get_arg_count() - (__offset__); \
     void **__poly_args = truffle_managed_malloc(sizeof(void*) * __poly_argc); \
+    int __kwdnames_cnt = 0; \
     for (int i = 0; i < __poly_argc; i++) { \
         __poly_args[i] = polyglot_get_arg(i + (__offset__)); \
     } \
-    __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), (__kwds__), polyglot_from_string((__fmt__), SRC_CS), (__kwdnames__), polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
+    if((__kwdnames__) != NULL){ \
+    	for (; (__kwdnames__)[__kwdnames_cnt] != NULL ; __kwdnames_cnt++); \
+    } \
+    __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), (__kwds__), polyglot_from_string((__fmt__), SRC_CS), polyglot_from_CharPtr_array(__kwdnames__, __kwdnames_cnt), polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
+
+
+#define CallParseTupleWithPolyglotArgs(__res__, __offset__, __args__, __fmt__) \
+    int __poly_argc = polyglot_get_arg_count() - (__offset__); \
+    void **__poly_args = truffle_managed_malloc(sizeof(void*) * __poly_argc); \
+    for (int i = 0; i < __poly_argc; i++) { \
+        __poly_args[i] = polyglot_get_arg(i + (__offset__)); \
+    } \
+    __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), NULL, polyglot_from_string((__fmt__), SRC_CS), NULL, polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
 
 
 #define PyTruffleVaArgI8(poly_args, offset, va) (poly_args == NULL ? va_arg(va, int8_t) : polyglot_as_i8((poly_args[offset++])))
@@ -153,14 +170,14 @@ NO_INLINE
 int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
     // TODO(fa) Converting the stack to a tuple is rather slow. We should refactor
     // '_PyTruffleArg_ParseTupleAndKeywords' (like CPython) into smaller operations.
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 3, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), NULL, format, NULL);
+	CallParseTupleWithPolyglotArgs(int result, 3, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), format);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
     // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 3, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), NULL, format, NULL);
+	CallParseTupleWithPolyglotArgs(int result, 3, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), format);
     return result;
 }
 
@@ -201,13 +218,13 @@ int _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *kwargs, str
 
 NO_INLINE
 int PyArg_ParseTuple(PyObject *args, const char *format, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 2, native_to_java_slim(args), NULL, format, NULL);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(args), format);
 	return result;
 }
 
 NO_INLINE
 int _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 2, native_to_java_slim(args), NULL, format, NULL);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(args), format);
 	return result;
 }
 
@@ -221,13 +238,13 @@ int _PyArg_VaParse_SizeT(PyObject *args, const char *format, va_list va) {
 
 NO_INLINE
 int PyArg_Parse(PyObject *args, const char *format, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 2, native_to_java_slim(PyTuple_Pack(1, args)), NULL, format, NULL);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(PyTuple_Pack(1, args)), format);
 	return result;
 }
 
 NO_INLINE
 int _PyArg_Parse_SizeT(PyObject *args, const char *format, ...) {
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 2, native_to_java_slim(PyTuple_Pack(1, args)), NULL, format, NULL);
+	CallParseTupleWithPolyglotArgs(int result, 2, native_to_java_slim(PyTuple_Pack(1, args)), format);
     return result;
 }
 

@@ -2951,7 +2951,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
                         @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
                         @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
-                        @Cached("createIdentityProfile()") ValueProfile kwdnamesProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
                         @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
                         @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
@@ -2986,14 +2986,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
 
             // sort out if kwdnames is native NULL
-            Object nativeKwdnames = arguments[3];
-            Object kwdnames;
-            if (kwdnamesRefLib.isSame(nativeKwdnames, nativeNull)) {
-                kwdnames = new Object[0];
-            } else {
-                kwdnames = kwdsToJavaNode.execute(nativeKwdnames);
-            }
-            return parseTupleAndKeywordsNode.execute(argv, kwdsProfile.profile(kwds), format, kwdnamesProfile.profile(kwdnames), arguments[4]);
+            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isSame(arguments[3], nativeNull)) ? null : arguments[3];
+
+            return parseTupleAndKeywordsNode.execute(argv, kwdsProfile.profile(kwds), format, kwdnames, arguments[4]);
         }
 
         static Object getKwds(Object[] arguments) {
