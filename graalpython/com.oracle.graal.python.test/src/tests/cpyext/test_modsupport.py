@@ -47,6 +47,13 @@ def _reference_format_specifier_w_star(args):
     bytes_like[0] = ord('a')
     return bytes_like
 
+
+def _reference_typecheck(args):
+    if not isinstance(args[0][0], str):
+        raise TypeError
+    return args[0][0]
+
+
 class TestModsupport(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -88,6 +95,64 @@ class TestModsupport(CPyExtTestCase):
         resultspec="O",
         argspec="O",
         arguments=["PyObject* bytesLike"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_O_conv = CPyExtFunction(
+        lambda args: True if args[0][0] else False,
+        lambda: (
+            ((b'helloworld', ),),
+            ((b'', ),),
+            (([0, 1, 2], ),),
+            (([], ),),
+        ),
+        code='''
+        static int convert_seq(PyObject* obj, void* out) {
+            PyObject **objOut = (PyObject **)out;
+            *objOut = PySequence_Size(obj) == 0 ? Py_False : Py_True;
+            return 1;
+        }
+        
+        static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject* out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "O&", convert_seq, &out) == 0) {
+                return NULL;
+            }
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_O_typecheck = CPyExtFunction(
+        _reference_typecheck,
+        lambda: (
+            (('helloworld', ),),
+            (('', ),),
+            (([0, 1, 2], ),),
+            (([], ),),
+        ),
+        code='''
+        static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject* out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "O!", &PyUnicode_Type, &out) == 0) {
+                return NULL;
+            }
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
         callfunction="wrap_PyArg_ParseTuple",
         cmpfunc=unhandled_error_compare
     )
