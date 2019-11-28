@@ -331,7 +331,7 @@ public abstract class CExtModsupportNodes {
         public abstract ParserState execute(ParserState state, Object kwds, char c, String format, int format_idx, Object[] kwdnames, Object varargs) throws InteropException, ParseArgumentsException;
 
         static boolean isCStringSpecifier(char c) {
-            return c == ParseTupleAndKeywordsNode.FORMAT_LOWER_S || c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z || c == ParseTupleAndKeywordsNode.FORMAT_UPPER_U;
+            return c == ParseTupleAndKeywordsNode.FORMAT_LOWER_S || c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z;
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_Y")
@@ -422,12 +422,12 @@ public abstract class CExtModsupportNodes {
 
         @Specialization(guards = "c == FORMAT_UPPER_S")
         static ParserState doBytes(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
-                                   Object[] kwdnames, Object varargs,
-                                   @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                                   @Exclusive @Cached GetLazyClassNode getClassNode,
-                                   @Cached IsBuiltinClassProfile isBytesProfile,
-                                   @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                                   @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Exclusive @Cached GetLazyClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile isBytesProfile,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
@@ -456,6 +456,38 @@ public abstract class CExtModsupportNodes {
                 throw raise(raiseNode, TypeError, "expected bytearray, not %p", arg);
             }
             return state.incrementOutIndex();
+        }
+
+        @Specialization(guards = "c == FORMAT_UPPER_U")
+        static ParserState doUnicode(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Exclusive @Cached GetLazyClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile isBytesProfile,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            if (!skipOptionalArg(arg, state.restOptional)) {
+                if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PString)) {
+                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                }
+                throw raise(raiseNode, TypeError, "expected str, not %p", arg);
+            }
+            return state.incrementOutIndex();
+        }
+
+        @Specialization(guards = "c == FORMAT_LOWER_E")
+        static ParserState doEncodedString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
+
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            if (!skipOptionalArg(arg, state.restOptional)) {
+                throw raise(raiseNode, TypeError, "'e*' format specifiers are not supported", arg);
+            }
+            return state;
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_B")
