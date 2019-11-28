@@ -2966,12 +2966,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             String format = castToStringNode.execute(arguments[2]);
             String functionName = null;
 
-            // trim off function name
             int colonIdx = format.indexOf(":");
             if (functionNameProfile.profile(colonIdx != -1)) {
-                format = format.substring(0, colonIdx);
+                // extract functino name
                 // use 'colonIdx+1' because we do not want to include the colon
                 functionName = format.substring(colonIdx + 1);
+
+                // trim off function name
+                format = format.substring(0, colonIdx);
             }
 
             // sort out if kwds is native NULL
