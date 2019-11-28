@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -415,6 +416,44 @@ public abstract class CExtModsupportNodes {
                         throw raise(raiseNode, TypeError, "expected %s, got %p", z ? "str or None" : "str", arg);
                     }
                 }
+            }
+            return state.incrementOutIndex();
+        }
+
+        @Specialization(guards = "c == FORMAT_UPPER_S")
+        static ParserState doBytes(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                                   Object[] kwdnames, Object varargs,
+                                   @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                                   @Exclusive @Cached GetLazyClassNode getClassNode,
+                                   @Cached IsBuiltinClassProfile isBytesProfile,
+                                   @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                                   @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            if (!skipOptionalArg(arg, state.restOptional)) {
+                if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PBytes)) {
+                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                }
+                throw raise(raiseNode, TypeError, "expected bytes, not %p", arg);
+            }
+            return state.incrementOutIndex();
+        }
+
+        @Specialization(guards = "c == FORMAT_UPPER_Y")
+        static ParserState doByteArray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                        Object[] kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Exclusive @Cached GetLazyClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile isBytesProfile,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+
+            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            if (!skipOptionalArg(arg, state.restOptional)) {
+                if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PByteArray)) {
+                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                }
+                throw raise(raiseNode, TypeError, "expected bytearray, not %p", arg);
             }
             return state.incrementOutIndex();
         }
