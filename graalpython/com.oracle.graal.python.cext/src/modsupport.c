@@ -131,6 +131,28 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {              
     __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), NULL, polyglot_from_string((__fmt__), SRC_CS), NULL, polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
 
 
+#define CallParseStackAndKeywordsWithPolyglotArgs(__res__, __offset__, __args__, __nargs__, __kwds__, __fmt__, __kwdnames__) \
+    int __poly_argc = polyglot_get_arg_count() - (__offset__); \
+    void **__poly_args = truffle_managed_malloc(sizeof(void*) * __poly_argc); \
+    int __kwdnames_cnt = 0; \
+    for (int i = 0; i < __poly_argc; i++) { \
+        __poly_args[i] = polyglot_get_arg(i + (__offset__)); \
+    } \
+    if((__kwdnames__) != NULL){ \
+    	for (; (__kwdnames__)[__kwdnames_cnt] != NULL ; __kwdnames_cnt++); \
+    } \
+    __res__ = PyTruffle_Arg_ParseTupleAndKeywords(polyglot_from_PyObjectPtr_array((__args__), (__nargs__)), (__kwds__), polyglot_from_string((__fmt__), SRC_CS), polyglot_from_CharPtr_array(__kwdnames__, __kwdnames_cnt), polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
+
+
+#define CallParseStackWithPolyglotArgs(__res__, __offset__, __args__, __nargs__, __fmt__) \
+    int __poly_argc = polyglot_get_arg_count() - (__offset__); \
+    void **__poly_args = truffle_managed_malloc(sizeof(void*) * __poly_argc); \
+    for (int i = 0; i < __poly_argc; i++) { \
+        __poly_args[i] = polyglot_get_arg(i + (__offset__)); \
+    } \
+    __res__ = PyTruffle_Arg_ParseTupleAndKeywords(polyglot_from_PyObjectPtr_array((__args__), (__nargs__)), NULL, polyglot_from_string((__fmt__), SRC_CS), NULL, polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
+
+
 #define PyTruffleVaArgI8(poly_args, offset, va) (poly_args == NULL ? va_arg(va, int8_t) : polyglot_as_i8((poly_args[offset++])))
 #define PyTruffleVaArgI32(poly_args, offset, va) (poly_args == NULL ? va_arg(va, int32_t) : polyglot_as_i32((poly_args[offset++])))
 #define PyTruffleVaArgI64(poly_args, offset, va, T) (poly_args == NULL ? va_arg(va, T) : ((T)polyglot_as_i64((poly_args[offset++]))))
@@ -157,41 +179,27 @@ int _PyArg_ParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const cha
     return result;
 }
 
-MUST_INLINE PyObject* PyTruffle_Stack2Tuple(PyObject** args, Py_ssize_t nargs) {
-    PyObject* argv = PyTuple_New(nargs);
-    Py_ssize_t i;
-    for (i=0; i < nargs; i++) {
-        PyTuple_SetItem(argv, i, args[i]);
-    }
-    return argv;
-}
-
 NO_INLINE
 int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
-    // TODO(fa) Converting the stack to a tuple is rather slow. We should refactor
-    // '_PyTruffleArg_ParseTupleAndKeywords' (like CPython) into smaller operations.
-	CallParseTupleWithPolyglotArgs(int result, 3, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), format);
+	CallParseStackWithPolyglotArgs(int result, 3, args, nargs, format);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
-    // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
-	CallParseTupleWithPolyglotArgs(int result, 3, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), format);
+	CallParseStackWithPolyglotArgs(int result, 3, args, nargs, format);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-    // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 4, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), native_to_java_slim(kwnames), parser->format, parser->keywords);
+	CallParseStackAndKeywordsWithPolyglotArgs(int result, 4, args, nargs, native_to_java_slim(kwnames), parser->format, parser->keywords);
     return result;
 }
 
 NO_INLINE
 int _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-    // TODO(fa) Avoid usage of 'PyTruffle_Stack2Tuple'; see 'PyArg_ParseStack'.
-	CallParseTupleAndKeywordsWithPolyglotArgs(int result, 4, native_to_java_slim(PyTruffle_Stack2Tuple(args, nargs)), native_to_java_slim(kwnames), parser->format, parser->keywords);
+	CallParseStackAndKeywordsWithPolyglotArgs(int result, 4, args, nargs, native_to_java_slim(kwnames), parser->format, parser->keywords);
     return result;
 }
 

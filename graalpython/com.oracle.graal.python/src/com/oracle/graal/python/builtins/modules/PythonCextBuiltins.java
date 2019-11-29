@@ -2055,7 +2055,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "isStringCallee(args)")
         double upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.CextUpcallNode upcallNode,
-                      @Shared("castToDoubleNode") @Cached CastToJavaDoubleNode castToDoubleNode) {
+                        @Shared("castToDoubleNode") @Cached CastToJavaDoubleNode castToDoubleNode) {
             return castToDoubleNode.execute(upcallNode.execute(frame, cextModule, args));
         }
 
@@ -2968,7 +2968,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             int colonIdx = format.indexOf(":");
             if (functionNameProfile.profile(colonIdx != -1)) {
-                // extract functino name
+                // extract function name
                 // use 'colonIdx+1' because we do not want to include the colon
                 functionName = format.substring(colonIdx + 1);
 
@@ -2997,6 +2997,90 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         static Object getKwdnames(Object[] arguments) {
             return arguments[3];
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Arg_ParseStackAndKeywords", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class ParseStackAndKeywordsNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        @Specialization(guards = "arguments.length == 5", limit = "2")
+        int doConvert(VirtualFrame frame, Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedLibrary("getArgsArray(arguments)") InteropLibrary argsArrayLib,
+                        @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
+                        @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
+                        @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
+                        @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode,
+                      @Cached PRaiseNativeNode raiseNode) {
+            Object argsArray = arguments[0];
+
+            // eagerly convert to tuple
+            int n = 0;
+            try {
+                n = PInt.intValueExact(argsArrayLib.getArraySize(argsArray));
+                Object[] args = new Object[n];
+                for (int i = 0; i < args.length; i++) {
+                    args[i] = argvToJavaNode.execute(argsArrayLib.readArrayElement(argsArray, i));
+                }
+                PTuple argv = factory().createTuple(args);
+
+                Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
+
+                // force 'format' to be a String
+                String format = castToStringNode.execute(arguments[2]);
+                String functionName = null;
+
+                int colonIdx = format.indexOf(":");
+                if (functionNameProfile.profile(colonIdx != -1)) {
+                    // extract function name
+                    // use 'colonIdx+1' because we do not want to include the colon
+                    functionName = format.substring(colonIdx + 1);
+
+                    // trim off function name
+                    format = format.substring(0, colonIdx);
+                }
+
+                // sort out if kwds is native NULL
+                Object nativeKwds = arguments[1];
+                Object kwds;
+                if (kwdsRefLib.isSame(nativeKwds, nativeNull)) {
+                    kwds = null;
+                } else {
+                    kwds = kwdsToJavaNode.execute(nativeKwds);
+                }
+
+                // sort out if kwdnames is native NULL
+                Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isSame(arguments[3], nativeNull)) ? null : arguments[3];
+
+                return parseTupleAndKeywordsNode.execute(argv, kwdsProfile.profile(kwds), format, kwdnames, arguments[4]);
+            } catch (InteropException e) {
+                CompilerDirectives.transferToInterpreter();
+                return raiseNode.raiseInt(frame, 0, SystemError, "error when reading native argument stack: %s", e);
+            }
+        }
+
+        static Object getKwds(Object[] arguments) {
+            return arguments[1];
+        }
+
+        static Object getKwdnames(Object[] arguments) {
+            return arguments[3];
+        }
+
+        static Object getArgsArray(Object[] arguments) {
+            return arguments[0];
         }
     }
 }

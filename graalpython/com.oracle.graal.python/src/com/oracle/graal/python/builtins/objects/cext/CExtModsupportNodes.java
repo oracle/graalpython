@@ -237,7 +237,9 @@ public abstract class CExtModsupportNodes {
                 case ':':
                     // We extract and remove the function name already in the calling builtin. So this char may not occur here.
                     assert false : "got ':' but this should be trimmed from the format string";
+                    return state;
                 case ';':
+                    // We extract and remove the function name already in the calling builtin. So this char may not occur here.
                     assert false : "got ';' but this should be trimmed from the format string";
                     return state;
                 default:
