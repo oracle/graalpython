@@ -235,11 +235,9 @@ public abstract class CExtModsupportNodes {
                     // look-ahead of the major specifiers like 'O' or 's'
                     return state;
                 case ':':
-                    // TODO: adapt error message based on string after this
+                    // We extract and remove the function name already in the calling builtin. So this char may not occur here.
                     assert false : "got ':' but this should be trimmed from the format string";
-                    return state;
                 case ';':
-                    // TODO: adapt error message based on string after this
                     assert false : "got ';' but this should be trimmed from the format string";
                     return state;
                 default:
