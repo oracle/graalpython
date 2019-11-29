@@ -104,40 +104,40 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class CExtModsupportNodes {
+    static final char FORMAT_LOWER_S = 's';
+    static final char FORMAT_UPPER_S = 'S';
+    static final char FORMAT_LOWER_Z = 'z';
+    static final char FORMAT_UPPER_Z = 'Z';
+    static final char FORMAT_LOWER_Y = 'y';
+    static final char FORMAT_UPPER_Y = 'Y';
+    static final char FORMAT_LOWER_U = 'u';
+    static final char FORMAT_UPPER_U = 'U';
+    static final char FORMAT_LOWER_E = 'e';
+    static final char FORMAT_LOWER_B = 'b';
+    static final char FORMAT_UPPER_B = 'B';
+    static final char FORMAT_LOWER_H = 'h';
+    static final char FORMAT_UPPER_H = 'H';
+    static final char FORMAT_LOWER_I = 'i';
+    static final char FORMAT_UPPER_I = 'I';
+    static final char FORMAT_LOWER_L = 'l';
+    static final char FORMAT_UPPER_L = 'L';
+    static final char FORMAT_LOWER_K = 'k';
+    static final char FORMAT_UPPER_K = 'K';
+    static final char FORMAT_LOWER_N = 'n';
+    static final char FORMAT_LOWER_C = 'c';
+    static final char FORMAT_UPPER_C = 'C';
+    static final char FORMAT_LOWER_F = 'f';
+    static final char FORMAT_LOWER_D = 'd';
+    static final char FORMAT_UPPER_D = 'D';
+    static final char FORMAT_UPPER_O = 'O';
+    static final char FORMAT_LOWER_W = 'w';
+    static final char FORMAT_LOWER_P = 'p';
+    static final char FORMAT_PAR_OPEN = '(';
+
     @GenerateUncached
     @ReportPolymorphism
     @ImportStatic(PGuards.class)
     public abstract static class ParseTupleAndKeywordsNode extends Node {
-
-        static final char FORMAT_LOWER_S = 's';
-        static final char FORMAT_UPPER_S = 'S';
-        static final char FORMAT_LOWER_Z = 'z';
-        static final char FORMAT_UPPER_Z = 'Z';
-        static final char FORMAT_LOWER_Y = 'y';
-        static final char FORMAT_UPPER_Y = 'Y';
-        static final char FORMAT_LOWER_U = 'u';
-        static final char FORMAT_UPPER_U = 'U';
-        static final char FORMAT_LOWER_E = 'e';
-        static final char FORMAT_LOWER_B = 'b';
-        static final char FORMAT_UPPER_B = 'B';
-        static final char FORMAT_LOWER_H = 'h';
-        static final char FORMAT_UPPER_H = 'H';
-        static final char FORMAT_LOWER_I = 'i';
-        static final char FORMAT_UPPER_I = 'I';
-        static final char FORMAT_LOWER_L = 'l';
-        static final char FORMAT_UPPER_L = 'L';
-        static final char FORMAT_LOWER_K = 'k';
-        static final char FORMAT_UPPER_K = 'K';
-        static final char FORMAT_LOWER_N = 'n';
-        static final char FORMAT_LOWER_C = 'c';
-        static final char FORMAT_UPPER_C = 'C';
-        static final char FORMAT_LOWER_F = 'f';
-        static final char FORMAT_LOWER_D = 'd';
-        static final char FORMAT_UPPER_D = 'D';
-        static final char FORMAT_UPPER_O = 'O';
-        static final char FORMAT_LOWER_W = 'w';
-        static final char FORMAT_LOWER_P = 'p';
-        static final char FORMAT_PAR_OPEN = '(';
 
         public abstract int execute(Object argv, Object kwds, Object format, Object kwdnames, Object varargs);
 
@@ -326,12 +326,12 @@ public abstract class CExtModsupportNodes {
      * since the different specifiers need a very different set of helper nodes.
      */
     @GenerateUncached
-    @ImportStatic(ParseTupleAndKeywordsNode.class)
+    @ImportStatic(CExtModsupportNodes.class)
     abstract static class ConvertArgNode extends Node {
         public abstract ParserState execute(ParserState state, Object kwds, char c, String format, int format_idx, Object kwdnames, Object varargs) throws InteropException, ParseArgumentsException;
 
         static boolean isCStringSpecifier(char c) {
-            return c == ParseTupleAndKeywordsNode.FORMAT_LOWER_S || c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z;
+            return c == FORMAT_LOWER_S || c == FORMAT_LOWER_Z;
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_Y")
@@ -379,7 +379,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
-            boolean z = c == ParseTupleAndKeywordsNode.FORMAT_LOWER_Z;
+            boolean z = c == FORMAT_LOWER_Z;
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
                 // 's*' or 'z*'
@@ -503,7 +503,7 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    long ival = asNativePrimitiveNode.toInt64(arg);
+                    long ival = asNativePrimitiveNode.toInt64(arg, true);
                     if (ival < 0) {
                         throw raise(raiseNode, OverflowError, "unsigned byte integer is less than minimum");
                     } else if (ival > Byte.MAX_VALUE * 2 + 1) {
@@ -533,7 +533,7 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    writeOutVarNode.writeUInt8(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg));
+                    writeOutVarNode.writeUInt8(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, false));
                 } catch (PException e) {
                     CompilerDirectives.transferToInterpreter();
                     transformExceptionToNativeNode.execute(null, e);
@@ -556,7 +556,7 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    long ival = asNativePrimitiveNode.toInt64(arg);
+                    long ival = asNativePrimitiveNode.toInt64(arg, true);
                     // TODO(fa) MIN_VALUE and MAX_VALUE should be retrieved from Sulong
                     if (ival < Short.MIN_VALUE) {
                         throw raise(raiseNode, OverflowError, "signed short integer is less than minimum");
@@ -585,7 +585,7 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    writeOutVarNode.writeInt16(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg));
+                    writeOutVarNode.writeInt16(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, false));
                 } catch (PException e) {
                     CompilerDirectives.transferToInterpreter();
                     transformExceptionToNativeNode.execute(null, e);
@@ -608,7 +608,7 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    long ival = asNativePrimitiveNode.toInt64(arg);
+                    long ival = asNativePrimitiveNode.toInt64(arg, true);
                     // TODO(fa) MIN_VALUE and MAX_VALUE should be retrieved from Sulong
                     if (ival < Integer.MIN_VALUE) {
                         throw raise(raiseNode, OverflowError, "signed integer is less than minimum");
@@ -637,7 +637,7 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    writeOutVarNode.writeUInt32(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg));
+                    writeOutVarNode.writeUInt32(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, false));
                 } catch (PException e) {
                     CompilerDirectives.transferToInterpreter();
                     transformExceptionToNativeNode.execute(null, e);
@@ -647,19 +647,23 @@ public abstract class CExtModsupportNodes {
             return state.incrementOutIndex();
         }
 
-        @Specialization(guards = "c == FORMAT_LOWER_L")
-        static ParserState doSignedLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
-                        Object kwdnames, Object varargs,
-                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                        @Cached AsNativePrimitiveNode asNativePrimitiveNode,
-                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
+        static boolean isLongSpecifier(char c) {
+            return c == FORMAT_LOWER_L || c == FORMAT_UPPER_L;
+        }
 
-            // C type: long
+        @Specialization(guards = "isLongSpecifier(c)")
+        static ParserState doLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+                                  Object kwdnames, Object varargs,
+                                  @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                                  @Cached AsNativePrimitiveNode asNativePrimitiveNode,
+                                  @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                                  @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
+
+            // C type: signed long and signed long long
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg));
+                    writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, true));
                 } catch (PException e) {
                     CompilerDirectives.transferToInterpreter();
                     transformExceptionToNativeNode.execute(null, e);
@@ -669,7 +673,11 @@ public abstract class CExtModsupportNodes {
             return state.incrementOutIndex();
         }
 
-        @Specialization(guards = "c == FORMAT_UPPER_L")
+        static boolean isLongBitfieldSpecifier(char c) {
+            return c == FORMAT_LOWER_K || c == FORMAT_UPPER_K;
+        }
+
+        @Specialization(guards = "isLongBitfieldSpecifier(c)")
         static ParserState doUnsignedLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
@@ -677,11 +685,11 @@ public abstract class CExtModsupportNodes {
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
-            // C type: unsigned long
+            // C type: unsigned long and unsigned long long
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    writeOutVarNode.writeUInt64(varargs, state.outIndex, asNativePrimitiveNode.toUInt64(arg));
+                    writeOutVarNode.writeUInt64(varargs, state.outIndex, asNativePrimitiveNode.toUInt64(arg, false));
                 } catch (PException e) {
                     CompilerDirectives.transferToInterpreter();
                     transformExceptionToNativeNode.execute(null, e);
@@ -703,7 +711,8 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg));
+                    // TODO(fa): AsNativePrimitiveNode coerces using '__int__', but here we must use '__index__'
+                    writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, true));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
                     throw ParseArgumentsException.raise();

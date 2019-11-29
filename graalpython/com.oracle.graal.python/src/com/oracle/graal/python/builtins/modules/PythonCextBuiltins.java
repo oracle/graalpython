@@ -2264,7 +2264,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(64));
+            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
         }
 
         @Specialization

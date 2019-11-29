@@ -1496,9 +1496,10 @@ public abstract class CExtNodes {
                         @Cached IsBuiltinClassProfile classProfile,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached PRaiseNode raiseNode) {
-            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it is a float object, use the value and do *NOT* call '__float__'.
-            if(PGuards.isPFloat(value)) {
-                return ((PFloat)value).getValue();
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it is a
+            // float object, use the value and do *NOT* call '__float__'.
+            if (PGuards.isPFloat(value)) {
+                return ((PFloat) value).getValue();
             }
 
             Object result = callFloatFunc.executeObject(value, __FLOAT__);
@@ -1607,77 +1608,79 @@ public abstract class CExtNodes {
     @ImportStatic(PGuards.class)
     public abstract static class AsNativePrimitiveNode extends Node {
 
-        public final int toInt32(Object value) {
-            return (int) execute(value, 1, 4);
+        public final int toInt32(Object value, boolean exact) {
+            return (int) execute(value, 1, 4, exact);
         }
 
-        public final int toUInt32(Object value) {
-            return (int) execute(value, 0, 4);
+        public final int toUInt32(Object value, boolean exact) {
+            return (int) execute(value, 0, 4, exact);
         }
 
-        public final long toInt64(Object value) {
-            return (long) execute(value, 1, 8);
+        public final long toInt64(Object value, boolean exact) {
+            return (long) execute(value, 1, 8, exact);
         }
 
-        public final long toUInt64(Object value) {
-            return (long) execute(value, 0, 8);
+        public final long toUInt64(Object value, boolean exact) {
+            return (long) execute(value, 0, 8, exact);
         }
 
-        public abstract Object execute(byte value, int signed, int targetTypeSize);
+        public abstract Object execute(byte value, int signed, int targetTypeSize, boolean exact);
 
-        public abstract Object execute(int value, int signed, int targetTypeSize);
+        public abstract Object execute(int value, int signed, int targetTypeSize, boolean exact);
 
-        public abstract Object execute(long value, int signed, int targetTypeSize);
+        public abstract Object execute(long value, int signed, int targetTypeSize, boolean exact);
 
-        public abstract Object execute(Object value, int signed, int targetTypeSize);
+        public abstract Object execute(Object value, int signed, int targetTypeSize, boolean exact);
 
         @Specialization(guards = "targetTypeSize == 4")
-        static int doIntToInt32(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize) {
+        @SuppressWarnings("unused")
+        static int doIntToInt32(int obj, int signed, int targetTypeSize, boolean exact) {
             // n.b. even if an unsigned is requested, it does not matter because the unsigned
             // interpretation is done in C code.
             return obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        static long doIntToInt64(int obj, int signed, @SuppressWarnings("unused") int targetTypeSize,
-                        @Cached("createBinaryProfile()") ConditionProfile signProfile) {
-            if (signProfile.profile(signed != 0)) {
-                return obj;
-            } else {
-                return obj & 0xFFFFFFFFL;
-            }
+        @SuppressWarnings("unused")
+        static long doIntToInt64(int obj, int signed, int targetTypeSize, boolean exact) {
+            return obj;
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static int doIntToOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, int targetTypeSize,
+        @SuppressWarnings("unused")
+        static int doIntToOther(int obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        static int doLongToInt32(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize,
+        @SuppressWarnings("unused")
+        static int doLongToInt32(long obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        static long doLongToInt64(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize) {
+        @SuppressWarnings("unused")
+        static long doLongToInt64(long obj, int signed, int targetTypeSize, boolean exact) {
             return obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        static Object doVoidPtrToI64(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize) {
+        @SuppressWarnings("unused")
+        static Object doVoidPtrToI64(PythonNativeVoidPtr obj, int signed, int targetTypeSize, boolean exact) {
             return obj;
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        static int doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, int targetTypeSize,
+        @SuppressWarnings("unused")
+        static int doPInt(long obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
-        @Specialization(guards = "targetTypeSize == 4")
-        static int doPIntToInt32(PInt obj, int signed, @SuppressWarnings("unused") int targetTypeSize,
+        @Specialization(guards = {"exact", "targetTypeSize == 4"})
+        static int doPIntToInt32(PInt obj, int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
                         @Exclusive @Cached BranchProfile errorProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (signed != 0) {
@@ -1686,15 +1689,15 @@ public abstract class CExtNodes {
                 } catch (ArithmeticException e) {
                     // fall through
                 }
-            } else if (obj.bitCount() <= 32) {
+            } else if (!exact || obj.bitCount() <= 32) {
                 return obj.intValue();
             }
             errorProfile.enter();
             throw raiseNode.raise(PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
         }
 
-        @Specialization(guards = "targetTypeSize == 8")
-        static long doPIntToInt64(PInt obj, int signed, @SuppressWarnings("unused") int targetTypeSize,
+        @Specialization(guards = {"exact", "targetTypeSize == 8"})
+        static long doPIntToInt64(PInt obj, int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
                         @Exclusive @Cached BranchProfile errorProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (signed != 0) {
@@ -1703,21 +1706,34 @@ public abstract class CExtNodes {
                 } catch (ArithmeticException e) {
                     // fall through
                 }
-            } else if (obj.bitCount() <= 64) {
+            } else if (!exact || obj.bitCount() <= 64) {
                 return obj.longValue();
             }
             errorProfile.enter();
             throw raiseNode.raise(PythonErrorType.OverflowError, "Python int too large to convert to %s-byte C type", targetTypeSize);
         }
 
+        @Specialization(guards = {"!exact", "targetTypeSize == 4"})
+        @SuppressWarnings("unused")
+        static int doPIntToInt32Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
+            return obj.intValue();
+        }
+
+        @Specialization(guards = {"!exact", "targetTypeSize == 8"})
+        @SuppressWarnings("unused")
+        static long doPIntToInt64Lossy(PInt obj, int signed, int targetTypeSize, boolean exact) {
+            return obj.longValue();
+        }
+
         @Specialization(guards = {"isIntegerType(obj)", "targetTypeSize != 4", "targetTypeSize != 8"})
-        static int doError(@SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize,
+        @SuppressWarnings("unused")
+        static int doError(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
         @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32", "doPIntToInt64"})
-        static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize,
+        static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize, boolean exact,
                         @Cached LookupAndCallUnaryDynamicNode callIntNode,
                         @Cached AsNativePrimitiveNode recursive,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -1731,7 +1747,7 @@ public abstract class CExtNodes {
             if (!(isIntegerType(result))) {
                 throw raiseNode.raise(PythonErrorType.TypeError, "__int__ returned non-int (type %p)", result);
             }
-            return recursive.execute(result, signed, targetTypeSize);
+            return recursive.execute(result, signed, targetTypeSize, exact);
         }
 
         static boolean isIntegerType(Object obj) {

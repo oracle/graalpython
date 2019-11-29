@@ -331,7 +331,7 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
             PyList_Append(list, PyLong_FromLongLong(PyTruffleVaArgI64(poly_args, offset, va, long long)));
             break;
         case 'K':
-            PyList_Append(list, PyLong_FromLongLong(PyTruffleVaArgI64(poly_args, offset, va, unsigned long long)));
+            PyList_Append(list, PyLong_FromUnsignedLongLong(PyTruffleVaArgI64(poly_args, offset, va, unsigned long long)));
             break;
         case 'n':
             PyList_Append(list, PyLong_FromSsize_t(PyTruffleVaArgI64(poly_args, offset, va, Py_ssize_t)));
