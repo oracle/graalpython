@@ -235,11 +235,13 @@ public abstract class CExtModsupportNodes {
                     // look-ahead of the major specifiers like 'O' or 's'
                     return state;
                 case ':':
-                    // We extract and remove the function name already in the calling builtin. So this char may not occur here.
+                    // We extract and remove the function name already in the calling builtin. So
+                    // this char may not occur here.
                     assert false : "got ':' but this should be trimmed from the format string";
                     return state;
                 case ';':
-                    // We extract and remove the function name already in the calling builtin. So this char may not occur here.
+                    // We extract and remove the function name already in the calling builtin. So
+                    // this char may not occur here.
                     assert false : "got ';' but this should be trimmed from the format string";
                     return state;
                 default:
@@ -433,8 +435,9 @@ public abstract class CExtModsupportNodes {
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PBytes)) {
                     writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                } else {
+                    throw raise(raiseNode, TypeError, "expected bytes, not %p", arg);
                 }
-                throw raise(raiseNode, TypeError, "expected bytes, not %p", arg);
             }
             return state.incrementOutIndex();
         }
@@ -452,8 +455,9 @@ public abstract class CExtModsupportNodes {
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PByteArray)) {
                     writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                } else {
+                    throw raise(raiseNode, TypeError, "expected bytearray, not %p", arg);
                 }
-                throw raise(raiseNode, TypeError, "expected bytearray, not %p", arg);
             }
             return state.incrementOutIndex();
         }
@@ -471,8 +475,9 @@ public abstract class CExtModsupportNodes {
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PString)) {
                     writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                } else {
+                    throw raise(raiseNode, TypeError, "expected str, not %p", arg);
                 }
-                throw raise(raiseNode, TypeError, "expected str, not %p", arg);
             }
             return state.incrementOutIndex();
         }
@@ -653,11 +658,11 @@ public abstract class CExtModsupportNodes {
 
         @Specialization(guards = "isLongSpecifier(c)")
         static ParserState doLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
-                                  Object kwdnames, Object varargs,
-                                  @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                                  @Cached AsNativePrimitiveNode asNativePrimitiveNode,
-                                  @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                                  @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
+                        Object kwdnames, Object varargs,
+                        @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: signed long and signed long long
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
@@ -711,7 +716,8 @@ public abstract class CExtModsupportNodes {
             Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
-                    // TODO(fa): AsNativePrimitiveNode coerces using '__int__', but here we must use '__index__'
+                    // TODO(fa): AsNativePrimitiveNode coerces using '__int__', but here we must use
+                    // '__index__'
                     writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, true));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(null, e);
@@ -975,7 +981,7 @@ public abstract class CExtModsupportNodes {
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                         @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         @CachedLibrary("kwdnames") InteropLibrary kwdnamesLib,
-                         @Cached PCallCapiFunction callCStringToString) throws InteropException {
+                        @Cached PCallCapiFunction callCStringToString) throws InteropException {
 
             Object out = null;
             if (!keywordsOnly) {
@@ -987,7 +993,8 @@ public abstract class CExtModsupportNodes {
             // only the bottom argstack can have keyword names
             if (kwds != null && out == null && p.prev == null && kwdnames != null) {
                 Object kwdnamePtr = kwdnamesLib.readArrayElement(kwdnames, p.argnum);
-                // TODO(fa) check if this is the NULL pointer since the kwdnames are always NULL-terminated
+                // TODO(fa) check if this is the NULL pointer since the kwdnames are always
+                // NULL-terminated
                 Object kwdname = callCStringToString.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
                 if (kwdname instanceof String) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
