@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -3083,4 +3084,71 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return arguments[0];
         }
     }
+
+    @Builtin(name = "PyTruffle_Arg_ParseTupleAndKeywords_VaList", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class ParseTupleAndKeywordsVaListNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
+        }
+
+        @Specialization(guards = "arguments.length == 5", limit = "2")
+        int doConvert(Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
+                        @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
+                        @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
+                        @Cached PCallCapiFunction callMallocOutVarPtr,
+                        @Cached PCallCapiFunction callFreeOutVarPtr,
+                        @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
+                        @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
+                        @Cached CastToJavaStringNode castToStringNode,
+                        @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+            Object argv = argvToJavaNode.execute(arguments[0]);
+            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
+
+            // force 'format' to be a String
+            String format = castToStringNode.execute(arguments[2]);
+            String functionName = null;
+
+            int colonIdx = format.indexOf(":");
+            if (functionNameProfile.profile(colonIdx != -1)) {
+                // extract function name
+                // use 'colonIdx+1' because we do not want to include the colon
+                functionName = format.substring(colonIdx + 1);
+
+                // trim off function name
+                format = format.substring(0, colonIdx);
+            }
+
+            // sort out if kwds is native NULL
+            Object nativeKwds = arguments[1];
+            Object kwds;
+            if (kwdsRefLib.isSame(nativeKwds, nativeNull)) {
+                kwds = null;
+            } else {
+                kwds = kwdsToJavaNode.execute(nativeKwds);
+            }
+
+            // sort out if kwdnames is native NULL
+            Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isSame(arguments[3], nativeNull)) ? null : arguments[3];
+
+            VaListWrapper varargs = new VaListWrapper(arguments[4], callMallocOutVarPtr.call("allocate_outvar"));
+            return parseTupleAndKeywordsNode.execute(argv, kwdsProfile.profile(kwds), format, kwdnames, varargs);
+        }
+
+        static Object getKwds(Object[] arguments) {
+            return arguments[1];
+        }
+
+        static Object getKwdnames(Object[] arguments) {
+            return arguments[3];
+        }
+    }
+
 }

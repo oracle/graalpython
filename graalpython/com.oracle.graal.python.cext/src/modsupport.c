@@ -92,6 +92,8 @@ typedef union {
 	Py_complex c;
 } OutVar;
 
+POLYGLOT_DECLARE_TYPE(OutVar);
+
 typedef struct { OutVar *content; } OutVarPtr;
 
 POLYGLOT_DECLARE_TYPE(OutVarPtr);
@@ -105,7 +107,7 @@ typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format
 static parseargs_func PyTruffle_Arg_ParseTupleAndKeywords;
 
 __attribute__((constructor))
-static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {                               \
+static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {
 	PyTruffle_Arg_ParseTupleAndKeywords = polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Arg_ParseTupleAndKeywords", SRC_CS));
 }
 
@@ -138,7 +140,7 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {              
     for (int i = 0; i < __poly_argc; i++) { \
         __poly_args[i] = polyglot_get_arg(i + (__offset__)); \
     } \
-    if((__kwdnames__) != NULL){ \
+    if((__kwdnames__) != NULL) { \
     	for (; (__kwdnames__)[__kwdnames_cnt] != NULL ; __kwdnames_cnt++); \
     } \
     __res__ = PyTruffle_Arg_ParseTupleAndKeywords(polyglot_from_PyObjectPtr_array((__args__), (__nargs__)), (__kwds__), polyglot_from_string((__fmt__), SRC_CS), polyglot_from_CharPtr_array(__kwdnames__, __kwdnames_cnt), polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
@@ -161,10 +163,45 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {              
 
 /* argparse */
 
+OutVarPtr* allocate_outvar() {
+	return polyglot_from_OutVarPtr(truffle_managed_malloc(sizeof(OutVarPtr)));
+}
+
+void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
+	p_outvar->content = (OutVar *)va_arg(*p_va, void *);
+}
+
+static parseargs_func PyTruffle_Arg_ParseTupleAndKeywords_VaList;
+
+__attribute__((constructor))
+static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword_VaList(void) {
+	PyTruffle_Arg_ParseTupleAndKeywords_VaList = polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Arg_ParseTupleAndKeywords_VaList", SRC_CS));
+}
+
+int PyArg_VaParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va) {
+	va_list lva;
+	va_copy(lva, va);
+    int __kwdnames_cnt = 0;
+    int res = 0;
+    if(kwdnames != NULL) {
+    	for (; kwdnames[__kwdnames_cnt] != NULL ; __kwdnames_cnt++);
+    }
+    res =PyTruffle_Arg_ParseTupleAndKeywords_VaList(native_to_java_slim(argv), native_to_java_slim(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_CharPtr_array(kwdnames, __kwdnames_cnt), &lva);
+    va_end(lva);
+    return res;
+}
+
 int _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *argv, PyObject *kwds, const char *format, char **kwdnames, va_list va) {
-	// TODO(fa) support 'va_list'
-	PyErr_Format(PyExc_SystemError, "function '_PyArg_VaParseTupleAndKeywords_SizeT' is not yet implemented");
-    return 0;
+	va_list lva;
+	va_copy(lva, va);
+    int __kwdnames_cnt = 0;
+    int res = 0;
+    if(kwdnames != NULL) {
+    	for (; kwdnames[__kwdnames_cnt] != NULL ; __kwdnames_cnt++);
+    }
+    res =PyTruffle_Arg_ParseTupleAndKeywords_VaList(native_to_java_slim(argv), native_to_java_slim(kwds), polyglot_from_string(format, SRC_CS), polyglot_from_CharPtr_array(kwdnames, __kwdnames_cnt), &lva);
+    va_end(lva);
+    return res;
 }
 
 NO_INLINE

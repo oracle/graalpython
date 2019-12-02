@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodesFactory.ConvertArgNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodesFactory.ParseTupleAndKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
@@ -150,7 +151,6 @@ public abstract class CExtModsupportNodes {
                 doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
-                CompilerAsserts.neverPartOfCompilation();
                 return 0;
             }
         }
@@ -166,7 +166,6 @@ public abstract class CExtModsupportNodes {
                 }
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
-                CompilerAsserts.neverPartOfCompilation();
                 return 0;
             }
         }
@@ -260,6 +259,12 @@ public abstract class CExtModsupportNodes {
 
         static boolean isDictOrNull(Object object) {
             return object == null || object instanceof PDict;
+        }
+
+        @Override
+        public Node copy() {
+            // create a new uninitialized node
+            return ParseTupleAndKeywordsNodeGen.create();
         }
     }
 
@@ -1016,9 +1021,19 @@ public abstract class CExtModsupportNodes {
 
         public abstract void execute(int index, Object converter, Object inputArgument, Object outputArgument) throws ParseArgumentsException;
 
-        @Specialization(guards = "cachedIndex == index", limit = "3")
+        @Specialization(guards = "cachedIndex == index", limit = "5")
         static void doExecuteConverterCached(@SuppressWarnings("unused") int index, Object converter, Object inputArgument, Object outputArgument,
                         @Cached(value = "index", allowUncached = true) @SuppressWarnings("unused") int cachedIndex,
+                        @CachedLibrary("converter") InteropLibrary converterLib,
+                        @CachedLibrary(limit = "1") InteropLibrary resultLib,
+                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Exclusive @Cached PRaiseNativeNode raiseNode,
+                        @Exclusive @Cached ConverterCheckResultNode checkResultNode) throws ParseArgumentsException {
+            doExecuteConverterGeneric(index, converter, inputArgument, outputArgument, converterLib, resultLib, toSulongNode, raiseNode, checkResultNode);
+        }
+
+        @Specialization(replaces = "doExecuteConverterCached", limit = "1")
+        static void doExecuteConverterGeneric(@SuppressWarnings("unused") int index, Object converter, Object inputArgument, Object outputArgument,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
                         @Exclusive @Cached ToSulongNode toSulongNode,
