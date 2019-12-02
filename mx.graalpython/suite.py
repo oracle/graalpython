@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "5bb01c93e034140a6ca6cfbd7c452f0ae4469e4b",
+                "version": "722df9ad49ca5212f2fbeddcf586fe6c308eeb4f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "5bb01c93e034140a6ca6cfbd7c452f0ae4469e4b",
+                "version": "722df9ad49ca5212f2fbeddcf586fe6c308eeb4f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
