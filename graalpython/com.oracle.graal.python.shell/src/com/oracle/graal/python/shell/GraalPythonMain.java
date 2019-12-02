@@ -491,7 +491,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             } catch (IOException e) {
             }
             File f = new File(inputFile);
-            if (f.isDirectory() || mimeType.equals("application/zip")) {
+            if (f.isDirectory() || (mimeType != null && mimeType.equals("application/zip"))) {
                 String runMod = String.format("import sys; sys.path.insert(0, '%s'); import runpy; runpy._run_module_as_main('__main__', False)", inputFile);
                 src = Source.newBuilder(getLanguageId(), runMod, "<string>").build();
             } else {
