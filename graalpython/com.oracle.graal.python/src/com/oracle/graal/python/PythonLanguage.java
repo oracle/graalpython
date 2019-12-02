@@ -85,6 +85,7 @@ import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -134,7 +135,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
 
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public static int getSingletonNativePtrIdx(Object obj) {
         for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
             if (CONTEXT_INSENSITIVE_SINGLETONS[i] == obj) {

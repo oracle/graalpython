@@ -195,6 +195,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -1126,7 +1127,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
-        @ExplodeLoop
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         boolean isInstanceTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsInstanceNode isInstanceNode) {
@@ -1195,7 +1196,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
-        @ExplodeLoop
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         public boolean isSubclassTupleConstantLen(VirtualFrame frame, Object derived, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
