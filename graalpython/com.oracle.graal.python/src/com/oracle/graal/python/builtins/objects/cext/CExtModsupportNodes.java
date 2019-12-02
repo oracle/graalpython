@@ -140,15 +140,15 @@ public abstract class CExtModsupportNodes {
     @ImportStatic(PGuards.class)
     public abstract static class ParseTupleAndKeywordsNode extends Node {
 
-        public abstract int execute(Object argv, Object kwds, Object format, Object kwdnames, Object varargs);
+        public abstract int execute(String funName, Object argv, Object kwds, Object format, Object kwdnames, Object varargs);
 
         @Specialization(guards = {"isDictOrNull(kwds)", "cachedFormat.equals(format)", "cachedFormat.length() <= 8"}, limit = "5")
-        int doSpecial(PTuple argv, Object kwds, @SuppressWarnings("unused") String format, Object kwdnames, Object varargs,
+        int doSpecial(String funName, PTuple argv, Object kwds, @SuppressWarnings("unused") String format, Object kwdnames, Object varargs,
                         @Cached(value = "format", allowUncached = true) String cachedFormat,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(argv, kwds, cachedFormat, kwdnames, varargs, convertArgNodes, raiseNode);
+                doParsingExploded(funName, argv, kwds, cachedFormat, kwdnames, varargs, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -156,11 +156,11 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial")
-        int doGeneric(PTuple argv, Object kwds, String format, Object kwdnames, Object varargs,
+        int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs,
                         @Cached ConvertArgNode convertArgNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                ParserState state = new ParserState(new PositionalArgStack(argv, null));
+                ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
                 for (int i = 0; i < format.length(); i++) {
                     state = convertArg(state, kwds, format, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
@@ -171,10 +171,10 @@ public abstract class CExtModsupportNodes {
         }
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        private static void doParsingExploded(PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
+        private static void doParsingExploded(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
             CompilerAsserts.partialEvaluationConstant(format.length());
-            ParserState state = new ParserState(new PositionalArgStack(argv, null));
+            ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
             for (int i = 0; i < format.length(); i++) {
                 state = convertArg(state, kwds, format, i, kwdnames, varargs, convertArgNodes[i], raiseNode);
             }
@@ -277,16 +277,18 @@ public abstract class CExtModsupportNodes {
      */
     @ValueType
     static final class ParserState {
+        private final String funName;
         private final int outIndex;
         private final boolean restOptional;
         private final boolean restKeywordsOnly;
         private final PositionalArgStack v;
 
-        ParserState(PositionalArgStack v) {
-            this(0, false, false, v);
+        ParserState(String funName, PositionalArgStack v) {
+            this(funName, 0, false, false, v);
         }
 
-        private ParserState(int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v) {
+        private ParserState(String funName, int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v) {
+            this.funName = funName;
             this.outIndex = outIndex;
             this.restOptional = restOptional;
             this.restKeywordsOnly = restKeywordsOnly;
@@ -294,23 +296,23 @@ public abstract class CExtModsupportNodes {
         }
 
         ParserState incrementOutIndex() {
-            return new ParserState(outIndex + 1, restOptional, restKeywordsOnly, v);
+            return new ParserState(funName, outIndex + 1, restOptional, restKeywordsOnly, v);
         }
 
         ParserState restOptional() {
-            return new ParserState(outIndex, true, restKeywordsOnly, v);
+            return new ParserState(funName, outIndex, true, restKeywordsOnly, v);
         }
 
         ParserState restKeywordsOnly() {
-            return new ParserState(outIndex, restOptional, true, v);
+            return new ParserState(funName, outIndex, restOptional, true, v);
         }
 
         ParserState open(PositionalArgStack nestedArgs) {
-            return new ParserState(outIndex, restOptional, true, nestedArgs);
+            return new ParserState(funName, outIndex, restOptional, true, nestedArgs);
         }
 
         ParserState close() {
-            return new ParserState(outIndex, restOptional, true, v.prev);
+            return new ParserState(funName, outIndex, restOptional, true, v.prev);
         }
 
     }

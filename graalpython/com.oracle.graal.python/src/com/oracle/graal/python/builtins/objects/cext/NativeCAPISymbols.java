@@ -89,6 +89,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TYPE_READY = "PyType_Ready";
     public static final String FUN_GET_BUFFER_R = "get_buffer_r";
     public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
+    public static final String FUN_ALLOCATE_OUTVAR = "allocate_outvar";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
