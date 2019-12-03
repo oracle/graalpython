@@ -83,6 +83,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -144,11 +145,12 @@ public abstract class CExtModsupportNodes {
 
         @Specialization(guards = {"isDictOrNull(kwds)", "cachedFormat.equals(format)", "cachedFormat.length() <= 8"}, limit = "5")
         int doSpecial(String funName, PTuple argv, Object kwds, @SuppressWarnings("unused") String format, Object kwdnames, Object varargs,
-                        @Cached(value = "format", allowUncached = true) String cachedFormat,
+                        @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") String cachedFormat,
+                        @Cached(value = "getChars(format)", allowUncached = true, dimensions = 1) char[] chars,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(funName, argv, kwds, cachedFormat, kwdnames, varargs, convertArgNodes, raiseNode);
+                doParsingExploded(funName, argv, kwds, chars, kwdnames, varargs, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -160,9 +162,10 @@ public abstract class CExtModsupportNodes {
                         @Cached ConvertArgNode convertArgNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
+                char[] chars = getChars(format);
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
                 for (int i = 0; i < format.length(); i++) {
-                    state = convertArg(state, kwds, format, i, kwdnames, varargs, convertArgNode, raiseNode);
+                    state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
@@ -171,18 +174,18 @@ public abstract class CExtModsupportNodes {
         }
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        private static void doParsingExploded(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
+        private static void doParsingExploded(String funName, PTuple argv, Object kwds, char[] chars, Object kwdnames, Object varargs, ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
-            CompilerAsserts.partialEvaluationConstant(format.length());
+            CompilerAsserts.partialEvaluationConstant(chars.length);
             ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
-            for (int i = 0; i < format.length(); i++) {
-                state = convertArg(state, kwds, format, i, kwdnames, varargs, convertArgNodes[i], raiseNode);
+            for (int i = 0; i < chars.length; i++) {
+                state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNodes[i], raiseNode);
             }
         }
 
-        private static ParserState convertArg(ParserState state, Object kwds, String format, int format_idx, Object kwdnames, Object varargs, ConvertArgNode convertArgNode,
+        private static ParserState convertArg(ParserState state, Object kwds, char[] format, int format_idx, Object kwdnames, Object varargs, ConvertArgNode convertArgNode,
                         PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-            char c = format.charAt(format_idx);
+            char c = format[format_idx];
             switch (c) {
                 case FORMAT_LOWER_S:
                 case FORMAT_LOWER_Z:
@@ -261,6 +264,10 @@ public abstract class CExtModsupportNodes {
             return object == null || object instanceof PDict;
         }
 
+        static char[] getChars(String format) {
+            return format.toCharArray();
+        }
+
         @Override
         public Node copy() {
             // create a new uninitialized node
@@ -337,14 +344,14 @@ public abstract class CExtModsupportNodes {
     @GenerateUncached
     @ImportStatic(CExtModsupportNodes.class)
     abstract static class ConvertArgNode extends Node {
-        public abstract ParserState execute(ParserState state, Object kwds, char c, String format, int format_idx, Object kwdnames, Object varargs) throws InteropException, ParseArgumentsException;
+        public abstract ParserState execute(ParserState state, Object kwds, char c, char[] format, int format_idx, Object kwdnames, Object varargs) throws InteropException, ParseArgumentsException;
 
         static boolean isCStringSpecifier(char c) {
             return c == FORMAT_LOWER_S || c == FORMAT_LOWER_Z;
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_Y")
-        static ParserState doBufferR(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doBufferR(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
@@ -377,7 +384,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "isCStringSpecifier(c)")
-        static ParserState doCString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doCString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
@@ -430,7 +437,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_S")
-        static ParserState doBytes(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doBytes(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Exclusive @Cached GetLazyClassNode getClassNode,
@@ -450,7 +457,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_Y")
-        static ParserState doByteArray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doByteArray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Exclusive @Cached GetLazyClassNode getClassNode,
@@ -470,7 +477,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_U")
-        static ParserState doUnicode(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doUnicode(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Exclusive @Cached GetLazyClassNode getClassNode,
@@ -490,7 +497,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_E")
-        static ParserState doEncodedString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doEncodedString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -503,7 +510,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_B")
-        static ParserState doUnsignedByte(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doUnsignedByte(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -533,7 +540,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_B")
-        static ParserState doUnsignedByteBitfield(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format,
+        static ParserState doUnsignedByteBitfield(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format,
                         @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
@@ -556,7 +563,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_H")
-        static ParserState doShortInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doShortInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -586,7 +593,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_H")
-        static ParserState doUnsignedShortInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doUnsignedShortInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -608,7 +615,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_I")
-        static ParserState doSignedInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doSignedInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -638,7 +645,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_I")
-        static ParserState doUnsignedInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doUnsignedInt(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -664,7 +671,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "isLongSpecifier(c)")
-        static ParserState doLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -690,7 +697,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "isLongBitfieldSpecifier(c)")
-        static ParserState doUnsignedLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doUnsignedLong(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -712,7 +719,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_N")
-        static ParserState doPySsizeT(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doPySsizeT(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -735,7 +742,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_C")
-        static ParserState doByteFromBytesOrBytearray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format,
+        static ParserState doByteFromBytesOrBytearray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format,
                         @SuppressWarnings("unused") int format_idx, Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -762,7 +769,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_C")
-        static ParserState doIntFromString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doIntFromString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached StringLenNode stringLenNode,
@@ -791,7 +798,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_F")
-        static ParserState doFloat(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doFloat(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativeDoubleNode asDoubleNode,
@@ -805,7 +812,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_D")
-        static ParserState doDouble(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doDouble(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativeDoubleNode asDoubleNode,
@@ -819,7 +826,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_D")
-        static ParserState doComplex(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doComplex(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached AsNativeComplexNode asComplexNode,
@@ -833,7 +840,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_O")
-        static ParserState doObject(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doObject(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
@@ -873,7 +880,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_W")
-        static ParserState doBufferRW(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doBufferRW(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
@@ -908,7 +915,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_P")
-        static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
@@ -922,7 +929,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "c == FORMAT_PAR_OPEN")
-        static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -951,8 +958,8 @@ public abstract class CExtModsupportNodes {
             return arg == null && optional;
         }
 
-        private static boolean isLookahead(String format, int format_idx, char expected) {
-            return format_idx + 1 < format.length() && format.charAt(format_idx + 1) == expected;
+        private static boolean isLookahead(char[] format, int format_idx, char expected) {
+            return format_idx + 1 < format.length && format[format_idx + 1] == expected;
         }
     }
 
@@ -1119,7 +1126,7 @@ public abstract class CExtModsupportNodes {
         static final int TYPE_OBJECT = 11;
         static final int TYPE_COMPLEX = 12;
 
-        private static final String[] MAP = new String[]{"i8", "i16", "i32", "i64", "u8", "i16", "u32", "u64", "d", "f", "ptr", "ptr", "c"};
+        @CompilationFinal(dimensions = 1) private static final String[] MAP = new String[]{"i8", "i16", "i32", "i64", "u8", "i16", "u32", "u64", "d", "f", "ptr", "ptr", "c"};
 
         public final void writeUInt8(Object varargs, int outIndex, Object value) throws InteropException {
             execute(varargs, outIndex, TYPE_U8, value);
