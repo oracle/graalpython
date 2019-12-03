@@ -167,7 +167,8 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CoerceToStringNode;
+import com.oracle.graal.python.nodes.util.CoerceToStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1492,7 +1493,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readStdout;
         @Child private GetAttributeNode getWrite = GetAttributeNode.create("write", null);
         @Child private CallNode callWrite = CallNode.create();
-        @Child private CastToStringNode toString = CastToStringNode.create();
+        @Child private CoerceToStringNode toString = CoerceToStringNodeGen.create();
         @Child private LookupAndCallUnaryNode callFlushNode;
         @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private PythonModule cachedSys;

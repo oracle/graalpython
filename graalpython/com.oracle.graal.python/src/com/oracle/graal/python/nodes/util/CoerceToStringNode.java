@@ -62,7 +62,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * coercion, i.e., it will call {@code __str__} if necessary.
  */
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class CastToStringNode extends PNodeWithContext {
+public abstract class CoerceToStringNode extends PNodeWithContext {
     private static final String ERROR_MESSAGE = "__str__ returned non-string (type %p)";
 
     public abstract Object execute(VirtualFrame frame, Object x);
@@ -116,9 +116,5 @@ public abstract class CastToStringNode extends PNodeWithContext {
             throw raise.raise(TypeError, ERROR_MESSAGE, result);
         }
         return result;
-    }
-
-    public static CastToStringNode create() {
-        return CastToStringNodeGen.create();
     }
 }
