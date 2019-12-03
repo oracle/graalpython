@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -81,8 +81,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
 import com.oracle.truffle.api.library.CachedLibrary;
+
 import org.tukaani.xz.ARMOptions;
 import org.tukaani.xz.ARMThumbOptions;
 import org.tukaani.xz.DeltaOptions;
@@ -195,7 +195,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         }
 
         // corresponds to 'parse_filter_chain_spec' in '_lzmamodule.c'
-        protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters, PythonDataModelLibrary library) {
+        protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters, PythonObjectLibrary library) {
             int n = len(frame, filters);
             FilterOptions[] optionsChain = new FilterOptions[n];
             for (int i = 0; i < n; i++) {
@@ -205,7 +205,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         }
 
         // corresponds to 'lzma_filter_converter' in '_lzmamodule.c'
-        private FilterOptions convertLZMAFilter(VirtualFrame frame, Object spec, PythonDataModelLibrary library) {
+        private FilterOptions convertLZMAFilter(VirtualFrame frame, Object spec, PythonObjectLibrary library) {
             if (!isSequence(frame, getContextRef(), spec, library)) {
                 throw raise(PythonBuiltinClassType.TypeError, "Filter specifier must be a dict or dict-like object");
             }
@@ -252,7 +252,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean isSequence(VirtualFrame frame, ContextReference<PythonContext> contextRef, Object obj, PythonDataModelLibrary library) {
+        private boolean isSequence(VirtualFrame frame, ContextReference<PythonContext> contextRef, Object obj, PythonObjectLibrary library) {
             PythonContext context = contextRef.get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -313,7 +313,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         @Cached CastToIndexNode castFormatToIntNode,
                         @Cached CastToIndexNode castCheckToIntNode,
                         @Cached CastToIndexNode castToIntNode,
-                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
 
             int format = FORMAT_XZ;
             int check = -1;

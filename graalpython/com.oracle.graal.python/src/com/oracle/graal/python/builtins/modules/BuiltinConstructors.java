@@ -119,8 +119,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -237,7 +237,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             int cap = getCastToIndexNode().execute(frame, capObj);
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
@@ -277,7 +277,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
                         @Cached("create()") CastToByteNode castToByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
 
             Object it = getIteratorNode.executeWith(frame, iterable);
             byte[] arr = new byte[16];
@@ -2656,7 +2656,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
-                        @CachedLibrary(limit = "3") PythonDataModelLibrary dataModelLibrary) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -2788,7 +2788,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
                         @Cached("create()") HashingStorageNodes.InitNode initNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
         }
 
@@ -2800,7 +2800,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"})
         Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass klass, Object obj,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonDataModelLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
         }
 
@@ -2808,7 +2808,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return o instanceof PHashingCollection;
         }
 
-        protected boolean isSequence(VirtualFrame frame, Object o, PythonDataModelLibrary library) {
+        protected boolean isSequence(VirtualFrame frame, Object o, PythonObjectLibrary library) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {

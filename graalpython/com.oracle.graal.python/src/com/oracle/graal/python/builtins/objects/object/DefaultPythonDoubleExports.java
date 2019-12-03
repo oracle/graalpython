@@ -40,18 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = String.class)
-final class DefaultDataModelStringExports {
+@ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
+final class DefaultPythonDoubleExports {
     @ExportMessage
-    static boolean isIterable(@SuppressWarnings("unused") String str) {
+    static boolean isHashable(@SuppressWarnings("unused") Double value) {
         return true;
     }
 
     @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") String value) {
-        return true;
+    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Double value) {
+        return PythonBuiltinClassType.PFloat;
     }
 }

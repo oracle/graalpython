@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Long.class)
-final class DefaultDataModelLongExports {
+@ExportLibrary(value = PythonObjectLibrary.class, receiverType = Long.class)
+final class DefaultPythonLongExports {
     @ExportMessage
     static boolean isHashable(@SuppressWarnings("unused") Long value) {
         return true;
@@ -53,5 +55,10 @@ final class DefaultDataModelLongExports {
     @ExportMessage
     static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
         return true;
+    }
+
+    @ExportMessage
+    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Long value) {
+        return PythonBuiltinClassType.PInt;
     }
 }

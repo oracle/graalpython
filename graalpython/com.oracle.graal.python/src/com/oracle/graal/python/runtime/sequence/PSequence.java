@@ -26,7 +26,7 @@
 package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -34,7 +34,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@ExportLibrary(PythonDataModelLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
     public PSequence(LazyPythonClass cls) {

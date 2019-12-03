@@ -130,8 +130,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -2682,7 +2682,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object object,
-                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
