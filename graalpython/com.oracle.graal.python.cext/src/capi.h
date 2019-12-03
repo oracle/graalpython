@@ -384,4 +384,7 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
     va_end(__poly_args)
 #endif
 
+typedef PyObject* PyObjectPtr;
+POLYGLOT_DECLARE_TYPE(PyObjectPtr);
+
 #endif

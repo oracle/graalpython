@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,64 +40,51 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
-/**
- * A simple wrapper around native {@code NULL}.
- */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
-@ExportLibrary(ReferenceLibrary.class)
-public class PythonNativeNull implements TruffleObject {
-    private Object ptr;
+public final class VaListWrapper implements TruffleObject {
 
-    public void setPtr(Object object) {
-        this.ptr = object;
-    }
+    private final Object vaListPtr;
+    public final Object outVarPtrPtr;
 
-    public Object getPtr() {
-        return ptr;
-    }
+    private long pos;
 
-    @ExportMessage
-    boolean isPointer() {
-        return true;
-    }
-
-    @ExportMessage(limit = "1")
-    long asPointer(
-                    @CachedLibrary("this.getPtr()") InteropLibrary ptrInteropLib) throws UnsupportedMessageException {
-        return ptrInteropLib.asPointer(getPtr());
+    public VaListWrapper(Object vaListPtr, Object outVarPtrPtr) {
+        this.vaListPtr = vaListPtr;
+        this.outVarPtrPtr = outVarPtrPtr;
     }
 
     @ExportMessage
-    boolean isNull() {
-        return true;
+    final long getArraySize() {
+        return Long.MAX_VALUE;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // this is '((void*)0x0)', so no type
-        return false;
+    final boolean hasArrayElements() {
+        return true;
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        return null;
+    final Object readArrayElement(long index,
+                    @Cached PCallCapiFunction callGetVaargNode) throws InvalidArrayIndexException {
+        if (index != pos) {
+            throw InvalidArrayIndexException.create(index);
+        }
+        Object res = callGetVaargNode.execute("get_next_vaarg", new Object[]{vaListPtr, outVarPtrPtr});
+        pos++;
+        return outVarPtrPtr;
     }
 
-    @ExportMessage(limit = "1")
-    boolean isSame(Object other,
-                    @CachedLibrary("this.getPtr()") ReferenceLibrary delegateLib) {
-        return delegateLib.isSame(ptr, other);
+    @ExportMessage
+    final boolean isArrayElementReadable(long identifier) {
+        return 0 <= identifier && identifier < getArraySize();
     }
 }

@@ -47,6 +47,13 @@ def _reference_format_specifier_w_star(args):
     bytes_like[0] = ord('a')
     return bytes_like
 
+
+def _reference_typecheck(args, expected_type):
+    if not isinstance(args[0][0], expected_type):
+        raise TypeError
+    return args[0][0]
+
+
 class TestModsupport(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -91,3 +98,288 @@ class TestModsupport(CPyExtTestCase):
         callfunction="wrap_PyArg_ParseTuple",
         cmpfunc=unhandled_error_compare
     )
+
+    test_parseargs_O_conv = CPyExtFunction(
+        lambda args: True if args[0][0] else False,
+        lambda: (
+            ((b'helloworld', ),),
+            ((b'', ),),
+            (([0, 1, 2], ),),
+            (([], ),),
+        ),
+        code='''
+        static int convert_seq(PyObject* obj, void* out) {
+            PyObject **objOut = (PyObject **)out;
+            *objOut = PySequence_Size(obj) == 0 ? Py_False : Py_True;
+            return 1;
+        }
+        
+        static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject* out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "O&", convert_seq, &out) == 0) {
+                return NULL;
+            }
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_O_typecheck = CPyExtFunction(
+        lambda args: _reference_typecheck(args, str),
+        lambda: (
+            (('helloworld', ),),
+            (('', ),),
+            (([0, 1, 2], ),),
+            (([], ),),
+        ),
+        code='''
+        static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject* out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "O!", &PyUnicode_Type, &out) == 0) {
+                return NULL;
+            }
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_H = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            ((0, ), 0),
+            ((-1, ), 0xFFFF),
+            ((-2, ), 0xFFFE),
+            ((1, ), 1),
+            ((2, ), 2),
+            # fits in a a short
+            ((0xFFFF, ), 0xFFFF),
+            # fits in an int
+            ((0xFFFFFFFF, ), 0xFFFF),
+            ((0x1234CAFE, ), 0xCAFE),
+            # still fits in a long
+            ((0xFFFFFFFFFFFFFFFF, ), 0xFFFF),
+            # will be a big one
+            ((0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, ), 0xFFFF),
+        ),
+        code='''
+        static unsigned short wrap_PyArg_ParseTuple(PyObject* argTuple, PyObject* expected) {
+            unsigned short out = 0xDEAD;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "H", &out) == 0) {
+                return -1;
+            }
+            return out;
+        }
+        ''',
+        resultspec="H",
+        argspec="OO",
+        arguments=["PyObject* argTuple", "PyObject* expected"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_I = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            ((0, ), 0),
+            ((-1, ), 0xFFFFFFFF),
+            ((-2, ), 0xFFFFFFFE),
+            ((1, ), 1),
+            ((2, ), 2),
+            # fits in an int
+            ((0xFFFFFFFF, ), 0xFFFFFFFF),
+            # still fits in a long
+            ((0xFFFFFFFFFFFFFFFF, ), 0xFFFFFFFF),
+            # will be a big one
+            ((0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, ), 0xFFFFFFFF),
+        ),
+        code='''
+        static unsigned int wrap_PyArg_ParseTuple(PyObject* argTuple, PyObject* expected) {
+            unsigned int out = 0xCAFEBABE;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "I", &out) == 0) {
+                return -1;
+            }
+            return out;
+        }
+        ''',
+        resultspec="I",
+        argspec="OO",
+        arguments=["PyObject* argTuple", "PyObject* expected"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_K = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            ((0, ), 0),
+            ((-1, ), 0xFFFFFFFFFFFFFFFF),
+            ((-2, ), 0xFFFFFFFFFFFFFFFE),
+            ((1, ), 1),
+            ((2, ), 2),
+            # fits in an int
+            ((0xFFFFFFFF, ), 0xFFFFFFFF),
+            ((0xFFFFCAFE, ), 0xFFFFCAFE),
+            # still fits in a long
+            ((0xFFFFFFFFFFFFFFFF, ), 0xFFFFFFFFFFFFFFFF),
+            ((0xFFFFFFFFCAFEFFFF, ), 0xFFFFFFFFCAFEFFFF),
+            # will be a big one
+            ((0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, ), 0xFFFFFFFFFFFFFFFF),
+            ((0xFFFFFFFFFFFFFFFFFFFFFFFCAFEFFFF, ), 0xFFFFFFFFCAFEFFFF),
+        ),
+        code='''
+        static unsigned long long wrap_PyArg_ParseTuple(PyObject* argTuple, PyObject* expected) {
+            unsigned long long out = 0xDEADBEEFDEADBEEF;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "K", &out) == 0) {
+                return -1;
+            }
+            return out;
+        }
+        ''',
+        resultspec="K",
+        argspec="OO",
+        arguments=["PyObject* argTuple", "PyObject* expected"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_S = CPyExtFunction(
+        lambda args: _reference_typecheck(args, bytes),
+        lambda: (
+            ((b'', ), ),
+            ((b'helloworld', ), ),
+            ((bytearray(b''), ), ),
+            ((bytearray(b'helloworld'), ), ),
+            (('helloworld', ), ),
+        ),
+        code='''
+        static PyObject * wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject *out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "S", &out) == 0) {
+                return NULL;
+            }
+            Py_DECREF(argTuple);
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_Y = CPyExtFunction(
+        lambda args: _reference_typecheck(args, bytearray),
+        lambda: (
+            ((b'', ), ),
+            ((b'helloworld', ), ),
+            ((bytearray(b''), ), ),
+            ((bytearray(b'helloworld'), ), ),
+            (('helloworld', ), ),
+        ),
+        code='''
+        static PyObject * wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject *out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "Y", &out) == 0) {
+                return NULL;
+            }
+            Py_DECREF(argTuple);
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_U = CPyExtFunction(
+        lambda args: _reference_typecheck(args, str),
+        lambda: (
+            ((b'', ), ),
+            ((b'helloworld', ), ),
+            ((bytearray(b''), ), ),
+            ((bytearray(b'helloworld'), ), ),
+            (('helloworld', ), ),
+        ),
+        code='''
+        static PyObject * wrap_PyArg_ParseTuple(PyObject* argTuple) {
+            PyObject *out = NULL;
+            Py_INCREF(argTuple);
+            if (PyArg_ParseTuple(argTuple, "U", &out) == 0) {
+                return NULL;
+            }
+            Py_DECREF(argTuple);
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_valist = CPyExtFunction(
+        lambda args: args[0],
+        lambda: (
+            ((b'hello', 1, b'world'),),
+        ),
+        code='''
+        static int do_call(PyObject* argTuple, char *format, ...) {
+            int result = 0;
+            char *kwnames[] = { "a", "b", "c", NULL };
+            va_list va;
+            va_start(va, format);
+            result = PyArg_VaParseTupleAndKeywords(argTuple, PyDict_New(), "OiO", kwnames, va);
+            va_end(va);
+            return result;
+        }
+        
+        static PyObject* wrap_PyArg_VaParseTupleAndKeywords_SizeT(PyObject* argTuple) {
+            PyObject* out0 = NULL;
+            int out1 = 0;
+            PyObject* out2 = NULL;
+            PyObject* res = NULL;
+            Py_INCREF(argTuple);
+            if (do_call(argTuple, "OiO", &out0, &out1, &out2) == 0) {
+                return NULL;
+            }
+            Py_DECREF(argTuple);
+            Py_XINCREF(out0);
+            Py_XINCREF(out2);
+            res = PyTuple_Pack(3, out0, PyLong_FromLong(out1), out2);
+            Py_XINCREF(res);
+            return res;
+        }
+        ''',
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* argTuple"],
+        callfunction="wrap_PyArg_VaParseTupleAndKeywords_SizeT",
+        cmpfunc=unhandled_error_compare
+    )
+
