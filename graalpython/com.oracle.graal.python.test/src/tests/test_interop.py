@@ -349,24 +349,58 @@ if sys.implementation.name == "graalpython":
                 assert sun.misc.Signal is not None
 
     def test_java_import_from_jar():
-        import sys
-        import tempfile
-        import zipfile
+        if sys.graal_python_jython_emulation_enabled:
+            import tempfile
+            import zipfile
 
-        tempname = tempfile.mktemp() + ".jar"
-        with zipfile.ZipFile(tempname, mode="w") as z:
-            with z.open("scriptDir/test_java_jar_import.py", mode="w") as member:
-                member.write(b"MEMBER = 42\n")
-        try:
-            sys.path.append(tempname + "!scriptDir")
+            # import a single file with jar!prefix/
+            tempname = tempfile.mktemp() + ".jar"
+            with zipfile.ZipFile(tempname, mode="w") as z:
+                with z.open("scriptDir/test_java_jar_import.py", mode="w") as member:
+                    member.write(b"MEMBER = 42\n")
             try:
-                import test_java_jar_import
-                assert test_java_jar_import.MEMBER == 42
-                assert test_java_jar_import.__path__ == tempname + "!scriptDir/test_java_jar_import.py"
+                sys.path.append(tempname + "!scriptDir")
+                try:
+                    import test_java_jar_import
+                    assert test_java_jar_import.MEMBER == 42
+                    assert test_java_jar_import.__path__ == tempname + "/scriptDir/test_java_jar_import.py"
+                finally:
+                    sys.path.pop()
             finally:
-                sys.path.pop()
-        finally:
-            os.unlink(tempname)
+                os.unlink(tempname)
+
+            # import a single file with jar!/prefix/
+            tempname = tempfile.mktemp() + ".jar"
+            with zipfile.ZipFile(tempname, mode="w") as z:
+                with z.open("scriptDir/test_java_jar_import_2.py", mode="w") as member:
+                    member.write(b"MEMBER = 43\n")
+            try:
+                sys.path.append(tempname + "!/scriptDir")
+                try:
+                    import test_java_jar_import_2
+                    assert test_java_jar_import_2.MEMBER == 43
+                    assert test_java_jar_import_2.__path__ == tempname + "/scriptDir/test_java_jar_import_2.py"
+                finally:
+                    sys.path.pop()
+            finally:
+                os.unlink(tempname)
+
+            # import a package with jar!/prefix/
+            tempname = tempfile.mktemp() + ".jar"
+            with zipfile.ZipFile(tempname, mode="w") as z:
+                with z.open("scriptDir/test_java_jar_pkg/__init__.py", mode="w") as member:
+                    member.write(b"MEMBER = 44\n")
+            try:
+                sys.path.append(tempname + "!/scriptDir")
+                try:
+                    import test_java_jar_pkg
+                    assert test_java_jar_pkg.MEMBER == 44
+                    assert test_java_jar_pkg.__path__ == tempname + "/scriptDir/test_java_jar_pkg/__init__.py"
+                finally:
+                    sys.path.pop()
+            finally:
+                os.unlink(tempname)
+
 
     def test_java_exceptions():
         if sys.graal_python_jython_emulation_enabled:
