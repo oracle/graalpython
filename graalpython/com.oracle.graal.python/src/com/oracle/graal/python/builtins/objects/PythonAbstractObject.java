@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.object.PythonTypeLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -572,13 +571,61 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean isSequence(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isSequenceType(getClassNode.execute(this));
+    }
+
+    @ExportMessage
+    public boolean isMapping(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isMappingType(getClassNode.execute(this));
+    }
+
+    @ExportMessage
+    public boolean isSequenceType(
+                        @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                        @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                        @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
+                        @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                        @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
+        if (isLazyClass.profile(this instanceof LazyPythonClass)) {
+            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed because of guard
+            if (lenProfile.profile(hasLenNode.execute(type, SpecialMethodNames.__LEN__) != PNone.NO_VALUE)) {
+                return getItemProfile.profile(hasGetItemNode.execute(type, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE);
+            }
+        }
+        return false;
+    }
+
+    @ExportMessage
+    public boolean isMappingType(
+                        @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                        @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                        @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
+                        @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                        @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile,
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
+                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+        if (isSequenceType(hasGetItemNode, hasLenNode, isLazyClass, lenProfile, getItemProfile)) {
+            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed b/c it's a sequence type
+            return profile.profile(hasKeysNode.execute(type, SpecialMethodNames.KEYS) != PNone.NO_VALUE &&
+                            hasItemsNode.execute(type, SpecialMethodNames.ITEMS) != PNone.NO_VALUE &&
+                            hasValuesNode.execute(type, SpecialMethodNames.VALUES) != PNone.NO_VALUE);
+        }
+        return false;
+    }
+
+    @ExportMessage
     public final boolean isIterable(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic getIterNode,
-                    @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic getIterNode,
+                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
                     @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileIter,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileNext) {
         LazyPythonClass klass = getClassNode.execute(this);
         Object iterMethod = getIterNode.execute(klass, __ITER__);
@@ -619,18 +666,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         return profile.profile(hasEnterNode.execute(this, __ENTER__) && hasExitNode.execute(this, __EXIT__));
-    }
-
-    @ExportMessage
-    public boolean isSequence(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
-                    @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
-        return pythonTypeLibrary.isSequenceType(getClassNode.execute(this));
-    }
-
-    @ExportMessage
-    public boolean isMapping(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
-                    @CachedLibrary(limit = "1") PythonTypeLibrary pythonTypeLibrary) {
-        return pythonTypeLibrary.isMappingType(getClassNode.execute(this));
     }
 
     @GenerateUncached
