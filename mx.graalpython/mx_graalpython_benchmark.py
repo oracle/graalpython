@@ -264,6 +264,14 @@ class GraalPythonVm(GuestVm):
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
             with environ(self._env or {}):
+                cp = []
+                if self._cp_prefix:
+                    cp.append(self._cp_prefix)
+                if self._cp_suffix:
+                    cp.append(self._cp_suffix)
+                if len(cp) > 0:
+                    extra_polyglot_args.append("--vm.classpath="+":".join(cp))
+
                 return host_vm.run_lang('graalpython', extra_polyglot_args + args, cwd)
 
         # Otherwise, we're running from the source tree
