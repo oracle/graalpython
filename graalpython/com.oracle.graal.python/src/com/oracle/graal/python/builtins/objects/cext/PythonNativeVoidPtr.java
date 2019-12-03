@@ -61,6 +61,7 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
         return 0;
     }
 
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public LazyPythonClass getLazyPythonClass() {

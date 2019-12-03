@@ -589,13 +589,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Child private GetInternalByteArrayNode toByteArrayNode;
 
         @Specialization
-        Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone errors) {
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone errors) {
             String string = decodeBytes(getBytesBuffer(bytes), "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Specialization(guards = {"isString(errors)"})
-        Object decode(VirtualFrame frame, PIBytesLike bytes, Object errors,
+        Object decode(PIBytesLike bytes, Object errors,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
             String string = decodeBytes(getBytesBuffer(bytes), profiledErrors.toString());

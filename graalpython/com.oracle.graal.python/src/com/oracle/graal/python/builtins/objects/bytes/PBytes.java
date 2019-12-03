@@ -107,6 +107,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }

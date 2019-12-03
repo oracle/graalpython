@@ -66,25 +66,46 @@ import com.oracle.truffle.api.nodes.Node;
 @DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
+    /**
+     * @return {@code true} if the object has a {@code __dict__} attribute
+     */
     public boolean hasDict(Object receiver) {
         return false;
     }
 
+    /**
+     * Note that not returning a value from this message does not mean that the object cannot have a
+     * {@code __dict__}. It may be that the object has inlined the representation of its
+     * {@code __dict__} and thus no object is available, yet.
+     *
+     * @return the value in {@code __dict__} or {@code null}, if there is none.
+     * @see #hasDict
+     */
     @Abstract(ifExported = "hasDict")
     public PHashingCollection getDict(Object receiver) {
         return null;
     }
 
+    /**
+     * Set the {@code __dict__} attribute of the object
+     */
     @Abstract(ifExported = "hasDict")
     public void setDict(Object receiver, PHashingCollection dict) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
+    /**
+     * @return the Python type of the receiver
+     */
     @Abstract
     public LazyPythonClass getLazyPythonClass(Object receiver) {
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
+    /**
+     * Sets the {@code __class__} value of the receiver. This is not supported for all kinds of
+     * objects.
+     */
     public void setLazyPythonClass(Object receiver, LazyPythonClass cls) {
         PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
     }

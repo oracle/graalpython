@@ -83,6 +83,7 @@ public final class PMMap extends PythonObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }
@@ -104,6 +105,8 @@ public final class PMMap extends PythonObject {
             int len = getBufferLength(lenNode, castToIntNode);
 
             // save current position
+            // TODO: restore in case of failure
+            @SuppressWarnings("unused")
             long oldPos = PMMap.position(mappedByteBuffer);
 
             PMMap.position(mappedByteBuffer, 0);

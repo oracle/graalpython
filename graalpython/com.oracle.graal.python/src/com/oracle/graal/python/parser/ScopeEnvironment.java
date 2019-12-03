@@ -41,10 +41,17 @@
 
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -52,7 +59,6 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
 import com.oracle.graal.python.nodes.cell.WriteLocalCellNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
@@ -61,10 +67,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameUtil;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
@@ -191,11 +193,6 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     public void addSeenVar(String name) {
         currentScope.addSeenVar(name);
-    }
-
-    private void createGlobal(String name) {
-        assert name != null : "name is null!";
-        globalScope.createSlotIfNotPresent(name);
     }
 
     public boolean atModuleLevel() {

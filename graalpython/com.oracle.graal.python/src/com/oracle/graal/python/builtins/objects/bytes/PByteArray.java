@@ -98,6 +98,7 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }

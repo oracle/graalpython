@@ -508,7 +508,7 @@ public abstract class HashingStorageNodes {
                         @Cached("createClassProfile()") ValueProfile keyTypeProfile,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupHash,
                         @Cached LookupAttributeInMRONode.Dynamic lookupStringHash,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             Object profileKey = keyTypeProfile.profile(key);
             if (profileKey instanceof String) {
                 return storage.hasKey(profileKey, DEFAULT_EQIVALENCE);
@@ -614,7 +614,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -627,7 +627,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -639,25 +639,25 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         protected boolean contains(LocalsStorage storage, PString key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             return storage.hasKey(key.getValue(), HashingStorage.DEFAULT_EQIVALENCE);
         }
 
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         protected boolean contains(LocalsStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             return storage.hasKey(key, HashingStorage.DEFAULT_EQIVALENCE);
         }
 
         @Specialization(guards = "!lib.isHashable(key)", limit = "1")
         protected boolean doUnhashable(@SuppressWarnings("unused") EconomicMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             throw unhashable(key);
         }
 
         @Specialization(guards = "!lib.isHashable(key)", limit = "1")
         protected boolean doUnhashable(@SuppressWarnings("unused") HashMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             throw unhashable(key);
         }
 
@@ -722,7 +722,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, EconomicMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -735,7 +735,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
         protected boolean contains(VirtualFrame frame, HashMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -747,13 +747,13 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         protected boolean contains(LocalsStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             return storage.hasKey(key, HashingStorage.DEFAULT_EQIVALENCE);
         }
 
         @Specialization(guards = "!lib.isHashable(key)", limit = "1")
         protected boolean doUnhashable(@SuppressWarnings("unused") HashMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             throw unhashable(key);
         }
 
@@ -828,7 +828,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doEmptyStorage(VirtualFrame frame, @SuppressWarnings("unused") EmptyStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             // immediately replace storage since empty storage is immutable
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
@@ -882,7 +882,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doLocalsGeneralize(VirtualFrame frame, LocalsStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -911,7 +911,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, PythonObjectDictStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             HashingStorage newStorage = switchToHybridDictStorage(storage);
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
@@ -926,7 +926,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doDynamicObjectGeneralize(VirtualFrame frame, FastDictStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -941,7 +941,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = {"!isJavaString(key)", "lib.isHashable(key)"}, limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doKeywordsGeneralize(VirtualFrame frame, KeywordsStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             // immediately replace storage since keywords storage is immutable
             EconomicMapStorage newStorage = EconomicMapStorage.create(storage.length() + 1, false);
             PythonContext context = getContextRef().get();
@@ -958,7 +958,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doHashMap(VirtualFrame frame, EconomicMapStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -972,7 +972,7 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("try")
         protected HashingStorage doHashMap(VirtualFrame frame, HashMapStorage storage, Object key, Object value,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             PythonContext context = getContextRef().get();
             PException caughtException = IndirectCallContext.enter(frame, context, this);
             try {
@@ -1224,7 +1224,7 @@ public abstract class HashingStorageNodes {
         // this must read from the non-dynamic object storage
         @Specialization(guards = {"!isString(key)", "lib.isHashable(key)"}, limit = "1")
         Object doDynamicStorage(PythonObjectHybridDictStorage s, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             return s.getItem(key, getEquivalence());
         }
 
@@ -1273,7 +1273,7 @@ public abstract class HashingStorageNodes {
                         @Cached LookupInheritedAttributeNode.Dynamic lookupHash,
                         @Cached LookupAttributeInMRONode.Dynamic lookupStringHash,
                         @Cached GetItemNode recursiveNode,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             if (lookupHash.execute(key, __HASH__) == lookupStringHash.execute(PythonBuiltinClassType.PString, __HASH__)) {
                 return recursiveNode.execute(frame, storage, key.getValue());
             }
@@ -1291,19 +1291,19 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         Object doGeneric(EconomicMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             return storage.getItem(key, getEquivalence());
         }
 
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         Object doGeneric(HashMapStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             return storage.getItem(key, getEquivalence());
         }
 
         @Specialization(guards = "!lib.isHashable(key)", limit = "1")
         Object doUnhashable(@SuppressWarnings("unused") HashingStorage storage, Object key,
-                        @CachedLibrary("key") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
             throw unhashable(key);
         }
     }

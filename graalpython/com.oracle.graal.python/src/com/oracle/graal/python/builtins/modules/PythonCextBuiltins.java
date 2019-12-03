@@ -1976,7 +1976,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class UpcallLNode extends UpcallLandingNode {
 
         @Specialization
-        long upcall(VirtualFrame frame, Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        long upcall(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.CastToNativeLongNode asLongNode,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {

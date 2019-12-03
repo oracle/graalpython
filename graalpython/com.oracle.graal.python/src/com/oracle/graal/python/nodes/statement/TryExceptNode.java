@@ -86,7 +86,6 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child InteropLibrary interopLib;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile everHandled = ConditionProfile.createBinaryProfile();
 
     @CompilationFinal private Boolean shouldCatchAll = null;
     @CompilationFinal private Boolean shouldCatchJavaExceptions = null;

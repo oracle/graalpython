@@ -584,11 +584,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isSequenceType(
-                        @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                        @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
-                        @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
-                        @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                        @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
+                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                    @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
+                    @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
         if (isLazyClass.profile(this instanceof LazyPythonClass)) {
             LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed because of guard
             if (lenProfile.profile(hasLenNode.execute(type, SpecialMethodNames.__LEN__) != PNone.NO_VALUE)) {
@@ -600,17 +600,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isMappingType(
-                        @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
-                        @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
-                        @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
-                        @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
-                        @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
-                        @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                    @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
+                    @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         if (isSequenceType(hasGetItemNode, hasLenNode, isLazyClass, lenProfile, getItemProfile)) {
-            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed b/c it's a sequence type
+            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed b/c it's a
+                                                           // sequence type
             return profile.profile(hasKeysNode.execute(type, SpecialMethodNames.KEYS) != PNone.NO_VALUE &&
                             hasItemsNode.execute(type, SpecialMethodNames.ITEMS) != PNone.NO_VALUE &&
                             hasValuesNode.execute(type, SpecialMethodNames.VALUES) != PNone.NO_VALUE);
