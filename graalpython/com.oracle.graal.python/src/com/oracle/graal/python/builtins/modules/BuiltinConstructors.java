@@ -170,6 +170,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
@@ -1995,7 +1997,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private GetAnyAttributeNode getAttrNode;
         @Child private CastToIndexNode castToInt;
         @Child private CastToListNode castToList;
-        @Child private CastToStringNode castToStringNode;
+        @Child private CastToJavaStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
@@ -2075,7 +2077,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("invalid globals object");
             }
-            return ensureCastToStringNode().execute(frame, nameAttr);
+            return ensureCastToStringNode().execute(nameAttr);
         }
 
         @SuppressWarnings("try")
@@ -2449,10 +2451,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return castToInt;
         }
 
-        private CastToStringNode ensureCastToStringNode() {
+        private CastToJavaStringNode ensureCastToStringNode() {
             if (castToStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToStringNode.create());
+                castToStringNode = insert(CastToJavaStringNodeGen.create());
             }
             return castToStringNode;
         }

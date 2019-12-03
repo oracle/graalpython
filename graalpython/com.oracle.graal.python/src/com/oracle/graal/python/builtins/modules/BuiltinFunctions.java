@@ -166,6 +166,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -1488,10 +1489,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class PrintNode extends PythonBuiltinNode {
         private static final String DEFAULT_END = "\n";
         private static final String DEFAULT_SEPARATOR = " ";
-        @Child ReadAttributeFromObjectNode readStdout;
-        @Child GetAttributeNode getWrite = GetAttributeNode.create("write", null);
-        @Child CallNode callWrite = CallNode.create();
-        @Child CastToStringNode toString = CastToStringNode.createCoercing();
+        @Child private ReadAttributeFromObjectNode readStdout;
+        @Child private GetAttributeNode getWrite = GetAttributeNode.create("write", null);
+        @Child private CallNode callWrite = CallNode.create();
+        @Child private CastToStringNode toString = CastToStringNode.create();
         @Child private LookupAndCallUnaryNode callFlushNode;
         @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private PythonModule cachedSys;
@@ -1527,21 +1528,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"printAllGiven", "printNoKeywords"})
         PNone printGeneric(VirtualFrame frame, Object[] values, Object sepIn, Object endIn, Object fileIn, Object flushIn,
-                        @Cached("createCoercing()") CastToStringNode castSep,
-                        @Cached("createCoercing()") CastToStringNode castEnd,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castFlush) {
-            String sep;
-            if (sepIn instanceof PNone) {
-                sep = DEFAULT_SEPARATOR;
-            } else {
-                sep = castSep.execute(frame, sepIn);
+                        @Cached CastToJavaStringNode castSep,
+                        @Cached CastToJavaStringNode castEnd,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castFlush,
+                        @Cached PRaiseNode raiseNode) {
+            String sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
+            if (sep == null) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "sep must be None or a string, not %p", sepIn);
             }
-            String end;
-            if (endIn instanceof PNone) {
-                end = DEFAULT_END;
-            } else {
-                end = castEnd.execute(frame, endIn);
+
+            String end = endIn instanceof PNone ? DEFAULT_END : castEnd.execute(endIn);
+            if (end == null) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "end must be None or a string, not %p", sepIn);
             }
+
             Object file;
             if (fileIn instanceof PNone) {
                 file = getStdout();

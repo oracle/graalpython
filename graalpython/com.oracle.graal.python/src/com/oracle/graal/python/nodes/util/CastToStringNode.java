@@ -40,92 +40,85 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Converts an arbitrary object to a java String
+ * Converts an arbitrary object to a Python string (aka unicode) object. This node will also do
+ * coercion, i.e., it will call {@code __str__} if necessary.
  */
+@ImportStatic({PGuards.class, SpecialMethodNames.class})
 public abstract class CastToStringNode extends PNodeWithContext {
     private static final String ERROR_MESSAGE = "__str__ returned non-string (type %p)";
 
-    @Child private LookupAndCallUnaryNode callStrNode;
-    private final PythonBuiltinClassType errorType;
-    private final String message;
-    protected final boolean coerce;
+    public abstract Object execute(VirtualFrame frame, Object x);
 
-    protected CastToStringNode(boolean coerce) {
-        this.errorType = PythonBuiltinClassType.TypeError;
-        this.message = ERROR_MESSAGE;
-        this.coerce = coerce;
+    public abstract Object execute(VirtualFrame frame, int x);
+
+    public abstract Object execute(VirtualFrame frame, long x);
+
+    public abstract Object execute(VirtualFrame frame, boolean x);
+
+    @Specialization(guards = "isString(x)")
+    static Object doString(Object x) {
+        return x;
     }
 
-    public abstract String execute(VirtualFrame frame, Object x);
-
-    public abstract String execute(VirtualFrame frame, int x);
-
-    public abstract String execute(VirtualFrame frame, long x);
-
-    public abstract String execute(VirtualFrame frame, boolean x);
-
-    @Specialization(guards = "coerce")
-    String doBoolean(boolean x) {
+    @Specialization
+    static String doBoolean(boolean x) {
         return x ? "True" : "False";
     }
 
-    @Specialization(guards = "coerce")
+    @Specialization
     @TruffleBoundary
-    String doInt(int x) {
+    static String doInt(int x) {
         return Integer.toString(x);
     }
 
-    @Specialization(guards = "coerce")
+    @Specialization
     @TruffleBoundary
-    String doLong(long x) {
+    static String doLong(long x) {
         return Long.toString(x);
     }
 
     @Specialization
-    String doPString(PString x) {
-        return x.getValue();
+    static String doDouble(double x) {
+        return PFloat.doubleToString(x);
     }
 
     @Specialization
-    String doString(String x) {
+    static String doString(String x) {
         return x;
     }
 
-    @Specialization(guards = "coerce")
-    String doGeneric(VirtualFrame frame, Object x,
+    @Specialization
+    Object doGeneric(VirtualFrame frame, Object x,
+                    @Cached("create(__STR__)") LookupAndCallUnaryNode callStrNode,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsBuiltinClassProfile isStringProfile,
                     @Cached PRaiseNode raise) {
-        if (callStrNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));
-        }
         Object result = callStrNode.executeObject(frame, x);
-        if (result instanceof String) {
-            return (String) result;
-        } else if (result instanceof PString) {
-            return ((PString) result).getValue();
+        if (!isStringProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PString)) {
+            throw raise.raise(TypeError, ERROR_MESSAGE, result);
         }
-        throw raise.raise(errorType, message);
+        return result;
     }
 
     public static CastToStringNode create() {
-        return CastToStringNodeGen.create(false);
-    }
-
-    public static CastToStringNode createCoercing() {
-        return CastToStringNodeGen.create(true);
+        return CastToStringNodeGen.create();
     }
 }

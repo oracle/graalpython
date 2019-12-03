@@ -182,7 +182,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -2743,20 +2742,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         PTuple doRepr(VirtualFrame frame, Object module, double val, int formatCode, int precision, int flags,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
-                        @Cached CastToStringNode castToStringNode,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             Object reprString = callReprNode.executeObject(frame, val);
-            return createResult(new CStringWrapper(castToStringNode.execute(frame, reprString)), val);
+            return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
         }
 
         @Specialization(guards = "!isReprFormatCode(formatCode)")
         Object doGeneric(VirtualFrame frame, Object module, double val, int formatCode, int precision, @SuppressWarnings("unused") int flags,
                         @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callReprNode,
-                        @Cached CastToStringNode castToStringNode,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object reprString = callReprNode.executeObject(frame, val, "." + precision + Character.toString((char) formatCode));
-                return createResult(new CStringWrapper(castToStringNode.execute(frame, reprString)), val);
+                return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute(module);

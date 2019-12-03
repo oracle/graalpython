@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,39 +41,48 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 /**
- * Converts a Python unicode object to a Java String without coercing. This node does not take a
- * frame and is meant for intenral use only. It does not throw a proper Python exception because the
- * user must ensure that the given object has already builtin type {@code PString}.
+ * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails, the
+ * node will return {@code null}. It does deliberately not throw an error and leaves error handling
+ * up to the user.
  */
 @GenerateUncached
+@ImportStatic(PGuards.class)
 public abstract class CastToJavaStringNode extends PNodeWithContext {
 
     public abstract String execute(Object x);
 
-    @Specialization(guards = "getCharSequenceClass(x) == cachedClass")
-    String doPStringCached(PString x,
-                    @Cached("getCharSequenceClass(x)") Class<? extends CharSequence> cachedClass) {
-        return PString.getValue(CompilerDirectives.castExact(x.getCharSequence(), cachedClass));
-    }
-
-    @Specialization(replaces = "doPStringCached")
-    String doPString(PString x) {
-        return x.getValue();
-    }
-
     @Specialization
-    String doString(String x) {
+    static String doString(String x) {
         return x;
     }
 
-    static Class<? extends CharSequence> getCharSequenceClass(PString string) {
-        return string.getCharSequence().getClass();
+    @Specialization(guards = "isMaterialized(x)")
+    static String doPStringMaterialized(PString x) {
+        // cast guaranteed by the guard
+        return (String) x.getCharSequence();
+    }
+
+    @Specialization(guards = "!isMaterialized(x)")
+    static String doPStringGeneric(PString x,
+                    @Cached StringMaterializeNode materializeNode) {
+        return materializeNode.execute(x);
+    }
+
+    @Specialization(guards = "!isString(x)")
+    static String doUnsupported(@SuppressWarnings("unused") Object x) {
+        return null;
+    }
+
+    static boolean isMaterialized(PString x) {
+        return x.getCharSequence() instanceof String;
     }
 }

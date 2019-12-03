@@ -37,7 +37,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class PString extends PImmutableSequence {
 
-    private final CharSequence value;
+    private CharSequence value;
 
     public PString(LazyPythonClass clazz, CharSequence value) {
         super(clazz);
@@ -122,5 +122,9 @@ public final class PString extends PImmutableSequence {
     @SuppressWarnings("static-method")
     public boolean isHashable() {
         return true;
+    }
+
+    void setCharSequence(String materialized) {
+        this.value = materialized;
     }
 }

@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.truffle.api.CompilerAsserts;
 
-public class NativeCharSequence implements PCharSequence {
+public final class NativeCharSequence implements PCharSequence {
 
     private final Object ptr;
     private String materialized;
@@ -81,6 +81,10 @@ public class NativeCharSequence implements PCharSequence {
             materialized = (String) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
         }
         return materialized;
+    }
+
+    Object getPtr() {
+        return ptr;
     }
 
     @Override
