@@ -305,7 +305,7 @@ PyObject * PyUnicode_DecodeUTF32(const char *s, Py_ssize_t size, const char *err
     PyObject *result;
     void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
     int bo = byteorder != NULL ? *byteorder : 0;
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_DecodeUTF32", s, size, native_to_java(jerrors), bo, NULL);
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_DecodeUTF32", polyglot_from_i8_array(s, size), size, native_to_java(jerrors), bo, NULL);
 }
 
 Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
