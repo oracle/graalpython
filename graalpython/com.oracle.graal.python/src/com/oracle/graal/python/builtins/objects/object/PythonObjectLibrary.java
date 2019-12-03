@@ -42,11 +42,15 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -65,6 +69,25 @@ import com.oracle.truffle.api.library.LibraryFactory;
 @DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
+    @ValueType
+    public static final class CallContext {
+        public final PFrame.Reference callerFrameInfo;
+        public final PFrame.Reference currentFrameInfo;
+        public final PException currentException;
+
+        public CallContext(PFrame.Reference callerFrameInfo, PFrame.Reference currentFrameInfo, PException currentException) {
+            this.callerFrameInfo = callerFrameInfo;
+            this.currentFrameInfo = currentFrameInfo;
+            this.currentException = currentException;
+        }
+
+        public CallContext(VirtualFrame frame) {
+            this.callerFrameInfo = PArguments.getCallerFrameInfo(frame);
+            this.currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+            this.currentException = PArguments.getException(frame);
+        }
+    }
+
     /**
      * @return {@code true} if the object has a {@code __dict__} attribute
      */
@@ -188,6 +211,46 @@ public abstract class PythonObjectLibrary extends Library {
     public boolean isHashable(Object receiver) {
         return false;
     }
+
+    public final long hash(VirtualFrame frame, Object self) throws UnsupportedMessageException {
+        return hash(self, new CallContext(frame));
+    }
+
+    @Abstract
+    public long hash(Object self, CallContext context) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    /**
+     * Checks that {@code self} and {@code other} are equal in Python. This does
+     * the double-dispatch that Python does if {@code self} does not know how to
+     * compare itself to {@code other}.
+     *
+     * <br/><b>Library implementers</b>: You should not implement this message,
+     * the default implementation will do the right thing. Instead, implement
+     * the {@link #leftEq} message.
+     *
+     * @return {@code true} if the two params are equal, {@code false} if not
+     */
+    public final boolean eq(VirtualFrame frame, Object self, Object other) {
+        return eq(self, other, new CallContext(frame));
+    }
+
+    /**
+     * <br/><b>Library implementers</b>: You should probably not implement this
+     * message, the default implementation will do the right thing. Instead,
+     * implement the {@link #leftEq} message.
+     *
+     * @return {@code true} if the two params are equal, {@code false} if not
+     */
+    public abstract boolean eq(Object self, Object other, CallContext ctx);
+
+    /**
+     * Compares {@code self} to {@code other} with Python semantics.
+     *
+     * @return {@code 1} for true, {@code 0} for false, {@code -1} when unknown
+     */
+    public abstract byte leftEq(Object self, Object other, CallContext ctx);
 
     /**
      * Checks whether the receiver is a Python an indexable object. As described in the
