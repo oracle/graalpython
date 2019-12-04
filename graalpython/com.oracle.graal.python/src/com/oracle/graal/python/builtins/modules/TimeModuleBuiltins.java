@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.PythonLanguage;
 import java.text.DateFormatSymbols;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -80,7 +81,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        TimeZone defaultTimeZone = TimeZone.getDefault();
+        TimeZone defaultTimeZone = TimeZone.getTimeZone(core.getContext().getEnv().getTimeZone());
         String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
         String daylightSavingZone = defaultTimeZone.getDisplayName(true, TimeZone.SHORT);
 
@@ -103,7 +104,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static Object[] getTimeStruct(double seconds, boolean local) {
         Object[] timeStruct = new Object[11];
         Instant instant = Instant.ofEpochSecond((long) seconds);
-        ZoneId zone = (local) ? ZoneId.systemDefault() : ZoneId.of("GMT");
+        ZoneId zone = (local) ? PythonLanguage.getContext().getEnv().getTimeZone() : ZoneId.of("GMT");
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[0] = zonedDateTime.getYear();
         timeStruct[1] = zonedDateTime.getMonth().getValue();
@@ -667,7 +668,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static long op(int[] integers) {
             LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
-            return localtime.toEpochSecond(ZoneOffset.UTC);
+            ZoneId timeZone = PythonLanguage.getContext().getEnv().getTimeZone();
+            return localtime.toEpochSecond(timeZone.getRules().getOffset(localtime));
         }
     }
 }
