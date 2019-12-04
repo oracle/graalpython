@@ -44,13 +44,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -59,7 +60,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Converts an arbitrary object to a Python string (aka unicode) object. This node will also do
- * coercion, i.e., it will call {@code __str__} if necessary.
+ * coercion, i.e., it will call {@code __str__} if necessary. The node reflects semantics of
+ * CPython's {@code PyObject_Str} function.
  */
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
 public abstract class CoerceToStringNode extends PNodeWithContext {
@@ -73,8 +75,13 @@ public abstract class CoerceToStringNode extends PNodeWithContext {
 
     public abstract Object execute(VirtualFrame frame, boolean x);
 
-    @Specialization(guards = "isString(x)")
-    static Object doString(Object x) {
+    @Specialization
+    static String doString(String x) {
+        return x;
+    }
+
+    @Specialization
+    static PString doPString(PString x) {
         return x;
     }
 
@@ -101,18 +108,13 @@ public abstract class CoerceToStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static String doString(String x) {
-        return x;
-    }
-
-    @Specialization
     Object doGeneric(VirtualFrame frame, Object x,
                     @Cached("create(__STR__)") LookupAndCallUnaryNode callStrNode,
                     @Cached GetLazyClassNode getClassNode,
-                    @Cached IsBuiltinClassProfile isStringProfile,
+                    @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PRaiseNode raise) {
         Object result = callStrNode.executeObject(frame, x);
-        if (!isStringProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PString)) {
+        if (!isSubtypeNode.execute(frame, getClassNode.execute(result), PythonBuiltinClassType.PString)) {
             throw raise.raise(TypeError, ERROR_MESSAGE, result);
         }
         return result;

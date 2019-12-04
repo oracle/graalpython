@@ -172,6 +172,7 @@ import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.nodes.util.CoerceToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1794,38 +1795,48 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
 
-        @SuppressWarnings("unused")
         @Specialization(guards = {"isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object strNoArgs(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
+        @SuppressWarnings("unused")
+        Object strNoArgs(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
             return asPString(strClass, "");
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object str(LazyPythonClass strClass, double arg, PNone encoding, PNone errors) {
-            return asPString(strClass, PFloat.doubleToString(arg));
-        }
-
         @Specialization(guards = {"!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
-            Object result = callNode.executeObject(frame, obj);
+        Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached CoerceToStringNode coerceToStringNode) {
+            Object result = coerceToStringNode.execute(frame, obj);
+
+            // try to return a primitive if possible
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
-            } else if (getIsPStringProfile().profile(result instanceof PString)) {
-                return result;
             }
-            throw raise(PythonErrorType.TypeError, "__str__ returned non-string (type %p)", result);
+
+            // CoerceToStringNode guarantees that the returned object is an instanceof of 'str'
+            return result;
+        }
+
+        @Specialization(guards = "!isNoValue(encoding)", limit = "3" )
+        Object doBuffer(VirtualFrame frame, LazyPythonClass strClass, Object obj, Object encoding, Object errors,
+                        @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
+            if(bufferLib.isBuffer(obj)) {
+                try {
+                    // TODO(fa): we should directly call '_codecs.decode'
+                    PBytes bytesObj = factory().createBytes(bufferLib.getBufferBytes(obj));
+                    return decodeBytes(frame, strClass, bytesObj, encoding, errors);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw raise(PythonBuiltinClassType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
         }
 
         @Specialization(guards = {"!isBytes(obj)", "!isMemoryView(obj)", "!isNoValue(encoding)"})
         public Object strNonBytesArgAndEncodingArg(@SuppressWarnings("unused") LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") Object encoding,
-                        @SuppressWarnings("unused") Object errors) {
+                                                   @SuppressWarnings("unused") Object errors) {
             throw raise(PythonErrorType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
         }
 
-        @Specialization(guards = "!isNoValue(encoding)")
-        public Object doBytesLike(VirtualFrame frame, LazyPythonClass strClass, PIBytesLike obj, Object encoding, Object errors) {
+        private Object decodeBytes(VirtualFrame frame, LazyPythonClass strClass, PBytes obj, Object encoding, Object errors) {
             Object result = getCallDecodeNode().execute(frame, obj, encoding, errors);
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
@@ -1833,17 +1844,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "%p.decode returned non-string (type %p)", obj, result);
-        }
-
-        @Specialization(guards = "!isNoValue(encoding)")
-        public Object doMemoryView(VirtualFrame frame, LazyPythonClass strClass, PMemoryView obj, Object encoding, Object errors,
-                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
-                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytes) {
-            Object result = callToBytes.executeObject(frame, obj);
-            if (isBytesProfile.profile(result instanceof PBytes)) {
-                return doBytesLike(frame, strClass, (PBytes) result, encoding, errors);
-            }
-            throw raise(PythonErrorType.TypeError, "%p.tobytes returned non-bytes object (type %p)", obj, result);
         }
 
         private Object asPString(LazyPythonClass cls, String str) {
