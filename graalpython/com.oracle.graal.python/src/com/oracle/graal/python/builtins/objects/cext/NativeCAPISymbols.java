@@ -90,6 +90,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_BUFFER_R = "get_buffer_r";
     public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
     public static final String FUN_ALLOCATE_OUTVAR = "allocate_outvar";
+    public static final String FUN_NATIVE_UNICODE_AS_STRING = "native_unicode_as_string";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

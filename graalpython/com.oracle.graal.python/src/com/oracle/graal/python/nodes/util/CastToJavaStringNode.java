@@ -40,10 +40,17 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -75,6 +82,22 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     static String doPStringGeneric(PString x,
                     @Cached StringMaterializeNode materializeNode) {
         return materializeNode.execute(x);
+    }
+
+    @Specialization
+    static String doNativeObject(PythonNativeObject x,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                    @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
+                    @Cached ToSulongNode toSulongNode) {
+        if (isSubtypeNode.executeWithGlobalState(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+            // read the native data
+            Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
+            assert result instanceof String;
+            return (String) result;
+        }
+        // the object's type is not a subclass of 'str'
+        return null;
     }
 
     @Specialization(guards = "!isString(x)")

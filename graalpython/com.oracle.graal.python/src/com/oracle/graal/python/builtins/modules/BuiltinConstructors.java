@@ -1795,13 +1795,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
 
-        @Specialization(guards = {"isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
         @SuppressWarnings("unused")
         Object strNoArgs(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
             return asPString(strClass, "");
         }
 
-        @Specialization(guards = {"!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
         Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached CoerceToStringNode coerceToStringNode) {
             Object result = coerceToStringNode.execute(frame, obj);
@@ -1815,7 +1815,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "!isNoValue(encoding)", limit = "3" )
+        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding)"}, limit = "3" )
         Object doBuffer(VirtualFrame frame, LazyPythonClass strClass, Object obj, Object encoding, Object errors,
                         @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
             if(bufferLib.isBuffer(obj)) {
@@ -1830,12 +1830,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
         }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isMemoryView(obj)", "!isNoValue(encoding)"})
-        public Object strNonBytesArgAndEncodingArg(@SuppressWarnings("unused") LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") Object encoding,
-                                                   @SuppressWarnings("unused") Object errors) {
-            throw raise(PythonErrorType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
-        }
-
         private Object decodeBytes(VirtualFrame frame, LazyPythonClass strClass, PBytes obj, Object encoding, Object errors) {
             Object result = getCallDecodeNode().execute(frame, obj, encoding, errors);
             if (getIsStringProfile().profile(result instanceof String)) {
@@ -1844,6 +1838,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "%p.decode returned non-string (type %p)", obj, result);
+        }
+
+        /**
+         * logic similar to
+         * {@code unicode_subtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)} from
+         * CPython {@code unicodeobject.c} we have to first create a temporary string, then fill it
+         * into a natively allocated subtype structure
+         */
+        @Specialization(guards = {"isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        Object doNativeSubclass(VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding,@SuppressWarnings("unused")  Object errors,
+                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Cached CoerceToStringNode castToStringNode,
+                        @Cached BranchProfile gotException,
+                        @Cached CExtNodes.StringSubtypeNew subtypeNew) {
+            return subtypeNew.call(cls, castToStringNode.execute(frame, obj));
+        }
+
+        protected static boolean isSubtypeOfString(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {
+            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PString);
         }
 
         private Object asPString(LazyPythonClass cls, String str) {

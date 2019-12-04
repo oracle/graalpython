@@ -109,6 +109,109 @@ static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t s
     }
 }
 
+#define _PyUnicode_UTF8(op)                             \
+    (((PyCompactUnicodeObject*)(op))->utf8)
+#define _PyUnicode_UTF8_LENGTH(op)                      \
+    (((PyCompactUnicodeObject*)(op))->utf8_length)
+#define _PyUnicode_WSTR(op)                             \
+    (((PyASCIIObject*)(op))->wstr)
+#define _PyUnicode_WSTR_LENGTH(op)                      \
+    (((PyCompactUnicodeObject*)(op))->wstr_length)
+#define _PyUnicode_LENGTH(op)                           \
+    (((PyASCIIObject *)(op))->length)
+#define _PyUnicode_STATE(op)                            \
+    (((PyASCIIObject *)(op))->state)
+#define _PyUnicode_DATA_ANY(op)                         \
+    (((PyUnicodeObject*)(op))->data.any)
+
+POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
+
+PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
+    PyObject *self;
+    Py_ssize_t length, char_size;
+    int share_wstr, share_utf8;
+    unsigned int kind;
+    void *data;
+
+    if (unicode == NULL)
+        return NULL;
+    assert(_PyUnicode_CHECK(unicode));
+    if (PyUnicode_READY(unicode) == -1) {
+        Py_DECREF(unicode);
+        return NULL;
+    }
+
+    self = type->tp_alloc(type, 0);
+    if (self == NULL) {
+        Py_DECREF(unicode);
+        return NULL;
+    }
+    kind = PyUnicode_KIND(unicode);
+    length = PyUnicode_GET_LENGTH(unicode);
+
+    _PyUnicode_LENGTH(self) = length;
+    _PyUnicode_STATE(self).interned = 0;
+    _PyUnicode_STATE(self).kind = kind;
+    _PyUnicode_STATE(self).compact = 0;
+    _PyUnicode_STATE(self).ascii = _PyUnicode_STATE(unicode).ascii;
+    _PyUnicode_STATE(self).ready = 1;
+    _PyUnicode_WSTR(self) = NULL;
+    _PyUnicode_UTF8_LENGTH(self) = 0;
+    _PyUnicode_UTF8(self) = NULL;
+    _PyUnicode_WSTR_LENGTH(self) = 0;
+    _PyUnicode_DATA_ANY(self) = NULL;
+
+    share_utf8 = 0;
+    share_wstr = 0;
+    if (kind == PyUnicode_1BYTE_KIND) {
+        char_size = 1;
+        if (PyUnicode_MAX_CHAR_VALUE(unicode) < 128)
+            share_utf8 = 1;
+    }
+    else if (kind == PyUnicode_2BYTE_KIND) {
+        char_size = 2;
+        if (sizeof(wchar_t) == 2)
+            share_wstr = 1;
+    }
+    else {
+        assert(kind == PyUnicode_4BYTE_KIND);
+        char_size = 4;
+        if (sizeof(wchar_t) == 4)
+            share_wstr = 1;
+    }
+
+    /* Ensure we won't overflow the length. */
+    if (length > (PY_SSIZE_T_MAX / char_size - 1)) {
+        PyErr_NoMemory();
+//        Py_DECREF(unicode);
+//        Py_DECREF(self);
+        return NULL;
+    }
+    data = malloc((length + 1) * char_size);
+    if (data == NULL) {
+        PyErr_NoMemory();
+//        Py_DECREF(unicode);
+//        Py_DECREF(self);
+        return NULL;
+    }
+
+    _PyUnicode_DATA_ANY(self) = data;
+    if (share_utf8) {
+        _PyUnicode_UTF8_LENGTH(self) = length;
+        _PyUnicode_UTF8(self) = data;
+    }
+    if (share_wstr) {
+        _PyUnicode_WSTR_LENGTH(self) = length;
+        _PyUnicode_WSTR(self) = (wchar_t *)data;
+    }
+
+    memcpy(data, PyUnicode_DATA(unicode),
+              kind * (length + 1));
+    assert(_PyUnicode_CheckConsistency(self, 1));
+    Py_DECREF(unicode);
+    return (PyUnicodeObject*) polyglot_from_PyUnicodeObject(self);
+}
+
 PyObject* PyUnicode_FromString(const char* o) {
     return to_sulong(polyglot_from_string(o, SRC_CS));
 }
@@ -524,4 +627,68 @@ PyObject * PyUnicode_AsEncodedString(PyObject *unicode, const char *encoding, co
 UPCALL_ID(PyUnicode_Replace);
 PyObject * PyUnicode_Replace(PyObject *str, PyObject *substr, PyObject *replstr, Py_ssize_t maxcount) {
 	return UPCALL_CEXT_O(_jls_PyUnicode_Replace, native_to_java(str), native_to_java(substr), native_to_java(replstr), maxcount);
+}
+
+/* Generic helper macro to convert characters of different types.
+   from_type and to_type have to be valid type names, begin and end
+   are pointers to the source characters which should be of type
+   "from_type *".  to is a pointer of type "to_type *" and points to the
+   buffer where the result characters are written to. */
+#define _PyUnicode_CONVERT_BYTES(from_type, to_type, begin, end, to) \
+    do {                                                \
+        to_type *_to = (to_type *)(to);                \
+        const from_type *_iter = (from_type *)(begin);  \
+        const from_type *_end = (from_type *)(end);     \
+        Py_ssize_t n = (_end) - (_iter);                \
+        const from_type *_unrolled_end =                \
+            _iter + _Py_SIZE_ROUND_DOWN(n, 4);          \
+        while (_iter < (_unrolled_end)) {               \
+            _to[0] = (to_type) _iter[0];                \
+            _to[1] = (to_type) _iter[1];                \
+            _to[2] = (to_type) _iter[2];                \
+            _to[3] = (to_type) _iter[3];                \
+            _iter += 4; _to += 4;                       \
+        }                                               \
+        while (_iter < (_end))                          \
+            *_to++ = (to_type) *_iter++;                \
+    } while (0)
+
+
+POLYGLOT_DECLARE_TYPE(Py_UCS4);
+
+/* used from Java only to decode a native unicode object */
+void* native_unicode_as_string(PyObject *string) {
+	Py_UCS4 *target = NULL;
+    int kind = 0;
+    void *data = NULL;
+    void *result = NULL;
+    Py_ssize_t len;
+    if (PyUnicode_READY(string) == -1) {
+    	PyErr_Format(PyExc_TypeError, "provided unicode object is not ready");
+        return NULL;
+    }
+    kind = PyUnicode_KIND(string);
+    data = PyUnicode_DATA(string);
+    len = PyUnicode_GET_LENGTH(string);
+    if (kind == PyUnicode_1BYTE_KIND) {
+        Py_UCS1 *start = (Py_UCS1 *) data;
+    	if (PyUnicode_IS_COMPACT_ASCII(string)) {
+            return polyglot_from_string_n((const char *)data, sizeof(Py_UCS1) * len, "ascii");
+    	}
+        return polyglot_from_string_n((const char *)data, sizeof(Py_UCS1) * len, "latin1");
+    }
+    else if (kind == PyUnicode_2BYTE_KIND) {
+        Py_UCS2 *start = (Py_UCS2 *) data;
+        target = PyMem_New(Py_UCS4, len);
+        if (!target) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+        _PyUnicode_CONVERT_BYTES(Py_UCS2, Py_UCS4, start, start + len, target);
+        result = polyglot_from_string_n((const char *)target, sizeof(Py_UCS4) * len, "UTF-32");
+        free(target);
+        return result;
+    }
+    assert(kind == PyUnicode_4BYTE_KIND);
+    return polyglot_from_string_n((const char *)data, sizeof(Py_UCS4) * len, "UTF-32");
 }
