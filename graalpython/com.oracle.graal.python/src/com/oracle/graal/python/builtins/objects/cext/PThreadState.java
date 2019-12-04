@@ -66,6 +66,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -154,7 +155,7 @@ public class PThreadState extends PythonNativeWrapper {
     @GenerateUncached
     abstract static class ThreadStateReadNode extends PNodeWithContext {
 
-        private static GetTracebackRootNode getTracebackRootNode;
+        @CompilationFinal private static GetTracebackRootNode getTracebackRootNode;
 
         public abstract Object execute(Object key);
 
@@ -293,6 +294,7 @@ public class PThreadState extends PythonNativeWrapper {
 
         private static RootCallTarget ensureCallTarget(PythonLanguage language) {
             if (getTracebackRootNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 getTracebackRootNode = new GetTracebackRootNode(language);
             }
             return getTracebackRootNode.getCallTarget();

@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -61,6 +62,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -71,13 +73,13 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(NativeTypeLibrary.class)
 public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
-    private static final String[] MAPPING_METHODS = new String[]{
+    @CompilationFinal(dimensions = 1) private static final String[] MAPPING_METHODS = new String[]{
                     MP_LENGTH,
                     MP_SUBSCRIPT,
                     MP_ASS_SUBSCRIPT,
     };
 
-    private static final String[] MAPPING_METHODS_MAPPING = new String[]{
+    @CompilationFinal(dimensions = 1) private static final String[] MAPPING_METHODS_MAPPING = new String[]{
                     __LEN__,
                     __GETITEM__,
                     __SETITEM__,
@@ -157,7 +159,7 @@ public class PyMappingMethodsWrapper extends PythonNativeWrapper {
         }
     }
 
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     private static String translate(String key) {
         for (int i = 0; i < MAPPING_METHODS.length; i++) {
             if (MAPPING_METHODS[i].equals(key)) {

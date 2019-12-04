@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -308,41 +309,76 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PFrame pyframe, Frame frameToSync);
 
-        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd", "cachedSlots.length < 32"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
         static void doLocalsStorageCached(PFrame pyFrame, Frame frameToSync,
                         @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots) {
+            boolean invalidState = false;
+            LocalsStorage localsStorage = getLocalsStorage(pyFrame);
+            MaterializedFrame target = localsStorage.getFrame();
+            assert cachedFd == target.getFrameDescriptor();
 
-            try {
-                LocalsStorage localsStorage = getLocalsStorage(pyFrame);
-                MaterializedFrame target = localsStorage.getFrame();
-                assert cachedFd == target.getFrameDescriptor();
-
-                for (int i = 0; i < cachedSlots.length; i++) {
-                    FrameSlot slot = cachedSlots[i];
-                    if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
-                        if (frameToSync.isBoolean(slot)) {
+            for (int i = 0; i < cachedSlots.length; i++) {
+                FrameSlot slot = cachedSlots[i];
+                if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                    if (frameToSync.isBoolean(slot)) {
+                        try {
                             target.setBoolean(slot, frameToSync.getBoolean(slot));
-                        } else if (frameToSync.isByte(slot)) {
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isByte(slot)) {
+                        try {
                             target.setByte(slot, frameToSync.getByte(slot));
-                        } else if (frameToSync.isDouble(slot)) {
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isDouble(slot)) {
+                        try {
                             target.setDouble(slot, frameToSync.getDouble(slot));
-                        } else if (frameToSync.isFloat(slot)) {
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isFloat(slot)) {
+                        try {
                             target.setFloat(slot, frameToSync.getFloat(slot));
-                        } else if (frameToSync.isInt(slot)) {
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isInt(slot)) {
+                        try {
                             target.setInt(slot, frameToSync.getInt(slot));
-                        } else if (frameToSync.isLong(slot)) {
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isLong(slot)) {
+                        try {
                             target.setLong(slot, frameToSync.getLong(slot));
-                        } else if (frameToSync.isObject(slot)) {
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isObject(slot)) {
+                        try {
                             target.setObject(slot, frameToSync.getObject(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
                         }
                     }
                 }
-            } catch (FrameSlotTypeException e) {
-                throw new IllegalStateException();
+            }
+            if (CompilerDirectives.inInterpreter() && invalidState) {
+                // we're always in the interpreter if invalidState was set
+                throw new IllegalStateException("the frame lied about the frame slot type");
             }
         }
 
@@ -473,6 +509,7 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         protected static FrameSlot[] getSlots(FrameDescriptor fd) {
+            CompilerDirectives.transferToInterpreter();
             return fd.getSlots().toArray(new FrameSlot[0]);
         }
 

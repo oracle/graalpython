@@ -57,6 +57,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -161,7 +162,7 @@ public final class HandleCache implements TruffleObject {
             return lookupPosition(cache, handle, len, ptrToResolveHandle, InteropLibrary.getFactory().getUncached(ptrToResolveHandle));
         }
 
-        @ExplodeLoop
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         protected static int lookupPosition(HandleCache cache, long handle, int cachedLen, TruffleObject ptrToResolveHandle, InteropLibrary interopLibrary)
                         throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             for (int i = 0; i < cachedLen; i++) {

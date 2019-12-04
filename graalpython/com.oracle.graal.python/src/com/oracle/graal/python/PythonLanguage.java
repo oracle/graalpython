@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -83,6 +85,7 @@ import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -132,7 +135,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
 
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public static int getSingletonNativePtrIdx(Object obj) {
         for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
             if (CONTEXT_INSENSITIVE_SINGLETONS[i] == obj) {
@@ -410,6 +413,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 if (attrSourceLocation != null) {
                     return attrSourceLocation;
                 }
+            }
+        } else if (value instanceof PList) {
+            ListLiteralNode node = ((PList) value).getOrigin();
+            if (node != null) {
+                return node.getSourceSection();
             }
         }
         return null;

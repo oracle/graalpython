@@ -31,7 +31,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -39,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
+
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
@@ -73,7 +76,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noUserSite = false;
     private boolean noSite = false;
     private boolean stdinIsInteractive = System.console() != null;
-    private boolean runLLI = false;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private VersionAction versionAction = VersionAction.None;
@@ -325,18 +327,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
-        if (runLLI) {
-            assert inputFile != null : "lli needs an input file";
-            try (Context context = contextBuilder.build()) {
-                try {
-                    context.eval(Source.newBuilder("llvm", new File(inputFile)).build());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return;
-        }
-
         if (!ignoreEnv) {
             String pythonpath = System.getenv("PYTHONPATH");
             if (pythonpath != null) {
@@ -495,7 +485,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
             assert inputFile != null;
-            src = Source.newBuilder(getLanguageId(), new File(inputFile)).mimeType(MIME_TYPE).build();
+            String mimeType = "";
+            try {
+                mimeType = Files.probeContentType(Paths.get(inputFile));
+            } catch (IOException e) {
+            }
+            File f = new File(inputFile);
+            if (f.isDirectory() || (mimeType != null && mimeType.equals("application/zip"))) {
+                String runMod = String.format("import sys; sys.path.insert(0, '%s'); import runpy; runpy._run_module_as_main('__main__', False)", inputFile);
+                src = Source.newBuilder(getLanguageId(), runMod, "<string>").build();
+            } else {
+                src = Source.newBuilder(getLanguageId(), f).mimeType(MIME_TYPE).build();
+            }
         }
         context.eval(src);
     }

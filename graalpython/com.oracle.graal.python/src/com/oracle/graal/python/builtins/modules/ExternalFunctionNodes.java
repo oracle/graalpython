@@ -42,10 +42,10 @@ package com.oracle.graal.python.builtins.modules;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.TrufflePInt_AsPrimitive;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
@@ -123,7 +123,7 @@ public abstract class ExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(ctx, savedExceptionState);
+                ForeignCallContext.exit(frame, ctx, savedExceptionState);
                 calleeContext.exit(frame, this);
             }
         }
@@ -647,9 +647,28 @@ public abstract class ExternalFunctionNodes {
             }
         }
 
+        void setArguments(Object[] arguments, Object arg0, Object arg1, Object arg2) {
+            PArguments.setVariableArguments(arguments, arg0, arg1, arg2);
+        }
+
         @Override
         public Signature getSignature() {
             return SIGNATURE;
+        }
+    }
+
+    /**
+     * Wrapper root node for native reverse power function (with an optional third argument).
+     */
+    static class MethRPowRootNode extends MethPowRootNode {
+
+        MethRPowRootNode(PythonLanguage language, RootCallTarget callTarget) {
+            super(language, callTarget);
+        }
+
+        @Override
+        void setArguments(Object[] arguments, Object arg0, Object arg1, Object arg2) {
+            PArguments.setVariableArguments(arguments, arg1, arg0, arg2);
         }
     }
 

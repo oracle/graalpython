@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -70,8 +71,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     private static Object resumeGenerator(PGenerator self) {
         try {
-            return self.getCallTarget().call(self.getArguments());
+            return self.getCurrentCallTarget().call(self.getArguments());
         } finally {
+            self.setNextCallTarget();
             PArguments.setSpecialArgument(self.getArguments(), null);
         }
     }
@@ -111,9 +113,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
             return target1 == target2;
         }
 
-        @Specialization(guards = "sameCallTarget(self.getCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "sameCallTarget(self.getCurrentCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
         public Object nextCached(VirtualFrame frame, PGenerator self,
-                        @Cached("createDirectCall(self.getCallTarget())") CallTargetInvokeNode call) {
+                        @Cached("createDirectCall(self.getCurrentCallTarget())") CallTargetInvokeNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
@@ -124,6 +126,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
+            } finally {
+                self.setNextCallTarget();
             }
         }
 
@@ -135,11 +139,13 @@ public class GeneratorBuiltins extends PythonBuiltins {
             }
             try {
                 Object[] arguments = self.getArguments();
-                return call.execute(frame, self.getCallTarget(), arguments);
+                return call.execute(frame, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
+            } finally {
+                self.setNextCallTarget();
             }
         }
     }
@@ -174,8 +180,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, LazyPythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
-                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object[] array = val.getArray();
+                        @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp,
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            Object[] array = getObjectArrayNode.execute(val);
             Object[] args = new Object[array.length + 1];
             System.arraycopy(array, 0, args, 1, array.length);
             args[0] = typ;
@@ -229,7 +236,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
             PCode code = self.getCode();
             if (hasCodeProfile.profile(code == null)) {
-                code = factory().createCode(self.getCallTarget());
+                code = factory().createCode(self.getCurrentCallTarget());
                 self.setCode(code);
             }
             return code;

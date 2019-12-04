@@ -1,0 +1,13 @@
+diff --git a/scipy/__init__.py b/scipy/__init__.py
+index 2c7508f..f3352ec 100755
+--- a/scipy/__init__.py
++++ b/scipy/__init__.py
+@@ -116,8 +116,6 @@ else:
+
+     del _NumpyVersion
+
+-    from scipy._lib._ccallback import LowLevelCallable
+-
+     from scipy._lib._testutils import PytestTester
+     test = PytestTester(__name__)
+     del PytestTester

@@ -41,16 +41,16 @@
 
 package com.oracle.graal.python.nodes.literal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import java.util.ArrayList;
-import java.util.List;
 
 public class FormatStringLiteralNode extends LiteralNode {
 
@@ -141,7 +141,6 @@ public class FormatStringLiteralNode extends LiteralNode {
         return result.toString();
     }
 
-    @ExplodeLoop
     private void parse(VirtualFrame frame) {
         // create tokens
         tokens = createTokens(this, values, true);
@@ -252,7 +251,7 @@ public class FormatStringLiteralNode extends LiteralNode {
      * node.value[token[1]] token[3] - end of the text in the node.value[token[1]] token[4] - only
      * for expressions. It's count how many tokens follow as tokens of format specifier. So the next
      * expression or string is not the next token, but the next token + token[4]
-     * 
+     *
      * @param node it's needed for raising syntax errors
      * @param values this part of text will be parsed
      * @param topLevel if there is called recursion on topLevel = false, then the syntax error is

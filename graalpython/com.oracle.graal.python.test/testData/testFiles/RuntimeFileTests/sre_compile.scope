@@ -19,12 +19,12 @@ Scope: []
             CellVars: [end, start]
             FreeVars: [code, dis_, labels, level, offset_width, sys]
             Scope: generator25717
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [x, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
             Scope: generator23296
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [x, sys, <return_val>]
                 CellVars: Empty
                 FreeVars: [sys]
@@ -44,7 +44,7 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
         Scope: generator20940
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [x, <return_val>]
             CellVars: Empty
             FreeVars: Empty
@@ -99,7 +99,7 @@ Scope: []
         CellVars: [_CODEBITS, _int, s]
         FreeVars: Empty
         Scope: generator14864
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [s, _CODEBITS, i, _int, <return_val>]
             CellVars: Empty
             FreeVars: [_CODEBITS, _int, s]
@@ -124,12 +124,12 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
     Scope: generator2184
-        Kind: Generator
+        Kind: DictComp
         FrameDescriptor: [t, i, <return_val>]
         CellVars: [i]
         FreeVars: Empty
         Scope: generator2193
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [i, j, <return_val>]
             CellVars: Empty
             FreeVars: [i]

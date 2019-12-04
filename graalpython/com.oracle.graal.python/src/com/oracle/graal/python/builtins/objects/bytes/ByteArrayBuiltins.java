@@ -392,9 +392,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ByteArrayCopyNode extends PythonBuiltinNode {
         @Specialization
         public PByteArray copy(VirtualFrame frame, PByteArray byteArray,
-                        @Cached("create()") GetLazyClassNode getClass,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return factory().createByteArray(getClass.execute(byteArray), toByteArray.execute(frame, byteArray.getSequenceStorage()));
+                        @Cached GetLazyClassNode getClass,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
+            return factory().createByteArray(getClass.execute(byteArray), toByteArray.execute(byteArray.getSequenceStorage()));
         }
     }
 
@@ -559,9 +559,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         PByteArray join(VirtualFrame frame, PByteArray bytes, Object iterable,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createByteArray(bytesJoinNode.execute(frame, toByteArrayNode.execute(frame, bytes.getSequenceStorage()), iterable));
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached BytesNodes.BytesJoinNode bytesJoinNode) {
+            return factory().createByteArray(bytesJoinNode.execute(frame, toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -730,7 +730,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonBuiltinNode {
+    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "isEmptyStorage(byteArray)")
         public boolean doEmpty(@SuppressWarnings("unused") PByteArray byteArray) {
             return false;

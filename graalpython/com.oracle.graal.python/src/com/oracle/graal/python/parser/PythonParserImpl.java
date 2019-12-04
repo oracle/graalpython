@@ -29,13 +29,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
 
-import com.oracle.graal.python.parser.antlr.Builder;
-import com.oracle.graal.python.parser.antlr.Python3NewLexer;
-import com.oracle.graal.python.parser.antlr.Python3NewParser;
+import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
+import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.sst.SSTNode;
+import com.oracle.graal.python.parser.sst.StringUtils;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -48,36 +47,31 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import org.antlr.v4.runtime.Token;
 
 public final class PythonParserImpl implements PythonParser {
 
-    private final boolean useExperimentalParser;
     private final boolean logFiles;
     private final int timeStatistics;
     private long timeInParser = 0;
     private long numberOfFiles = 0;
 
+    public static final DescriptiveBailErrorListener ERROR_LISTENER = new DescriptiveBailErrorListener();
+
     public PythonParserImpl(Env env) {
-        this.useExperimentalParser = env.getOptions().get(PythonOptions.UseExperimentalParser);
         this.logFiles = env.getOptions().get(PythonOptions.ParserLogFiles);
         this.timeStatistics = env.getOptions().get(PythonOptions.ParserStatistics);
     }
 
-    private static Python3Parser getPython3Parser(String string) {
-        Python3Parser parser = Builder.createParser(CharStreams.fromString(string));
-        parser.setErrorHandler(new PythonErrorStrategy());
-        return parser;
-    }
-
-    private static Python3NewParser getPython3NewParser(Source source, ParserErrorCallback errors) {
-        Python3NewLexer lexer = new Python3NewLexer(CharStreams.fromString(source.getCharacters().toString()));
+    private static Python3Parser getPython3Parser(Source source, ParserErrorCallback errors) {
+        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(source.getCharacters().toString()));
         lexer.removeErrorListeners();
-        lexer.addErrorListener(Builder.ERROR_LISTENER);
-        Python3NewParser parser = new Python3NewParser(new CommonTokenStream(lexer));
+        lexer.addErrorListener(ERROR_LISTENER);
+        Python3Parser parser = new Python3Parser(new CommonTokenStream(lexer));
         parser.setBuildParseTree(false);
-        parser.factory = new PythonNodeFactory(errors, source);
+        parser.setFactory(new PythonSSTNodeFactory(errors, source));
         parser.removeErrorListeners();
-        parser.addErrorListener(Builder.ERROR_LISTENER);
+        parser.addErrorListener(ERROR_LISTENER);
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
@@ -104,30 +98,10 @@ public final class PythonParserImpl implements PythonParser {
 
         Node result;
         if (timeStatistics <= 0) {
-            if (useExperimentalParser) {
-                if (logFiles) {
-                    System.out.println(" with experimental parser.");
-                }
-                result = parseN(mode, errors, source, currentFrame);
-            } else {
-                if (logFiles) {
-                    System.out.println(" with old parser.");
-                }
-                result = parseO(mode, errors, source, currentFrame);
-            }
+            result = parseN(mode, errors, source, currentFrame);
         } else {
             long start = System.currentTimeMillis();
-            if (useExperimentalParser) {
-                if (logFiles) {
-                    System.out.print(" with experimental parser");
-                }
-                result = parseN(mode, errors, source, currentFrame);
-            } else {
-                if (logFiles) {
-                    System.out.print(" with old parser");
-                }
-                result = parseO(mode, errors, source, currentFrame);
-            }
+            result = parseN(mode, errors, source, currentFrame);
             long end = System.currentTimeMillis();
             if (timeStatistics > 0) {
                 timeInParser = timeInParser + (end - start);
@@ -147,8 +121,9 @@ public final class PythonParserImpl implements PythonParser {
     public Node parseN(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         // ANTLR parsing
-        Python3NewParser parser = getPython3NewParser(source, errors);
-        parser.factory = new PythonNodeFactory(errors, source);
+        Python3Parser parser = getPython3Parser(source, errors);
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source);
+        parser.setFactory(sstFactory);
         SSTNode parserSSTResult = null;
 
         try {
@@ -184,84 +159,42 @@ public final class PythonParserImpl implements PythonParser {
             }
         }
 
-        lastGlobalScope = parser.factory.getScopeEnvironment().getGlobalScope();
+        lastGlobalScope = sstFactory.getScopeEnvironment().getGlobalScope();
         try {
-            return parser.factory.createParserResult(parserSSTResult, mode, currentFrame);
+            return sstFactory.createParserResult(parserSSTResult, mode, currentFrame);
         } catch (Exception e) {
             throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
         }
     }
 
-    // @Override
-    @TruffleBoundary
-    public Node parseO(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame) {
-        // ANTLR parsing
-        Python3Parser parser = getPython3Parser(source.getCharacters().toString());
-        ParserRuleContext input;
-        try {
-            switch (mode) {
-                case Eval:
-                    input = parser.eval_input();
-                    break;
-                case File:
-                    input = parser.file_input();
-                    break;
-                case InteractiveStatement:
-                case InlineEvaluation:
-                case Statement:
-                    input = parser.single_input();
-                    break;
-                default:
-                    throw new RuntimeException("unexpected mode: " + mode);
-            }
-        } catch (Exception e) {
-            if ((mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement) && e instanceof PIncompleteSourceException) {
-                ((PIncompleteSourceException) e).setSource(source);
-                throw e;
-            } else if (mode == ParserMode.InlineEvaluation) {
-                try {
-                    parser.reset();
-                    input = parser.eval_input();
-                } catch (Exception e2) {
-                    throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
-                }
-            } else {
-                throw handleParserError(errors, source, e, !(mode == ParserMode.InteractiveStatement || mode == ParserMode.Statement));
-            }
-        }
-
-        // prepare scope translator
-        TranslationEnvironment environment = new TranslationEnvironment(errors.getLanguage());
-        FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
-        ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(errors, environment, source.isInteractive(), inlineLocals);
-        // first pass of the scope translator -> define the scopes
-        input.accept(defineScopes);
-        // create frame slots for cell and free vars
-        defineScopes.setFreeVarsInRootScope(currentFrame);
-        defineScopes.createFrameSlotsForCellAndFreeVars();
-
-        lastGlobalScope = environment.getGlobalScope();
-        // create Truffle ASTs
-        return PythonTreeTranslator.translate(errors, source.getName(), input, environment, source, mode);
-    }
-
     @Override
     @TruffleBoundary
     public boolean isIdentifier(PythonCore core, String snippet) {
-        Python3Parser parser = getPython3Parser(snippet);
-        Python3Parser.AtomContext input;
-        try {
-            input = parser.atom();
-        } catch (Exception e) {
+        if (snippet.length() != snippet.trim().length()) {
+            // identifier cannot start or end with any whitspace
             return false;
         }
-        return input.NAME() != null;
+        Python3Lexer lexer = new Python3Lexer(CharStreams.fromString(snippet));
+        Token t = lexer.nextToken();
+        if (t.getType() == Python3Lexer.NAME) {
+            // the first token is identifier
+            t = lexer.nextToken();
+            if (t.getType() == Python3Lexer.NEWLINE) {
+                // lexer alwayes add new line at the end
+                t = lexer.nextToken();
+                if (t.getType() == Python3Lexer.EOF) {
+                    // now we are sure that this is identifer
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
     @TruffleBoundary
     public String unescapeJavaString(String str) {
-        return PythonTreeTranslator.unescapeJavaString(str);
+        return StringUtils.unescapeJavaString(str);
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e, boolean showBadLine) {

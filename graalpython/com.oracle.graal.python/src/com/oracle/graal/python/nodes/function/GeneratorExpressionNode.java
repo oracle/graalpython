@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -44,6 +45,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     // name = "generator_exp:" + line number of the generator;
     private final String name;
     private final RootCallTarget callTarget;
+    @CompilationFinal(dimensions = 1) private RootCallTarget[] callTargets;
     private final FrameDescriptor frameDescriptor;
     private final int numOfActiveFlags;
     private final int numOfGeneratorBlockNode;
@@ -135,8 +137,12 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         // The generator doesn't capture the currently handled exception at creation time.
         PArguments.setException(arguments, PException.NO_EXCEPTION);
 
+        if (callTargets == null) {
+            callTargets = GeneratorFunctionRootNode.createYieldTargets(callTarget);
+        }
+
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory.createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,
+        return factory.createGenerator(name, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
                         numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }
 

@@ -170,10 +170,6 @@ initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference);
 initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference);
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
-
-typedef PyObject* PyObjectPtr;
-POLYGLOT_DECLARE_TYPE(PyObjectPtr);
-
 POLYGLOT_DECLARE_TYPE(newfunc);
 
 static void initialize_globals() {
@@ -267,12 +263,8 @@ PyObject* to_sulong(void *o) {
 }
 
 /** to be used from Java code only; reads native 'ob_type' field */
-void* get_ob_type(PyObject* obj) {
-    PyTypeObject* type = obj->ob_type;
-    if (!truffle_cannot_be_handle(type)) {
-        return resolve_handle(cache, (uint64_t)type);
-    }
-    return (void *)type;
+PyTypeObject* get_ob_type(PyObject* obj) {
+    return polyglot_from__typeobject(native_type_to_java(obj->ob_type));
 }
 
 /** to be used from Java code only; reads native 'tp_dict' field */
@@ -292,7 +284,7 @@ PyObject* get_tp_name(PyTypeObject* obj) {
 
 /** to be used from Java code only; reads native 'tp_mro' field */
 PyObject* get_tp_mro(PyTypeObject* obj) {
-	return native_to_java(obj->tp_mro);
+	return native_to_java_slim(obj->tp_mro);
 }
 
 /** to be used from Java code only; reads native 'tp_subclasses' field */

@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "ecbb41e20846fd4be1e0620b4b1185e7da5810e0",
+                "version": "48aa9f2523f7ecfcd09b748c3c8696efeddd2291",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "b06ba4554dfab182980b3a3d64264bb19559a0c4",
+                "version": "48aa9f2523f7ecfcd09b748c3c8696efeddd2291",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -391,7 +391,7 @@ suite = {
             "description": "Graal.Python support distribution for the GraalVM license files",
             "layout": {
                 "LICENSE_GRAALPYTHON.txt": "file:LICENSE",
-                "3rd_party_licenses_graalpython.txt": "file:3rd_party_licenses.txt",
+                "THIRD_PARTY_LICENSE_GRAALPYTHON.txt": "file:THIRD_PARTY_LICENSE.txt",
             },
             "maven": False,
         },

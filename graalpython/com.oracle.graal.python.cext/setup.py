@@ -54,7 +54,9 @@ libpython_name = "libpython"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
+relative_rpath = "@loader_path" if darwin_native else "\$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
+SOABI = get_config_var("SOABI")
 
 
 def system(cmd, msg=""):
@@ -70,9 +72,6 @@ def xit(msg, status=-1):
 
 
 class CAPIDependency:
-    _lib_install_dir = os.path.join(site.getuserbase(), "lib", get_config_var("SOABI"))
-    _include_install_dir = os.path.join(site.getuserbase(), "include")
-
     def __init__(self, lib_name, package_spec, src_var):
         self.lib_name = lib_name
         if "==" in package_spec:
@@ -100,6 +99,11 @@ class CAPIDependency:
         if not (os.path.isdir(dir) and os.path.exists(dir)):
             os.makedirs(dir)
 
+    @classmethod
+    def set_lib_install_base(cls, value):
+        cls._lib_install_dir = os.path.join(value, "lib", SOABI)
+        cls._include_install_dir = os.path.join(value, "include")
+
     @property
     def lib_install_dir(self):
         CAPIDependency._ensure_dir(self._lib_install_dir)
@@ -121,6 +125,16 @@ class Bzip2Depedency(CAPIDependency):
             extracted_dir = self.download()
         lib_src_folder = os.path.join(extracted_dir, self.package_name + "-" + self.version)
         logger.info("Building dependency %s in %s using Makefile %s" % (self.package_name, lib_src_folder, self.makefile))
+
+        # On Darwin, we need to use -install_name for the native linker
+        if darwin_native:
+            makefile_path = os.path.join(lib_src_folder, self.makefile)
+            with open(makefile_path, "r") as f:
+                content = f.read()
+                content = content.replace("-Wl,-soname -Wl,%s" % self.install_name, "-Wl,-install_name -Wl,@rpath/%s" % self.install_name)
+            with open(makefile_path, "w") as f:
+                f.write(content)
+
         system("make -C '%s' -f '%s' CC='%s'" % (lib_src_folder, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
         return lib_src_folder
 
@@ -150,59 +164,19 @@ class Bzip2Depedency(CAPIDependency):
 
         return self.lib_install_dir
 
-    def conftest(self):
-        import tempfile
-        src = b'''#include <bzlib.h>
-        #include <stdio.h>
-
-        int main(void) {
-            printf("%.200s", BZ2_bzlibVersion());
-            return 0;
-        }
-        '''
-        conftest_file = None
-        try:
-            prefix = "_conftest_" + self.lib_name
-            conftest_file = tempfile.NamedTemporaryFile(suffix=".c", prefix=prefix, delete=False)
-            conftest_file.write(src)
-            conftest_file.close()
-            logger.debug("Created conftest file %s" % conftest_file.name)
-
-            try:
-                # try to compile
-                conftest_module = Extension(prefix,
-                                            sources=[conftest_file.name],
-                                            include_dirs=[self.include_install_dir],
-                                            extra_link_args=["-L" + self.lib_install_dir, "-lbz2"],
-                                            )
-                setup_args = [verbosity, 'build', "clean"]
-                setup(script_name='setup_' + prefix,
-                      script_args=setup_args,
-                      name=libpython_name,
-                      version='1.0',
-                      description="Conftest for " + self.lib_name,
-                      ext_modules=[conftest_module],
-                      )
-            except BaseException as e:
-                logger.debug("Conftest %s produced exception: %s" % (conftest_file.name, e))
-                return False
-        finally:
-            if conftest_file:
-                os.unlink(conftest_file.name)
-        # success
-        return True
-
 
 class NativeBuiltinModule:
-    def __init__(self, name, subdir="modules", files=None, deps=[]):
+    def __init__(self, name, subdir="modules", files=None, deps=[], **kwargs):
         self.name = name
         self.subdir = subdir
         self.deps = deps
         # common case: just a single file which is the module's name plus the file extension
         if not files:
             self.files = [name + ".c"]
+        self.kwargs = kwargs
 
     def __call__(self):
+        kwargs = self.kwargs
         libs = []
         library_dirs = []
         include_dirs = []
@@ -225,11 +199,17 @@ class NativeBuiltinModule:
             if dep.include_install_dir:
                 include_dirs.append(dep.include_install_dir)
 
+        libs += kwargs.get("libs", [])
+        library_dirs += kwargs.get("library_dirs", [])
+        runtime_library_dirs += kwargs.get("runtime_library_dirs", [])
+        include_dirs += kwargs.get("include_dirs", [])
+        extra_link_args += kwargs.get("extra_link_args", [])
+
         return Extension(self.name,
                          sources=[os.path.join(__dir__, self.subdir, f) for f in self.files],
                          libraries=libs,
                          library_dirs=library_dirs,
-                         extra_compile_args=cflags_warnings,
+                         extra_compile_args=cflags_warnings + kwargs.get("cflags_warnings", []),
                          runtime_library_dirs=runtime_library_dirs,
                          include_dirs=include_dirs,
                          extra_link_args=extra_link_args,
@@ -243,7 +223,7 @@ builtin_exts = (
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_struct"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
-    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")]),
+    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
 )
 
 
@@ -280,6 +260,7 @@ def build_builtin_exts(capi_home):
 
 
 def build(capi_home):
+    CAPIDependency.set_lib_install_base(capi_home)
     build_libpython(capi_home)
     build_builtin_exts(capi_home)
 

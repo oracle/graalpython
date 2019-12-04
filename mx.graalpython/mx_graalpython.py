@@ -26,12 +26,18 @@ from __future__ import print_function
 
 import contextlib
 import glob
+import json
 import os
 import platform
 import re
 import shutil
 import sys
+PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
+if PY3:
+    import urllib.request as urllib_request
+else:
+    import urllib2 as urllib_request
 from argparse import ArgumentParser
 
 import mx
@@ -40,6 +46,7 @@ import mx_gate
 import mx_unittest
 import mx_sdk
 import mx_subst
+import mx_urlrewrites
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
@@ -57,8 +64,6 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 
-# compatibility between Python versions
-PY3 = sys.version_info[0] == 3
 if PY3:
     raw_input = input # pylint: disable=redefined-builtin;
 
@@ -758,6 +763,12 @@ def update_import(name, rev="origin/master", callback=None):
 
 def update_import_cmd(args):
     """Update our mx or overlay imports"""
+    try:
+        args.remove("--no-pull")
+    except ValueError:
+        rev = "origin/master"
+    else:
+        rev = "HEAD"
     if not args:
         args = ["truffle"]
     if "overlay" in args:
@@ -796,7 +807,7 @@ def update_import_cmd(args):
     else:
         callback = None
     for name in set(args):
-        update_import(name, callback=callback)
+        update_import(name, rev=rev, callback=callback)
 
 
 def python_style_checks(args):
@@ -830,6 +841,40 @@ def python_checkcopyrights(args):
     finally:
         os.unlink(listfilename)
 
+    _python_checkpatchfiles()
+
+
+def _python_checkpatchfiles():
+    listfilename = tempfile.mktemp()
+    # additionally, we want to check if the packages we are patching all have a permissive license
+    with open(listfilename, "w") as listfile:
+        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
+    try:
+        pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
+        with open(listfilename, "r") as listfile:
+            content = listfile.read()
+        patchfile_pattern = re.compile("lib-graalpython/patches/(.*)\.patch")
+        allowed_licenses = ["MIT", "BSD", "MIT license"]
+        for line in content.split("\n"):
+            match = patchfile_pattern.search(line)
+            if match:
+                package_name = match.group(1)
+                package_url = "/".join([pypi_base_url, "pypi", package_name, "json"])
+                mx.log("Checking license of patchfile for " + package_url)
+                response = urllib_request.urlopen(package_url)
+                try:
+                    data = json.loads(response.read())
+                    data_license = data["info"]["license"]
+                    if data_license not in allowed_licenses:
+                        mx.abort(("The license for the original project %r is %r. We cannot include " +
+                                  "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
+                except Exception as e:
+                    mx.abort("Error getting %r.\n%r" % (package_url, e))
+                finally:
+                    if response:
+                        response.close()
+    finally:
+        os.unlink(listfilename)
 
 def import_python_sources(args):
     "Update the inlined files from PyPy and CPython"
@@ -1001,7 +1046,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     dir_name='python',
     dependencies=[],
     license_files=['LICENSE_GRAALPYTHON.txt'],
-    third_party_license_files=['3rd_party_licenses_graalpython.txt'],
+    third_party_license_files=['THIRD_PARTY_LICENSE_GRAALPYTHON.txt'],
     truffle_jars=[],
     support_distributions=[
         'graalpython:GRAALPYTHON_GRAALVM_LICENSES',
@@ -1259,6 +1304,8 @@ class GraalpythonCAPIProject(mx.Project):
     def __init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense=None, **kwargs):
         context = 'project ' + name
         self.buildDependencies = mx.Suite._pop_list(kwargs, 'buildDependencies', context)
+        if mx.suite("sulong-managed", fatalIfMissing=False) is not None:
+            self.buildDependencies.append('sulong-managed:SULONG_MANAGED_HOME')
         super(GraalpythonCAPIProject, self).__init__(suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
@@ -1287,6 +1334,45 @@ class GraalpythonCAPIProject(mx.Project):
         return ret
 
 
+def checkout_find_version_for_graalvm(args):
+    """
+    A quick'n'dirty way to check out the revision of the project at the given
+    path to one that imports the same truffle/graal as we do. The assumption is
+    the such a version can be reached by following the HEAD^ links
+    """
+    path = args[0]
+    projectname = os.path.basename(args[0])
+    suite = os.path.join(path, "mx.%s" % projectname, "suite.py")
+    other_version = ""
+    for i in SUITE.suite_imports:
+        if i.name == "sulong":
+            needed_version = i.version
+            break
+    current_commit = SUITE.vc.tip(path)
+    mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
+    while needed_version != other_version:
+        if other_version:
+            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", "HEAD"]).split()
+            if not parent:
+                mx.log("Got to oldest revision before finding appropriate commit, reverting to %s" % current_commit)
+                mx.vc.update(path, rev=current_commit)
+                return
+            parent = parent[0]
+            SUITE.vc.update(path, rev=parent)
+        with open(suite) as f:
+            contents = f.read()
+            if not PY3:
+                contents = contents.decode()
+            d = {}
+            exec(contents, d, d)
+            suites = d["suite"]["imports"]["suites"]
+            for suitedict in suites:
+                if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
+                    other_version = suitedict.get("version", "")
+                    if other_version:
+                        break
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -1298,12 +1384,13 @@ mx.update_commands(SUITE, {
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
-    'python-update-import': [update_import_cmd, '[import-name, default: truffle]'],
+    'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
+    'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],

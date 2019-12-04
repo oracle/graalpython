@@ -57,14 +57,13 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryviewBuiltins extends PythonBuiltins {
-    private static final String C_MEMORYVIEW = "__c_memoryview";
 
     @Override
     protected List<NodeFactory<SetCMemoryviewNode>> getNodeFactories() {
         return MemoryviewBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = C_MEMORYVIEW, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = PMemoryView.C_MEMORYVIEW, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class SetCMemoryviewNode extends PythonBinaryBuiltinNode {
 
@@ -75,13 +74,13 @@ public class MemoryviewBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         Object set(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            return readNode.execute(self, C_MEMORYVIEW);
+            return readNode.execute(self, PMemoryView.C_MEMORYVIEW);
         }
 
         @Specialization(guards = "!isNoValue(cmemoryview)")
         PNone set(Object self, Object cmemoryview,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            writeNode.execute(self, C_MEMORYVIEW, cmemoryview);
+            writeNode.execute(self, PMemoryView.C_MEMORYVIEW, cmemoryview);
             return PNone.NONE;
         }
     }

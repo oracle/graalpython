@@ -9,7 +9,7 @@ Scope: []
         CellVars: [files]
         FreeVars: Empty
         Scope: generator28
-            Kind: Generator
+            Kind: ListComp
             FrameDescriptor: [file, files, dir, <return_val>]
             CellVars: Empty
             FreeVars: [files]

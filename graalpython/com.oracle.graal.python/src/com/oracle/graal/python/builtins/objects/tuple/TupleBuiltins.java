@@ -546,7 +546,7 @@ public class TupleBuiltins extends PythonBuiltins {
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doPTuple(PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(self.getSequenceStorage()) != 0;
         }
 

@@ -54,7 +54,7 @@ Scope: []
         CellVars: Empty
         FreeVars: Empty
     Scope: generator11461
-        Kind: Generator
+        Kind: DictComp
         FrameDescriptor: [i, <return_val>]
         CellVars: Empty
         FreeVars: Empty

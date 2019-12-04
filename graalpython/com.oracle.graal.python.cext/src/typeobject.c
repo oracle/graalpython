@@ -381,7 +381,9 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__mod__", numbers->nb_remainder, -2);
         ADD_SLOT_CONV("__rmod__", native_to_java_exported, numbers->nb_remainder, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
+        ADD_SLOT_CONV("__rdivmod__", native_to_java_exported, numbers->nb_divmod, -2, JWRAPPER_REVERSE);
         ADD_SLOT_CONV("__pow__", native_to_java_exported, numbers->nb_power, -3, JWRAPPER_POW);
+        ADD_SLOT_CONV("__rpow__", native_to_java_exported, numbers->nb_power, -3, JWRAPPER_REVERSE_POW);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
@@ -390,6 +392,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT_CONV("__rlshift__", native_to_java_exported, numbers->nb_lshift, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
+        ADD_SLOT_CONV("__rrshift__", native_to_java_exported, numbers->nb_rshift, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__and__", numbers->nb_and, -2);
         ADD_SLOT_CONV("__rand__", native_to_java_exported, numbers->nb_and, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__xor__", numbers->nb_xor, -2);
@@ -409,11 +412,14 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__ixor__", numbers->nb_inplace_xor, -2);
         ADD_SLOT("__ior__", numbers->nb_inplace_or, -2);
         ADD_SLOT("__floordiv__", numbers->nb_floor_divide, -2);
+        ADD_SLOT_CONV("__rfloordiv__", native_to_java_exported, numbers->nb_floor_divide, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__truediv__", numbers->nb_true_divide, -2);
+        ADD_SLOT_CONV("__rtruediv__", native_to_java_exported, numbers->nb_true_divide, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__ifloordiv__", numbers->nb_inplace_floor_divide, -2);
         ADD_SLOT("__itruediv__", numbers->nb_inplace_true_divide, -2);
         ADD_SLOT("__index__", numbers->nb_index, -1);
         ADD_SLOT("__matmul__", numbers->nb_matrix_multiply, -2);
+        ADD_SLOT_CONV("__rmatmul__", native_to_java_exported, numbers->nb_matrix_multiply, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__imatmul__", numbers->nb_inplace_matrix_multiply, -2);
     }
 

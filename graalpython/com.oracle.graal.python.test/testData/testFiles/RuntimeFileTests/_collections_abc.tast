@@ -410,14 +410,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   CellVarsSlots: None
                 InnerRootNode SourceSection: [2032,2047]`lambda: (yield)`
                   GeneratorReturnTargetNode SourceSection: [2032,2047]`lambda: (yield)`
-                    flagSlot: 0
+                    flagSlot: 1
                     FrameReturnNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [0,<return_val>,Illegal]
                         YieldNode SourceSection: [2041,2046]`yield`
-                          flagSlot: 1
+                          flagSlot: 0
                           EmptyNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                     ReadGeneratorFrameVariableNode SourceSection: None

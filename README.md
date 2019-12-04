@@ -16,9 +16,17 @@ some examples of what you can do with it, check out the
 
 ### Create a virtual environment
 
-The best way of using the GraalVM implementation of Python is out of a virtual environment. This generates 
+The best way of using the GraalVM implementation of Python is out of a virtual environment. This generates
 wrapper scripts and makes the implementation usable from shell as standard Python interpreter. To do so
-execute the following command in the project directory:
+execute the following in the project directory:
+
+Build GraalPython:
+
+```
+mx build
+```
+
+Create the venv:
 
 ```
 mx python -m venv <dir-to-venv>
@@ -30,42 +38,8 @@ To activate the environment in your shell session call:
 source <dir-to-venv>/bin/activate
 ```
 
-In the venv multiple executables are available, like `python`, `python3` and `graalpython`. 
+In the venv multiple executables are available, like `python`, `python3` and `graalpython`.
 
-### Using modules with C extensions
-
-This Python implementation is able to load and run modules with C extensions.
-Supporting C extensions is one of the most difficult features for any Python 
-implementation since it requires to be compatible to CPython's C API.
-
-However, GraalVM's Python implementation is capable of executing C extensions and
-there is also no optimization boundary.
-
-In order to be able to run C extensions, a user must first build the C API
-runtime library. It is recommended to build the C API in any case because
-it will only be used if necessary. 
-The recommended way to do so is to create a venv (see [Create a virtual environment](#create-a-virtual-environment))
-and run everything within the venv.
-
-If you don't want to create and use a venv, the C API can be built using
-following command:
-```
-mx python -m build_capi
-```
-
-You can test if everything was built correctly by, for example, using 
-a memoryvew object:
-```
-(your-venv) graalpython -c "print(repr(memoryview(b'')))"
-```
-
-in the venv or
-
-```
-mx python -c "print(repr(memoryview(b'')))"
-```
-
-without a venv.
 
 ### Installing packages
 
@@ -85,9 +59,8 @@ As a slightly more exciting example, try:
 graalpython -m ginstall install numpy
 ```
 
-If all goes well (you'll need to have `clang`, `llvm-link`, `llvm-extract`,
-`llvm-nm`, and `opt` in your `PATH` in addition to the normal NumPy build
-dependencies), you should be able to `import numpy` afterwards.
+If all goes well (also consider native dependencies of NumPy), you should be 
+able to `import numpy` afterwards.
 
 Support for more extension modules is high priority for us. We are actively
 building out our support for the Python C API to make extensions such as NumPy,
@@ -95,8 +68,7 @@ SciPy, Scikit-learn, Pandas, Tensorflow and the like work. This work means that
 some other extensions might also already work, but we're not actively testing
 other extensions right now and cannot promise anything. Note that to try
 extensions on this implementation, you have to download, build, and install them
-manually for now. To do so, we recommend LLVM 6. Other versions might also work,
-but this version is what we're testing with in our CI.
+manually for now. 
 
 ### Polyglot Usage
 
@@ -123,5 +95,4 @@ Permissive License v 1.0 as shown at
 [http://oss.oracle.com/licenses/upl](http://oss.oracle.com/licenses/upl). This
 implementation is in part derived from and contains additional code from 3rd
 parties, the copyrights and licensing of which is detailed in the
-[LICENSE](LICENSE) and [3rd_party_licenses.txt](3rd_party_licenses.txt) files.
-
+[LICENSE](LICENSE) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.

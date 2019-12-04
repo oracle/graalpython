@@ -44,11 +44,16 @@ public final class ScopeInfo {
         Module,
         Function,
         Class,
-        // generator expression or generator function
+        // Generator Function
         Generator,
-        // list comprehension
+        // Generatro Expression
+        GenExp,
+        // List Comprehension
         ListComp,
-
+        // Set Comprehension
+        SetComp,
+        // Dir Comprehension
+        DictComp,
         // new
         Transparent
     }
@@ -282,19 +287,6 @@ public final class ScopeInfo {
 
     public List<KwDefaultExpressionNode> getDefaultKwArgumentNodes() {
         return kwDefaultArgumentNodes;
-    }
-
-    public void createFrameSlotsForCellAndFreeVars() {
-        if (cellVars != null) {
-            cellVars.forEach((identifier) -> {
-                createSlotIfNotPresent(identifier);
-            });
-        }
-        if (freeVars != null) {
-            freeVars.forEach((identifier) -> {
-                createSlotIfNotPresent(identifier);
-            });
-        }
     }
 
     @Override

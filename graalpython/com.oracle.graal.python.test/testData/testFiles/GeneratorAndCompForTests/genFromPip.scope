@@ -9,7 +9,7 @@ Scope: []
         CellVars: [only, path_item]
         FreeVars: Empty
         Scope: generator342
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [entry, path_item, only, <return_val>]
             CellVars: Empty
             FreeVars: [only, path_item]

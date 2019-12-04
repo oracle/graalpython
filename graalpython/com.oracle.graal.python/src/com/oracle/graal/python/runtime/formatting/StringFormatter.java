@@ -8,6 +8,7 @@ package com.oracle.graal.python.runtime.formatting;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -19,7 +20,6 @@ import java.util.function.BiFunction;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -162,7 +162,7 @@ public class StringFormatter {
      */
     @TruffleBoundary
     public Object format(Object args1, CallNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
-        PDict dict = null;
+        Object mapping = null;
         this.args = args1;
 
         if (args1 instanceof PTuple) {
@@ -172,12 +172,8 @@ public class StringFormatter {
             // Not a tuple, but possibly still some kind of container: use
             // special argIndex values.
             argIndex = -1;
-            /*
-             * TODO: support other mappables || (!(args instanceof PSequence) && (args instanceof
-             * PythonObject && ((PythonObject) args).getAttribute("__getitem__") != null))
-             */
-            if (args1 instanceof PDict) {
-                dict = (PDict) args1;
+            if (lookupAttribute.apply(args1, __GETITEM__) != PNone.NO_VALUE) {
+                mapping = args1;
                 argIndex = -3;
             }
         }
@@ -212,7 +208,7 @@ public class StringFormatter {
             c = pop();
             if (c == '(') {
                 // Mapping key, consisting of a parenthesised sequence of characters.
-                if (dict == null) {
+                if (mapping == null) {
                     throw core.raise(TypeError, "format requires a mapping");
                 }
                 // Scan along until a matching close parenthesis is found
@@ -228,8 +224,9 @@ public class StringFormatter {
                 }
                 // Last c=pop() is the closing ')' while indexKey is just after the opening '('
                 String tmp = formatText.substring(keyStart, index - 1);
-                // Look it up using this extent as the (right type of) key.
-                this.args = dict.getItem(tmp);
+                // Look it up using this extent as the (right type of) key. The caller must have
+                // pushed the frame.
+                this.args = getItemNode.executeObject(null, mapping, tmp);
             } else {
                 // Not a mapping key: next clause will re-read c.
                 push();

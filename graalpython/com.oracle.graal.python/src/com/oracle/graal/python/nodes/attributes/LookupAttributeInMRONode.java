@@ -88,7 +88,6 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         @Specialization(guards = "compareStrings(key, cachedKey)", limit = "2")
-        @ExplodeLoop
         protected Object lookupConstantMRO(LazyPythonClass klass, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("create(key)") LookupAttributeInMRONode lookup) {
@@ -113,7 +112,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     static class DynamicUncached extends Dynamic {
-        private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncached();
+        private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncachedForceType();
         private final GetMroStorageNode getMroNode = GetMroStorageNode.getUncached();
 
         @Override
@@ -232,7 +231,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     assumptions = {"lookupStable", "singleContextAssumption()"})
-    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
+    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonAbstractClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonAbstractClass cachedKlass,
                     @Cached("getMro(cachedKlass)") MroSequenceStorage mro,

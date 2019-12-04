@@ -70,11 +70,13 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIterat
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFrameNodeGen;
+import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -118,7 +120,7 @@ public abstract class ListNodes {
 
         protected SequenceStorage doIt(VirtualFrame frame, Object iterator, ListStorageType type, T nextNode, IsBuiltinClassProfile errorProfile) {
             SequenceStorage storage;
-            if (type == ListStorageType.Uninitialized) {
+            if (type == ListStorageType.Uninitialized || type == ListStorageType.Empty) {
                 Object[] elements = new Object[START_SIZE];
                 int i = 0;
                 while (true) {
@@ -662,19 +664,47 @@ public abstract class ListNodes {
         }
     }
 
+    /**
+     * This node takes a bit of care to avoid compiling code for switching storages. In the
+     * interpreter, it will use a different {@link SequenceStorageNodes.AppendNode} than in the
+     * compiled code, so the specializations for the compiler are different. This is useful, because
+     * in the interpreter we will report back type and size changes to the origin of the list via
+     * {@link PList#getOrigin} and {@link ListLiteralNode#reportUpdatedCapacity}. Thus, there's a
+     * chance that the compiled code will only see lists of the correct size and storage type.
+     */
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
 
         public abstract void execute(PList list, Object value);
 
+        protected static boolean[] flagContainer(boolean flag) {
+            boolean[] container = new boolean[1];
+            container[0] = flag;
+            return container;
+        }
+
         @Specialization
         public void appendObjectGeneric(PList list, Object value,
+                        @Cached SequenceStorageNodes.AppendNode appendInInterpreterNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached(value = "flagContainer(false)", uncached = "flagContainer(true)", dimensions = 1) boolean[] triedToCompile,
                         @Cached BranchProfile updateStoreProfile) {
-            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
-            if (list.getSequenceStorage() != newStore) {
-                updateStoreProfile.enter();
+            if (CompilerDirectives.inInterpreter() && !triedToCompile[0] && list.getOrigin() != null) {
+                SequenceStorage newStore = appendInInterpreterNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
                 list.setSequenceStorage(newStore);
+                if (list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
+                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
+                }
+            } else {
+                if (!triedToCompile[0]) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    triedToCompile[0] = true;
+                }
+                SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
+                if (list.getSequenceStorage() != newStore) {
+                    updateStoreProfile.enter();
+                    list.setSequenceStorage(newStore);
+                }
             }
         }
 

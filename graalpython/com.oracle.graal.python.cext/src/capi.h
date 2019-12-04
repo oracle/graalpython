@@ -210,11 +210,19 @@ inline void* native_to_java(void* obj) {
 extern void* native_to_java_exported(PyObject* obj);
 
 __attribute__((always_inline))
-inline void* native_type_to_java(PyTypeObject* type) {
-	if (!truffle_cannot_be_handle(type)) {
-        return (void *)resolve_handle(cache, (uint64_t)type);
+inline void* native_to_java_slim(PyObject* obj) {
+    if (!truffle_cannot_be_handle(obj)) {
+        return truffle_managed_from_handle(obj);
     }
-    return (void *)type;
+    return obj;
+}
+
+__attribute__((always_inline))
+inline PyTypeObject* native_type_to_java(PyTypeObject* type) {
+	if (!truffle_cannot_be_handle(type)) {
+        return (PyTypeObject *)truffle_managed_from_handle(type);
+    }
+    return type;
 }
 
 extern void* to_java(PyObject* obj);
@@ -242,6 +250,7 @@ void initialize_hashes();
 #define JWRAPPER_SSIZE_OBJ_ARG               (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
 #define JWRAPPER_REVERSE                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE"))
 #define JWRAPPER_POW                         (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_POW"))
+#define JWRAPPER_REVERSE_POW                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE_POW"))
 #define JWRAPPER_LT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LT"))
 #define JWRAPPER_LE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LE"))
 #define JWRAPPER_EQ                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_EQ"))
@@ -376,5 +385,8 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
     result = function(__VA_ARGS__, __poly_args, NULL, 0);               \
     va_end(__poly_args)
 #endif
+
+typedef PyObject* PyObjectPtr;
+POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
 #endif

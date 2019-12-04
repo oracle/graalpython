@@ -604,7 +604,7 @@ Scope: []
             CellVars: [key]
             FreeVars: [__class__]
             Scope: generator33790
-                Kind: Generator
+                Kind: GenExp
                 FrameDescriptor: [m, <return_val>, key]
                 CellVars: Empty
                 FreeVars: [key]
@@ -669,7 +669,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [__class__]
             Scope: generator30346
-                Kind: Generator
+                Kind: ListComp
                 FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
@@ -794,7 +794,7 @@ Scope: []
             CellVars: Empty
             FreeVars: [_len, num_fields, tuple_new]
         Scope: generator14106
-            Kind: Generator
+            Kind: GenExp
             FrameDescriptor: [name, <return_val>]
             CellVars: Empty
             FreeVars: Empty

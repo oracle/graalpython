@@ -4,7 +4,7 @@ Scope: []
     CellVars: Empty
     FreeVars: Empty
     Scope: generator9880
-        Kind: Generator
+        Kind: ListComp
         FrameDescriptor: [<return_val>, n]
         CellVars: Empty
         FreeVars: Empty

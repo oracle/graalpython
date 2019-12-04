@@ -7,7 +7,7 @@ ModuleRootNode Name: <module 'binaryOp03'> SourceSection: [0,6]`3 ** 2`
   InnerRootNode SourceSection: [0,6]`3 ** 2`
     TernaryArithmeticExpression SourceSection: [0,6]`3 ** 2`
       LookupAndCallTernaryNodeGen SourceSection: None
-        CallTernaryMethodNodeGen SourceSection: None
+        CallTernaryMethodCachedNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [0,1]`3`
         Value: 3
       IntegerLiteralNode SourceSection: [5,6]`2`

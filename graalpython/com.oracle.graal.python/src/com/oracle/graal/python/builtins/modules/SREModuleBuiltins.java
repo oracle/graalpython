@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -136,8 +137,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(VirtualFrame frame, PIBytesLike str) {
-            byte[] bytes = doBytes(getToByteArrayNode().execute(frame, str.getSequenceStorage()));
+        Object run(PIBytesLike str) {
+            byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
             if (bytes != null) {
                 return factory().createByteArray(bytes);
             }
@@ -181,7 +182,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toByteArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toByteArrayNode;
         }
@@ -220,7 +221,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 // just re-throw
                 throw e;
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
     }
@@ -242,7 +243,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } finally {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
             }
         }
     }

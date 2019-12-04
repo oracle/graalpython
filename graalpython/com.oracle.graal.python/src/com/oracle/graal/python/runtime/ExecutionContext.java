@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -333,8 +332,8 @@ public abstract class ExecutionContext {
          * Cleanup after a call without frame. For more details, see
          * {@link #enter(VirtualFrame, PythonContext, Node)}.
          */
-        public static void exit(PythonContext context, PException savedExceptionState) {
-            if (context != null) {
+        public static void exit(VirtualFrame frame, PythonContext context, PException savedExceptionState) {
+            if (frame != null && context != null) {
                 context.popTopFrameInfo();
                 ExceptionContext.exit(context, savedExceptionState);
             }
@@ -387,9 +386,9 @@ public abstract class ExecutionContext {
          * Cleanup after an interop call. For more details, see
          * {@link #enter(VirtualFrame, PythonContext, Node)}.
          */
-        public static void exit(PythonContext context, PException savedExceptionState) {
+        public static void exit(VirtualFrame frame, PythonContext context, PException savedExceptionState) {
             if (context != null) {
-                IndirectCallContext.exit(context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedExceptionState);
                 if (!context.getSingleThreadedAssumption().isValid()) {
                     context.releaseInteropLock();
                 }

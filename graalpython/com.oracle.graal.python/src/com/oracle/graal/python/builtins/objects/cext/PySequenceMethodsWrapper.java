@@ -43,16 +43,13 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -107,7 +104,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
                     @Cached CExtNodes.ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                    @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                     @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
         Object result;
         try {
@@ -123,9 +120,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
             }
         } catch (PException e) {
             errorProfile.enter();
-            PythonContext context = contextRef.get();
-            context.setCurrentException(e);
-            e.getExceptionObject().reifyException(context.peekTopFrameInfo());
+            transformExceptionToNativeNode.execute(null, e);
             result = getNativeNullNode.execute(null);
         }
         return result;

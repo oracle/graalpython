@@ -88,6 +88,9 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_OBJECT_SIZE = "PyTruffle_Object_Size";
     public static final String FUN_PY_TYPE_READY = "PyType_Ready";
     public static final String FUN_GET_NEWFUNC_TYPE_ID = "get_newfunc_typeid";
+    public static final String FUN_GET_BUFFER_R = "get_buffer_r";
+    public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
+    public static final String FUN_ALLOCATE_OUTVAR = "allocate_outvar";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
@@ -104,7 +107,7 @@ public abstract class NativeCAPISymbols {
         }
     }
 
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     public static boolean isValid(String name) {
         for (int i = 0; i < values.length; i++) {
             if (values[i].equals(name)) {

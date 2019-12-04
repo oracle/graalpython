@@ -46,6 +46,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class AbstractYieldNode extends ExpressionNode {
     @CompilationFinal protected int flagSlot;
+    @CompilationFinal protected int yieldIndex;
 
     protected final BranchProfile gotException = BranchProfile.create();
     protected final BranchProfile gotValue = BranchProfile.create();
@@ -57,6 +58,12 @@ public abstract class AbstractYieldNode extends ExpressionNode {
 
     public int getFlagSlot() {
         return flagSlot;
+    }
+
+    public void setIndex(int idx) {
+        assert yieldIndex == 0;
+        assert idx != 0;
+        yieldIndex = idx;
     }
 
     public AbstractYieldNode() {

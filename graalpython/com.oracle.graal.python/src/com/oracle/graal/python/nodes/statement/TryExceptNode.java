@@ -71,6 +71,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -166,26 +167,22 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         return factory().createBaseException(PythonErrorType.ValueError, "%m", new Object[]{t});
     }
 
-    @ExplodeLoop
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     private boolean catchException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState) {
-        boolean wasHandled = false;
         for (ExceptNode exceptNode : exceptNodes) {
-            // we want a constant loop iteration count for ExplodeLoop to work,
-            // so we always run through all except handlers
-            if (!wasHandled) {
-                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
-                    if (everHandled.profile(wasHandled = handleException(frame, exception, exceptionState, wasHandled, exceptNode))) {
-                        // restore previous exception state, this won't happen if the except block
-                        // raises an exception
-                        restoreExceptionState(frame, exceptionState);
-                    }
+            if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                if (handleException(frame, exception, exceptionState, exceptNode)) {
+                    // restore previous exception state, this won't happen if the except block
+                    // raises an exception
+                    restoreExceptionState(frame, exceptionState);
+                    return true;
                 }
             }
         }
-        return wasHandled;
+        return false;
     }
 
-    private boolean handleException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState, boolean wasHandled, ExceptNode exceptNode) {
+    private boolean handleException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState, ExceptNode exceptNode) {
         try {
             exceptNode.executeExcept(frame, exception);
         } catch (ExceptionHandledException e) {
@@ -196,7 +193,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             restoreExceptionState(frame, exceptionState);
             throw e;
         }
-        return wasHandled;
+        return false;
     }
 
     public StatementNode getBody() {
@@ -296,7 +293,6 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             PArguments.setArgument(args, 1, caughtClasses);
         }
 
-        @ExplodeLoop
         boolean catches(Object exception) {
             if (isInstance == null) {
                 return false;

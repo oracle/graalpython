@@ -35,12 +35,22 @@ public final class GeneratorControlData {
     private final boolean[] activeFlags;
     private final int[] blockNodeIndices;       // See {@link GeneratorBlockNode}
     private final Object[] forNodeIterators; // See {@link GeneratorForNode}
+    private int lastYieldIndex;
     private ExceptionState activeException;
 
     public GeneratorControlData(int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         this.activeFlags = new boolean[numOfActiveFlags];
         this.blockNodeIndices = new int[numOfGeneratorBlockNode];
         this.forNodeIterators = new Object[numOfGeneratorForNode];
+    }
+
+    public int getLastYieldIndex() {
+        return lastYieldIndex;
+    }
+
+    public void setLastYieldIndex(int lastYieldIndex) {
+        assert lastYieldIndex != 0;
+        this.lastYieldIndex = lastYieldIndex;
     }
 
     public boolean getActive(int slot) {

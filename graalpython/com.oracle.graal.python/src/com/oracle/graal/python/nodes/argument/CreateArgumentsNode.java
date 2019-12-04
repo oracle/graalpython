@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -742,7 +743,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract PKeyword execute(PKeyword[] kwdefaults, String kwname);
 
         @Specialization(guards = {"kwdefaults.length == cachedLength", "kwdefaults.length < 32"})
-        @ExplodeLoop
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         PKeyword doCached(PKeyword[] kwdefaults, String kwname,
                         @Cached("kwdefaults.length") int cachedLength) {
             for (int j = 0; j < cachedLength; j++) {

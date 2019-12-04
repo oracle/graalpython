@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -236,7 +238,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private long doCRC32(byte[] data) {
+        private static long doCRC32(byte[] data) {
             CRC32 crc32 = new CRC32();
             crc32.update(data);
             return crc32.getValue();
@@ -312,7 +314,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private long doAdler32(byte[] data) {
+        private static long doAdler32(byte[] data) {
             Adler32 adler32 = new Adler32();
             adler32.update(data);
             return adler32.getValue();
@@ -493,7 +495,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] data = toBytes.execute(frame, pb);
-            byte[] result = new byte[DEF_BUF_SIZE];
+            byte[] result = new byte[Math.min(maxLen, DEF_BUF_SIZE)];
             byte[] decompressed = decompress(stream, maxLength, baos, data, result);
 
             return factory().createTuple(new Object[]{
@@ -501,6 +503,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                             stream.inflater.finished(),
                             stream.getRemaining()
             });
+        }
+
+        @Specialization
+        Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, long maxLen,
+                        @Cached CastToJavaIntNode castInt) {
+            return decompress(frame, stream, pb, castInt.execute(maxLen));
         }
 
         @TruffleBoundary
@@ -531,7 +539,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
             if (toArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toArrayNode;
         }
@@ -552,18 +560,18 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone level) {
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
 
         @Specialization
-        public PBytes doit(VirtualFrame frame, PIBytesLike data, long level,
+        public PBytes doit(PIBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
                 throw raise(ZLibError, "Bad compression level");
             }
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, (int) level));
         }
 
@@ -583,7 +591,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.ToByteArrayNode getToArrayNode() {
             if (toArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toArrayNode;
         }
@@ -622,8 +630,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, MAX_WBITS, DEF_BUF_SIZE));
         }
 
@@ -638,7 +646,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, "bufsize must be non-negative");
             }
-            byte[] array = getToArrayNode().execute(frame, data.getSequenceStorage());
+            byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, (int) wbits, bufsize == 0 ? 1 : bufsize));
         }
 

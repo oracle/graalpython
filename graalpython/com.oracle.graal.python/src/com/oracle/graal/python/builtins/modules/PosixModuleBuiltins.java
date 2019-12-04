@@ -106,7 +106,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemDynamicNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -1190,15 +1190,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object write(VirtualFrame frame, int fd, PBytes data,
+        Object write(int fd, PBytes data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, getByteArray(frame, data), channelClassProfile);
+            return write(fd, getByteArray(data), channelClassProfile);
         }
 
         @Specialization
-        Object write(VirtualFrame frame, int fd, PByteArray data,
+        Object write(int fd, PByteArray data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(fd, getByteArray(frame, data), channelClassProfile);
+            return write(fd, getByteArray(data), channelClassProfile);
         }
 
         @Specialization
@@ -1208,12 +1208,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return recursive.executeWith(frame, castToIntNode.execute(frame, fd), data);
         }
 
-        private byte[] getByteArray(VirtualFrame frame, PIBytesLike pByteArray) {
+        private byte[] getByteArray(PIBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(ToByteArrayNode.create());
+                toByteArrayNode = insert(ToByteArrayNodeGen.create());
             }
-            return toByteArrayNode.execute(frame, pByteArray.getSequenceStorage());
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
         }
 
         public static WriteNode create() {
@@ -1250,6 +1250,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
                         @Cached CastToJavaLongNode castToLongNode) {
             return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
+        }
+
+        @Specialization
+        Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
+                        @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Shared("readNode") @Cached ReadFromChannelNode readNode,
+                        @Cached CastToJavaLongNode castToLongNode,
+                        @Cached CastToJavaIntNode castToIntNode) {
+            return readLong(frame, castToIntNode.execute(fd), castToLongNode.execute(requestedSize), channelClassProfile, readNode);
         }
     }
 

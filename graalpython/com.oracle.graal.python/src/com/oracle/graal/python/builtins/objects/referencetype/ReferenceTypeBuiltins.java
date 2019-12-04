@@ -105,7 +105,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         static long HASH_UNSET = -1;
 
         @Specialization(guards = "self.getHash() != HASH_UNSET")
-        long getHash(VirtualFrame frame, PReferenceType self) {
+        long getHash(PReferenceType self) {
             return self.getHash();
         }
 
@@ -129,7 +129,8 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.getObject() == null", "self.getHash() == HASH_UNSET"})
-        int hashGone(VirtualFrame frame, @SuppressWarnings("unused") PReferenceType self) {
+        @SuppressWarnings("unused")
+        int hashGone(VirtualFrame frame, PReferenceType self) {
             throw raise(PythonErrorType.TypeError, "weak object has gone away");
         }
 

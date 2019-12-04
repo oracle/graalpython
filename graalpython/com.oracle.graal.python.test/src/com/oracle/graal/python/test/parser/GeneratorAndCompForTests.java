@@ -330,4 +330,23 @@ public class GeneratorAndCompForTests extends ParserTestBase {
                                         "    yield 100");
     }
 
+    @Test
+    public void listCompr() throws Exception {
+        checkScopeAndTree("[i for i in range(3)]");
+    }
+
+    @Test
+    public void setCompr() throws Exception {
+        checkScopeAndTree("{i for i in range(3)}");
+    }
+
+    @Test
+    public void dictCompr() throws Exception {
+        checkScopeAndTree("{i: i + 1 for i in range(3)}");
+    }
+
+    @Test
+    public void genExpr() throws Exception {
+        checkScopeAndTree("(i for i in range(3))");
+    }
 }

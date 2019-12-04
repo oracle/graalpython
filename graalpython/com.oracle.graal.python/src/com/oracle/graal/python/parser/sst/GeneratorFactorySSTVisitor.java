@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -77,7 +79,6 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -87,6 +88,7 @@ import com.oracle.truffle.api.source.Source;
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
     private int numOfActiveFlags;
+    private int numOfYields;
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
     protected FactorySSTVisitor parentVisitor;
@@ -99,6 +101,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
     public void init() {
         this.numOfActiveFlags = 0;
+        this.numOfYields = 1;
         this.numOfGeneratorBlockNode = 0;
         this.numOfGeneratorForNode = 0;
     }
@@ -164,6 +167,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     @Override
     public PNode visit(ForComprehensionSSTNode node) {
         int oldNumOfActiveFlags = numOfActiveFlags;
+        int oldNumOfYields = numOfYields;
         int oldNumOfGeneratorBlockNode = numOfGeneratorBlockNode;
         int oldNumOfGeneratorForNode = numOfGeneratorForNode;
         init();
@@ -187,6 +191,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         }
         parentVisitor.comprLevel--;
         YieldNode yieldExpression = nodeFactory.createYield(targetExpression);
+        yieldExpression.setIndex(numOfYields++);
         yieldExpression.setFlagSlot(numOfActiveFlags++);
         yieldExpression.assignSourceSection(targetExpression.getSourceSection());
 
@@ -236,6 +241,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         }
         scopeEnvironment.setCurrentScope(originScope);
         numOfActiveFlags = oldNumOfActiveFlags;
+        numOfYields = oldNumOfYields;
         numOfGeneratorBlockNode = oldNumOfGeneratorBlockNode;
         numOfGeneratorForNode = oldNumOfGeneratorForNode;
         return result;
@@ -432,11 +438,13 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         if (node.isFrom) {
             YieldFromNode yieldNode = nodeFactory.createYieldFrom(value);
             yieldNode.setFlagSlot(numOfActiveFlags++);
+            yieldNode.setIndex(numOfYields++);
             yieldNode.setIteratorSlot(numOfGeneratorForNode++);
             result = yieldNode;
         } else {
             YieldNode yieldNode = nodeFactory.createYield(value);
             yieldNode.setFlagSlot(numOfActiveFlags++);
+            yieldNode.setIndex(numOfYields++);
             result = yieldNode;
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));

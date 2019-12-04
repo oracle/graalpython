@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -188,7 +189,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
             if (toByteArray == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArray = insert(SequenceStorageNodes.ToByteArrayNode.create());
+                toByteArray = insert(ToByteArrayNodeGen.create());
             }
             return toByteArray;
         }
@@ -221,18 +222,18 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, @SuppressWarnings("unused") PNone newline) {
-            return b2aBytesLike(frame, data, 1);
+        PBytes b2aBytesLike(PIBytesLike data, @SuppressWarnings("unused") PNone newline) {
+            return b2aBytesLike(data, 1);
         }
 
         @Specialization
-        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, long newline) {
-            return b2a(getToByteArrayNode().execute(frame, data.getSequenceStorage()), newline != 0);
+        PBytes b2aBytesLike(PIBytesLike data, long newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
         }
 
         @Specialization
-        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, PInt newline) {
-            return b2a(getToByteArrayNode().execute(frame, data.getSequenceStorage()), !newline.isZero());
+        PBytes b2aBytesLike(PIBytesLike data, PInt newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
         @Specialization
@@ -246,13 +247,13 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes b2aArray(VirtualFrame frame, PArray data, long newline) {
-            return b2a(getToByteArrayNode().execute(frame, data.getSequenceStorage()), newline != 0);
+        PBytes b2aArray(PArray data, long newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
         }
 
         @Specialization
-        PBytes b2aArray(VirtualFrame frame, PArray data, PInt newline) {
-            return b2a(getToByteArrayNode().execute(frame, data.getSequenceStorage()), !newline.isZero());
+        PBytes b2aArray(PArray data, PInt newline) {
+            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
         @Specialization
@@ -273,7 +274,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
             Object bytesObj = toBytesNode.executeObject(frame, data);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
-                return b2aBytesLike(frame, (PBytes) bytesObj, newline);
+                return b2aBytesLike((PBytes) bytesObj, newline);
             }
             throw raise(SystemError, "could not get bytes of memoryview");
         }
@@ -294,7 +295,6 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         PBytes b2sGeneral(Object data, @SuppressWarnings("unused") Object newline) {
             throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", data);
         }
-
     }
 
     @Builtin(name = "b2a_hex", minNumOfPositionalArgs = 1)
@@ -321,9 +321,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        String b2a(VirtualFrame frame, PBytes data,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            byte[] bytes = toByteArray.execute(frame, data.getSequenceStorage());
+        String b2a(PBytes data,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
+            byte[] bytes = toByteArray.execute(data.getSequenceStorage());
             StringBuilder sb = newStringBuilder();
             for (int i = 0; i < bytes.length; i++) {
                 String hexString = toHexString(bytes[i]);
@@ -340,10 +340,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Crc32Node extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(crc)")
-        long b2a(VirtualFrame frame, PBytes data, @SuppressWarnings("unused") PNone crc,
-                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            byte[] bytes = toByteArray.execute(frame, data.getSequenceStorage());
-            return getCrcValue(bytes);
+        long b2a(PBytes data, @SuppressWarnings("unused") PNone crc,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
+            return getCrcValue(toByteArray.execute(data.getSequenceStorage()));
         }
 
         @TruffleBoundary

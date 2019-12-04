@@ -368,12 +368,6 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "self.size() == 0")
-        boolean runEmpty(PDict self, Object key) {
-            return false;
-        }
-
         @Specialization
         boolean run(VirtualFrame frame, PDict self, Object key) {
             if (containsKeyNode == null) {
@@ -388,8 +382,9 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean repr(PDict self) {
-            return self.size() > 0;
+        public boolean repr(PDict self,
+                        @Cached HashingCollectionNodes.LenNode lenNode) {
+            return lenNode.execute(self) > 0;
         }
     }
 

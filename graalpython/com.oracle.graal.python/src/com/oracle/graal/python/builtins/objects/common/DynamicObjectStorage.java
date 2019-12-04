@@ -48,6 +48,7 @@ import java.util.function.Predicate;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
@@ -247,7 +248,7 @@ public abstract class DynamicObjectStorage extends HashingStorage {
 
         @Override
         public int length() {
-            CompilerAsserts.neverPartOfCompilation();
+            CompilerDirectives.transferToInterpreter();
             if (shape != getStore().getShape()) {
                 size = 0;
                 for (@SuppressWarnings("unused")

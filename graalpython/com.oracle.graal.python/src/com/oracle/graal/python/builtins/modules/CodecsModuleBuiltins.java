@@ -64,6 +64,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -498,40 +500,40 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends EncodeBaseNode {
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        @Child private GetInternalByteArrayNode toByteArrayNode;
 
         @Specialization
-        Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            byte[] decoded = getBytes(frame, bytes);
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            byte[] decoded = getBytes(bytes);
             String string = decodeBytes(decoded, "utf-8", "strict");
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
         @Specialization(guards = {"isString(encoding)"})
-        Object decode(VirtualFrame frame, PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
+        Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            byte[] decoded = getBytes(frame, bytes);
+            byte[] decoded = getBytes(bytes);
             String string = decodeBytesStrict(decoded, profiledEncoding);
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
         @Specialization(guards = {"isString(errors)"})
-        Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            byte[] decoded = getBytes(frame, bytes);
+            byte[] decoded = getBytes(bytes);
             String string = decodeBytesUTF8(decoded, profiledErrors);
             return factory().createTuple(new Object[]{string, decoded.length});
         }
 
         @Specialization(guards = {"isString(encoding)", "isString(errors)"})
-        Object decode(VirtualFrame frame, PIBytesLike bytes, Object encoding, Object errors,
+        Object decode(PIBytesLike bytes, Object encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            byte[] decoded = getBytes(frame, bytes);
+            byte[] decoded = getBytes(bytes);
             String string = decodeBytes(decoded, profiledEncoding, profiledErrors);
             return factory().createTuple(new Object[]{string, decoded.length});
         }
@@ -541,12 +543,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
         }
 
-        private byte[] getBytes(VirtualFrame frame, PIBytesLike bytesLike) {
+        private byte[] getBytes(PIBytesLike bytesLike) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(false));
+                toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
             }
-            return toByteArrayNode.execute(frame, bytesLike.getSequenceStorage());
+            return toByteArrayNode.execute(bytesLike.getSequenceStorage());
         }
 
         @TruffleBoundary
@@ -584,11 +586,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__truffle_raw_decode", minNumOfPositionalArgs = 1, parameterNames = {"bytes", "errors"})
     @GenerateNodeFactory
     abstract static class RawDecodeNode extends EncodeBaseNode {
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        @Child private GetInternalByteArrayNode toByteArrayNode;
 
         @Specialization
         Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone errors) {
-            String string = decodeBytes(getBytesBuffer(frame, bytes), "strict");
+            String string = decodeBytes(getBytesBuffer(bytes), "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -596,16 +598,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PIBytesLike bytes, Object errors,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(getBytesBuffer(frame, bytes), profiledErrors.toString());
+            String string = decodeBytes(getBytesBuffer(bytes), profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
-        private ByteBuffer getBytesBuffer(VirtualFrame frame, PIBytesLike bytesLike) {
+        private ByteBuffer getBytesBuffer(PIBytesLike bytesLike) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(false));
+                toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
             }
-            byte[] barr = toByteArrayNode.execute(frame, bytesLike.getSequenceStorage());
+            byte[] barr = toByteArrayNode.execute(bytesLike.getSequenceStorage());
             return ByteBuffer.wrap(barr, 0, barr.length);
         }
 

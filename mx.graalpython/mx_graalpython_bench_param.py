@@ -104,6 +104,7 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-issubtype-polymorphic-forced-to-native': ITER_10 + ['50000000'],
     'c-issubtype-polymorphic': ITER_10 + ['50000000'],
     'c-issubtype-monorphic': ITER_10 + ['50000000'],
+    'c-call-method': ITER_15 + ['5000000'],
 }
 
 

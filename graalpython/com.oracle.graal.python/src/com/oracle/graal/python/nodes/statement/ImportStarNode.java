@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -34,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -46,16 +46,22 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class ImportStarNode extends AbstractImportNode {
+    private final ConditionProfile javaImport = ConditionProfile.createBinaryProfile();
 
     @Child private SetItemNode dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
-    @Child private GetAttributeNode getAttributeNode;
     @Child private LookupAndCallUnaryNode callLenNode;
     @Child private GetItemNode getItemNode;
     @Child private CastToIndexNode castToIndexNode;
     @Child private CastToStringNode castToStringNode;
+    @Child private GetAnyAttributeNode readNode;
 
     @CompilationFinal private IsBuiltinClassProfile isAttributeErrorProfile;
 
@@ -80,6 +86,14 @@ public class ImportStarNode extends AbstractImportNode {
         }
     }
 
+    private Object readAttribute(VirtualFrame frame, Object object, String name) {
+        if (readNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            readNode = insert(GetAttributeNode.GetAnyAttributeNode.create());
+        }
+        return readNode.executeObject(frame, object, name);
+    }
+
     public ImportStarNode(String moduleName, int level) {
         this.moduleName = moduleName;
         this.level = level;
@@ -90,44 +104,44 @@ public class ImportStarNode extends AbstractImportNode {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
         PythonObject globals = PArguments.getGlobals(frame);
 
-        String[] exportedModuleAttrs;
-        Object attrAll;
-        boolean skip_leading_underscores = true;
-        try {
-            attrAll = ensureGetAttributeNode().executeObject(frame, importedModule);
-        } catch (PException e) {
-            e.expectAttributeError(ensureIsAttributeErrorProfile());
-            attrAll = PNone.NO_VALUE;
-        }
-
-        if (attrAll != PNone.NO_VALUE) {
-            int n = ensureCastToIndexNode().execute(frame, ensureCallLenNode().executeObject(frame, attrAll));
-            exportedModuleAttrs = new String[n];
-            for (int i = 0; i < n; i++) {
-                exportedModuleAttrs[i] = ensureCastToStringNode().execute(frame, ensureGetItemNode().executeWith(frame, attrAll, i));
+        if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
+            try {
+                InteropLibrary interopLib = InteropLibrary.getFactory().getUncached();
+                Object hostAttrs = interopLib.getMembers(importedModule, true);
+                int len = (int) interopLib.getArraySize(hostAttrs);
+                for (int i = 0; i < len; i++) {
+                    // interop protocol guarantees these are Strings
+                    String attrName = (String) interopLib.readArrayElement(hostAttrs, i);
+                    Object attr = interopLib.readMember(importedModule, attrName);
+                    writeAttribute(frame, globals, attrName, attr);
+                }
+            } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
             }
-            skip_leading_underscores = false;
         } else {
-            exportedModuleAttrs = getModuleAttrs(importedModule);
-        }
-
-        assert importedModule instanceof PythonModule;
-        for (String name : exportedModuleAttrs) {
-            // only skip attributes with leading '__' if there was no '__all__' attribute (see
-            // 'ceval.c: import_all_from')
-            if (!(skip_leading_underscores && name.startsWith("__"))) {
-                Object attr = ((PythonModule) importedModule).getAttribute(name);
-                writeAttribute(frame, globals, name, attr);
+            try {
+                Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
+                int n = ensureCastToIndexNode().execute(frame, ensureCallLenNode().executeObject(frame, attrAll));
+                for (int i = 0; i < n; i++) {
+                    String attrName = ensureCastToStringNode().execute(frame, ensureGetItemNode().executeWith(frame, attrAll, i));
+                    Object attr = readAttribute(frame, importedModule, attrName);
+                    writeAttribute(frame, globals, attrName, attr);
+                }
+            } catch (PException e) {
+                e.expectAttributeError(ensureIsAttributeErrorProfile());
+                assert importedModule instanceof PythonModule;
+                String[] exportedModuleAttrs = getModuleAttrs(importedModule);
+                for (String name : exportedModuleAttrs) {
+                    // skip attributes with leading '__' if there was no '__all__' attribute (see
+                    // 'ceval.c: import_all_from')
+                    if (!name.startsWith("__")) {
+                        Object attr = readAttribute(frame, importedModule, name);
+                        writeAttribute(frame, globals, name, attr);
+                    }
+                }
             }
         }
-    }
-
-    private GetAttributeNode ensureGetAttributeNode() {
-        if (getAttributeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__ALL__));
-        }
-        return getAttributeNode;
     }
 
     private LookupAndCallUnaryNode ensureCallLenNode() {

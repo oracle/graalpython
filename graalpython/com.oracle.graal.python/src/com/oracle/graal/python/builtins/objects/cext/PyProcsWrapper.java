@@ -40,20 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -62,6 +60,8 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -128,35 +128,23 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) throws ArityException, UnsupportedMessageException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
-            Object[] converted = new Object[2];
-            converted[0] = toJavaNode.execute(arguments[0]);
-            converted[1] = toJavaNode.execute(arguments[1]);
             Object result;
             try {
-                result = toSulongNode.execute(executeNode.execute(lib.getDelegate(this), converted));
+                result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]));
             } catch (PException e) {
-                // TODO move to node
                 e.expectAttributeError(errProfile);
-
-                // This node cannot have a frame so we cannot neither be sure if the PFrame is
-                // already available nor we can create it at this point. Furthermore, the last
-                // Python caller also won't eagerly create the PFrame since this could unnecessarily
-                // expensive. So, we just need to provide the frame info. This will be enough to
-                // re-create the current stack at a later point in time.
-                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-
-                context.setCurrentException(e);
+                transformExceptionToNativeNode.execute(null, e);
                 result = getNativeNullNode.execute();
             }
-            return result;
+            return toSulongNode.execute(result);
         }
     }
 
@@ -170,23 +158,20 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         @ExportMessage
         protected int execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Cached CallTernaryMethodNode callTernaryMethodNode,
                         @Cached ToJavaNode toJavaNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
-            if (arguments.length != 3) {
+                        @Cached("createBinaryProfile()") ConditionProfile arityProfile,
+                        @Cached BranchProfile errorProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedMessageException {
+            if (arityProfile.profile(arguments.length != 3)) {
                 throw ArityException.create(3, arguments.length);
             }
-            Object[] converted = new Object[3];
-            converted[0] = toJavaNode.execute(arguments[0]);
-            converted[1] = toJavaNode.execute(arguments[1]);
-            converted[2] = toJavaNode.execute(arguments[2]);
             try {
-                executeNode.execute(lib.getDelegate(this), converted);
+                callTernaryMethodNode.execute(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
                 return 0;
             } catch (PException e) {
-                PythonContext context = contextRef.get();
-                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-                context.setCurrentException(e);
+                errorProfile.enter();
+                transformExceptionToNativeNode.execute(null, e);
                 return -1;
             }
         }
@@ -204,27 +189,22 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached PythonAbstractObject.PExecuteNode executeNode,
+                        @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) throws ArityException, UnsupportedMessageException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
-            Object[] converted = new Object[2];
-            converted[0] = toJavaNode.execute(arguments[0]);
             assert arguments[1] instanceof Number;
-            converted[1] = arguments[1];
             Object result;
             try {
-                result = toSulongNode.execute(executeNode.execute(lib.getDelegate(this), converted));
+                result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]);
             } catch (PException e) {
-                PythonContext context = contextRef.get();
-                e.getExceptionObject().reifyException(context.peekTopFrameInfo());
-                context.setCurrentException(e);
+                transformExceptionToNativeNode.execute(null, e);
                 result = getNativeNullNode.execute();
             }
-            return result;
+            return toSulongNode.execute(result);
         }
     }
 

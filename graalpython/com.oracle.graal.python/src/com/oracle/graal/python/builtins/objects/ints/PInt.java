@@ -186,6 +186,12 @@ public final class PInt extends PythonBuiltinObject {
         }
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean canBeIndex() {
+        return true;
+    }
+
     @Override
     public int hashCode() {
         return value.hashCode();

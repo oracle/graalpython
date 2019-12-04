@@ -27,15 +27,19 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferLibrary.class)
 public final class PByteArray extends PSequence implements PIBytesLike {
 
     private SequenceStorage store;
@@ -93,8 +97,20 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         store.reverse();
     }
 
-    @Override
-    public PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes) {
-        return factory.createByteArray(bytes);
+    @ExportMessage
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(store);
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(
+                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+        return toByteArrayNode.execute(store);
     }
 }

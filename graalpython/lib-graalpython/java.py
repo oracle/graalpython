@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import posix
 import sys
 import _frozen_importlib
 
@@ -161,6 +162,39 @@ class JavaImportFinder:
                    return _frozen_importlib.ModuleSpec(fullname, JavaPackageLoader, is_package=True)
                 else:
                     return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
+
+
+if sys.graal_python_jython_emulation_enabled:
+    class JarImportLoader:
+        def __init__(self, code):
+            self.code = code
+
+        def create_module(self, spec):
+            newmod = _frozen_importlib._new_module(spec.name)
+            newmod.__path__ = self.code.co_filename
+            return newmod
+
+        def exec_module(self, module):
+            exec(self.code, module.__dict__)
+
+
+    class JarImportFinder:
+        def __init__(self):
+            self.zipimport = __import__("zipimport")
+
+        def find_spec(self, fullname, path, target=None):
+            for path in sys.path:
+                if ".jar!" in path:
+                    zipimport_path = path.replace(".jar!/", ".jar/").replace(".jar!", ".jar/")
+                    zipimporter = self.zipimport.zipimporter(zipimport_path)
+                    if zipimporter.find_module(fullname):
+                        if zipimporter.is_package(fullname):
+                            return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(zipimporter.get_code(fullname)), is_package=True)
+                        else:
+                            return _frozen_importlib.ModuleSpec(fullname, JarImportLoader(zipimporter.get_code(fullname)), is_package=False)
+
+
+    sys.meta_path.append(JarImportFinder())
 
 
 sys.meta_path.append(JavaImportFinder())
