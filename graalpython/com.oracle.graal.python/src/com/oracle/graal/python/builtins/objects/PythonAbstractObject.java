@@ -680,7 +680,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     int year = castToIntNode.execute(lib.readMember(this, "year"));
                     int month = castToIntNode.execute(lib.readMember(this, "month"));
                     int day = castToIntNode.execute(lib.readMember(this, "day"));
-                    return LocalDate.of(year, month, day);
+                    return createLocalDate(year, month, day);
                 } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
                     throw UnsupportedMessageException.create();
                 }
@@ -693,7 +693,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
                     int month = castToIntNode.execute(lib.readMember(this, "tm_mon"));
                     int day = castToIntNode.execute(lib.readMember(this, "tm_mday"));
-                    return LocalDate.of(year, month, day);
+                    return createLocalDate(year, month, day);
                 } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
                     throw UnsupportedMessageException.create();
                 }
@@ -739,7 +739,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     int min = castToIntNode.execute(lib.readMember(this, "minute"));
                     int sec = castToIntNode.execute(lib.readMember(this, "second"));
                     int micro = castToIntNode.execute(lib.readMember(this, "microsecond"));
-                    return LocalTime.of(hour, min, sec, micro);
+                    return createLocalTime(hour, min, sec, micro);
                 } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
                     throw UnsupportedMessageException.create();
                 }
@@ -752,7 +752,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
                     int min = castToIntNode.execute(lib.readMember(this, "tm_min"));
                     int sec = castToIntNode.execute(lib.readMember(this, "tm_sec"));
-                    return LocalTime.of(hour, min, sec);
+                    return createLocalTime(hour, min, sec, 0);
                 } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
                     throw UnsupportedMessageException.create();
                 }
@@ -834,7 +834,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
                         if (delta != PNone.NONE) {
                             int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
-                            return ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(seconds));
+                            return createZoneId(seconds);
                         }
                     }
                 } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
@@ -847,7 +847,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
                         if (delta != PNone.NONE) {
                             int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
-                            return ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(seconds));
+                            return createZoneId(seconds);
                         }
                     }
                 } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
@@ -864,10 +864,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         Object tm_gmtoffset = lib.readMember(this, "tm_gmtoff");
                         if (tm_gmtoffset != PNone.NONE) {
                             int seconds = castToIntNode.execute(tm_gmtoffset);
-                            return ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(seconds));
+                            return createZoneId(seconds);
                         }
                         if (tm_zone instanceof String) {
-                            return ZoneId.of((String) tm_zone);
+                            return createZoneId((String) tm_zone);
                         }
                     }
                 } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
@@ -876,6 +876,26 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
         throw UnsupportedMessageException.create();
+    }
+
+    @TruffleBoundary
+    private ZoneId createZoneId(int utcDeltaInSeconds) {
+        return ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(utcDeltaInSeconds));
+    }
+
+    @TruffleBoundary
+    private ZoneId createZoneId(String zone) {
+        return ZoneId.of(zone);
+    }
+
+    @TruffleBoundary
+    private LocalTime createLocalTime(int hour, int min, int sec, int micro) {
+        return LocalTime.of(hour, min, sec, micro);
+    }
+
+    @TruffleBoundary
+    private LocalDate createLocalDate(int year, int month, int day) {
+        return LocalDate.of(year, month, day);
     }
 
     @GenerateUncached
