@@ -92,7 +92,7 @@ public abstract class CallNode extends PNodeWithContext {
         return executeInternal(null, callableObject, arguments, keywords);
     }
 
-    public final Object execute(Object callableObject, Object[] arguments) {
+    public final Object execute(Object callableObject, Object... arguments) {
         return executeInternal(null, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 

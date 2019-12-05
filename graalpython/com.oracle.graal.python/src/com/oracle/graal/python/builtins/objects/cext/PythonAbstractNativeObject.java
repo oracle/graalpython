@@ -162,7 +162,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     public abstract static class GetDict {
         @Specialization
         public static PHashingCollection getNativeDictionary(PythonAbstractNativeObject self,
-                        @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached ToSulongNode toSulong,
                         @Exclusive @Cached ToJavaNode toJava,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,

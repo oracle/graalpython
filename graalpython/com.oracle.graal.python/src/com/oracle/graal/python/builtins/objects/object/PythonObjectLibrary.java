@@ -49,6 +49,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
@@ -189,6 +190,16 @@ public abstract class PythonObjectLibrary extends Library {
     public boolean isHashable(Object receiver) {
         return false;
     }
+
+    public final long hash(VirtualFrame frame, Object receiver) {
+        return withFrameHash(receiver, frame);
+    }
+
+    public long withFrameHash(Object receiver, Frame frame) {
+        return hash(receiver);
+    }
+
+    public abstract long hash(Object receiver);
 
     /**
      * Checks whether the receiver is a Python an indexable object. As described in the

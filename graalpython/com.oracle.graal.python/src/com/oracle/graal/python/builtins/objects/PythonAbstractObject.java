@@ -112,6 +112,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -661,10 +663,52 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean isHashable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+    public final boolean isHashable(@Shared("lookupHash") @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         return dataModelLibrary.isCallable(hashAttr);
+    }
+
+    @ExportMessage
+    public long hash(@Shared("lookupHash") @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+                    @Shared("raiseHash") @Cached PRaiseNode raise,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
+        Object result = CallNode.getUncached().execute(hashAttr, this);
+        return callHashAttr(raise, interopLib, hashAttr, result);
+    }
+
+    @ExportMessage
+    public long withFrameHash(Frame frame,
+                    @Shared("lookupHash") @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+                    @Cached CallNode callNode,
+                    @Shared("raiseHash") @Cached PRaiseNode raise,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
+        Object result = callNode.execute((VirtualFrame) frame, hashAttr, this);
+        return callHashAttr(raise, interopLib, hashAttr, result);
+    }
+
+    private static long callHashAttr(PRaiseNode raise, InteropLibrary interopLib, Object hashAttr, Object result) {
+        if (interopLib.fitsInLong(hashAttr)) {
+            try {
+                return interopLib.asLong(result);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        }
+        throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
+    }
+
+    private Object getHashAttr(LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode, PRaiseNode raise, PythonObjectLibrary lib) {
+        Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
+        if (!lib.isCallable(hashAttr)) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "unhashable type: '%p'", this);
+        }
+        return hashAttr;
     }
 
     @ExportMessage

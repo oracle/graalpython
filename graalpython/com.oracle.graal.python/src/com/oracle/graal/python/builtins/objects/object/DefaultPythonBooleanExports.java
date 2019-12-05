@@ -61,4 +61,9 @@ final class DefaultPythonBooleanExports {
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Boolean value) {
         return PythonBuiltinClassType.Boolean;
     }
+
+    @ExportMessage
+    static long hash(Boolean value) {
+        return value ? 1 : 0;
+    }
 }
