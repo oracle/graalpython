@@ -209,7 +209,7 @@ PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
               kind * (length + 1));
     assert(_PyUnicode_CheckConsistency(self, 1));
     Py_DECREF(unicode);
-    return (PyUnicodeObject*) polyglot_from_PyUnicodeObject(self);
+    return (PyUnicodeObject*) polyglot_from_PyUnicodeObject((PyUnicodeObject*)self);
 }
 
 PyObject* PyUnicode_FromString(const char* o) {
@@ -348,9 +348,8 @@ PyObject* PyUnicode_FromObject(PyObject* o) {
     return UPCALL_CEXT_O(_jls_PyUnicode_FromObject, native_to_java(o));
 }
 
-UPCALL_ID(PyUnicode_GetLength);
 Py_ssize_t PyUnicode_GetLength(PyObject *unicode) {
-    return UPCALL_CEXT_L(_jls_PyUnicode_GetLength, native_to_java(unicode));
+    return PyUnicode_GET_LENGTH(unicode);
 }
 
 UPCALL_ID(PyUnicode_Concat);

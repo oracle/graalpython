@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.string.StringLenNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
