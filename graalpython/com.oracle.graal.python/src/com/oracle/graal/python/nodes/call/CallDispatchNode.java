@@ -34,14 +34,17 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
+@GenerateUncached
 public abstract class CallDispatchNode extends Node {
 
     protected static InvokeNode createInvokeNode(PFunction callee) {
@@ -64,13 +67,25 @@ public abstract class CallDispatchNode extends Node {
         return CallDispatchNodeGen.create();
     }
 
+    public static CallDispatchNode getUncached() {
+        return CallDispatchNodeGen.getUncached();
+    }
+
     protected Assumption singleContextAssumption() {
         return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
-    public abstract Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments);
+    public final Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments) {
+        return executeInternal(frame, callee, arguments);
+    }
 
-    public abstract Object executeCall(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments);
+    public final Object executeCall(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
+        return executeInternal(frame, callee, arguments);
+    }
+
+    protected abstract Object executeInternal(Frame frame, PFunction callee, Object[] arguments);
+
+    protected abstract Object executeInternal(Frame frame, PBuiltinFunction callee, Object[] arguments);
 
     // We only have a single context and this function never changed its code
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
@@ -96,7 +111,7 @@ public abstract class CallDispatchNode extends Node {
     }
 
     // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-    @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
@@ -117,15 +132,15 @@ public abstract class CallDispatchNode extends Node {
         return invoke.execute(frame, null, null, arguments);
     }
 
-    @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCt"})
-    protected Object callFunctionUncached(VirtualFrame frame, PFunction callee, Object[] arguments,
-                    @Cached("create()") GenericInvokeNode invoke) {
-        return invoke.execute(frame, callee, arguments);
+    @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCode", "callFunctionCachedCt"})
+    protected Object callFunctionUncached(Frame frame, PFunction callee, Object[] arguments,
+                    @Cached GenericInvokeNode invoke) {
+        return invoke.executeInternal(frame, callee, arguments);
     }
 
     @Specialization(replaces = {"callBuiltinFunctionCached", "callBuiltinFunctionCachedCt"})
-    protected Object callBuiltinFunctionUncached(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments,
-                    @Cached("create()") GenericInvokeNode invoke) {
-        return invoke.execute(frame, callee, arguments);
+    protected Object callBuiltinFunctionUncached(Frame frame, PBuiltinFunction callee, Object[] arguments,
+                    @Cached GenericInvokeNode invoke) {
+        return invoke.executeInternal(frame, callee, arguments);
     }
 }
