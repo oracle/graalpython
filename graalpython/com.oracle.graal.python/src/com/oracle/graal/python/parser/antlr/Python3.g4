@@ -412,7 +412,18 @@ parameters returns [ArgDefListBuilder result]
 typedargslist [ArgDefListBuilder args]
 :
     (
-	defparameter[args] ( ',' defparameter[args] )*
+        defparameter[args] ( ',' defparameter[args] )* ',' '/' 
+            ((',' defparameter[args] ( ',' defparameter[args] )*)?
+                ( ',' 
+                    ( splatparameter[args]	
+                        ( ',' defparameter[args])*
+                        ( ',' ( kwargsparameter[args] ','? )?
+                        )?
+                        | kwargsparameter[args] ','?
+                    )?
+                )?
+            )?
+	| defparameter[args] ( ',' defparameter[args] )*
             ( ',' 
                 ( splatparameter[args]	
                     ( ',' defparameter[args])*
@@ -436,11 +447,13 @@ defparameter [ArgDefListBuilder args]
 	( ':' test { type = $test.result; } )?
 	( '=' test { defValue = $test.result; } )?
 	{ 
-            if (defValue == null && args.hasDefaultParameter() && !args.hasSplat()) {
-                throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
+            ArgDefListBuilder.AddParamResult result = args.addParam($NAME.text, type, defValue); 
+            switch(result) {
+                case NONDEFAULT_FOLLOWS_DEFAULT:
+                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
+                case DUPLICATED_ARGUMENT:
+                    throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
-            args.addParam($NAME.text, type, defValue); 
-            
         }
 ;
 

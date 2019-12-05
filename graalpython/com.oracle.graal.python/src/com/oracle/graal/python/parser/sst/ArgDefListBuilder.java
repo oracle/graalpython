@@ -48,8 +48,10 @@ import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class ArgDefListBuilder {
 
@@ -87,16 +89,30 @@ public final class ArgDefListBuilder {
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;
     private List<ParameterWithDefValue> kwargsWithDefValue;
+    private final Set<String> paramNames;
     private int splatIndex = -1;
     private int kwarIndex = -1;
     private int countOfTypedParams = 0;
 
     public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
+        this.paramNames = new HashSet<>();
         this.scopeEnvironment = scopeEnvironment;
     }
 
-    public void addParam(String name, SSTNode type, SSTNode defValue) {
-        // System.out.println("Param: " + name);
+    public static enum AddParamResult {
+        OK, // was added without an error
+        NONDEFAULT_FOLLOWS_DEFAULT, //non-default argument follows default argument
+        DUPLICATED_ARGUMENT//duplicate argument 'x' in function definition
+    };
+    
+    public AddParamResult addParam(String name, SSTNode type, SSTNode defValue) {
+        if (paramNames.contains(name)) {
+            return AddParamResult.DUPLICATED_ARGUMENT;
+        }
+        if (defValue == null && hasDefaultParameter() && !hasSplat()) {
+            return AddParamResult.NONDEFAULT_FOLLOWS_DEFAULT;
+        }
+        paramNames.add(name);
         Parameter arg = defValue == null ? new Parameter(name, type) : new ParameterWithDefValue(name, type, defValue);
         if (type != null) {
             countOfTypedParams++;
@@ -124,6 +140,7 @@ public final class ArgDefListBuilder {
             }
             kwargs.add(arg);
         }
+        return AddParamResult.OK;
     }
 
     public void addSplat(String name, SSTNode type) {

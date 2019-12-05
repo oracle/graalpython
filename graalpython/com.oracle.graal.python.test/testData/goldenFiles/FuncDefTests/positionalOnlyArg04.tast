@@ -1,0 +1,56 @@
+ModuleRootNode Name: <module 'positionalOnlyArg04'> SourceSection: [0,30]`def name(p1, p2=None...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,30]`def name(p1, p2=None...`
+    ExpressionWithSideEffect SourceSection: [0,30]`def name(p1, p2=None...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,30]`def name(p1, p2=None...`
+          Identifier: name
+          FunctionDefinitionNode Name: name SourceSection: None
+            Arguments:
+              ObjectLiteralNode SourceSection: [16,20]`None`
+            KwArguments: None
+            Documentation: StringLiteralNode: Empty
+            FreeVarSlots: None
+            ExecutionSlots:
+              FreeVarsSlots: None
+              CellVarsSlots: None
+            FunctionRootNode SourceSection: [0,30]`def name(p1, p2=None...`
+              Name: name
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                Param Names: p1, p2
+              CelVars: None
+              FreeVars: None
+              NeedsCellFrame: False
+              FrameDescriptor: 3 slots [p1, p2, <return_val>]
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              InnerRootNode SourceSection: [0,30]`def name(p1, p2=None...`
+                ReturnTargetNode SourceSection: [0,30]`def name(p1, p2=None...`
+                  Body: BlockNode SourceSection: None
+                    BlockNode SourceSection: None
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: p1
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,p1,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                      WriteLocalVariableNodeGen SourceSection: None
+                        Identifier: p2
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [1,p2,Illegal]
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 1
+                    ExpressionStatementNode SourceSection: [26,30]`pass`
+                      EmptyNode SourceSection: [26,30]`pass`
+                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                    Frame: [2,<return_val>,Illegal]
+                    ReadVariableFromFrameNodeGen SourceSection: None
