@@ -242,7 +242,7 @@ public class MMapBuiltins extends PythonBuiltins {
         public abstract long executeLong(VirtualFrame frame, PMMap self, Object idxObj);
 
         @Specialization(guards = "!isPSlice(idxObj)")
-        int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
+        int doSingle(PMMap self, Object idxObj,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
                         @Cached("create()") CastToJavaLongNode castToLongNode,
@@ -271,7 +271,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doSlice(VirtualFrame frame, PMMap self, PSlice idx,
+        Object doSlice(PMMap self, PSlice idx,
                         @Cached("create()") ReadFromChannelNode readNode,
                         @Cached("create()") InternalLenNode lenNode) {
             try {
@@ -379,7 +379,7 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization
-        long len(VirtualFrame frame, PMMap self,
+        long len(PMMap self,
                         @Cached("create()") InternalLenNode lenNode) {
             return lenNode.execute(self);
         }
@@ -442,7 +442,7 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class SizeNode extends PythonBuiltinNode {
 
         @Specialization
-        long size(VirtualFrame frame, PMMap self,
+        long size(PMMap self,
                         @Cached("create()") InternalLenNode lenNode) {
             return lenNode.execute(self);
         }

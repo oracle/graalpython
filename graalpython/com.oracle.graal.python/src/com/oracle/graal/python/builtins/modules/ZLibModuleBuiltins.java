@@ -232,7 +232,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long doit(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+        public long doitNone(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
                         @Cached ToBytesNode toBytesNode) {
             return doCRC32(toBytesNode.execute(frame, data));
         }
@@ -245,7 +245,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long doit(VirtualFrame frame, Object data, long value,
+        public long doitLong(VirtualFrame frame, Object data, long value,
                         @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
@@ -321,13 +321,13 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long doit(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+        public long doitNone(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
                         @Cached ToBytesNode toBytesNode) {
             return doAdler32(toBytesNode.execute(frame, data));
         }
 
         @Specialization
-        public long doit(VirtualFrame frame, Object data, long value,
+        public long doitLong(VirtualFrame frame, Object data, long value,
                         @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
@@ -560,13 +560,13 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
+        public PBytes doitNone(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, long level,
+        public PBytes doitLong(PIBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
                 throw raise(ZLibError, "Bad compression level");
@@ -636,12 +636,12 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes decompress(VirtualFrame frame, PIBytesLike data, byte wbits, int bufsize) {
-            return decompress(frame, data, (long) wbits, bufsize);
+        public PBytes decompress(PIBytesLike data, byte wbits, int bufsize) {
+            return decompress(data, (long) wbits, bufsize);
         }
 
         @Specialization
-        public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, int bufsize) {
+        public PBytes decompress(PIBytesLike data, long wbits, int bufsize) {
             // checking bufsize
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, "bufsize must be non-negative");

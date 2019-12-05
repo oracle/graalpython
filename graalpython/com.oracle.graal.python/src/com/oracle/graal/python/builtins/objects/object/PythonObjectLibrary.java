@@ -41,40 +41,273 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
+import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.Node;
 
 @GenerateLibrary
+@DefaultExport(DefaultPythonBooleanExports.class)
+@DefaultExport(DefaultPythonIntegerExports.class)
+@DefaultExport(DefaultPythonLongExports.class)
+@DefaultExport(DefaultPythonDoubleExports.class)
+@DefaultExport(DefaultPythonStringExports.class)
+@DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
-    public boolean hasDict(PythonAbstractObject receiver) {
+    /**
+     * @return {@code true} if the object has a {@code __dict__} attribute
+     */
+    public boolean hasDict(Object receiver) {
         return false;
     }
 
+    /**
+     * Note that not returning a value from this message does not mean that the object cannot have a
+     * {@code __dict__}. It may be that the object has inlined the representation of its
+     * {@code __dict__} and thus no object is available, yet.
+     *
+     * @return the value in {@code __dict__} or {@code null}, if there is none.
+     * @see #hasDict
+     */
     @Abstract(ifExported = "hasDict")
-    public PHashingCollection getDict(PythonAbstractObject receiver) {
+    public PHashingCollection getDict(Object receiver) {
         return null;
     }
 
+    /**
+     * Set the {@code __dict__} attribute of the object
+     */
     @Abstract(ifExported = "hasDict")
-    public void setDict(PythonAbstractObject receiver, PHashingCollection dict) throws UnsupportedMessageException {
+    public void setDict(Object receiver, PHashingCollection dict) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
+    /**
+     * @return the Python type of the receiver
+     */
     @Abstract
-    public LazyPythonClass getLazyPythonClass(PythonAbstractObject receiver) {
+    public LazyPythonClass getLazyPythonClass(Object receiver) {
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
-    public void setLazyPythonClass(PythonAbstractObject receiver, LazyPythonClass cls) {
+    /**
+     * Sets the {@code __class__} value of the receiver. This is not supported for all kinds of
+     * objects.
+     */
+    public void setLazyPythonClass(Object receiver, LazyPythonClass cls) {
         PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'", receiver);
+    }
+
+    /**
+     * Checks whether the receiver is a Python iterable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__iter__</b>
+     * special method. If not defined, it will also check for iterable objects that implement the
+     * following special methods: <b>
+     * <ul>
+     * <li>__getitem__</li>
+     * <li>__next__</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if object is iterable
+     */
+    public boolean isIterable(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python callable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__call__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object is callable
+     */
+    public boolean isCallable(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python context manager. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model </a>,
+     * <a href="https://www.python.org/dev/peps/pep-0343/">PEP 343</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the following
+     * special methods: <b>
+     * <ul>
+     * <li>__enter__</li>
+     * <li>__exit__</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if object is a context manager
+     */
+    public boolean isContextManager(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python hashable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__hash__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object is hashable
+     */
+    public boolean isHashable(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python an indexable object. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
+     * special method.
+     *
+     * @param receiver the receiver Object
+     * @return True if object is indexable
+     */
+    public boolean canBeIndex(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python sequence. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * See {@link #isSequenceType(Object)}
+     *
+     * @param receiver the receiver Object
+     * @return True if object is a Python sequence object
+     */
+    public boolean isSequence(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python mapping. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * See {@link #isMappingType(Object)}
+     *
+     * @param receiver the receiver Object
+     * @return True if object is a Python mapping object
+     */
+    public boolean isMapping(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python sequence type. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks for the implementation of the following
+     * special methods: <b>
+     * <ul>
+     * <li>__getitem__</li>
+     * <li>__len__</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if a sequence type
+     */
+    public boolean isSequenceType(Object receiver) {
+        return false;
+    }
+
+    /**
+     * Checks whether the receiver is a Python mapping type. As described in the
+     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
+     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
+     * Containers</a>
+     *
+     * <br>
+     * Specifically the default implementation checks whether the receiver
+     * {@link #isSequenceType(Object)} and for the implementation of the following special methods:
+     * <b>
+     * <ul>
+     * <li>keys</li>
+     * <li>items</li>
+     * <li>values</li>
+     * </ul>
+     * </b>
+     *
+     * @param receiver the receiver Object
+     * @return True if a mapping type
+     */
+    public boolean isMappingType(Object receiver) {
+        return false;
+    }
+
+    @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
+    public boolean isBuffer(Object receiver) {
+        return false;
+    }
+
+    @Abstract(ifExported = {"isBuffer", "getBufferBytes"})
+    public int getBufferLength(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @Abstract(ifExported = {"isBuffer", "getBufferLength"})
+    public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
+        PythonContext context = contextRef.get();
+        PException caughtException = IndirectCallContext.enter(frame, context, callNode);
+        try {
+            return library.isIterable(object);
+        } finally {
+            IndirectCallContext.exit(frame, context, caughtException);
+        }
     }
 
     static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);

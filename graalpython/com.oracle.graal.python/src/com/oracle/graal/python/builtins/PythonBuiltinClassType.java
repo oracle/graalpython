@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -45,6 +46,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public enum PythonBuiltinClassType implements LazyPythonClass {
 
     ForeignObject(BuiltinNames.FOREIGN),
@@ -440,5 +442,24 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.hasMemberWriteSideEffects(context.getCore().lookupType(this), key);
+    }
+
+    @ExportMessage
+    static boolean isSequenceType(PythonBuiltinClassType type,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.isSequenceType(context.getCore().lookupType(type));
+    }
+
+    @ExportMessage
+    static boolean isMappingType(PythonBuiltinClassType type,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.isMappingType(context.getCore().lookupType(type));
+    }
+
+    @ExportMessage
+    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
+        return PythonClass;
     }
 }

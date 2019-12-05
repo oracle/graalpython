@@ -66,6 +66,7 @@ public final class PEllipsis extends PythonAbstractObject {
         return this.hashCode() - o.hashCode();
     }
 
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public LazyPythonClass getLazyPythonClass() {

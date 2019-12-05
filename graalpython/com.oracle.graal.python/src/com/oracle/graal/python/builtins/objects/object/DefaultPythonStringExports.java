@@ -38,31 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.bytes;
+package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
-import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
-import com.oracle.truffle.api.library.Library;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-@GenerateLibrary
-@DefaultExport(DefaultBufferStringExports.class)
-@SuppressWarnings("unused")
-public abstract class PythonBufferLibrary extends Library {
-
-    @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
-    public boolean isBuffer(Object receiver) {
-        return false;
+@ExportLibrary(value = PythonObjectLibrary.class, receiverType = String.class)
+final class DefaultPythonStringExports {
+    @ExportMessage
+    static boolean isIterable(@SuppressWarnings("unused") String str) {
+        return true;
     }
 
-    @Abstract(ifExported = "getBufferBytes")
-    public int getBufferLength(Object receiver) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
+    @ExportMessage
+    static boolean isHashable(@SuppressWarnings("unused") String value) {
+        return true;
     }
 
-    @Abstract(ifExported = "getBufferLength")
-    public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
+    @ExportMessage
+    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") String value) {
+        return PythonBuiltinClassType.PString;
+    }
+
+    @ExportMessage
+    static boolean isBuffer(@SuppressWarnings("unused") String str) {
+        return true;
+    }
+
+    @ExportMessage
+    static int getBufferLength(@SuppressWarnings("unused") String str) {
+        return getBufferBytes(str).length;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static byte[] getBufferBytes(String str) {
+        return str.getBytes();
     }
 }
