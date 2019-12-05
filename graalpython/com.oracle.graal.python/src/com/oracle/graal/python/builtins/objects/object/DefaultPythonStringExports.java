@@ -41,12 +41,8 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary.CallContext;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -81,42 +77,5 @@ final class DefaultPythonStringExports {
     @TruffleBoundary
     static byte[] getBufferBytes(String str) {
         return str.getBytes();
-    }
-
-    @ExportMessage
-    static class LeftEq {
-        private static byte fromBool(boolean x) {
-            return (byte) (x ? 1 : 0);
-        }
-
-        protected static byte plainString(PString other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(other.getCharSequence() instanceof String);
-        }
-
-        @Specialization
-        static byte eq(String self, String other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self.equals(other));
-        }
-
-        @Specialization(guards = "plainString(other)")
-        static byte eq(String self, PString other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self.equals(other.getCharSequence()));
-        }
-
-        @Specialization
-        static byte eqAnyPString(String self, PString other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self.equals(other.getValue()));
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static byte eq(String self, Object other, @SuppressWarnings("unused") CallContext context) {
-            return -1;
-        }
-    }
-
-    @ExportMessage
-    static long hash(String self, @SuppressWarnings("unused") CallContext context) {
-        return self.hashCode();
     }
 }

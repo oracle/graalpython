@@ -41,13 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary.CallContext;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -61,66 +55,5 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Double value) {
         return PythonBuiltinClassType.PFloat;
-    }
-
-    @ExportMessage
-    static class LeftEq {
-        private static byte fromBool(boolean x) {
-            return (byte) (x ? 1 : 0);
-        }
-
-        @Specialization
-        static byte eq(Double self, boolean other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(other ? self == 1 : self == 0);
-        }
-
-        @Specialization
-        static byte eq(Double self, int other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other);
-        }
-
-        @Specialization
-        static byte eq(Double self, long other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other);
-        }
-
-        @Specialization
-        static byte eq(Double self, double other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        static byte eq(Double self, PInt other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other.doubleValue());
-        }
-
-        @Specialization
-        static byte eq(Double self, PFloat other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other.getValue());
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static byte eq(Double self, Object other, @SuppressWarnings("unused") CallContext context) {
-            return -1;
-        }
-    }
-
-    @ExportMessage
-    static class Hash {
-        static boolean noDecimals(Double self, @SuppressWarnings("unused") CallContext context) {
-            return self % 1 == 0;
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        static long hashDoubleNoDecimals(Double self, @SuppressWarnings("unused") CallContext context) {
-            return self.longValue();
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        static long hashDoubleWithDecimals(Double self, @SuppressWarnings("unused") CallContext context) {
-            return Double.valueOf(self).hashCode();
-        }
     }
 }

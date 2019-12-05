@@ -41,12 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary.CallContext;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -65,53 +60,5 @@ final class DefaultPythonIntegerExports {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
         return PythonBuiltinClassType.PInt;
-    }
-
-    @ExportMessage
-    static class LeftEq {
-        private static byte fromBool(boolean x) {
-            return (byte) (x ? 1 : 0);
-        }
-
-        @Specialization
-        static byte eq(Integer self, boolean other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(other ? self == 1 : self == 0);
-        }
-
-        @Specialization
-        static byte eq(Integer self, int other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other);
-        }
-
-        @Specialization
-        static byte eq(Integer self, long other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other);
-        }
-
-        @Specialization
-        static byte eq(Integer self, double other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other);
-        }
-
-        @Specialization
-        static byte eq(Integer self, PInt other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(other.compareTo((int) self) == 0);
-        }
-
-        @Specialization
-        static byte eq(Integer self, PFloat other, @SuppressWarnings("unused") CallContext context) {
-            return fromBool(self == other.getValue());
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static byte eq(Integer self, Object other, @SuppressWarnings("unused") CallContext context) {
-            return -1;
-        }
-    }
-
-    @ExportMessage
-    static long hash(Integer self, @SuppressWarnings("unused") CallContext context) {
-        return self;
     }
 }
