@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -60,5 +61,21 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") String value) {
         return PythonBuiltinClassType.PString;
+    }
+
+    @ExportMessage
+    static boolean isBuffer(@SuppressWarnings("unused") String str) {
+        return true;
+    }
+
+    @ExportMessage
+    static int getBufferLength(@SuppressWarnings("unused") String str) {
+        return getBufferBytes(str).length;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static byte[] getBufferBytes(String str) {
+        return str.getBytes();
     }
 }

@@ -285,6 +285,21 @@ public abstract class PythonObjectLibrary extends Library {
         return false;
     }
 
+    @Abstract(ifExported = {"getBufferBytes", "getBufferLength"})
+    public boolean isBuffer(Object receiver) {
+        return false;
+    }
+
+    @Abstract(ifExported = {"isBuffer", "getBufferBytes"})
+    public int getBufferLength(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @Abstract(ifExported = {"isBuffer", "getBufferLength"})
+    public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
         PythonContext context = contextRef.get();
         PException caughtException = IndirectCallContext.enter(frame, context, callNode);

@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.bytes.PythonBufferLibrary;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -2710,8 +2709,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @CachedLibrary("codestring") PythonBufferLibrary codestringBufferLib,
-                        @CachedLibrary("lnotab") PythonBufferLibrary lnotabBufferLib,
+                        @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
+                        @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
             byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
