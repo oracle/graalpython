@@ -40,9 +40,6 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
@@ -68,6 +65,7 @@ import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
@@ -188,6 +186,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
@@ -640,7 +640,7 @@ public final class Python3Core implements PythonCore {
             // use an anonymous module for the side-effects
             mod = factory().createPythonModule("__anonymous__");
         }
-        GenericInvokeNode.getUncached().execute(null, callTarget, PArguments.withGlobals(mod));
+        GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
     public PythonObjectFactory factory() {

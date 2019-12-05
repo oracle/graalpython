@@ -198,7 +198,7 @@ public class PThreadState extends PythonNativeWrapper {
                 // we use 'GetTracebackNode' via a call to have a frame
                 Object[] arguments = PArguments.create(1);
                 PArguments.setArgument(arguments, 0, exceptionObject);
-                result = invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
+                result = invokeNode.execute(ensureCallTarget(context.getLanguage()), arguments);
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -242,7 +242,7 @@ public class PThreadState extends PythonNativeWrapper {
                 // we use 'GetTracebackNode' via a call to have a frame
                 Object[] arguments = PArguments.create(1);
                 PArguments.setArgument(arguments, 0, exceptionObject);
-                result = invokeNode.execute(null, ensureCallTarget(context.getLanguage()), arguments);
+                result = invokeNode.execute(ensureCallTarget(context.getLanguage()), arguments);
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
