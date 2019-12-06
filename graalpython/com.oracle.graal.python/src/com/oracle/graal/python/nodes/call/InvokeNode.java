@@ -30,18 +30,21 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class InvokeNode extends Node {
+public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
         return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
     }
@@ -72,12 +75,6 @@ public abstract class InvokeNode extends Node {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
 
-    @Override
-    public Node copy() {
-        InvokeNode copy = (InvokeNode) super.copy();
-        return copy;
-    }
-
     public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
         return GenericInvokeNode.getUncached().execute(callee, arguments);
     }
@@ -88,6 +85,32 @@ public abstract class InvokeNode extends Node {
 }
 
 abstract class DirectInvokeNode extends InvokeNode {
+    /**
+     * Flags indicating if some child node of this root node (or a callee) eventually needs the
+     * caller or exception state. Hence, the caller of this root node should provide the exception
+     * state in the arguments.
+     */
+    @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
+    @CompilationFinal private Assumption dontNeedCallerFrame = createCallerFrameAssumption();
+
+    private static Assumption createCallerFrameAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need caller frame");
+    }
+
+    private static Assumption createExceptionStateAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need exception state");
+    }
+
+    @Override
+    public Assumption needNotPassFrameAssumption() {
+        return dontNeedCallerFrame;
+    }
+
+    @Override
+    public Assumption needNotPassExceptionAssumption() {
+        return dontNeedExceptionState;
+    }
+
     @CompilationFinal private int state = 0;
 
     protected boolean profileIsNullFrame(boolean isNullFrame) {
@@ -113,5 +136,13 @@ abstract class DirectInvokeNode extends InvokeNode {
             throw new IllegalStateException("Invoke node was initialized for a non-null frame. Cannot use it with null frame now.");
         }
         return false;
+    }
+
+    @Override
+    public Node copy() {
+        DirectInvokeNode copy = (DirectInvokeNode) super.copy();
+        copy.dontNeedCallerFrame = createCallerFrameAssumption();
+        copy.dontNeedExceptionState = createExceptionStateAssumption();
+        return copy;
     }
 }

@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -60,8 +61,8 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -79,7 +80,19 @@ import com.oracle.truffle.api.source.Source;
 
 public abstract class CodeNodes {
 
-    public static class CreateCodeNode extends PNodeWithContext {
+    public static class CreateCodeNode extends PNodeWithContext implements IndirectCallNode {
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
 
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @CompilationFinal private ContextReference<PythonContext> contextRef;
@@ -93,11 +106,11 @@ public abstract class CodeNodes {
                         byte[] lnotab) {
 
             PythonContext context = getContextRef().get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 

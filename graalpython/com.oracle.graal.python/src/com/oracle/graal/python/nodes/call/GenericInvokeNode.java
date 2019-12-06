@@ -48,7 +48,9 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -61,6 +63,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class GenericInvokeNode extends InvokeNode {
+    private static final Assumption invalid = Truffle.getRuntime().createAssumption();
+    static {
+        invalid.invalidate();
+    }
+
     public static GenericInvokeNode create() {
         return GenericInvokeNodeGen.create();
     }
@@ -70,6 +77,16 @@ public abstract class GenericInvokeNode extends InvokeNode {
     }
 
     protected GenericInvokeNode() {
+    }
+
+    @Override
+    public Assumption needNotPassExceptionAssumption() {
+        return invalid;
+    }
+
+    @Override
+    public Assumption needNotPassFrameAssumption() {
+        return invalid;
     }
 
     /**

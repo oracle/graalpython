@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -75,8 +76,10 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -387,8 +390,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class BinaryUnionNode extends PNodeWithContext {
+    abstract static class BinaryUnionNode extends PNodeWithContext implements IndirectCallNode {
         @Child private Equivalence equivalenceNode;
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
 
         public abstract PBaseSet execute(VirtualFrame frame, PBaseSet container, HashingStorage left, Object right);
 
@@ -404,13 +419,13 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doHashingCollection(VirtualFrame frame, PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
-            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 for (Object key : other.getDictStorage().keys()) {
                     selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
             } finally {
-                IndirectCallContext.exit(frame, context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, state);
             }
             return container;
         }

@@ -2192,7 +2192,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Make slots into a tuple
                 }
                 PythonContext context = getContextRef().get();
-                PException caughtException = ForeignCallContext.enter(frame, context, this);
+                Object state = ForeignCallContext.enter(frame, context, this);
                 try {
                     PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
@@ -2206,7 +2206,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    ForeignCallContext.exit(frame, context, caughtException);
+                    ForeignCallContext.exit(frame, context, state);
                 }
             }
 
@@ -2670,7 +2670,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
             PythonContext context = getContextRef().get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 if (dataModelLibrary.isCallable(func)) {
                     return factory().createMethod(self, func);
@@ -2678,7 +2678,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, "first argument must be callable");
                 }
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
     }
@@ -2822,11 +2822,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         protected boolean isSequence(VirtualFrame frame, Object o, PythonObjectLibrary library) {
             PythonContext context = getContextRef().get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return library.isSequence(o);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
     }

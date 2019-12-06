@@ -101,6 +101,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -131,6 +132,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -2267,16 +2269,42 @@ public abstract class CExtNodes {
             transformToNative(context, PArguments.getCurrentFrameInfo(frame), e);
         }
 
+        protected static ConditionProfile[] getFlag() {
+            ConditionProfile[] flag = new ConditionProfile[1];
+            return flag;
+        }
+
         @Specialization(guards = "frame == null")
         void doWithoutFrame(@SuppressWarnings("unused") Frame frame, PException e,
+                        @Cached(value = "getFlag()", dimensions = 1) ConditionProfile[] flag,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            transformToNative(context, context.peekTopFrameInfo(), e);
+            PFrame.Reference ref = context.peekTopFrameInfo();
+            if (flag[0] == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // executed the first time, don't pollute the profile, we'll mark the caller to pass the info on the next call
+                flag[0] = ConditionProfile.createBinaryProfile();
+                if (ref == null) {
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                }
+            }
+            if (flag[0].profile(ref == null)) {
+                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+            }
+            transformToNative(context, ref, e);
         }
 
         @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
         void doGeneric(Frame frame, PException e,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PFrame.Reference ref = frame == null ? context.peekTopFrameInfo() : PArguments.getCurrentFrameInfo(frame);
+            PFrame.Reference ref;
+            if (frame == null) {
+                ref = context.peekTopFrameInfo();
+                if (ref == null) {
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(ref, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                }
+            } else {
+                ref = PArguments.getCurrentFrameInfo(frame);
+            }
             transformToNative(context, ref, e);
         }
 

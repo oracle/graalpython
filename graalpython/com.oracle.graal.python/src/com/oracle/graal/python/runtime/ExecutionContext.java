@@ -44,6 +44,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -131,10 +133,6 @@ public abstract class ExecutionContext {
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
                     if (curExc == null) {
-                        // bad, but we must provide the exception state
-
-                        // TODO: frames: check that this also set
-                        // needsExceptionState on our own root node
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
                         curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
@@ -275,6 +273,17 @@ public abstract class ExecutionContext {
 
     }
 
+    @ValueType
+    private static final class IndirectCallState {
+        private final PFrame.Reference info;
+        private final PException curExc;
+
+        private IndirectCallState(PFrame.Reference info, PException curExc) {
+            this.info = info;
+            this.curExc = curExc;
+        }
+    }
+
     public abstract static class IndirectCallContext {
         /**
          * Prepare a call from a Python frame to a callable without frame. This transfers the
@@ -313,29 +322,47 @@ public abstract class ExecutionContext {
          * </pre>
          * </p>
          */
-        public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+        public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
             if (frame == null || context == null) {
                 return null;
             }
-            PFrame.Reference prev = context.popTopFrameInfo();
-            assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
-                            "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
-            PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-            info.setCallNode(callNode);
-            // TODO: frames: add an assumption that none of the callers interop calls ever need
-            // these infos
-            context.setTopFrameInfo(info);
-            return ExceptionContext.enter(context, PArguments.getException(frame));
+            PFrame.Reference info = null;
+            if (callNode.calleeNeedsCallerFrame()) {
+                PFrame.Reference prev = context.popTopFrameInfo();
+                assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
+                    "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
+                info = PArguments.getCurrentFrameInfo(frame);
+                info.setCallNode((Node) callNode);
+                context.setTopFrameInfo(info);
+            }
+            PException curExc = null;
+            if (callNode.calleeNeedsExceptionState()) {
+                PException exceptionState = PArguments.getException(frame);
+                curExc = context.getCaughtException();
+                context.setCaughtException(exceptionState);
+            }
+
+            if (curExc == null && info == null) {
+                return null;
+            } else {
+                return new IndirectCallState(info, curExc);
+            }
         }
 
         /**
          * Cleanup after a call without frame. For more details, see
-         * {@link #enter(VirtualFrame, PythonContext, Node)}.
+         * {@link #enter}.
          */
-        public static void exit(VirtualFrame frame, PythonContext context, PException savedExceptionState) {
-            if (frame != null && context != null) {
+        public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
+            if (frame == null || context == null || savedState == null) {
+                return;
+            }
+            IndirectCallState state = (IndirectCallState) savedState;
+            if (state.info != null) {
                 context.popTopFrameInfo();
-                ExceptionContext.exit(context, savedExceptionState);
+            }
+            if (state.curExc != null) {
+                context.setCaughtException(state.curExc);
             }
         }
     }
@@ -343,11 +370,12 @@ public abstract class ExecutionContext {
     public abstract static class ForeignCallContext {
 
         /**
-         * Prepare a call from a Python frame to foreign callable. This will also call
-         * {@link IndirectCallContext#enter(VirtualFrame, PythonContext, Node)} to transfer the
-         * state to the context. In addition, this will acquire the interop lock from the
-         * {@link PythonContext} to ensure exclusive execution to prevent unsynchronized global
-         * state modification (which is in particular a problem when calling native code).
+         * Prepare a call from a Python frame to foreign callable. This will
+         * also call {@link IndirectCallContext#enter} to transfer the state to
+         * the context. In addition, this will acquire the interop lock from the
+         * {@link PythonContext} to ensure exclusive execution to prevent
+         * unsynchronized global state modification (which is in particular a
+         * problem when calling native code).
          *
          * <pre>
          * public abstract class SomeNode extends Node {
@@ -372,7 +400,7 @@ public abstract class ExecutionContext {
          * </pre>
          * </p>
          */
-        public static PException enter(VirtualFrame frame, PythonContext context, Node callNode) {
+        public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
             if (context == null) {
                 return null;
             }
@@ -384,11 +412,11 @@ public abstract class ExecutionContext {
 
         /**
          * Cleanup after an interop call. For more details, see
-         * {@link #enter(VirtualFrame, PythonContext, Node)}.
+         * {@link #enter}.
          */
-        public static void exit(VirtualFrame frame, PythonContext context, PException savedExceptionState) {
+        public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
             if (context != null) {
-                IndirectCallContext.exit(frame, context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, savedState);
                 if (!context.getSingleThreadedAssumption().isValid()) {
                     context.releaseInteropLock();
                 }
@@ -408,10 +436,6 @@ public abstract class ExecutionContext {
             if (calleeRootNode.needsExceptionState()) {
                 PException curExc = context.getCaughtException();
                 if (curExc == null) {
-                    // bad, but we must provide the exception state
-
-                    // TODO: frames: check that this also set
-                    // needsExceptionState on our own root node
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
                     curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
@@ -430,21 +454,5 @@ public abstract class ExecutionContext {
             // latest needed time
             context.setTopFrameInfo(frameInfo);
         }
-    }
-
-    public abstract static class ExceptionContext {
-
-        public static PException enter(PythonContext context, PException exceptionState) {
-            PException cur = context.getCaughtException();
-            context.setCaughtException(exceptionState);
-            return cur;
-        }
-
-        public static void exit(PythonContext context, PException savedExceptionState) {
-            if (context != null) {
-                context.setCaughtException(savedExceptionState);
-            }
-        }
-
     }
 }

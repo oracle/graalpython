@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -67,7 +68,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -99,10 +102,22 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
     }
 
     @ImportStatic(PGuards.class)
-    public abstract static class CastToListNode extends Node {
+    public abstract static class CastToListNode extends Node implements IndirectCallNode {
         @Child private GetLazyClassNode getClassNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
 
         public abstract PList execute(VirtualFrame frame, Object list);
 
@@ -144,11 +159,11 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached ConstructListNode constructListNode,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return constructListNode.execute(value);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -159,14 +174,14 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached PRaiseNode raise,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return constructListNode.execute(v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, "%s is not iterable", v);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 

@@ -1594,12 +1594,11 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("lookupAttrNode") @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-
-            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return new StringFormatter(context.getCore(), self).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
             } finally {
-                IndirectCallContext.exit(frame, context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 

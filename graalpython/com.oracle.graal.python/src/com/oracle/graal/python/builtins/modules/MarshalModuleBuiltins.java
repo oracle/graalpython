@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -76,9 +77,11 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -504,11 +507,23 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class UnmarshallerNode extends PNodeWithState {
+    public abstract static class UnmarshallerNode extends PNodeWithState implements IndirectCallNode {
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
         @Child private CodeNodes.CreateCodeNode createCodeNode;
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
 
         private int index;
         private byte[] data;
@@ -739,11 +754,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             reset();
             this.data = dataBytes;
-            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return readObject(0);
             } finally {
-                IndirectCallContext.exit(frame, context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 
