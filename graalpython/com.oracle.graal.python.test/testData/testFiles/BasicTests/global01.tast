@@ -49,9 +49,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                           Value: 2
                     ExpressionStatementNode SourceSection: [84,109]`print("Inside add():...`
                       PythonCallNodeGen SourceSection: [84,109]`print("Inside add():...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [90,105]`"Inside add():"`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [107,108]`c`
                           Identifier: c
@@ -64,15 +62,11 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [111,116]`add()`
         PythonCallNodeGen SourceSection: [111,116]`add()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: add
       PythonCallNodeGen SourceSection: [117,137]`print("In main:", c)...`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         StringLiteralNode SourceSection: [123,133]`"In main:"`
         ReadNameNodeGen SourceSection: [135,136]`c`
           Identifier: c

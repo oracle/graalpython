@@ -14,9 +14,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
             WriteNameNodeGen SourceSection: [49,98]`double_dict1 = {k:v*...`
               Identifier: double_dict1
               PythonCallNodeGen SourceSection: [65,97]`k:v*2 for (k,v) in d...`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 GeneratorExpressionNode SourceSection: [71,97]`for (k,v) in dict1.i...`
                   Name: [].<locals>.<genexp>:dict02:2
                   FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
@@ -96,9 +94,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                   GetIteratorExpressionNodeGen SourceSection: [84,97]`dict1.items()`
                     GetIteratorNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [84,97]`dict1.items()`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None
                         ReadNameNodeGen SourceSection: [84,89]`dict1`
                           Identifier: dict1

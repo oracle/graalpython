@@ -38,9 +38,7 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,inner,Illegal]
                       PythonCallNodeGen SourceSection: [15,26]`@decorator1`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         FunctionDefinitionNode Name: inner SourceSection: None
                           Arguments: None
                           KwArguments: None

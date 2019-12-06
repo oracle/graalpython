@@ -115,9 +115,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __add__
                                                     PythonCallNodeGen SourceSection: [91,100]`fn(*args)`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       PositionalArgumentsNode SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [95,99]`args`
                                                           Frame: [0,args,Illegal]
@@ -161,9 +159,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
       WriteNameNodeGen SourceSection: [151,198]`@mydecorator(3)↵def ...`
         Identifier: getNumber
         PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           FunctionDefinitionNode Name: getNumber SourceSection: None
             Arguments: None
             KwArguments: None
@@ -197,21 +193,15 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [151,166]`@mydecorator(3)`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [164,165]`3`
               Value: 3
             ReadNameNodeGen SourceSection: None
               Identifier: mydecorator
       PythonCallNodeGen SourceSection: [198,216]`print(getNumber())`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [204,215]`getNumber()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: getNumber
         ReadNameNodeGen SourceSection: None

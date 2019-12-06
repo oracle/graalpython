@@ -35,9 +35,7 @@ ModuleRootNode Name: <module 'call19'> SourceSection: [0,33]`def fn(): "in".form
                     BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [10,33]`"in".format(name="Ba...`
                       PythonCallNodeGen SourceSection: [10,33]`"in".format(name="Ba...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             StringLiteralNode SourceSection: [27,32]`"Baf"`

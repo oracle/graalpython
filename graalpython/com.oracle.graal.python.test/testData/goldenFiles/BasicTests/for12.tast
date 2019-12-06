@@ -62,9 +62,7 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [44,52]`print(a)`
                             PythonCallNodeGen SourceSection: [44,52]`print(a)`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [50,51]`a`
                                 Frame: [0,a,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

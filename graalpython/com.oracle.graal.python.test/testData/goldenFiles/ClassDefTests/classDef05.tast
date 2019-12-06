@@ -43,9 +43,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,<>temp1,Illegal]
                           PythonCallNodeGen SourceSection: [12,63]`class DerivedClassNa...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: DerivedClassName SourceSection: None
                               Arguments: None
                               KwArguments: None

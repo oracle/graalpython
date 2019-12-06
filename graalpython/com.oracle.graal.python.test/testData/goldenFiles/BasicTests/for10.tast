@@ -29,9 +29,7 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                   GetIteratorExpressionNodeGen SourceSection: [37,49]`range(2,num)`
                     GetIteratorNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [37,49]`range(2,num)`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [43,44]`2`
                         Value: 2
                       ReadNameNodeGen SourceSection: [45,48]`num`
@@ -43,9 +41,7 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
             GetIteratorExpressionNodeGen SourceSection: [11,23]`range(10,20)`
               GetIteratorNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [11,23]`range(10,20)`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [17,19]`10`
                   Value: 10
                 IntegerLiteralNode SourceSection: [20,22]`20`

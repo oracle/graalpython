@@ -120,9 +120,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               Identifier: ImportError
           ExpressionStatementNode SourceSection: [1394,1442]`_collections_abc.Mut...`
             PythonCallNodeGen SourceSection: [1394,1442]`_collections_abc.Mut...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1436,1441]`deque`
                 Identifier: deque
               GetCallAttributeNodeGen SourceSection: None
@@ -209,9 +207,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [1,obj,Illegal]
                           PythonCallNodeGen SourceSection: [1800,1831]`getattr(_collections...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1808,1824]`_collections_abc`
                               Identifier: _collections_abc
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -230,9 +226,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Module: warnings
                         ExpressionStatementNode SourceSection: [1864,2114]`warnings.warn("Using...`
                           PythonCallNodeGen SourceSection: [1864,2114]`warnings.warn("Using...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [1878,2057]`"Using or importing ...`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2081,2099]`DeprecationWarning`
                               Identifier: DeprecationWarning
@@ -250,9 +244,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [2123,2144]`globals()[name] = ob...`
                           PythonCallNodeGen SourceSection: [2123,2132]`globals()`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: globals
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -273,9 +265,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       BlockNode SourceSection: None
                     RaiseNodeGen SourceSection: [2168,2238]`raise AttributeError...`
                       PythonCallNodeGen SourceSection: [2174,2238]`AttributeError(f'mod...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         FormatStringLiteralNode SourceSection: [2189,2237]`f'module {__name__!r...`
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: AttributeError
@@ -292,9 +282,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
             PythonCallNodeGen SourceSection: [2419,2547]`class _OrderedDictKe...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _OrderedDictKeysView SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -365,9 +353,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       PythonCallNodeGen SourceSection: [2522,2545]`reversed(self._mappi...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [2531,2544]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
@@ -417,9 +403,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
             PythonCallNodeGen SourceSection: [2547,2722]`class _OrderedDictIt...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _OrderedDictItemsView SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -512,9 +496,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       GetIteratorExpressionNodeGen SourceSection: [2652,2675]`reversed(self._mappi...`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [2652,2675]`reversed(self._mappi...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [2661,2674]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
@@ -569,9 +551,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [2,<>temp2,Illegal]
             PythonCallNodeGen SourceSection: [2722,2892]`class _OrderedDictVa...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _OrderedDictValuesView SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -659,9 +639,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       GetIteratorExpressionNodeGen SourceSection: [2829,2852]`reversed(self._mappi...`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [2829,2852]`reversed(self._mappi...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [2838,2851]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
@@ -716,9 +694,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [3,<>temp3,Illegal]
             PythonCallNodeGen SourceSection: [2892,2967]`class _Link(object):...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _Link SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -782,9 +758,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [4,<>temp4,Illegal]
             PythonCallNodeGen SourceSection: [2967,10820]`class OrderedDict(di...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: OrderedDict SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -872,9 +846,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [4058,4171]`raise TypeError("des...`
                                           PythonCallNodeGen SourceSection: [4064,4171]`TypeError("descripto...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [4074,4170]`"descriptor '__init_...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: TypeError
@@ -913,9 +885,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __gt__
                                             PythonCallNodeGen SourceSection: [4210,4219]`len(args)`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [4214,4218]`args`
                                                 Frame: [0,args,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -926,17 +896,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Value: 1
                                         RaiseNodeGen SourceSection: [4237,4304]`raise TypeError('exp...`
                                           PythonCallNodeGen SourceSection: [4243,4304]`TypeError('expected ...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             BinaryArithmeticExpression SourceSection: [4253,4303]`'expected at most 1 ...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [4253,4291]`'expected at most 1 ...`
                                               PythonCallNodeGen SourceSection: [4294,4303]`len(args)`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [4298,4302]`args`
                                                   Frame: [0,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -967,9 +933,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [2,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [4403,4410]`_Link()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: _Link
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -979,9 +943,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [7,<>temp7,Illegal]
                                                   PythonCallNodeGen SourceSection: [4444,4467]`_proxy(self.__hardro...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [4451,4466]`self.__hardroot`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __hardroot
@@ -1046,9 +1008,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           SaveExceptionStateNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [4545,4573]`self.__update(*args,...`
                                         PythonCallNodeGen SourceSection: [4545,4573]`self.__update(*args,...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
                                             ReadLocalVariableNode SourceSection: [4560,4564]`args`
                                               Frame: [0,args,Illegal]
@@ -1189,9 +1149,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [10,<>temp10,Illegal]
                                               PythonCallNodeGen SourceSection: [4958,4964]`Link()`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [5,Link,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1303,9 +1261,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [7,root,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [5139,5150]`proxy(link)`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [5145,5149]`link`
                                                 Frame: [6,link,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1315,9 +1271,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [5159,5189]`dict_setitem(self, k...`
                                         PythonCallNodeGen SourceSection: [5159,5189]`dict_setitem(self, k...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5172,5176]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1399,9 +1353,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [5465,5488]`dict_delitem(self, k...`
                                         PythonCallNodeGen SourceSection: [5465,5488]`dict_delitem(self, k...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5478,5482]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1416,9 +1368,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,link,Illegal]
                                         PythonCallNodeGen SourceSection: [5504,5523]`self.__map.pop(key)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5519,5522]`key`
                                             Frame: [1,key,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1773,9 +1723,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [6371,6389]`self.__map.clear()`
                                         PythonCallNodeGen SourceSection: [6371,6389]`self.__map.clear()`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [6371,6381]`self.__map`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -1787,9 +1735,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [6398,6414]`dict.clear(self)`
                                         PythonCallNodeGen SourceSection: [6398,6414]`dict.clear(self)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [6409,6413]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1851,9 +1797,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [6647,6684]`raise KeyError('dict...`
                                           PythonCallNodeGen SourceSection: [6653,6684]`KeyError('dictionary...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [6662,6683]`'dictionary is empty...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: KeyError
@@ -1988,9 +1932,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [7,value,Illegal]
                                         PythonCallNodeGen SourceSection: [7072,7091]`dict.pop(self, key)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [7081,7085]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2301,9 +2243,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __add__
                                           PythonCallNodeGen SourceSection: [7937,7946]`len(self)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [7941,7945]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2317,9 +2257,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,size,Illegal]
                                         PythonCallNodeGen SourceSection: [8021,8042]`sizeof(self.__dict__...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [8028,8041]`self.__dict__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __dict__
@@ -2343,9 +2281,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mul__
                                             PythonCallNodeGen SourceSection: [8092,8110]`sizeof(self.__map)`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [8099,8109]`self.__map`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __map
@@ -2371,9 +2307,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mul__
                                             PythonCallNodeGen SourceSection: [8175,8198]`sizeof(self.__hardro...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [8182,8197]`self.__hardroot`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __hardroot
@@ -2400,9 +2334,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mul__
                                             PythonCallNodeGen SourceSection: [8238,8257]`sizeof(self.__root)`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [8245,8256]`self.__root`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __root
@@ -2508,9 +2440,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [8475,8501]`_OrderedDictKeysView...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [8496,8500]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2560,9 +2490,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [8610,8637]`_OrderedDictItemsVie...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [8632,8636]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2612,9 +2540,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [8741,8769]`_OrderedDictValuesVi...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [8764,8768]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2654,9 +2580,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [8839,8847]`object()`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: None
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2781,9 +2705,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [9240,9259]`raise KeyError(key)`
                                           PythonCallNodeGen SourceSection: [9246,9259]`KeyError(key)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [9255,9258]`key`
                                               Frame: [1,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2906,9 +2828,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: __repr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -2994,13 +2914,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [9815,9833]`list(self.items())`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [9820,9832]`self.items()`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [9820,9824]`self`
                                                         Frame: [0,self,Illegal]
@@ -3012,9 +2928,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: None
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
@@ -3064,14 +2978,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,inst_dict,Illegal]
                                         PythonCallNodeGen SourceSection: [9930,9947]`vars(self).copy()`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [9930,9940]`vars(self)`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [9935,9939]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3088,9 +2998,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [2,k,Illegal]
                                             ExpressionStatementNode SourceSection: [9998,10020]`inst_dict.pop(k, Non...`
                                               PythonCallNodeGen SourceSection: [9998,10020]`inst_dict.pop(k, Non...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [10012,10013]`k`
                                                   Frame: [2,k,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3102,13 +3010,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           GetIteratorExpressionNodeGen SourceSection: [9965,9984]`vars(OrderedDict())`
                                             GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [9965,9984]`vars(OrderedDict())`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [9970,9983]`OrderedDict()`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: OrderedDict
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3141,13 +3045,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               YesNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [10075,10079]`None`
                                             PythonCallNodeGen SourceSection: [10081,10099]`iter(self.items())`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [10086,10098]`self.items()`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [10086,10090]`self`
                                                     Frame: [0,self,Illegal]
@@ -3198,9 +3098,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [10180,10200]`self.__class__(self)...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [10195,10199]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3217,9 +3115,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [10206,10218]`@classmethod`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: fromkeys SourceSection: None
                               Arguments:
                                 ObjectLiteralNode SourceSection: [10257,10261]`None`
@@ -3271,9 +3167,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,self,Illegal]
                                           PythonCallNodeGen SourceSection: [10383,10388]`cls()`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [0,cls,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3367,9 +3261,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       IfNode SourceSection: [10668,10786]`if isinstance(other,...`
                                         YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [10671,10701]`isinstance(other, Or...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10682,10687]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3386,9 +3278,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [3,<return_val>,Illegal]
                                             AndNode SourceSection: [10722,10777]`dict.__eq__(self, ot...`
                                               PythonCallNodeGen SourceSection: [10722,10746]`dict.__eq__(self, ot...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [10734,10738]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3400,13 +3290,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     Identifier: dict
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [10751,10777]`all(map(_eq, self, o...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [10755,10776]`map(_eq, self, other...`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [10759,10762]`_eq`
                                                     Identifier: _eq
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3430,9 +3316,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [3,<return_val>,Illegal]
                                           PythonCallNodeGen SourceSection: [10793,10817]`dict.__eq__(self, ot...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10805,10809]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3558,9 +3442,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                     IfNode SourceSection: [12231,12328]`if isinstance(field_...`
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [12234,12262]`isinstance(field_nam...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [12245,12256]`field_names`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,field_names,Illegal]
@@ -3578,14 +3460,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           Frame: [1,field_names,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [12286,12323]`field_names.replace(...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [12286,12315]`field_names.replace(...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [12306,12309]`','`
                               StringLiteralNode SourceSection: [12311,12314]`' '`
                               GetCallAttributeNodeGen SourceSection: None
@@ -3601,13 +3479,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [1,field_names,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [12342,12369]`list(map(str, field_...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [12347,12368]`map(str, field_names...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12351,12354]`str`
                             Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3627,13 +3501,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,typename,Illegal]
                       PythonCallNodeGen SourceSection: [12385,12411]`_sys.intern(str(type...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [12397,12410]`str(typename)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [12401,12409]`typename`
                             Frame: [0,typename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3655,9 +3525,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [6,seen,Illegal]
                           PythonCallNodeGen SourceSection: [12443,12448]`set()`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: set
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3696,17 +3564,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         OrNode SourceSection: None
                                           NotNodeGen SourceSection: [12516,12539]`not name.isidentifie...`
                                             PythonCallNodeGen SourceSection: [12520,12539]`name.isidentifier()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12520,12524]`name`
                                                   Frame: [8,name,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [12559,12575]`_iskeyword(name)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12570,12574]`name`
                                               Frame: [8,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3715,9 +3579,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [12595,12615]`name.startswith('_')...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [12611,12614]`'_'`
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12595,12599]`name`
@@ -3748,9 +3610,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [12711,12725]`seen.add(name)`
                                   PythonCallNodeGen SourceSection: [12711,12725]`seen.add(name)`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [12720,12724]`name`
                                       Frame: [8,name,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3761,9 +3621,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             GetIteratorExpressionNodeGen SourceSection: [12476,12498]`enumerate(field_name...`
                               GetIteratorNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [12476,12498]`enumerate(field_name...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [12486,12497]`field_names`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [1,field_names,Illegal]
@@ -3787,9 +3645,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               NotNodeGen SourceSection: [12780,12801]`type(name) is not st...`
                                 IsExpressionNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [12780,12790]`type(name)`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [12785,12789]`name`
                                       Frame: [8,name,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3801,9 +3657,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [12815,12876]`raise TypeError('Typ...`
                                 PythonCallNodeGen SourceSection: [12821,12876]`TypeError('Type name...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [12831,12875]`'Type names and fiel...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: TypeError
@@ -3813,18 +3667,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             IfNode SourceSection: [12885,13049]`if not name.isidenti...`
                               NotNodeGen SourceSection: [12888,12911]`not name.isidentifie...`
                                 PythonCallNodeGen SourceSection: [12892,12911]`name.isidentifier()`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [12892,12896]`name`
                                       Frame: [8,name,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [12925,13040]`raise ValueError('Ty...`
                                 PythonCallNodeGen SourceSection: [12931,13040]`ValueError('Type nam...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [12942,13039]`'Type names and fiel...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
@@ -3834,9 +3684,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             IfNode SourceSection: [13049,13197]`if _iskeyword(name):...`
                               YesNodeGen SourceSection: None
                                 PythonCallNodeGen SourceSection: [13052,13068]`_iskeyword(name)`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [13063,13067]`name`
                                     Frame: [8,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3845,9 +3693,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13082,13191]`raise ValueError('Ty...`
                                 PythonCallNodeGen SourceSection: [13088,13191]`ValueError('Type nam...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13099,13190]`'Type names and fiel...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
@@ -3875,9 +3721,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [6,seen,Illegal]
                       PythonCallNodeGen SourceSection: [13204,13209]`set()`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3894,9 +3738,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [13250,13285]`name.startswith('_')...`
                                   PythonCallNodeGen SourceSection: [13250,13270]`name.startswith('_')...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [13266,13269]`'_'`
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [13250,13254]`name`
@@ -3909,9 +3751,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   YesNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13299,13405]`raise ValueError('Fi...`
                                 PythonCallNodeGen SourceSection: [13305,13405]`ValueError('Field na...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13316,13404]`'Field names cannot ...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
@@ -3932,9 +3772,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13443,13506]`raise ValueError(f'E...`
                                 PythonCallNodeGen SourceSection: [13449,13506]`ValueError(f'Encount...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13460,13505]`f'Encountered duplic...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: ValueError
@@ -3943,9 +3781,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [13515,13529]`seen.add(name)`
                               PythonCallNodeGen SourceSection: [13515,13529]`seen.add(name)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [13524,13528]`name`
                                   Frame: [8,name,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3980,9 +3816,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [4,defaults,Illegal]
                           PythonCallNodeGen SourceSection: [13603,13618]`tuple(defaults)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [13609,13617]`defaults`
                               Frame: [4,defaults,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3995,9 +3829,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __gt__
                               PythonCallNodeGen SourceSection: [13630,13643]`len(defaults)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [13634,13642]`defaults`
                                   Frame: [4,defaults,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4005,9 +3837,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [13646,13662]`len(field_names)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [13650,13661]`field_names`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [1,field_names,Illegal]
@@ -4018,9 +3848,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           RaiseNodeGen SourceSection: [13676,13735]`raise TypeError('Got...`
                             PythonCallNodeGen SourceSection: [13682,13735]`TypeError('Got more ...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [13692,13734]`'Got more default va...`
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: TypeError
@@ -4032,25 +3860,15 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [9,field_defaults,Illegal]
                           PythonCallNodeGen SourceSection: [13761,13877]`dict(reversed(list(z...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [13766,13876]`reversed(list(zip(re...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [13775,13875]`list(zip(reversed(fi...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 PythonCallNodeGen SourceSection: [13780,13874]`zip(reversed(field_n...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [13784,13805]`reversed(field_names...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalCellNodeGen SourceSection: [13793,13804]`field_names`
                                       ReadLocalVariableNode SourceSection: None
                                         Frame: [1,field_names,Illegal]
@@ -4060,9 +3878,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Identifier: reversed
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [13855,13873]`reversed(defaults)`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [13864,13872]`defaults`
                                       Frame: [4,defaults,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -4088,13 +3904,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [1,field_names,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [13948,13984]`tuple(map(_sys.inter...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [13954,13983]`map(_sys.intern, fie...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [13958,13969]`_sys.intern`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: intern
@@ -4120,9 +3932,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [10,num_fields,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [14002,14018]`len(field_names)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [14006,14017]`field_names`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [1,field_names,Illegal]
@@ -4137,16 +3947,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [11,arg_list,Illegal]
                       GetItemNodeGen SourceSection: [14034,14074]`repr(field_names).re...`
                         PythonCallNodeGen SourceSection: [14034,14068]`repr(field_names).re...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [14060,14063]`"'"`
                           StringLiteralNode SourceSection: [14065,14067]`""`
                           GetCallAttributeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [14034,14051]`repr(field_names)`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [14039,14050]`field_names`
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [1,field_names,Illegal]
@@ -4175,9 +3981,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Op: __add__
                           StringLiteralNode SourceSection: [14090,14093]`'('`
                           PythonCallNodeGen SourceSection: [14096,14143]`', '.join(f'{name}=%...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             GeneratorExpressionNode SourceSection: [14119,14142]`for name in field_na...`
                               Name: namedtuple.<locals>.<genexp>:initCollectionsPart1:388
                               FrameDescriptor: 2 slots [name, <return_val>]
@@ -4260,9 +4064,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [15,s,Illegal]
                       PythonCallNodeGen SourceSection: [14281,14354]`'def __new__(_cls, {...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [14345,14353]`arg_list`
                           Frame: [11,arg_list,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4282,9 +4084,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadFromCellNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [14409,14441]`'namedtuple_{}'.form...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14432,14440]`typename`
                             Frame: [0,typename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4292,9 +4092,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             StringLiteralNode SourceSection: [14409,14424]`'namedtuple_{}'`
                     ExpressionStatementNode SourceSection: [14515,14533]`exec(s, namespace)`
                       PythonCallNodeGen SourceSection: [14515,14533]`exec(s, namespace)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [14520,14521]`s`
                           Frame: [15,s,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4340,9 +4138,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [18,_make,Illegal]
                       PythonCallNodeGen SourceSection: [14714,14726]`@classmethod`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         FunctionDefinitionNode Name: _make SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4386,9 +4182,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,result,Illegal]
                                       PythonCallNodeGen SourceSection: [14774,14798]`tuple_new(cls, itera...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [14784,14787]`cls`
                                           Frame: [0,cls,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4406,9 +4200,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __ne__
                                           PythonCallNodeGen SourceSection: [14810,14822]`_len(result)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [14815,14821]`result`
                                               Frame: [2,result,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -4424,9 +4216,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadFromCellNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [14850,14920]`raise TypeError(f'Ex...`
                                         PythonCallNodeGen SourceSection: [14856,14920]`TypeError(f'Expected...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           FormatStringLiteralNode SourceSection: [14866,14919]`f'Expected {num_fiel...`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: TypeError
@@ -4506,13 +4296,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [2,result,Illegal]
                                     PythonCallNodeGen SourceSection: [15119,15165]`_self._make(map(kwds...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       PythonCallNodeGen SourceSection: [15131,15164]`map(kwds.pop, field_...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [15135,15143]`kwds.pop`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: pop
@@ -4543,9 +4329,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     RaiseNodeGen SourceSection: [15195,15258]`raise ValueError(f'G...`
                                       PythonCallNodeGen SourceSection: [15201,15258]`ValueError(f'Got une...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         FormatStringLiteralNode SourceSection: [15212,15257]`f'Got unexpected fie...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: ValueError
@@ -4676,13 +4460,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
                                     PythonCallNodeGen SourceSection: [15665,15701]`OrderedDict(zip(self...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       PythonCallNodeGen SourceSection: [15677,15700]`zip(self._fields, se...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [15681,15693]`self._fields`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _fields
@@ -4742,9 +4522,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
                                     PythonCallNodeGen SourceSection: [15814,15825]`tuple(self)`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [15820,15824]`self`
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -4915,9 +4693,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [26,itemgetter_object,Illegal]
                                       PythonCallNodeGen SourceSection: [16719,16737]`_itemgetter(index)`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [16731,16736]`index`
                                           Frame: [7,index,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4957,9 +4733,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Frame: [8,name,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [16872,16908]`property(itemgetter_...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [16881,16898]`itemgetter_object`
                                   Frame: [26,itemgetter_object,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4977,9 +4751,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         GetIteratorExpressionNodeGen SourceSection: [16575,16597]`enumerate(field_name...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [16575,16597]`enumerate(field_name...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [16585,16596]`field_names`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,field_names,Illegal]
@@ -4994,9 +4766,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [28,result,Illegal]
                       PythonCallNodeGen SourceSection: [16923,16964]`type(typename, (tupl...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [16928,16936]`typename`
                           Frame: [0,typename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -5025,9 +4795,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [5,module,Illegal]
                             PythonCallNodeGen SourceSection: [17380,17435]`_sys._getframe(1).f_...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [17412,17422]`'__name__'`
                               StringLiteralNode SourceSection: [17424,17434]`'__main__'`
                               GetCallAttributeNodeGen SourceSection: None
@@ -5037,9 +4805,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                   PythonCallNodeGen SourceSection: [17380,17397]`_sys._getframe(1)`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [17395,17396]`1`
                                       Value: 1
                                     GetCallAttributeNodeGen SourceSection: None
@@ -5158,9 +4924,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __add__
                               PythonCallNodeGen SourceSection: [17901,17921]`mapping_get(elem, 0)...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [17913,17917]`elem`
                                   Frame: [3,elem,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5212,9 +4976,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                 WriteLocalFrameSlotNodeGen SourceSection: None
                   Frame: [5,<>temp5,Illegal]
                 PythonCallNodeGen SourceSection: [18080,32029]`class Counter(dict):...`
-                  CachedCallNodeGen SourceSection: None
-                    CreateArgumentsNodeGen SourceSection: None
-                    CallDispatchNodeGen SourceSection: None
+                  CallNodeGen SourceSection: None
                   FunctionDefinitionNode Name: Counter SourceSection: None
                     Arguments: None
                     KwArguments: None
@@ -5302,9 +5064,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [20738,20847]`raise TypeError("des...`
                                               PythonCallNodeGen SourceSection: [20744,20847]`TypeError("descripto...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [20754,20846]`"descriptor '__init_...`
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: TypeError
@@ -5343,9 +5103,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __gt__
                                                 PythonCallNodeGen SourceSection: [20886,20895]`len(args)`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [20890,20894]`args`
                                                     Frame: [0,args,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5356,17 +5114,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Value: 1
                                             RaiseNodeGen SourceSection: [20913,20980]`raise TypeError('exp...`
                                               PythonCallNodeGen SourceSection: [20919,20980]`TypeError('expected ...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 BinaryArithmeticExpression SourceSection: [20929,20979]`'expected at most 1 ...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __mod__
                                                   StringLiteralNode SourceSection: [20929,20967]`'expected at most 1 ...`
                                                   PythonCallNodeGen SourceSection: [20970,20979]`len(args)`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [20974,20978]`args`
                                                       Frame: [0,args,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -5380,14 +5134,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             BlockNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [20989,21020]`super(Counter, self)...`
                                             PythonCallNodeGen SourceSection: [20989,21020]`super(Counter, self)...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [20989,21009]`super(Counter, self)...`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20995,21002]`Counter`
                                                     Identifier: Counter
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5399,9 +5149,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [21029,21055]`self.update(*args, *...`
                                             PythonCallNodeGen SourceSection: [21029,21055]`self.update(*args, *...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               PositionalArgumentsNode SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [21042,21046]`args`
                                                   Frame: [0,args,Illegal]
@@ -5529,13 +5277,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [3,<return_val>,Illegal]
                                                 PythonCallNodeGen SourceSection: [21617,21671]`sorted(self.items(),...`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [21624,21636]`self.items()`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [21624,21628]`self`
                                                         Frame: [0,self,Illegal]
@@ -5543,9 +5287,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   KeywordArgumentsNodeGen SourceSection: None
                                                     KeywordLiteralNode SourceSection: None
                                                       PythonCallNodeGen SourceSection: [21642,21656]`_itemgetter(1)`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [21654,21655]`1`
                                                           Value: 1
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -5566,16 +5308,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [21687,21739]`_heapq.nlargest(n, s...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [21703,21704]`n`
                                                   Frame: [1,n,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [21706,21718]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [21706,21710]`self`
                                                       Frame: [0,self,Illegal]
@@ -5583,9 +5321,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
                                                     PythonCallNodeGen SourceSection: [21724,21738]`_itemgetter(1)`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [21736,21737]`1`
                                                         Value: 1
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -5641,20 +5377,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             PythonCallNodeGen SourceSection: [22505,22558]`_chain.from_iterable...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [22526,22557]`_starmap(_repeat, se...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22535,22542]`_repeat`
                                                   Identifier: _repeat
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [22544,22556]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [22544,22548]`self`
                                                       Frame: [0,self,Illegal]
@@ -5675,9 +5405,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Index: 0
                               StringLiteralNode SourceSection: None
                               PythonCallNodeGen SourceSection: [22609,22621]`@classmethod`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 FunctionDefinitionNode Name: fromkeys SourceSection: None
                                   Arguments:
                                     ObjectLiteralNode SourceSection: [22656,22660]`None`
@@ -5725,9 +5453,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Index: 2
                                           RaiseNodeGen SourceSection: [22811,22917]`raise NotImplemented...`
                                             PythonCallNodeGen SourceSection: [22817,22917]`NotImplementedError(...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [22850,22916]`'Counter.fromkeys() ...`
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: NotImplementedError
@@ -5795,9 +5521,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [23907,24014]`raise TypeError("des...`
                                               PythonCallNodeGen SourceSection: [23913,24014]`TypeError("descripto...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [23923,24013]`"descriptor 'update'...`
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: TypeError
@@ -5836,9 +5560,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __gt__
                                                 PythonCallNodeGen SourceSection: [24053,24062]`len(args)`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [24057,24061]`args`
                                                     Frame: [0,args,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5849,17 +5571,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Value: 1
                                             RaiseNodeGen SourceSection: [24080,24147]`raise TypeError('exp...`
                                               PythonCallNodeGen SourceSection: [24086,24147]`TypeError('expected ...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 BinaryArithmeticExpression SourceSection: [24096,24146]`'expected at most 1 ...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __mod__
                                                   StringLiteralNode SourceSection: [24096,24134]`'expected at most 1 ...`
                                                   PythonCallNodeGen SourceSection: [24137,24146]`len(args)`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [24141,24145]`args`
                                                       Frame: [0,args,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -5897,9 +5615,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             IfNode SourceSection: [24238,24662]`if isinstance(iterab...`
                                               YesNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [24241,24287]`isinstance(iterable,...`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [24252,24260]`iterable`
                                                     Frame: [3,iterable,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5973,9 +5689,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                               Frame: [6,count,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             PythonCallNodeGen SourceSection: [24456,24473]`self_get(elem, 0)`
-                                                              CachedCallNodeGen SourceSection: None
-                                                                CreateArgumentsNodeGen SourceSection: None
-                                                                CallDispatchNodeGen SourceSection: None
+                                                              CallNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [24465,24469]`elem`
                                                                 Frame: [5,elem,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -5987,9 +5701,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       GetIteratorExpressionNodeGen SourceSection: [24393,24409]`iterable.items()`
                                                         GetIteratorNodeGen SourceSection: None
                                                         PythonCallNodeGen SourceSection: [24393,24409]`iterable.items()`
-                                                          CachedCallNodeGen SourceSection: None
-                                                            CreateArgumentsNodeGen SourceSection: None
-                                                            CallDispatchNodeGen SourceSection: None
+                                                          CallNodeGen SourceSection: None
                                                           GetCallAttributeNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [24393,24401]`iterable`
                                                               Frame: [3,iterable,Illegal]
@@ -5997,17 +5709,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [24516,24553]`super(Counter, self)...`
                                                   PythonCallNodeGen SourceSection: [24516,24553]`super(Counter, self)...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [24544,24552]`iterable`
                                                       Frame: [3,iterable,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       PythonCallNodeGen SourceSection: [24516,24536]`super(Counter, self)...`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24522,24529]`Counter`
                                                           Identifier: Counter
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6019,9 +5727,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [24622,24653]`_count_elements(self...`
                                                 PythonCallNodeGen SourceSection: [24622,24653]`_count_elements(self...`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [24638,24642]`self`
                                                     Frame: [2,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -6039,9 +5745,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [24683,24700]`self.update(kwds)`
                                               PythonCallNodeGen SourceSection: [24683,24700]`self.update(kwds)`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [24695,24699]`kwds`
                                                   Frame: [1,kwds,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6103,9 +5807,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [25478,25587]`raise TypeError("des...`
                                               PythonCallNodeGen SourceSection: [25484,25587]`TypeError("descripto...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [25494,25586]`"descriptor 'subtrac...`
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: TypeError
@@ -6144,9 +5846,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __gt__
                                                 PythonCallNodeGen SourceSection: [25626,25635]`len(args)`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [25630,25634]`args`
                                                     Frame: [0,args,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -6157,17 +5857,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Value: 1
                                             RaiseNodeGen SourceSection: [25653,25720]`raise TypeError('exp...`
                                               PythonCallNodeGen SourceSection: [25659,25720]`TypeError('expected ...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 BinaryArithmeticExpression SourceSection: [25669,25719]`'expected at most 1 ...`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __mod__
                                                   StringLiteralNode SourceSection: [25669,25707]`'expected at most 1 ...`
                                                   PythonCallNodeGen SourceSection: [25710,25719]`len(args)`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [25714,25718]`args`
                                                       Frame: [0,args,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6218,9 +5914,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               IfNode SourceSection: [25843,26125]`if isinstance(iterab...`
                                                 YesNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [25846,25892]`isinstance(iterable,...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [25857,25865]`iterable`
                                                       Frame: [3,iterable,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6273,9 +5967,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __sub__
                                                           PythonCallNodeGen SourceSection: [25980,25997]`self_get(elem, 0)`
-                                                            CachedCallNodeGen SourceSection: None
-                                                              CreateArgumentsNodeGen SourceSection: None
-                                                              CallDispatchNodeGen SourceSection: None
+                                                            CallNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [25989,25993]`elem`
                                                               Frame: [5,elem,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6290,9 +5982,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     GetIteratorExpressionNodeGen SourceSection: [25929,25945]`iterable.items()`
                                                       GetIteratorNodeGen SourceSection: None
                                                       PythonCallNodeGen SourceSection: [25929,25945]`iterable.items()`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [25929,25937]`iterable`
                                                             Frame: [3,iterable,Illegal]
@@ -6317,9 +6007,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __sub__
                                                           PythonCallNodeGen SourceSection: [26095,26112]`self_get(elem, 0)`
-                                                            CachedCallNodeGen SourceSection: None
-                                                              CreateArgumentsNodeGen SourceSection: None
-                                                              CallDispatchNodeGen SourceSection: None
+                                                            CallNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [26104,26108]`elem`
                                                               Frame: [5,elem,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6344,9 +6032,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [26146,26165]`self.subtract(kwds)`
                                               PythonCallNodeGen SourceSection: [26146,26165]`self.subtract(kwds)`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [26160,26164]`kwds`
                                                   Frame: [1,kwds,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6398,9 +6084,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             PythonCallNodeGen SourceSection: [26235,26255]`self.__class__(self)...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [26250,26254]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -6463,9 +6147,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               TupleLiteralNode SourceSection: [26314,26327]`(dict(self),)`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [26315,26325]`dict(self)`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [26320,26324]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -6531,17 +6213,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [26481,26506]`super().__delitem__(...`
                                             PythonCallNodeGen SourceSection: [26481,26506]`super().__delitem__(...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [26501,26505]`elem`
                                                 Frame: [1,elem,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [26481,26488]`super()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: super
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6620,13 +6298,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [1,items,Illegal]
                                                   PythonCallNodeGen SourceSection: [26638,26690]`', '.join(map('%r: %...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     PythonCallNodeGen SourceSection: [26648,26689]`map('%r: %r'.__mod__...`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [26652,26668]`'%r: %r'.__mod__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __mod__
@@ -6634,9 +6308,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                             Op: __getattribute__
                                                         StringLiteralNode SourceSection: [26652,26660]`'%r: %r'`
                                                       PythonCallNodeGen SourceSection: [26670,26688]`self.most_common()`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [26670,26674]`self`
                                                             Frame: [0,self,Illegal]
@@ -6680,9 +6352,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [3,<return_val>,Illegal]
                                                     PythonCallNodeGen SourceSection: [26858,26914]`'{0}({1!r})'.format(...`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [26878,26901]`self.__class__.__nam...`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __name__
@@ -6697,9 +6367,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                             Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                       PythonCallNodeGen SourceSection: [26903,26913]`dict(self)`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [26908,26912]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6762,9 +6430,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           IfNode SourceSection: [27436,27513]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [27439,27469]`not isinstance(other...`
                                               PythonCallNodeGen SourceSection: [27443,27469]`isinstance(other, Co...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [27454,27459]`other`
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6788,9 +6454,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,result,Illegal]
                                             PythonCallNodeGen SourceSection: [27522,27531]`Counter()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: Counter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6863,9 +6527,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [27559,27571]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [27559,27571]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [27559,27563]`self`
                                                       Frame: [0,self,Illegal]
@@ -6935,9 +6597,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [27712,27725]`other.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [27712,27725]`other.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [27712,27717]`other`
                                                       Frame: [1,other,Illegal]
@@ -7000,9 +6660,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           IfNode SourceSection: [28039,28116]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [28042,28072]`not isinstance(other...`
                                               PythonCallNodeGen SourceSection: [28046,28072]`isinstance(other, Co...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [28057,28062]`other`
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7026,9 +6684,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,result,Illegal]
                                             PythonCallNodeGen SourceSection: [28125,28134]`Counter()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: Counter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7101,9 +6757,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [28162,28174]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [28162,28174]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [28162,28166]`self`
                                                       Frame: [0,self,Illegal]
@@ -7178,9 +6832,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [28315,28328]`other.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [28315,28328]`other.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [28315,28320]`other`
                                                       Frame: [1,other,Illegal]
@@ -7243,9 +6895,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           IfNode SourceSection: [28653,28730]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [28656,28686]`not isinstance(other...`
                                               PythonCallNodeGen SourceSection: [28660,28686]`isinstance(other, Co...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [28671,28676]`other`
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7269,9 +6919,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,result,Illegal]
                                             PythonCallNodeGen SourceSection: [28739,28748]`Counter()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: Counter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7359,9 +7007,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [28776,28788]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [28776,28788]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [28776,28780]`self`
                                                       Frame: [0,self,Illegal]
@@ -7431,9 +7077,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [28993,29006]`other.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [28993,29006]`other.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [28993,28998]`other`
                                                       Frame: [1,other,Illegal]
@@ -7496,9 +7140,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           IfNode SourceSection: [29303,29380]`if not isinstance(ot...`
                                             NotNodeGen SourceSection: [29306,29336]`not isinstance(other...`
                                               PythonCallNodeGen SourceSection: [29310,29336]`isinstance(other, Co...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [29321,29326]`other`
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7522,9 +7164,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,result,Illegal]
                                             PythonCallNodeGen SourceSection: [29389,29398]`Counter()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: Counter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7612,9 +7252,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [29426,29438]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [29426,29438]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [29426,29430]`self`
                                                       Frame: [0,self,Illegal]
@@ -7671,9 +7309,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,result,Illegal]
                                             PythonCallNodeGen SourceSection: [29759,29768]`Counter()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: Counter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7728,9 +7364,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [29796,29808]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [29796,29808]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [29796,29800]`self`
                                                       Frame: [0,self,Illegal]
@@ -7787,9 +7421,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,result,Illegal]
                                             PythonCallNodeGen SourceSection: [30074,30083]`Counter()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: Counter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7849,9 +7481,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [30111,30123]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [30111,30123]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [30111,30115]`self`
                                                       Frame: [0,self,Illegal]
@@ -7908,9 +7538,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,nonpositive,Illegal]
                                             PythonCallNodeGen SourceSection: [30346,30399]`elem for elem, count...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GeneratorExpressionNode SourceSection: [30351,30399]`for elem, count in s...`
                                                 Name: _keep_positive.<locals>.<genexp>:initCollectionsPart1:818
                                                 FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
@@ -7993,9 +7621,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 GetIteratorExpressionNodeGen SourceSection: [30370,30382]`self.items()`
                                                   GetIteratorNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [30370,30382]`self.items()`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [30370,30374]`self`
                                                         Frame: [0,self,Illegal]
@@ -8127,9 +7753,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [30749,30762]`other.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [30749,30762]`other.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [30749,30754]`other`
                                                       Frame: [1,other,Illegal]
@@ -8141,9 +7765,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [7,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [30811,30832]`self._keep_positive(...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [30811,30815]`self`
                                                     Frame: [0,self,Illegal]
@@ -8242,9 +7864,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [31101,31114]`other.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [31101,31114]`other.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [31101,31106]`other`
                                                       Frame: [1,other,Illegal]
@@ -8256,9 +7876,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [7,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [31163,31184]`self._keep_positive(...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [31163,31167]`self`
                                                     Frame: [0,self,Illegal]
@@ -8373,9 +7991,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [31453,31466]`other.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [31453,31466]`other.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [31453,31458]`other`
                                                       Frame: [1,other,Illegal]
@@ -8387,9 +8003,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [8,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [31591,31612]`self._keep_positive(...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [31591,31595]`self`
                                                     Frame: [0,self,Illegal]
@@ -8504,9 +8118,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               GetIteratorExpressionNodeGen SourceSection: [31862,31874]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [31862,31874]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [31862,31866]`self`
                                                       Frame: [0,self,Illegal]
@@ -8518,9 +8130,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [8,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [32006,32027]`self._keep_positive(...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [32006,32010]`self`
                                                     Frame: [0,self,Illegal]

@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
   Documentation: None
   InnerRootNode SourceSection: [0,34]`[ b for a in d1 if d...`
     PythonCallNodeGen SourceSection: [0,34]`[ b for a in d1 if d...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [4,33]`for a in d1 if d1 fo...`
         Name: [].<locals>.<genexp>:issueGR18309:1
         FrameDescriptor: 3 slots [b, a, <return_val>]

@@ -29,9 +29,7 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
             GetIteratorExpressionNodeGen SourceSection: [9,18]`xrange(3)`
               GetIteratorNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [9,18]`xrange(3)`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [16,17]`3`
                   Value: 3
                 ReadNameNodeGen SourceSection: None

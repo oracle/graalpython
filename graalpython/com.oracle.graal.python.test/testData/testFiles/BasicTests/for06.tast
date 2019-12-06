@@ -62,9 +62,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                             BlockNode SourceSection: None
                               ExpressionStatementNode SourceSection: [68,82]`print('jedna')`
                                 PythonCallNodeGen SourceSection: [68,82]`print('jedna')`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [74,81]`'jedna'`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: print
@@ -72,9 +70,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                               BreakNode SourceSection: [89,94]`break`
                             ExpressionStatementNode SourceSection: [111,119]`print(x)`
                               PythonCallNodeGen SourceSection: [111,119]`print(x)`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [117,118]`x`
                                   Frame: [0,x,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -84,9 +80,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                       GetIteratorExpressionNodeGen SourceSection: [27,35]`range(3)`
                         GetIteratorNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [27,35]`range(3)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [33,34]`3`
                             Value: 3
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -97,8 +91,6 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
       PythonCallNodeGen SourceSection: [121,125]`fn()`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: None
           Identifier: fn

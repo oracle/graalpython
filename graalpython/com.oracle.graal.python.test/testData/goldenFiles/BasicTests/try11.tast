@@ -40,9 +40,7 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [69,79]`print(err)`
                             PythonCallNodeGen SourceSection: [69,79]`print(err)`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [75,78]`err`
                                 Frame: [0,err,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

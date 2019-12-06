@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
   Documentation: None
   InnerRootNode SourceSection: [0,52]`{x:x for x in seq1 f...`
     PythonCallNodeGen SourceSection: [0,52]`{x:x for x in seq1 f...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [5,51]`for x in seq1 for y ...`
         Name: [].<locals>.<genexp>:dictComprehensions03:1
         FrameDescriptor: 3 slots [y, x, <return_val>]
@@ -37,9 +35,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     GeneratorAccessNode SourceSection: None
                     YesNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [36,51]`condition(x, y)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [46,47]`x`
                           Frame: [1,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None

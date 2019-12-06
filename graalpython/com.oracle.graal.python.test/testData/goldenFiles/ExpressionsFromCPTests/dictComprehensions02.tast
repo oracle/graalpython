@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
   Documentation: None
   InnerRootNode SourceSection: [0,40]`{x**2:x[3] for x in ...`
     PythonCallNodeGen SourceSection: [0,40]`{x**2:x[3] for x in ...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [11,39]`for x in seq if cond...`
         Name: [].<locals>.<genexp>:dictComprehensions02:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -36,9 +34,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [27,39]`condition(x)`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [37,38]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None

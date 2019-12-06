@@ -22,9 +22,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     Value: 200
               ExpressionStatementNode SourceSection: [27,36]`print (2)`
                 PythonCallNodeGen SourceSection: [27,36]`print (2)`
-                  CachedCallNodeGen SourceSection: None
-                    CreateArgumentsNodeGen SourceSection: None
-                    CallDispatchNodeGen SourceSection: None
+                  CallNodeGen SourceSection: None
                   IntegerLiteralNode SourceSection: [34,35]`2`
                     Value: 2
                   ReadNameNodeGen SourceSection: None
@@ -40,9 +38,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       Value: 150
                 ExpressionStatementNode SourceSection: [56,67]`print (1.5)`
                   PythonCallNodeGen SourceSection: [56,67]`print (1.5)`
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
                     ReadNameNodeGen SourceSection: None
                       Identifier: print
@@ -57,9 +53,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                         Value: 100
                   ExpressionStatementNode SourceSection: [87,96]`print (1)`
                     PythonCallNodeGen SourceSection: [87,96]`print (1)`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [94,95]`1`
                         Value: 1
                       ReadNameNodeGen SourceSection: None
