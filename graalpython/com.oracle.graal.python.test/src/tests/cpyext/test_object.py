@@ -384,6 +384,184 @@ class TestObject(object):
         assert 1 @ tester == 123, "__rmatmul__ failed"
 
 
+    def test_str_subclass(self):
+        TestStrSubclass = CPyExtType("TestStrSubclass",
+                                       r"""
+                                       static PyTypeObject* testStrSubclassPtr = NULL;
+                                    
+                                        #define MAX_UNICODE 0x10ffff
+                                    
+                                        #define _PyUnicode_UTF8(op)                             \
+                                            (((PyCompactUnicodeObject*)(op))->utf8)
+                                        #define PyUnicode_UTF8(op)                              \
+                                            (assert(_PyUnicode_CHECK(op)),                      \
+                                             assert(PyUnicode_IS_READY(op)),                    \
+                                             PyUnicode_IS_COMPACT_ASCII(op) ?                   \
+                                                 ((char*)((PyASCIIObject*)(op) + 1)) :          \
+                                                 _PyUnicode_UTF8(op))
+                                        #define _PyUnicode_UTF8_LENGTH(op)                      \
+                                            (((PyCompactUnicodeObject*)(op))->utf8_length)
+                                        #define PyUnicode_UTF8_LENGTH(op)                       \
+                                            (assert(_PyUnicode_CHECK(op)),                      \
+                                             assert(PyUnicode_IS_READY(op)),                    \
+                                             PyUnicode_IS_COMPACT_ASCII(op) ?                   \
+                                                 ((PyASCIIObject*)(op))->length :               \
+                                                 _PyUnicode_UTF8_LENGTH(op))
+                                        #define _PyUnicode_WSTR(op)                             \
+                                            (((PyASCIIObject*)(op))->wstr)
+                                        #define _PyUnicode_WSTR_LENGTH(op)                      \
+                                            (((PyCompactUnicodeObject*)(op))->wstr_length)
+                                        #define _PyUnicode_LENGTH(op)                           \
+                                            (((PyASCIIObject *)(op))->length)
+                                        #define _PyUnicode_STATE(op)                            \
+                                            (((PyASCIIObject *)(op))->state)
+                                        #define _PyUnicode_HASH(op)                             \
+                                            (((PyASCIIObject *)(op))->hash)
+                                        #define _PyUnicode_KIND(op)                             \
+                                            (assert(_PyUnicode_CHECK(op)),                      \
+                                             ((PyASCIIObject *)(op))->state.kind)
+                                        #define _PyUnicode_GET_LENGTH(op)                       \
+                                            (assert(_PyUnicode_CHECK(op)),                      \
+                                             ((PyASCIIObject *)(op))->length)
+                                        #define _PyUnicode_DATA_ANY(op)                         \
+                                            (((PyUnicodeObject*)(op))->data.any)
+    
+                                        // that's taken from CPython's 'PyUnicode_New'
+                                        static PyUnicodeObject * new_empty_unicode(Py_ssize_t size, Py_UCS4 maxchar) {
+                                            PyUnicodeObject *obj;
+                                            PyCompactUnicodeObject *unicode;
+                                            void *data;
+                                            enum PyUnicode_Kind kind;
+                                            int is_sharing, is_ascii;
+                                            Py_ssize_t char_size;
+                                            Py_ssize_t struct_size;
+                                        
+                                            is_ascii = 0;
+                                            is_sharing = 0;
+                                            struct_size = sizeof(PyCompactUnicodeObject);
+                                            if (maxchar < 128) {
+                                                kind = PyUnicode_1BYTE_KIND;
+                                                char_size = 1;
+                                                is_ascii = 1;
+                                                struct_size = sizeof(PyASCIIObject);
+                                            }
+                                            else if (maxchar < 256) {
+                                                kind = PyUnicode_1BYTE_KIND;
+                                                char_size = 1;
+                                            }
+                                            else if (maxchar < 65536) {
+                                                kind = PyUnicode_2BYTE_KIND;
+                                                char_size = 2;
+                                                if (sizeof(wchar_t) == 2)
+                                                    is_sharing = 1;
+                                            }
+                                            else {
+                                                if (maxchar > MAX_UNICODE) {
+                                                    PyErr_SetString(PyExc_SystemError,
+                                                                    "invalid maximum character passed to PyUnicode_New");
+                                                    return NULL;
+                                                }
+                                                kind = PyUnicode_4BYTE_KIND;
+                                                char_size = 4;
+                                                if (sizeof(wchar_t) == 4)
+                                                    is_sharing = 1;
+                                            }
+                                        
+                                            /* Ensure we won't overflow the size. */
+                                            if (size < 0) {
+                                                PyErr_SetString(PyExc_SystemError,
+                                                                "Negative size passed to PyUnicode_New");
+                                                return NULL;
+                                            }
+                                            if (size > ((PY_SSIZE_T_MAX - struct_size) / char_size - 1))
+                                                return NULL;
+                                        
+                                            /* Duplicated allocation code from _PyObject_New() instead of a call to
+                                             * PyObject_New() so we are able to allocate space for the object and
+                                             * it's data buffer.
+                                             */
+                                            obj = (PyUnicodeObject *) malloc(struct_size + (size + 1) * char_size);
+                                            if (obj == NULL)
+                                                return NULL;
+                                            obj = PyObject_INIT(obj, &PyUnicode_Type);
+                                            if (obj == NULL)
+                                                return NULL;
+                                        
+                                            unicode = (PyCompactUnicodeObject *)obj;
+                                            if (is_ascii)
+                                                data = ((PyASCIIObject*)obj) + 1;
+                                            else
+                                                data = unicode + 1;
+                                            _PyUnicode_LENGTH(unicode) = size;
+                                            _PyUnicode_HASH(unicode) = -1;
+                                            _PyUnicode_STATE(unicode).interned = 0;
+                                            _PyUnicode_STATE(unicode).kind = kind;
+                                            _PyUnicode_STATE(unicode).compact = 1;
+                                            _PyUnicode_STATE(unicode).ready = 1;
+                                            _PyUnicode_STATE(unicode).ascii = is_ascii;
+                                            if (is_ascii) {
+                                                ((char*)data)[size] = 0;
+                                                _PyUnicode_WSTR(unicode) = NULL;
+                                            }
+                                            else if (kind == PyUnicode_1BYTE_KIND) {
+                                                ((char*)data)[size] = 0;
+                                                _PyUnicode_WSTR(unicode) = NULL;
+                                                _PyUnicode_WSTR_LENGTH(unicode) = 0;
+                                                unicode->utf8 = NULL;
+                                                unicode->utf8_length = 0;
+                                            }
+                                            else {
+                                                unicode->utf8 = NULL;
+                                                unicode->utf8_length = 0;
+                                                if (kind == PyUnicode_2BYTE_KIND)
+                                                    ((Py_UCS2*)data)[size] = 0;
+                                                else /* kind == PyUnicode_4BYTE_KIND */
+                                                    ((Py_UCS4*)data)[size] = 0;
+                                                if (is_sharing) {
+                                                    _PyUnicode_WSTR_LENGTH(unicode) = size;
+                                                    _PyUnicode_WSTR(unicode) = (wchar_t *)data;
+                                                }
+                                                else {
+                                                    _PyUnicode_WSTR_LENGTH(unicode) = 0;
+                                                    _PyUnicode_WSTR(unicode) = NULL;
+                                                }
+                                            }
+                                            return obj;
+                                        }
+                                        
+                                       static PyObject* nstr_tpnew(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
+                                            char *ascii_data = NULL;
+                                            Py_XINCREF(args);
+                                            if (!PyArg_ParseTuple(args, "s", &ascii_data)) {{
+                                                return NULL;
+                                            }}
+                                           Py_ssize_t len = strlen(ascii_data);
+                                           PyUnicodeObject* strObj = new_empty_unicode(len, (Py_UCS4) 127);
+                                           memcpy(PyUnicode_1BYTE_DATA(strObj), (Py_UCS1*)ascii_data, len);
+                                           return (PyObject*) strObj;
+                                       }
+                                       """,
+                                       cmembers="""PyUnicodeObject base;
+                                                   int marker;""",
+                                       tp_base="&PyUnicode_Type",
+                                       tp_new="nstr_tpnew",
+                                       post_ready_code="testStrSubclassPtr = &TestStrSubclassType; Py_INCREF(testStrSubclassPtr);"
+                                       )
+        tester = TestStrSubclass("hello\nworld")
+        assert tester == "hello\nworld"
+        assert str(tester) == "hello\nworld"
+        assert tester.splitlines() == ['hello', 'world']
+        assert tester >= "hello"
+        assert not (tester >= "helloasdfasdfasdf")
+        assert tester <= "helloasdfasdfasdf"
+        assert not (tester <= "hello")
+        assert tester.startswith("hello")
+        assert tester.endswith("rld")
+        assert tester.join(["a", "b"]) == "ahello\nworldb"
+        assert tester.upper() == "HELLO\nWORLD"
+        assert tester.replace("o", "uff") == "helluff\nwuffrld"
+        assert tester.replace("o", "uff", 1) == "helluff\nworld"
+
 class TestObjectFunctions(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
