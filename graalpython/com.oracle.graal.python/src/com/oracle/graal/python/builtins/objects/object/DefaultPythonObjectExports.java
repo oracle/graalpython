@@ -40,18 +40,29 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(value = PythonDataModelLibrary.class, receiverType = Long.class)
-final class DefaultDataModelLongExports {
+@ExportLibrary(value = PythonObjectLibrary.class, receiverType = Object.class)
+final class DefaultPythonObjectExports {
     @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Long value) {
-        return true;
+    static boolean isSequence(Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+        return interopLib.hasArrayElements(receiver);
     }
 
     @ExportMessage
-    static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
-        return true;
+    static boolean isMapping(Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+        return interopLib.hasMembers(receiver);
+    }
+
+    @ExportMessage
+    static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Object value) {
+        return PythonBuiltinClassType.ForeignObject;
     }
 }

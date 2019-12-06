@@ -282,7 +282,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
             if (forceType) {
                 d = GetTypeMemberNode.getUncached().execute(object, NativeMemberNames.TP_DICT);
             } else {
-                d = PythonObjectLibrary.getUncached().getDict((PythonAbstractNativeObject) object);
+                d = PythonObjectLibrary.getUncached().getDict(object);
             }
             Object value = null;
             if (d instanceof PHashingCollection) {

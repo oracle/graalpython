@@ -73,9 +73,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonTypeLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -131,7 +130,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonDataModelLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
@@ -148,7 +147,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode writeNode,
@@ -192,7 +191,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) throws UnknownIdentifierException {
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
         Object attrGetattribute = null;
         if (attrKey != null) {
@@ -230,13 +229,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
         return (dataModelLibrary.isSequence(this) || dataModelLibrary.isIterable(this)) && !dataModelLibrary.isMapping(this);
     }
 
     @ExportMessage
     public Object readArrayElement(long key,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIterNode,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupNextNode,
@@ -277,7 +276,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void writeArrayElement(long key, Object value,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -294,7 +293,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public void removeArrayElement(long key,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode) throws UnsupportedMessageException, InvalidArrayIndexException {
         if (dataModelLibrary.isSequence(this)) {
             try {
@@ -456,7 +455,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isExecutable(
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
         return dataModelLibrary.isCallable(this);
     }
 
@@ -472,7 +471,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
                     @Cached CastToListInteropNode castToList,
                     @Cached GetClassNode getClass,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode) {
@@ -511,7 +510,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public void removeMember(String member,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
@@ -548,6 +547,12 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public LazyPythonClass getLazyPythonClass() {
+        CompilerDirectives.bailout("Abstract method");
+        throw new AbstractMethodError(getClass().getCanonicalName());
+    }
+
+    @ExportMessage
     public boolean isInstantiable(
                     @Cached TypeNodes.IsTypeNode isTypeNode) {
         return isTypeNode.execute(this);
@@ -576,13 +581,62 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public boolean isSequence(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isSequenceType(getClassNode.execute(this));
+    }
+
+    @ExportMessage
+    public boolean isMapping(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
+        return pythonTypeLibrary.isMappingType(getClassNode.execute(this));
+    }
+
+    @ExportMessage
+    public boolean isSequenceType(
+                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                    @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
+                    @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile) {
+        if (isLazyClass.profile(this instanceof LazyPythonClass)) {
+            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed because of guard
+            if (lenProfile.profile(hasLenNode.execute(type, SpecialMethodNames.__LEN__) != PNone.NO_VALUE)) {
+                return getItemProfile.profile(hasGetItemNode.execute(type, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE);
+            }
+        }
+        return false;
+    }
+
+    @ExportMessage
+    public boolean isMappingType(
+                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic hasGetItemNode,
+                    @Shared("hasLenNode") @Cached LookupAttributeInMRONode.Dynamic hasLenNode,
+                    @Shared("isLazyClass") @Cached("createBinaryProfile()") ConditionProfile isLazyClass,
+                    @Shared("lenProfile") @Cached("createBinaryProfile()") ConditionProfile lenProfile,
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile getItemProfile,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasKeysNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasItemsNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasValuesNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+        if (isSequenceType(hasGetItemNode, hasLenNode, isLazyClass, lenProfile, getItemProfile)) {
+            LazyPythonClass type = (LazyPythonClass) this; // guaranteed to succeed b/c it's a
+                                                           // sequence type
+            return profile.profile(hasKeysNode.execute(type, SpecialMethodNames.KEYS) != PNone.NO_VALUE &&
+                            hasItemsNode.execute(type, SpecialMethodNames.ITEMS) != PNone.NO_VALUE &&
+                            hasValuesNode.execute(type, SpecialMethodNames.VALUES) != PNone.NO_VALUE);
+        }
+        return false;
+    }
+
+    @ExportMessage
     public final boolean isIterable(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic getIterNode,
-                    @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic getIterNode,
+                    @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
+                    @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileIter,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
+                    @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileNext) {
         LazyPythonClass klass = getClassNode.execute(this);
         Object iterMethod = getIterNode.execute(klass, __ITER__);
@@ -608,7 +662,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public final boolean isHashable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
-                    @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary) {
+                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         return dataModelLibrary.isCallable(hashAttr);
     }
@@ -923,7 +977,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         int access(Object object, String fieldName,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
-                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
@@ -1139,7 +1193,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         @Specialization(limit = "1", replaces = "doVarargsBuiltinMethod")
         Object doExecute(Object receiver, Object[] arguments,
                         @Exclusive @Cached PTypeToForeignNode toForeign,
-                        @CachedLibrary("receiver") PythonDataModelLibrary dataModelLibrary,
+                        @CachedLibrary("receiver") PythonObjectLibrary dataModelLibrary,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
             if (!dataModelLibrary.isCallable(receiver)) {

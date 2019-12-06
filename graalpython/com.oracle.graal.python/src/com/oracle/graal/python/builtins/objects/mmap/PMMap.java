@@ -43,9 +43,9 @@ package com.oracle.graal.python.builtins.objects.mmap;
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 
-import com.oracle.graal.python.builtins.objects.bytes.PythonBufferLibrary;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins.InternalLenNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonBufferLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PMMap extends PythonObject {
 
     private final SeekableByteChannel mappedByteBuffer;
@@ -83,6 +83,7 @@ public final class PMMap extends PythonObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }
@@ -104,6 +105,8 @@ public final class PMMap extends PythonObject {
             int len = getBufferLength(lenNode, castToIntNode);
 
             // save current position
+            // TODO: restore in case of failure
+            @SuppressWarnings("unused")
             long oldPos = PMMap.position(mappedByteBuffer);
 
             PMMap.position(mappedByteBuffer, 0);

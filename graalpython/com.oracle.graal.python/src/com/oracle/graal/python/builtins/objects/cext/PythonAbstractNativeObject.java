@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -81,7 +80,7 @@ import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(ReferenceLibrary.class)
-@ExportLibrary(PythonDataModelLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;

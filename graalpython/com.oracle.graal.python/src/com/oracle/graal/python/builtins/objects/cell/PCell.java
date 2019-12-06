@@ -108,6 +108,7 @@ public final class PCell extends PythonAbstractObject {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public LazyPythonClass getLazyPythonClass() {

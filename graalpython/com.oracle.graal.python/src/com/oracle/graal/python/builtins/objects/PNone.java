@@ -59,6 +59,7 @@ public final class PNone extends PythonAbstractObject {
         return true;
     }
 
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public LazyPythonClass getLazyPythonClass() {

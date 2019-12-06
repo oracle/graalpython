@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -506,7 +505,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object hash(VirtualFrame frame, Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHash,
-                        @CachedLibrary(limit = "1") PythonDataModelLibrary dataModelLibrary,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                         @Cached CallUnaryMethodNode callUnary,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
                         @Cached IsInstanceNode isInstanceNode) {

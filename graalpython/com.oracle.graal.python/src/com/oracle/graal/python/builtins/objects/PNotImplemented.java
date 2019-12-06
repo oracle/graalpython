@@ -50,6 +50,7 @@ public final class PNotImplemented extends PythonAbstractObject {
         return this.hashCode() - o.hashCode();
     }
 
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public LazyPythonClass getLazyPythonClass() {

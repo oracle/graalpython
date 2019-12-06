@@ -96,7 +96,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
         }
 
         @Specialization(guards = "isEmptyStorage(starargs)")
-        static PKeyword[] doEmptyStorage(PDict starargs) {
+        static PKeyword[] doEmptyStorage(@SuppressWarnings("unused") PDict starargs) {
             return PKeyword.EMPTY_KEYWORDS;
         }
 
@@ -134,7 +134,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
         }
 
         @Specialization(guards = "!isDict(object)")
-        static PKeyword[] doNonMapping(Object object) {
+        static PKeyword[] doNonMapping(@SuppressWarnings("unused") Object object) {
             return PKeyword.EMPTY_KEYWORDS;
         }
 

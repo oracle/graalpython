@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -40,7 +41,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonBufferLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     private SequenceStorage store;
@@ -107,6 +108,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }

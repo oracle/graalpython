@@ -666,11 +666,11 @@ public abstract class ListNodes {
 
     /**
      * This node takes a bit of care to avoid compiling code for switching storages. In the
-     * interpreter, it will use a different {@link SequenceStorageNodes.AppendNode} than in the
-     * compiled code, so the specializations for the compiler are different. This is useful, because
-     * in the interpreter we will report back type and size changes to the origin of the list via
-     * {@link PList#getOrigin} and {@link ListLiteralNode#reportUpdatedCapacity}. Thus, there's a
-     * chance that the compiled code will only see lists of the correct size and storage type.
+     * interpreter, it will use a different {@link AppendNode} than in the compiled code, so the
+     * specializations for the compiler are different. This is useful, because in the interpreter we
+     * will report back type and size changes to the origin of the list via {@link PList#getOrigin}
+     * and {@link ListLiteralNode#reportUpdatedCapacity}. Thus, there's a chance that the compiled
+     * code will only see lists of the correct size and storage type.
      */
     @GenerateUncached
     public abstract static class AppendNode extends PNodeWithContext {
