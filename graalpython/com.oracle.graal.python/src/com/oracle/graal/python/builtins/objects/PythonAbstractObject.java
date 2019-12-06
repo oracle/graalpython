@@ -670,11 +670,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtypeNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
-                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+                    @CachedLibrary("this") InteropLibrary lib, 
+                    @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
         LazyPythonClass objType = getClassNode.execute(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (module != null) {
+        if (dateTimeModuleLoaded.profile(module != null)) {
             if (isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, DATETIME_TYPE)) || isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, DATE_TYPE))) {
                 try {
                     int year = castToIntNode.execute(lib.readMember(this, "year"));
@@ -687,7 +689,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
         module = importedModules.getItem(TIME_MODULE_NAME);
-        if (module != null) {
+        if (timeModuleLoaded.profile(module != null)) {
             if (isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, STRUCT_TIME_TYPE))) {
                 try {
                     int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
@@ -705,17 +707,19 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public boolean isTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtype) {
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtype, 
+                    @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
         LazyPythonClass objType = getClassNode.execute(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (module != null) {
+        if (dateTimeModuleLoaded.profile(module != null)) {
             if (isSubtype.executeWithGlobalState(objType, readTypeNode.execute(module, DATETIME_TYPE)) || isSubtype.executeWithGlobalState(objType, readTypeNode.execute(module, TIME_TYPE))) {
                 return true;
             }
         }
         module = importedModules.getItem(TIME_MODULE_NAME);
-        if (module != null) {
+        if (timeModuleLoaded.profile(module != null)) {
             if (isSubtype.executeWithGlobalState(objType, readTypeNode.execute(module, STRUCT_TIME_TYPE))) {
                 return true;
             }
@@ -728,11 +732,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtypeNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
-                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+                    @CachedLibrary("this") InteropLibrary lib, 
+                    @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
         LazyPythonClass objType = getClassNode.execute(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (module != null) {
+        if (dateTimeModuleLoaded.profile(module != null)) {
             if (isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, DATETIME_TYPE)) || isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, TIME_TYPE))) {
                 try {
                     int hour = castToIntNode.execute(lib.readMember(this, "hour"));
@@ -746,7 +752,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
         module = importedModules.getItem(TIME_MODULE_NAME);
-        if (module != null) {
+        if (timeModuleLoaded.profile(module != null)) {
             if (isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, STRUCT_TIME_TYPE))) {
                 try {
                     int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
@@ -764,13 +770,15 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public boolean isTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
-                    @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtype) {
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtype,
+                    @CachedLibrary(limit = "2") InteropLibrary lib, 
+                    @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
         LazyPythonClass objType = getClassNode.execute(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (module != null) {
+        if (dateTimeModuleLoaded.profile(module != null)) {
             if (isSubtype.executeWithGlobalState(objType, readTypeNode.execute(module, DATETIME_TYPE))) {
-                InteropLibrary lib = InteropLibrary.getFactory().getUncached(this);
                 try {
                     Object tzinfo = lib.readMember(this, "tzinfo");
                     if (tzinfo != PNone.NONE) {
@@ -783,7 +791,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     return false;
                 }
             } else if (isSubtype.executeWithGlobalState(objType, readTypeNode.execute(module, TIME_TYPE))) {
-                InteropLibrary lib = InteropLibrary.getFactory().getUncached(this);
                 try {
                     Object tzinfo = lib.readMember(this, "tzinfo");
                     if (tzinfo != PNone.NONE) {
@@ -798,9 +805,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
         module = importedModules.getItem(TIME_MODULE_NAME);
-        if (module != null) {
+        if (timeModuleLoaded.profile(module != null)) {
             if (isSubtype.executeWithGlobalState(objType, readTypeNode.execute(module, STRUCT_TIME_TYPE))) {
-                InteropLibrary lib = InteropLibrary.getFactory().getUncached(this);
                 try {
                     Object tm_zone = lib.readMember(this, "tm_zone");
                     if (tm_zone != PNone.NONE) {
@@ -819,14 +825,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode.IsSubtypeWithoutFrameNode isSubtypeNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
-                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+                    @CachedLibrary(limit = "3") InteropLibrary lib, 
+                    @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
         if (!lib.isTimeZone(this)) {
             throw UnsupportedMessageException.create();
         }
         LazyPythonClass objType = getClassNode.execute(this);
         PDict importedModules = PythonLanguage.getContext().getImportedModules();
         Object module = importedModules.getItem(DATETIME_MODULE_NAME);
-        if (module != null) {
+        if (dateTimeModuleLoaded.profile(module != null)) {
             if (isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, "datetime"))) {
                 try {
                     Object tzinfo = lib.readMember(this, "tzinfo");
@@ -856,7 +864,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             }
         }
         module = importedModules.getItem(TIME_MODULE_NAME);
-        if (module != null) {
+        if (timeModuleLoaded.profile(module != null)) {
             if (isSubtypeNode.executeWithGlobalState(objType, readTypeNode.execute(module, "struct_time"))) {
                 try {
                     Object tm_zone = lib.readMember(this, "tm_zone");
