@@ -60,7 +60,7 @@ import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
-public abstract class GenericInvokeNode extends AbstractInvokeNode {
+public abstract class GenericInvokeNode extends InvokeNode {
     public static GenericInvokeNode create() {
         return GenericInvokeNodeGen.create();
     }

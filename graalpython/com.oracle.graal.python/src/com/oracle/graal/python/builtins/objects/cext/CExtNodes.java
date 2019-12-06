@@ -95,7 +95,7 @@ import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -1841,7 +1841,7 @@ public abstract class CExtNodes {
     @Builtin(minNumOfPositionalArgs = 1)
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
@@ -1851,7 +1851,7 @@ public abstract class CExtNodes {
         public MayRaiseUnaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = func;
-            this.invokeNode = InvokeNode.create(func);
+            this.invokeNode = FunctionInvokeNode.create(func);
             this.errorResult = errorResult;
         }
 
@@ -1880,7 +1880,7 @@ public abstract class CExtNodes {
     @Builtin(minNumOfPositionalArgs = 2)
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
@@ -1890,7 +1890,7 @@ public abstract class CExtNodes {
         public MayRaiseBinaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = func;
-            this.invokeNode = InvokeNode.create(func);
+            this.invokeNode = FunctionInvokeNode.create(func);
             this.errorResult = errorResult;
         }
 
@@ -1919,7 +1919,7 @@ public abstract class CExtNodes {
     @Builtin(minNumOfPositionalArgs = 3)
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
@@ -1929,7 +1929,7 @@ public abstract class CExtNodes {
         public MayRaiseTernaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = func;
-            this.invokeNode = InvokeNode.create(func);
+            this.invokeNode = FunctionInvokeNode.create(func);
             this.errorResult = errorResult;
         }
 
@@ -1957,7 +1957,7 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @Builtin(takesVarArgs = true)
     public static class MayRaiseNode extends PythonBuiltinNode {
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
@@ -1970,7 +1970,7 @@ public abstract class CExtNodes {
             this.readVarargsNode = ReadVarArgsNode.create(0, true);
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = callable;
-            this.invokeNode = InvokeNode.create(callable);
+            this.invokeNode = FunctionInvokeNode.create(callable);
             this.errorResult = errorResult;
         }
 

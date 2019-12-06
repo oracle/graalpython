@@ -161,7 +161,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -1612,7 +1612,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     abstract static class MethodDescriptorRoot extends PRootNode {
-        @Child protected InvokeNode invokeNode;
+        @Child protected FunctionInvokeNode invokeNode;
         @Child protected ReadIndexedArgumentNode readSelfNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
@@ -1625,7 +1625,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             this.factory = factory;
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
             assert builtinFunction.getCallTarget().getRootNode() instanceof ExternalFunctionNode;
-            this.invokeNode = InvokeNode.create(builtinFunction);
+            this.invokeNode = FunctionInvokeNode.create(builtinFunction);
         }
 
         @Override
