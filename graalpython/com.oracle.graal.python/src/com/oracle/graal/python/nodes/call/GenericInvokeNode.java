@@ -76,7 +76,8 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
      * To be used when this node is called adopted.
      *
      * @param frame - the current frame
-     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or {@link RootCallTarget}.
+     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
+     *            {@link RootCallTarget}.
      * @param arguments - the complete (runtime + user) frame arguments for the call
      */
     public final Object execute(VirtualFrame frame, Object callee, Object[] arguments) {
@@ -87,10 +88,12 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
     protected abstract Object executeInternal(Frame frame, Object callee, Object[] arguments);
 
     /**
-     * Can be used when this node is called unadopted or from a place where no
-     * frame is available. However, it will be slower than passing a frame,
-     * because the threadstate is read from the Python context.
-     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or {@link RootCallTarget}.
+     * Can be used when this node is called unadopted or from a place where no frame is available.
+     * However, it will be slower than passing a frame, because the threadstate is read from the
+     * Python context.
+     * 
+     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
+     *            {@link RootCallTarget}.
      * @param arguments - the complete (runtime + user) frame arguments for the call
      */
     public final Object execute(Object callee, Object[] arguments) {

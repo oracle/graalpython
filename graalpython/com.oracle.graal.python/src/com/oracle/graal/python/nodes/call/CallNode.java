@@ -84,10 +84,9 @@ public abstract class CallNode extends PNodeWithContext {
     protected abstract Object executeInternal(Frame frame, Object callableObject, Object[] arguments, PKeyword[] keywords);
 
     /**
-     * To be used when this node is called uncached or when no frame is
-     * available. Note that the current thread state will be read from the
-     * context, so calls through this entry point are potentially slower than if
-     * a frame is available.
+     * To be used when this node is called uncached or when no frame is available. Note that the
+     * current thread state will be read from the context, so calls through this entry point are
+     * potentially slower than if a frame is available.
      */
     public final Object execute(Object callableObject, Object[] arguments, PKeyword[] keywords) {
         return executeInternal(null, callableObject, arguments, keywords);
@@ -199,7 +198,7 @@ public abstract class CallNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"doObjectAndType", "decoratedMethodCall", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallDirect", "builtinMethodCallBuiltinDirectCached",
-                                "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"})
+                    "builtinMethodCallBuiltinDirect", "methodCall", "builtinMethodCall", "functionCall", "builtinFunctionCall"})
     protected Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs,
