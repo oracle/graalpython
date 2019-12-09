@@ -91,7 +91,7 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
      * Can be used when this node is called unadopted or from a place where no frame is available.
      * However, it will be slower than passing a frame, because the threadstate is read from the
      * Python context.
-     * 
+     *
      * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
      *            {@link RootCallTarget}.
      * @param arguments - the complete (runtime + user) frame arguments for the call
@@ -112,7 +112,7 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
             }
         } else {
             assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
-                callContext.prepareCall((VirtualFrame) frame, arguments, callTarget, this);
+            callContext.prepareCall((VirtualFrame) frame, arguments, callTarget, this);
             return callNode.call(callTarget, arguments);
         }
     }
