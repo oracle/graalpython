@@ -44,7 +44,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class ModuleRootNode extends PClosureRootNode {
-    private static final Signature SIGNATURE = new Signature(false, -1, false, new String[0], new String[0]);
     private final String name;
     private final String doc;
     private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
@@ -124,7 +123,7 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public Signature getSignature() {
-        return SIGNATURE;
+        return Signature.EMPTY;
     }
 
     @Override

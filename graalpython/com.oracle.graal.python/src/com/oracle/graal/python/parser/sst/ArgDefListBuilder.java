@@ -92,6 +92,7 @@ public final class ArgDefListBuilder {
     private final Set<String> paramNames;
     private int splatIndex = -1;
     private int kwarIndex = -1;
+    private int positionalOnlyIndex = -1;  // index to the last positional argument
     private int countOfTypedParams = 0;
 
     public ArgDefListBuilder(ScopeEnvironment scopeEnvironment) {
@@ -101,10 +102,10 @@ public final class ArgDefListBuilder {
 
     public static enum AddParamResult {
         OK, // was added without an error
-        NONDEFAULT_FOLLOWS_DEFAULT, //non-default argument follows default argument
-        DUPLICATED_ARGUMENT//duplicate argument 'x' in function definition
+        NONDEFAULT_FOLLOWS_DEFAULT, // non-default argument follows default argument
+        DUPLICATED_ARGUMENT// duplicate argument 'x' in function definition
     };
-    
+
     public AddParamResult addParam(String name, SSTNode type, SSTNode defValue) {
         if (paramNames.contains(name)) {
             return AddParamResult.DUPLICATED_ARGUMENT;
@@ -189,6 +190,19 @@ public final class ArgDefListBuilder {
 
     public boolean hasSplat() {
         return splatIndex > -1;
+    }
+
+    /**
+     * 
+     * @return The index to the positional only argument marker ('/'). Which means that all
+     *         positional only argument have index smaller then this.
+     */
+    public int getPositionalOnlyIndex() {
+        return positionalOnlyIndex;
+    }
+
+    public void markPositionalOnlyIndex() {
+        this.positionalOnlyIndex = args.size();
     }
 
     public StatementNode[] getArgumentNodes() {
@@ -293,7 +307,7 @@ public final class ArgDefListBuilder {
                 }
             }
         }
-        return new Signature(kwarIndex > -1, splatMarker ? -1 : splatIndex, splatMarker, ids, kwids);
+        return new Signature(positionalOnlyIndex, kwarIndex > -1, splatMarker ? -1 : splatIndex, splatMarker, ids, kwids);
     }
 
 }

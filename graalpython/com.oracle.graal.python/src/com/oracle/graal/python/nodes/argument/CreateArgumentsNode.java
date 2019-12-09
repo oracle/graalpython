@@ -477,6 +477,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int k = 0;
             int additionalKwds = 0;
             String lastWrongKeyword = null;
+            int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
                 String name = kwArg.getName();
@@ -489,6 +490,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
 
                 if (kwIdx != -1) {
+                    if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
+                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                    }
                     if (PArguments.getArgument(arguments, kwIdx) != null) {
                         throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                     }
@@ -500,7 +504,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, raise);
+            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, raise);
             return arguments;
         }
 
@@ -517,6 +521,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             // same as above
             int k = 0;
             int additionalKwds = 0;
+            int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
+
             String lastWrongKeyword = null;
             for (int i = 0; i < keywords.length; i++) {
                 PKeyword kwArg = keywords[i];
@@ -530,6 +536,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
 
                 if (kwIdx != -1) {
+                    if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
+                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                    }
                     if (PArguments.getArgument(arguments, kwIdx) != null) {
                         throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
                     }
@@ -541,15 +550,15 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, raise);
+            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, raise);
             return arguments;
         }
 
-        private static void storeKeywordsOrRaise(Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword, PRaiseNode raise) {
+        private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "got an unexpected keyword argument '%s'", lastWrongKeyword);
+                throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got an unexpected keyword argument '%s'", CreateArgumentsNode.getName(callee), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "got %d unexpected keyword arguments", tooManyKeywords);
+                throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got %d unexpected keyword arguments", CreateArgumentsNode.getName(callee), tooManyKeywords);
             } else if (unusedKeywords != null) {
                 PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
             }
@@ -594,12 +603,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     protected abstract static class FillBaseNode extends PNodeWithContext {
 
-        protected PException raiseMissing(Object callable, String[] missingNames, int missingCnt, PRaiseNode raise) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() missing %d required positional argument%s: %s",
+        protected PException raiseMissing(Object callable, String[] missingNames, int missingCnt, String type, PRaiseNode raise) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() missing %d required %s argument%s: '%s'",
                             getName(callable),
                             missingCnt,
+                            type,
                             missingCnt == 1 ? "" : "s",
-                            String.join(",", Arrays.copyOf(missingNames, missingCnt)));
+                            missingCnt == 1 ? missingNames[0]
+                                            : String.join("', '", Arrays.copyOf(missingNames, missingCnt - 1)) + (missingCnt == 2 ? "' and '" : "', and '") + missingNames[missingCnt - 1]);
         }
 
         protected static boolean checkIterations(int input_argcount, int co_argcount) {
@@ -634,7 +645,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, raise);
+                throw raiseMissing(callable, missingNames, missingCnt, "positional", raise);
             }
         }
 
@@ -657,7 +668,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, raise);
+                throw raiseMissing(callable, missingNames, missingCnt, "positional", raise);
             }
         }
 
@@ -698,7 +709,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, raise);
+                throw raiseMissing(callable, missingNames, missingCnt, "keyword-only", raise);
             }
         }
 
@@ -723,7 +734,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             if (missingProfile.profile(missingCnt > 0)) {
-                throw raiseMissing(callable, missingNames, missingCnt, raise);
+                throw raiseMissing(callable, missingNames, missingCnt, "keyword-only", raise);
             }
         }
 

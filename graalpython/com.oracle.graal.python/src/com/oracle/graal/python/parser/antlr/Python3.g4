@@ -412,13 +412,12 @@ parameters returns [ArgDefListBuilder result]
 typedargslist [ArgDefListBuilder args]
 :
     (
-        defparameter[args] ( ',' defparameter[args] )* ',' '/' 
+        defparameter[args] ( ',' defparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
             ((',' defparameter[args] ( ',' defparameter[args] )*)?
                 ( ',' 
                     ( splatparameter[args]	
                         ( ',' defparameter[args])*
-                        ( ',' ( kwargsparameter[args] ','? )?
-                        )?
+                        ( ',' ( kwargsparameter[args] ','? )? )?
                         | kwargsparameter[args] ','?
                     )?
                 )?
@@ -427,15 +426,13 @@ typedargslist [ArgDefListBuilder args]
             ( ',' 
                 ( splatparameter[args]	
                     ( ',' defparameter[args])*
-                    ( ',' ( kwargsparameter[args] ','? )?
-		    )?
+                    ( ',' ( kwargsparameter[args] ','? )?)?
                     | kwargsparameter[args] ','?
 		)?
             )?
 	| splatparameter[args]
             ( ',' defparameter[args])*
-            ( ',' ( kwargsparameter[args] ','? )?
-            )?
+            ( ',' ( kwargsparameter[args] ','? )? )?
 	| kwargsparameter[args] ','?
     )
 ;
@@ -453,7 +450,8 @@ defparameter [ArgDefListBuilder args]
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
                 case DUPLICATED_ARGUMENT:
                     throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
-            }
+            } 
+            
         }
 ;
 
@@ -480,37 +478,28 @@ varargslist returns [ArgDefListBuilder result]
 :
 	{ ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
 	(
-		vdefparameter[args]
-		(
-			',' vdefparameter[args]
-		)*
-		(
-			','
-			(
-				vsplatparameter[args]
-				(
-					',' vdefparameter[args]
-				)*
-				(
-					','
-					(
-						vkwargsparameter[args] ','?
-					)?
-				)?
-				| vkwargsparameter[args] ','?
-			)?
-		)?
-		| vsplatparameter[args]
-		(
-			',' vdefparameter[args]
-		)*
-		(
-			','
-			(
-				vkwargsparameter[args] ','?
-			)?
-		)?
-		| vkwargsparameter[args] ','?
+            vdefparameter[args] ( ',' vdefparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
+                ((',' vdefparameter[args] (',' vdefparameter[args])* )?
+                    ( ','
+                        ( vsplatparameter[args]
+                            ( ',' vdefparameter[args])*
+                            ( ',' (vkwargsparameter[args] ','? )? )?
+                            | vkwargsparameter[args] ','?
+                        )?
+                    )?
+                )?
+            | vdefparameter[args] (',' vdefparameter[args])*
+                ( ','
+                    ( vsplatparameter[args]
+                        ( ',' vdefparameter[args])*
+                        ( ',' (vkwargsparameter[args] ','? )? )?
+                        | vkwargsparameter[args] ','?
+                    )?
+                )?
+            | vsplatparameter[args]
+                (',' vdefparameter[args])*
+                ( ',' (vkwargsparameter[args] ','? )? )?
+            | vkwargsparameter[args] ','?
 	)
 	{ $result = args; }
 ;
@@ -520,7 +509,16 @@ vdefparameter [ArgDefListBuilder args]
 	NAME
 	{ SSTNode defValue = null; }
 	( '=' test { defValue = $test.result; } )?
-	{ args.addParam($NAME.text, null, defValue);}
+	{ 
+            ArgDefListBuilder.AddParamResult result = args.addParam($NAME.text, null, defValue); 
+            switch(result) {
+                case NONDEFAULT_FOLLOWS_DEFAULT:
+                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
+                case DUPLICATED_ARGUMENT:
+                    throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
+            }
+            
+        }
 ;
 
 vsplatparameter [ArgDefListBuilder args]

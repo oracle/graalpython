@@ -50,7 +50,7 @@ public class FuncDefTests extends ParserTestBase {
     public void args01() throws Exception {
         checkScopeAndTree("def fn(a, b=0, *arg, k1, k2=0): return a + b + k1 + k2 + sum(arg)");
     }
-    
+
     @Test
     public void args02() throws Exception {
         checkSyntaxErrorMessage("def f(a, a): pass", "SyntaxError: duplicate argument 'a' in function definition");
@@ -236,47 +236,47 @@ public class FuncDefTests extends ParserTestBase {
     public void positionalOnlyArg01() throws Exception {
         checkTreeResult("def name(p1, p2, /, p_or_kw, *, kw): pass");
     }
-    
+
     @Test
     public void positionalOnlyArg02() throws Exception {
         checkTreeResult("def name(p1, p2=None, /, p_or_kw=None, *, kw): pass");
     }
-    
+
     @Test
     public void positionalOnlyArg03() throws Exception {
         checkTreeResult("def name(p1, p2=None, /, *, kw): pass");
     }
-    
+
     @Test
     public void positionalOnlyArg04() throws Exception {
         checkTreeResult("def name(p1, p2=None, /): pass");
     }
-    
+
     @Test
     public void positionalOnlyArg05() throws Exception {
         checkTreeResult("def name(p1, p2, /, p_or_kw): pass");
     }
-    
+
     @Test
     public void positionalOnlyArg06() throws Exception {
         checkTreeResult("def name(p1, p2, /): pass");
     }
-    
+
     @Test
     public void positionalOnlyArg07() throws Exception {
         checkSyntaxErrorMessage("def name(p1, p2=None, /, p_or_kw, *, kw): pass", "SyntaxError: non-default argument follows default argument");
     }
-    
+
     @Test
     public void positionalOnlyArg08() throws Exception {
         checkSyntaxErrorMessage("def name(p1=None, p2, /, p_or_kw=None, *, kw): pass", "SyntaxError: non-default argument follows default argument");
     }
-    
+
     @Test
     public void positionalOnlyArg09() throws Exception {
         checkSyntaxErrorMessage("def name(p1=None, p2, /): pass", "SyntaxError: non-default argument follows default argument");
     }
-    
+
     @Test
     public void positionalOnlyArg10() throws Exception {
         checkSyntaxErrorMessage("def f(a, b = 5, /, c): pass", "SyntaxError: non-default argument follows default argument");
@@ -296,7 +296,7 @@ public class FuncDefTests extends ParserTestBase {
     public void positionalOnlyArg13() throws Exception {
         checkSyntaxErrorMessage("def f(a = 5, b, /): pass", "SyntaxError: non-default argument follows default argument");
     }
-    
+
     @Test
     public void positionalOnlyArg14() throws Exception {
         checkSyntaxError("def f(*args, /): pass");
@@ -306,7 +306,7 @@ public class FuncDefTests extends ParserTestBase {
     public void positionalOnlyArg15() throws Exception {
         checkSyntaxError("def f(*args, a, /): pass");
     }
-        
+
     @Test
     public void positionalOnlyArg16() throws Exception {
         checkSyntaxError("def f(**kwargs, /): pass");
@@ -378,12 +378,12 @@ public class FuncDefTests extends ParserTestBase {
     }
 
     @Test
-    public void positionalOnlyArg30() throws Exception {    
+    public void positionalOnlyArg30() throws Exception {
         checkSyntaxErrorMessage("async def f(a = 5, b, /, c): pass", "SyntaxError: non-default argument follows default argument");
     }
 
     @Test
-    public void positionalOnlyArg31() throws Exception {        
+    public void positionalOnlyArg31() throws Exception {
         checkSyntaxErrorMessage("async def f(a = 5, b=1, /, c, d=2): pass", "SyntaxError: non-default argument follows default argument");
     }
 
@@ -466,7 +466,7 @@ public class FuncDefTests extends ParserTestBase {
     public void positionalOnlyArg47() throws Exception {
         checkSyntaxError("async def f(a, *, c, /, d, e): pass");
     }
-    
+
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);
