@@ -7,6 +7,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 * Jython Compatiblity: Implement `from JavaType import *` to import all static members of a Java class
 * Jython Compatiblity: Implement importing Python code from inside JAR files by adding `path/to/jarfile.jar!path/inside/jar` to `sys.path`
+* PEP 570 -- Python Positional-Only Parameters implemented
 
 ## Version 19.3.0
 
