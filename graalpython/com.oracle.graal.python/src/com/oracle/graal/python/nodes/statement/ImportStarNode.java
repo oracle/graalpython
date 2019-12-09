@@ -44,7 +44,6 @@ import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
-import com.oracle.graal.python.parser.sst.SimpleSSTNode.Type;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -131,8 +130,9 @@ public class ImportStarNode extends AbstractImportNode {
                 for (int i = 0; i < n; i++) {
                     Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
                     String attrName = ensureCastToStringNode().execute(attrNameObj);
-                    if(attrName == null) {
-                        // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode; but that needs some refactoring first.
+                    if (attrName == null) {
+                        // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode;
+                        // but that needs some refactoring first.
                         throw raise(PythonBuiltinClassType.TypeError, "attribute name must be string, not '%p'", attrNameObj);
                     }
                     Object attr = readAttribute(frame, importedModule, attrName);

@@ -1815,10 +1815,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding)"}, limit = "3" )
+        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding)"}, limit = "3")
         Object doBuffer(VirtualFrame frame, LazyPythonClass strClass, Object obj, Object encoding, Object errors,
                         @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
-            if(bufferLib.isBuffer(obj)) {
+            if (bufferLib.isBuffer(obj)) {
                 try {
                     // TODO(fa): we should directly call '_codecs.decode'
                     PBytes bytesObj = factory().createBytes(bufferLib.getBufferBytes(obj));
@@ -1847,10 +1847,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * into a natively allocated subtype structure
          */
         @Specialization(guards = {"isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
-        Object doNativeSubclass(VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding,@SuppressWarnings("unused")  Object errors,
+        Object doNativeSubclass(VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CoerceToStringNode castToStringNode,
-                        @Cached BranchProfile gotException,
                         @Cached CExtNodes.StringSubtypeNew subtypeNew) {
             return subtypeNew.call(cls, castToStringNode.execute(frame, obj));
         }

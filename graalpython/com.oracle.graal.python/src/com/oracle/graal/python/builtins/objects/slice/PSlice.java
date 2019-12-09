@@ -118,6 +118,7 @@ public class PSlice extends PythonBuiltinObject {
             this.length = length;
         }
     }
+
     public SliceInfo computeIndices(int length) {
         return PSlice.computeIndices(start, stop, step, length);
 
