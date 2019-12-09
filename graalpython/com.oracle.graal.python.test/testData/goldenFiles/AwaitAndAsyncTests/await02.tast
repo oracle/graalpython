@@ -38,9 +38,7 @@ ModuleRootNode Name: <module 'await02'> SourceSection: [0,34]`async def f():↵ 
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,foo,Illegal]
                       PythonCallNodeGen SourceSection: [22,34]`await smth()`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: smth
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

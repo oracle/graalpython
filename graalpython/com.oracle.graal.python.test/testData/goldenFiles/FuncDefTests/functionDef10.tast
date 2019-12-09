@@ -41,9 +41,7 @@ ModuleRootNode Name: <module 'functionDef10'> SourceSection: [0,30]`def foo(*arg
                           PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [19,30]`print(args)`
                       PythonCallNodeGen SourceSection: [19,30]`print(args)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [25,29]`args`
                           Frame: [0,args,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None

@@ -106,9 +106,7 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                               Frame: [4,k2,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [57,65]`sum(arg)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [61,64]`arg`
                               Frame: [2,arg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

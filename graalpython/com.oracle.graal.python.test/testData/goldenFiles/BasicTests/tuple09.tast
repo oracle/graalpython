@@ -10,8 +10,6 @@ ModuleRootNode Name: <module 'tuple09'> SourceSection: [0,10]`1, call1()`
       IntegerLiteralNode SourceSection: [0,1]`1`
         Value: 1
       PythonCallNodeGen SourceSection: [3,10]`call1()`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: None
           Identifier: call1

@@ -43,9 +43,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [58,85]`_is_unpacked_egg(pat...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [75,84]`path_item`
                             ReadGeneratorFrameVariableNode SourceSection: None
                               Frame: [1,path_item,Illegal]
@@ -59,9 +57,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           YieldNode SourceSection: [95,261]`yield Distribution.f...`
                             flagSlot: 0
                             PythonCallNodeGen SourceSection: [101,261]`Distribution.from_fi...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [141,150]`path_item`
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [1,path_item,Illegal]
@@ -70,18 +66,14 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               KeywordArgumentsNodeGen SourceSection: None
                                 KeywordLiteralNode SourceSection: None
                                   PythonCallNodeGen SourceSection: [161,251]`PathMetadata(↵      ...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
                                       ReadGeneratorFrameVariableNode SourceSection: None
                                         Frame: [1,path_item,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadFromCellNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [202,237]`os.path.join(path_it...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
                                         ReadGeneratorFrameVariableNode SourceSection: None
                                           Frame: [1,path_item,Illegal]
@@ -116,9 +108,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [3,entries,Illegal]
                       PythonCallNodeGen SourceSection: [292,315]`safe_listdir(path_it...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [305,314]`path_item`
                           ReadGeneratorFrameVariableNode SourceSection: None
                             Frame: [1,path_item,Illegal]
@@ -158,9 +148,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                   GeneratorAccessNode SourceSection: None
                                   YesNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [388,424]`dist_factory(path_it...`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [401,410]`path_item`
                                         ReadGeneratorFrameVariableNode SourceSection: None
                                           Frame: [1,path_item,Illegal]
@@ -213,9 +201,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [5,path_item_entries,Illegal]
                       PythonCallNodeGen SourceSection: [456,488]`_by_version_descendi...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [479,487]`filtered`
                           Frame: [4,filtered,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -230,9 +216,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [6,fullpath,Illegal]
                             PythonCallNodeGen SourceSection: [544,574]`os.path.join(path_it...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [557,566]`path_item`
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [1,path_item,Illegal]
@@ -255,9 +239,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [7,factory,Illegal]
                             PythonCallNodeGen SourceSection: [593,629]`dist_factory(path_it...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [606,615]`path_item`
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [1,path_item,Illegal]
@@ -290,9 +272,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               GetIteratorExpressionNodeGen SourceSection: [650,667]`factory(fullpath)`
                                 GetIteratorNodeGen SourceSection: None
                                 PythonCallNodeGen SourceSection: [650,667]`factory(fullpath)`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: [658,666]`fullpath`
                                     Frame: [6,fullpath,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None

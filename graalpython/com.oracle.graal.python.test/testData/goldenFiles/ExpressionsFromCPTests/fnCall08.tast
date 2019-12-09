@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'fnCall08'> SourceSection: [0,19]`foo(a, b, c, *arg
   Documentation: None
   InnerRootNode SourceSection: [0,19]`foo(a, b, c, *args)`
     PythonCallNodeGen SourceSection: [0,19]`foo(a, b, c, *args)`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       PositionalArgumentsNode SourceSection: None
         ReadNameNodeGen SourceSection: [4,5]`a`
           Identifier: a

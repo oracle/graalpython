@@ -8,9 +8,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
     ExpressionWithSideEffect SourceSection: [0,132]`def test():↵  def in...`
       Expression:
         PythonCallNodeGen SourceSection: [126,132]`test()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: test
       SideEffect:
@@ -102,9 +100,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                 BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [60,89]`print("inner_inner",...`
                                                   PythonCallNodeGen SourceSection: [60,89]`print("inner_inner",...`
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [66,79]`"inner_inner"`
                                                     KeywordArgumentsNodeGen SourceSection: None
                                                       KeywordLiteralNode SourceSection: None
@@ -124,9 +120,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [94,107]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [94,107]`inner_inner()`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: None
                                           Frame: [1,inner_inner,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -135,9 +129,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,125]`inner(" baf\n")`
                         PythonCallNodeGen SourceSection: [110,125]`inner(" baf\n")`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [116,124]`" baf\n"`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,inner,Illegal]

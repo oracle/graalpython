@@ -12,9 +12,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
         WriteNameNodeGen SourceSection: [0,38]`@some.path.to.decora...`
           Identifier: fn
           PythonCallNodeGen SourceSection: [0,23]`@some.path.to.decora...`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             FunctionDefinitionNode Name: fn SourceSection: None
               Arguments: None
               KwArguments: None

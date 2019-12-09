@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'fnCall07'> SourceSection: [0,20]`foo(key=value, **
   Documentation: None
   InnerRootNode SourceSection: [0,20]`foo(key=value, **kw)...`
     PythonCallNodeGen SourceSection: [0,20]`foo(key=value, **kw)...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
         KeywordLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [8,13]`value`

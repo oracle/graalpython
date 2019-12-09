@@ -63,9 +63,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [42,67]`test(msg, self.strin...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [47,50]`msg`
                             Frame: [1,msg,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

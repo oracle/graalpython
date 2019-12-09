@@ -44,9 +44,7 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
                           IntegerLiteralNode SourceSection: [29,30]`0`
                             Value: 0
                       PythonCallNodeGen SourceSection: [32,47]`getMessage(len)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [43,46]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

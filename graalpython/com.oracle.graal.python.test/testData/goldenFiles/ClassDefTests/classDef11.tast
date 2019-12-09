@@ -61,9 +61,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [3,<>temp3,Illegal]
                             PythonCallNodeGen SourceSection: [46,264]`class named_tuple(tu...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               FunctionDefinitionNode Name: named_tuple SourceSection: None
                                 Arguments: None
                                 KwArguments: None
@@ -120,9 +118,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                               Index: 0
                                           StringLiteralNode SourceSection: None
                                           PythonCallNodeGen SourceSection: [124,135]`len(fields)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadClassAttributeNodeGen SourceSection: [128,134]`fields`
                                               GetItemNodeGen SourceSection: None
                                                 ArgumentExpressionNode SourceSection: None

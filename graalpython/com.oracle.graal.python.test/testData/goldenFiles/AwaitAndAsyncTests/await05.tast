@@ -35,13 +35,9 @@ ModuleRootNode Name: <module 'await05'> SourceSection: [0,35]`async def f():↵ 
                     BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [16,35]`foo((await smth()))`
                       PythonCallNodeGen SourceSection: [16,35]`foo((await smth()))`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [21,33]`await smth()`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: smth
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

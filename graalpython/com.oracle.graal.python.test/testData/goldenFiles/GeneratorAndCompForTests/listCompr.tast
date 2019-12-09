@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
   Documentation: None
   InnerRootNode SourceSection: [0,21]`[i for i in range(3)...`
     PythonCallNodeGen SourceSection: [0,21]`[i for i in range(3)...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,20]`for i in range(3)`
         Name: [].<locals>.<genexp>:listCompr:1
         FrameDescriptor: 2 slots [i, <return_val>]
@@ -59,9 +57,7 @@ ModuleRootNode Name: <module 'listCompr'> SourceSection: [0,21]`[i for i in rang
         GetIteratorExpressionNodeGen SourceSection: [12,20]`range(3)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [12,20]`range(3)`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [18,19]`3`
               Value: 3
             ReadNameNodeGen SourceSection: None
