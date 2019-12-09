@@ -17,9 +17,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               PythonCallNodeGen SourceSection: [0,110]`class Complex:↵    d...`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 FunctionDefinitionNode Name: Complex SourceSection: None
                   Arguments: None
                   KwArguments: None

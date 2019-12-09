@@ -8,9 +8,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
     ExpressionWithSideEffect SourceSection: [0,155]`def test():↵  def in...`
       Expression:
         PythonCallNodeGen SourceSection: [149,155]`test()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: test
       SideEffect:
@@ -103,9 +101,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                                 BlockNode SourceSection: None
                                                   ExpressionStatementNode SourceSection: [60,95]`print("inner_inner",...`
                                                     PythonCallNodeGen SourceSection: [60,95]`print("inner_inner",...`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [66,79]`"inner_inner"`
                                                       KeywordArgumentsNodeGen SourceSection: None
                                                         KeywordLiteralNode SourceSection: None
@@ -118,9 +114,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [102,112]`print(end)`
                                                     PythonCallNodeGen SourceSection: [102,112]`print(end)`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [108,111]`end`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [0,end,Illegal]
@@ -134,9 +128,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [117,130]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [117,130]`inner_inner()`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: None
                                           Frame: [1,inner_inner,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -145,9 +137,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [133,148]`inner(" baf\n")`
                         PythonCallNodeGen SourceSection: [133,148]`inner(" baf\n")`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [139,147]`" baf\n"`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,inner,Illegal]

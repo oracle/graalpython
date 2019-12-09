@@ -46,9 +46,7 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __ne__
                           PythonCallNodeGen SourceSection: [27,37]`len(marks)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [31,36]`marks`
                               Frame: [0,marks,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

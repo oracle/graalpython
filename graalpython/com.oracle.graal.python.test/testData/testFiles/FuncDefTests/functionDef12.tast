@@ -8,9 +8,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
     ExpressionWithSideEffect SourceSection: [0,81]`def outer ():↵    de...`
       Expression:
         PythonCallNodeGen SourceSection: [74,81]`outer()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: outer
       SideEffect:
@@ -67,9 +65,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                   BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [39,48]`print(x )`
                                     PythonCallNodeGen SourceSection: [39,48]`print(x )`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [45,46]`x`
                                         ReadLocalVariableNode SourceSection: None
                                           Frame: [0,x,Illegal]
@@ -90,9 +86,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                           Value: 12
                       ExpressionStatementNode SourceSection: [65,72]`inner()`
                         PythonCallNodeGen SourceSection: [65,72]`inner()`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,inner,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

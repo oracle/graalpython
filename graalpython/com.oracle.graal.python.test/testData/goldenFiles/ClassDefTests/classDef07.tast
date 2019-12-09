@@ -17,9 +17,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               PythonCallNodeGen SourceSection: [0,106]`class OrderedDict(di...`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 FunctionDefinitionNode Name: OrderedDict SourceSection: None
                   Arguments: None
                   KwArguments: None
@@ -102,17 +100,13 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                       BlockNode SourceSection: None
                                         ExpressionStatementNode SourceSection: [75,89]`dict_setitem()`
                                           PythonCallNodeGen SourceSection: [75,89]`dict_setitem()`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [0,dict_setitem,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [94,106]`dict.clear()`
                                           PythonCallNodeGen SourceSection: [94,106]`dict.clear()`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [94,98]`dict`
                                                 Identifier: dict

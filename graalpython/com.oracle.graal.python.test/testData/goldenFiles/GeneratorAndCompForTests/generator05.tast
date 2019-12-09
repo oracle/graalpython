@@ -69,9 +69,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                                   YieldNode SourceSection: [32,43]`c.isspace()`
                                     flagSlot: 0
                                     PythonCallNodeGen SourceSection: [32,43]`c.isspace()`
-                                      CachedCallNodeGen SourceSection: None
-                                        CreateArgumentsNodeGen SourceSection: None
-                                        CallDispatchNodeGen SourceSection: None
+                                      CallNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNode SourceSection: [32,33]`c`
                                           Frame: [0,c,Illegal]

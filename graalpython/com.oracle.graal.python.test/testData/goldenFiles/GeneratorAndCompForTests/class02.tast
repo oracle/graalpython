@@ -17,9 +17,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               PythonCallNodeGen SourceSection: [0,208]`class Counter(dict):...`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 FunctionDefinitionNode Name: Counter SourceSection: None
                   Arguments: None
                   KwArguments: None
@@ -91,9 +89,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,nonpositive,Illegal]
                                           PythonCallNodeGen SourceSection: [74,127]`elem for elem, count...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             GeneratorExpressionNode SourceSection: [79,127]`for elem, count in s...`
                                               Name: _keep_positive.<locals>.<genexp>:class02:3
                                               FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
@@ -176,9 +172,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                               GetIteratorExpressionNodeGen SourceSection: [98,110]`self.items()`
                                                 GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [98,110]`self.items()`
-                                                  CachedCallNodeGen SourceSection: None
-                                                    CreateArgumentsNodeGen SourceSection: None
-                                                    CallDispatchNodeGen SourceSection: None
+                                                  CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [98,102]`self`
                                                       Frame: [0,self,Illegal]

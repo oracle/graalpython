@@ -74,9 +74,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __add__
                                       PythonCallNodeGen SourceSection: [52,56]`fn()`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [0,fn,Illegal]
@@ -101,9 +99,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
       WriteNameNodeGen SourceSection: [78,122]`@mydecorator↵def get...`
         Identifier: getNumber
         PythonCallNodeGen SourceSection: [78,90]`@mydecorator`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           FunctionDefinitionNode Name: getNumber SourceSection: None
             Arguments: None
             KwArguments: None
@@ -139,13 +135,9 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
           ReadNameNodeGen SourceSection: [78,90]`@mydecorator`
             Identifier: mydecorator
       PythonCallNodeGen SourceSection: [122,140]`print(getNumber())`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [128,139]`getNumber()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: getNumber
         ReadNameNodeGen SourceSection: None

@@ -75,9 +75,7 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [5,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [72,76]`_cls`
                             Frame: [0,_cls,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

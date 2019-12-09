@@ -114,9 +114,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __gt__
                           PythonCallNodeGen SourceSection: [24,30]`len(h)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [28,29]`h`
                               Frame: [0,h,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

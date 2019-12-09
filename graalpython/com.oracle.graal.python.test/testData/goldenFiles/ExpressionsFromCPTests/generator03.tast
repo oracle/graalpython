@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
   Documentation: None
   InnerRootNode SourceSection: [0,43]`[x**3 for x in range...`
     PythonCallNodeGen SourceSection: [0,43]`[x**3 for x in range...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,42]`for x in range(20) i...`
         Name: [].<locals>.<genexp>:generator03:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -86,9 +84,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
         GetIteratorExpressionNodeGen SourceSection: [15,24]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [15,24]`range(20)`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [21,23]`20`
               Value: 20
             ReadNameNodeGen SourceSection: None

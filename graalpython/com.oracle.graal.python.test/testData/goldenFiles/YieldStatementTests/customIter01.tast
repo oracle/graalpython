@@ -45,9 +45,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [3,<>temp3,Illegal]
                             PythonCallNodeGen SourceSection: [14,148]`class MyIter:↵      ...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               FunctionDefinitionNode Name: MyIter SourceSection: None
                                 Arguments: None
                                 KwArguments: None
@@ -160,9 +158,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                           Index: 0
                                                     RaiseNodeGen SourceSection: [120,143]`raise StopIteration(...`
                                                       PythonCallNodeGen SourceSection: [126,143]`StopIteration(42)`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [140,142]`42`
                                                           Value: 42
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -227,9 +223,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       PythonCallNodeGen SourceSection: [205,213]`MyIter()`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [0,MyIter,Illegal]
@@ -250,13 +244,9 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                         ObjectLiteralNode SourceSection: [224,228]`None`
                       ExpressionStatementNode SourceSection: [233,244]`list(gen())`
                         PythonCallNodeGen SourceSection: [233,244]`list(gen())`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [238,243]`gen()`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,gen,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

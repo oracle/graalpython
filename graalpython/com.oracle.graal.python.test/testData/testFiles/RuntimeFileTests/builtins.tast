@@ -147,9 +147,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                     IfNode SourceSection: [2342,2433]`if filename.startswi...`
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [2345,2370]`filename.startswith(...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [2365,2369]`"%s"`
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2345,2353]`filename`
@@ -179,9 +177,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,fd,Illegal]
                       PythonCallNodeGen SourceSection: [2438,2474]`posix.open(filename,...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2449,2457]`filename`
                           Frame: [0,filename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -202,9 +198,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [6,content,Illegal]
                       PythonCallNodeGen SourceSection: [2489,2516]`posix.read(fd, sys.m...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2500,2502]`fd`
                           Frame: [5,fd,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -222,9 +216,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                             ReadVariableFromFrameNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2521,2536]`posix.close(fd)`
                       PythonCallNodeGen SourceSection: [2521,2536]`posix.close(fd)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2533,2535]`fd`
                           Frame: [5,fd,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -237,9 +229,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [7,code,Illegal]
                       PythonCallNodeGen SourceSection: [2548,2582]`compile(content, fil...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2556,2563]`content`
                           Frame: [6,content,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -252,9 +242,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2587,2614]`exec(code, module.__...`
                       PythonCallNodeGen SourceSection: [2587,2614]`exec(code, module.__...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2592,2596]`code`
                           Frame: [7,code,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -282,53 +270,41 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                   ReadVariableFromFrameNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [2635,2676]`__import__("%s/funct...`
         PythonCallNodeGen SourceSection: [2635,2676]`__import__("%s/funct...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2646,2663]`"%s/functions.py"`
           StringLiteralNode SourceSection: [2665,2675]`"builtins"`
           ReadNameNodeGen SourceSection: None
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2677,2717]`__import__("%s/prope...`
         PythonCallNodeGen SourceSection: [2677,2717]`__import__("%s/prope...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2688,2704]`"%s/property.py"`
           StringLiteralNode SourceSection: [2706,2716]`"builtins"`
           ReadNameNodeGen SourceSection: None
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2718,2760]`__import__("%s/excep...`
         PythonCallNodeGen SourceSection: [2718,2760]`__import__("%s/excep...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2729,2747]`"%s/exceptions.py"`
           StringLiteralNode SourceSection: [2749,2759]`"builtins"`
           ReadNameNodeGen SourceSection: None
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2761,2798]`__import__("%s/super...`
         PythonCallNodeGen SourceSection: [2761,2798]`__import__("%s/super...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2772,2785]`"%s/super.py"`
           StringLiteralNode SourceSection: [2787,2797]`"builtins"`
           ReadNameNodeGen SourceSection: None
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2799,2839]`__import__("%s/ellip...`
         PythonCallNodeGen SourceSection: [2799,2839]`__import__("%s/ellip...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2810,2826]`"%s/ellipsis.py"`
           StringLiteralNode SourceSection: [2828,2838]`"builtins"`
           ReadNameNodeGen SourceSection: None
             Identifier: __import__
       PythonCallNodeGen SourceSection: [2840,2879]`__import__("%s/timso...`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         StringLiteralNode SourceSection: [2851,2866]`"%s/timsort.py"`
         StringLiteralNode SourceSection: [2868,2878]`"builtins"`
         ReadNameNodeGen SourceSection: None

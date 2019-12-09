@@ -12,9 +12,7 @@ ModuleRootNode Name: <module 'assignment09'> SourceSection: [0,9]`f().b = 1`
         SetAttributeNodeGen SourceSection: [0,9]`f().b = 1`
           Attribute: b
           PythonCallNodeGen SourceSection: [0,3]`f()`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: f
           IntegerLiteralNode SourceSection: [8,9]`1`

@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
   Documentation: None
   InnerRootNode SourceSection: [0,48]`''.join(f'{name}' fo...`
     PythonCallNodeGen SourceSection: [0,48]`''.join(f'{name}' fo...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [18,47]`for name in ['Pepa',...`
         Name: [].<locals>.<genexp>:topLevelParser02:1
         FrameDescriptor: 2 slots [name, <return_val>]

@@ -56,9 +56,7 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                         GetIteratorExpressionNodeGen SourceSection: [21,30]`xrange(3)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [21,30]`xrange(3)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [28,29]`3`
                               Value: 3
                             ReadGlobalOrBuiltinNodeGen SourceSection: None

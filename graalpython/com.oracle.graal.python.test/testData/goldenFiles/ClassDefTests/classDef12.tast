@@ -77,9 +77,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<>temp2,Illegal]
                                           PythonCallNodeGen SourceSection: [77,375]`class Test(object):↵...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             FunctionDefinitionNode Name: Test SourceSection: None
                                               Arguments: None
                                               KwArguments: None
@@ -241,9 +239,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [2,<return_val>,Illegal]
                                                                       PythonCallNodeGen SourceSection: [293,306]`str("global")`
-                                                                        CachedCallNodeGen SourceSection: None
-                                                                          CreateArgumentsNodeGen SourceSection: None
-                                                                          CallDispatchNodeGen SourceSection: None
+                                                                        CallNodeGen SourceSection: None
                                                                         StringLiteralNode SourceSection: [297,305]`"global"`
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                                           Identifier: str
@@ -291,9 +287,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [2,<return_val>,Illegal]
                                                                       PythonCallNodeGen SourceSection: [357,366]`str(self)`
-                                                                        CachedCallNodeGen SourceSection: None
-                                                                          CreateArgumentsNodeGen SourceSection: None
-                                                                          CallDispatchNodeGen SourceSection: None
+                                                                        CallNodeGen SourceSection: None
                                                                         ReadLocalVariableNode SourceSection: [361,365]`self`
                                                                           Frame: [0,self,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -323,9 +317,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [382,388]`Test()`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [1,Test,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -337,9 +329,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,t,Illegal]
                         PythonCallNodeGen SourceSection: [397,415]`get_nested_class()`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [0,get_nested_class,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

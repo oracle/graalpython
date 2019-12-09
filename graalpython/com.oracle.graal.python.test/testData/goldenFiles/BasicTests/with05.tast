@@ -37,9 +37,7 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                       ExpressionStatementNode SourceSection: [32,36]`pass`
                         EmptyNode SourceSection: [32,36]`pass`
                       PythonCallNodeGen SourceSection: [17,26]`open('x')`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [22,25]`'x'`
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: open
@@ -52,12 +50,8 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None

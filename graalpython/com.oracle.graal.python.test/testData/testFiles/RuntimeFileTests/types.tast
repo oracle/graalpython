@@ -45,9 +45,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [366,389]`FunctionType = type(...`
         Identifier: FunctionType
         PythonCallNodeGen SourceSection: [381,389]`type(_f)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [386,388]`_f`
             Identifier: _f
           ReadNameNodeGen SourceSection: None
@@ -55,9 +53,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [390,421]`LambdaType = type(la...`
         Identifier: LambdaType
         PythonCallNodeGen SourceSection: [403,421]`type(lambda: None)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           FunctionDefinitionNode Name: anonymous SourceSection: [408,420]`lambda: None`
             Arguments: None
             KwArguments: None
@@ -94,9 +90,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [453,481]`CodeType = type(_f._...`
         Identifier: CodeType
         PythonCallNodeGen SourceSection: [464,481]`type(_f.__code__)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [469,480]`_f.__code__`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __code__
@@ -109,9 +103,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [482,520]`MappingProxyType = t...`
         Identifier: MappingProxyType
         PythonCallNodeGen SourceSection: [501,520]`type(type.__dict__)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [506,519]`type.__dict__`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __dict__
@@ -124,9 +116,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [521,563]`SimpleNamespace = ty...`
         Identifier: SimpleNamespace
         PythonCallNodeGen SourceSection: [539,563]`type(sys.implementat...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [544,562]`sys.implementation`
             GetFixedAttributeNodeGen SourceSection: None
               Key: implementation
@@ -178,13 +168,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [587,613]`GeneratorType = type...`
         Identifier: GeneratorType
         PythonCallNodeGen SourceSection: [603,613]`type(_g())`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [608,612]`_g()`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: _g
           ReadNameNodeGen SourceSection: None
@@ -221,26 +207,20 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [636,645]`_c = _c()`
         Identifier: _c
         PythonCallNodeGen SourceSection: [641,645]`_c()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: _c
       WriteNameNodeGen SourceSection: [646,670]`CoroutineType = type...`
         Identifier: CoroutineType
         PythonCallNodeGen SourceSection: [662,670]`type(_c)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [667,669]`_c`
             Identifier: _c
           ReadNameNodeGen SourceSection: None
             Identifier: type
       ExpressionStatementNode SourceSection: [671,681]`_c.close()`
         PythonCallNodeGen SourceSection: [671,681]`_c.close()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [671,673]`_c`
               Identifier: _c
@@ -285,17 +265,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [737,748]`_ag = _ag()`
         Identifier: _ag
         PythonCallNodeGen SourceSection: [743,748]`_ag()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: _ag
       WriteNameNodeGen SourceSection: [749,779]`AsyncGeneratorType =...`
         Identifier: AsyncGeneratorType
         PythonCallNodeGen SourceSection: [770,779]`type(_ag)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [775,778]`_ag`
             Identifier: _ag
           ReadNameNodeGen SourceSection: None
@@ -308,9 +284,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
             PythonCallNodeGen SourceSection: [781,814]`class _C:↵    def _m...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _C SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -395,18 +369,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [814,840]`MethodType = type(_C...`
         Identifier: MethodType
         PythonCallNodeGen SourceSection: [827,840]`type(_C()._m)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [832,839]`_C()._m`
             GetFixedAttributeNodeGen SourceSection: None
               Key: _m
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
             PythonCallNodeGen SourceSection: [832,836]`_C()`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: _C
           ReadNameNodeGen SourceSection: None
@@ -414,9 +384,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [842,873]`BuiltinFunctionType ...`
         Identifier: BuiltinFunctionType
         PythonCallNodeGen SourceSection: [864,873]`type(len)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [869,872]`len`
             Identifier: len
           ReadNameNodeGen SourceSection: None
@@ -424,9 +392,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [874,909]`BuiltinMethodType = ...`
         Identifier: BuiltinMethodType
         PythonCallNodeGen SourceSection: [894,909]`type([].append)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [899,908]`[].append`
             GetFixedAttributeNodeGen SourceSection: None
               Key: append
@@ -439,9 +405,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [945,990]`WrapperDescriptorTyp...`
         Identifier: WrapperDescriptorType
         PythonCallNodeGen SourceSection: [969,990]`type(object.__init__...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [974,989]`object.__init__`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __init__
@@ -454,18 +418,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [991,1033]`MethodWrapperType = ...`
         Identifier: MethodWrapperType
         PythonCallNodeGen SourceSection: [1011,1033]`type(object().__str_...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [1016,1032]`object().__str__`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __str__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
             PythonCallNodeGen SourceSection: [1016,1024]`object()`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: object
           ReadNameNodeGen SourceSection: None
@@ -473,9 +433,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1034,1071]`MethodDescriptorType...`
         Identifier: MethodDescriptorType
         PythonCallNodeGen SourceSection: [1057,1071]`type(str.join)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [1062,1070]`str.join`
             GetFixedAttributeNodeGen SourceSection: None
               Key: join
@@ -488,9 +446,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1072,1131]`ClassMethodDescripto...`
         Identifier: ClassMethodDescriptorType
         PythonCallNodeGen SourceSection: [1100,1131]`type(dict.__dict__['...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetItemNodeGen SourceSection: [1105,1130]`dict.__dict__['fromk...`
             GetAttributeNodeGen SourceSection: None
               GetFixedAttributeNodeGen SourceSection: None
@@ -505,9 +461,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1133,1155]`ModuleType = type(sy...`
         Identifier: ModuleType
         PythonCallNodeGen SourceSection: [1146,1155]`type(sys)`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1151,1154]`sys`
             Identifier: sys
           ReadNameNodeGen SourceSection: None
@@ -524,9 +478,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Identifier: tb
                 GetItemNodeGen SourceSection: [1209,1226]`sys.exc_info()[2]`
                   PythonCallNodeGen SourceSection: [1209,1223]`sys.exc_info()`
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
                     GetCallAttributeNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [1209,1212]`sys`
                         Identifier: sys
@@ -535,9 +487,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               WriteNameNodeGen SourceSection: [1231,1255]`TracebackType = type...`
                 Identifier: TracebackType
                 PythonCallNodeGen SourceSection: [1247,1255]`type(tb)`
-                  CachedCallNodeGen SourceSection: None
-                    CreateArgumentsNodeGen SourceSection: None
-                    CallDispatchNodeGen SourceSection: None
+                  CallNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [1252,1254]`tb`
                     Identifier: tb
                   ReadNameNodeGen SourceSection: None
@@ -545,9 +495,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               WriteNameNodeGen SourceSection: [1260,1289]`FrameType = type(tb....`
                 Identifier: FrameType
                 PythonCallNodeGen SourceSection: [1272,1289]`type(tb.tb_frame)`
-                  CachedCallNodeGen SourceSection: None
-                    CreateArgumentsNodeGen SourceSection: None
-                    CallDispatchNodeGen SourceSection: None
+                  CallNodeGen SourceSection: None
                   GetAttributeNodeGen SourceSection: [1277,1288]`tb.tb_frame`
                     GetFixedAttributeNodeGen SourceSection: None
                       Key: tb_frame
@@ -569,9 +517,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1365,1415]`GetSetDescriptorType...`
         Identifier: GetSetDescriptorType
         PythonCallNodeGen SourceSection: [1388,1415]`type(FunctionType.__...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [1393,1414]`FunctionType.__code_...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __code__
@@ -584,9 +530,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
       WriteNameNodeGen SourceSection: [1416,1469]`MemberDescriptorType...`
         Identifier: MemberDescriptorType
         PythonCallNodeGen SourceSection: [1439,1469]`type(FunctionType.__...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           GetAttributeNodeGen SourceSection: [1444,1468]`FunctionType.__globa...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __globals__
@@ -670,9 +614,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [4,resolved_bases,Illegal]
                       PythonCallNodeGen SourceSection: [1757,1777]`resolve_bases(bases)...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [1771,1776]`bases`
                           Frame: [1,bases,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -681,9 +623,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [1782,1840]`meta, ns, kwds = pre...`
                       PythonCallNodeGen SourceSection: [1799,1840]`prepare_class(name, ...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [1813,1817]`name`
                           Frame: [0,name,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -738,9 +678,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ObjectLiteralNode SourceSection: [1865,1869]`None`
                       ExpressionStatementNode SourceSection: [1879,1892]`exec_body(ns)`
                         PythonCallNodeGen SourceSection: [1879,1892]`exec_body(ns)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1889,1891]`ns`
                             Frame: [6,ns,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -772,9 +710,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [10,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [1977,2015]`meta(name, resolved_...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1982,1986]`name`
                             Frame: [0,name,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -833,9 +769,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [1,new_bases,Illegal]
                       PythonCallNodeGen SourceSection: [2126,2137]`list(bases)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [2131,2136]`bases`
                           Frame: [0,bases,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -885,9 +819,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [2217,2273]`if isinstance(base, ...`
                                 YesNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [2220,2242]`isinstance(base, typ...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [2231,2235]`base`
                                       Frame: [6,base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -902,9 +834,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [2273,2343]`if not hasattr(base,...`
                                 NotNodeGen SourceSection: [2276,2312]`not hasattr(base, "_...`
                                   PythonCallNodeGen SourceSection: [2280,2312]`hasattr(base, "__mro...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [2288,2292]`base`
                                       Frame: [6,base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -919,9 +849,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [4,new_base,Illegal]
                                 PythonCallNodeGen SourceSection: [2354,2381]`base.__mro_entries__...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2375,2380]`bases`
                                     Frame: [0,bases,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -937,9 +865,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [2413,2625]`if not isinstance(ne...`
                                 NotNodeGen SourceSection: [2416,2447]`not isinstance(new_b...`
                                   PythonCallNodeGen SourceSection: [2420,2447]`isinstance(new_base,...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [2431,2439]`new_base`
                                       Frame: [4,new_base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -951,9 +877,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 RaiseNodeGen SourceSection: [2461,2515]`raise TypeError("__m...`
                                   PythonCallNodeGen SourceSection: [2467,2515]`TypeError("__mro_ent...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [2477,2514]`"__mro_entries__ mus...`
                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                       Identifier: TypeError
@@ -1005,9 +929,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __sub__
                                         PythonCallNodeGen SourceSection: [2603,2616]`len(new_base)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [2607,2615]`new_base`
                                             Frame: [4,new_base,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1019,9 +941,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         GetIteratorExpressionNodeGen SourceSection: [2191,2207]`enumerate(bases)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [2191,2207]`enumerate(bases)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2201,2206]`bases`
                               Frame: [0,bases,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1049,9 +969,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [9,<return_val>,Illegal]
                         PythonCallNodeGen SourceSection: [2673,2689]`tuple(new_bases)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2679,2688]`new_bases`
                             Frame: [1,new_bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1129,9 +1047,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,kwds,Illegal]
                         PythonCallNodeGen SourceSection: [3190,3200]`dict(kwds)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3195,3199]`kwds`
                             Frame: [2,kwds,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1153,9 +1069,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,meta,Illegal]
                         PythonCallNodeGen SourceSection: [3279,3300]`kwds.pop('metaclass'...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [3288,3299]`'metaclass'`
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [3279,3283]`kwds`
@@ -1171,9 +1085,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [3,meta,Illegal]
                           PythonCallNodeGen SourceSection: [3348,3362]`type(bases[0])`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             GetItemNodeGen SourceSection: [3353,3361]`bases[0]`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,bases,Illegal]
@@ -1193,9 +1105,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     IfNode SourceSection: [3405,3618]`if isinstance(meta, ...`
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [3408,3430]`isinstance(meta, typ...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3419,3423]`meta`
                             Frame: [3,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1210,9 +1120,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [3,meta,Illegal]
                         PythonCallNodeGen SourceSection: [3585,3613]`_calculate_meta(meta...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3601,3605]`meta`
                             Frame: [3,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1226,9 +1134,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     IfNode SourceSection: [3618,3732]`if hasattr(meta, '__...`
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [3621,3649]`hasattr(meta, '__pre...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3629,3633]`meta`
                             Frame: [3,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1241,9 +1147,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,ns,Illegal]
                         PythonCallNodeGen SourceSection: [3664,3701]`meta.__prepare__(nam...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3681,3685]`name`
                             Frame: [0,name,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1347,9 +1251,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [3,base_meta,Illegal]
                                 PythonCallNodeGen SourceSection: [3898,3908]`type(base)`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [3903,3907]`base`
                                     Frame: [4,base,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -1359,9 +1261,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [3917,3980]`if issubclass(winner...`
                                 YesNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [3920,3949]`issubclass(winner, b...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [3931,3937]`winner`
                                       Frame: [2,winner,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -1376,9 +1276,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IfNode SourceSection: [3980,4090]`if issubclass(base_m...`
                                 YesNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [3983,4012]`issubclass(base_meta...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [3994,4003]`base_meta`
                                       Frame: [3,base_meta,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -1400,9 +1298,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 BlockNode SourceSection: None
                               RaiseNodeGen SourceSection: [4090,4310]`raise TypeError("met...`
                                 PythonCallNodeGen SourceSection: [4096,4310]`TypeError("metaclass...`
-                                  CachedCallNodeGen SourceSection: None
-                                    CreateArgumentsNodeGen SourceSection: None
-                                    CallDispatchNodeGen SourceSection: None
+                                  CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [4106,4309]`"metaclass conflict:...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                     Identifier: TypeError
@@ -1433,9 +1329,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
             PythonCallNodeGen SourceSection: [4330,6524]`class DynamicClassAt...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: DynamicClassAttribute SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -1599,13 +1493,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [5264,5314]`bool(getattr(fget, '...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [5269,5313]`getattr(fget, '__isa...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5277,5281]`fget`
                                               Frame: [1,fget,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1700,9 +1590,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             BlockNode SourceSection: None
                                           RaiseNodeGen SourceSection: [5477,5499]`raise AttributeError...`
                                             PythonCallNodeGen SourceSection: [5483,5499]`AttributeError()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1721,9 +1609,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ObjectLiteralNode SourceSection: [5526,5530]`None`
                                           RaiseNodeGen SourceSection: [5544,5588]`raise AttributeError...`
                                             PythonCallNodeGen SourceSection: [5550,5588]`AttributeError("unre...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5565,5587]`"unreadable attribut...`
                                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                 Identifier: AttributeError
@@ -1736,9 +1622,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,<return_val>,Illegal]
                                           PythonCallNodeGen SourceSection: [5604,5623]`self.fget(instance)`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5614,5622]`instance`
                                               Frame: [1,instance,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1813,9 +1697,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ObjectLiteralNode SourceSection: [5689,5693]`None`
                                         RaiseNodeGen SourceSection: [5707,5750]`raise AttributeError...`
                                           PythonCallNodeGen SourceSection: [5713,5750]`AttributeError("can'...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [5728,5749]`"can't set attribute...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: AttributeError
@@ -1824,9 +1706,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [5759,5785]`self.fset(instance, ...`
                                         PythonCallNodeGen SourceSection: [5759,5785]`self.fset(instance, ...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5769,5777]`instance`
                                             Frame: [1,instance,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1897,9 +1777,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ObjectLiteralNode SourceSection: [5847,5851]`None`
                                         RaiseNodeGen SourceSection: [5865,5911]`raise AttributeError...`
                                           PythonCallNodeGen SourceSection: [5871,5911]`AttributeError("can'...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [5886,5910]`"can't delete attrib...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: AttributeError
@@ -1908,9 +1786,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [5920,5939]`self.fdel(instance)`
                                         PythonCallNodeGen SourceSection: [5920,5939]`self.fdel(instance)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5930,5938]`instance`
                                             Frame: [1,instance,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1992,9 +1868,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,result,Illegal]
                                         PythonCallNodeGen SourceSection: [6046,6106]`type(self)(fget, sel...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [6057,6061]`fget`
                                             Frame: [1,fget,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2028,9 +1902,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: None
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [6051,6055]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2109,9 +1981,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,result,Illegal]
                                         PythonCallNodeGen SourceSection: [6225,6277]`type(self)(self.fget...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [6236,6245]`self.fget`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: fget
@@ -2140,9 +2010,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: None
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [6230,6234]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2221,9 +2089,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,result,Illegal]
                                         PythonCallNodeGen SourceSection: [6397,6449]`type(self)(self.fget...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [6408,6417]`self.fget`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: fget
@@ -2252,9 +2118,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: None
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [6402,6406]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2304,9 +2168,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [2,<>temp2,Illegal]
             PythonCallNodeGen SourceSection: [6524,7624]`class _GeneratorWrap...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _GeneratorWrapper SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -2412,9 +2274,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [6718,6748]`getattr(gen, '__name...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [6726,6729]`gen`
                                             Frame: [1,gen,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2429,9 +2289,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [6777,6811]`getattr(gen, '__qual...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [6785,6788]`gen`
                                             Frame: [1,gen,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2491,9 +2349,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [6852,6876]`self.__wrapped.send(...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [6872,6875]`val`
                                             Frame: [1,val,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2564,9 +2420,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [6924,6955]`self.__wrapped.throw...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
                                             ReadLocalVariableNode SourceSection: [6945,6947]`tp`
                                               Frame: [1,tp,Illegal]
@@ -2627,9 +2481,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [6992,7014]`self.__wrapped.close...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [6992,7006]`self.__wrapped`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -2648,9 +2500,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7019,7028]`@property`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: gi_code SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -2716,9 +2566,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7094,7103]`@property`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: gi_frame SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -2784,9 +2632,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7171,7180]`@property`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: gi_running SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -2852,9 +2698,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Index: 0
                           StringLiteralNode SourceSection: None
                           PythonCallNodeGen SourceSection: [7252,7261]`@property`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             FunctionDefinitionNode Name: gi_yieldfrom SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -3010,9 +2854,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [7474,7494]`next(self.__wrapped)...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [7479,7493]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __wrapped
@@ -3158,9 +3000,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     IfNode SourceSection: [7711,7803]`if not callable(func...`
                       NotNodeGen SourceSection: [7714,7732]`not callable(func)`
                         PythonCallNodeGen SourceSection: [7718,7732]`callable(func)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [7727,7731]`func`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,func,Illegal]
@@ -3171,9 +3011,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [7742,7797]`raise TypeError('typ...`
                         PythonCallNodeGen SourceSection: [7748,7797]`TypeError('types.cor...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [7758,7796]`'types.coroutine() e...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: TypeError
@@ -3204,9 +3042,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               PythonCallNodeGen SourceSection: [7850,7881]`getattr(func, '__cod...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [7858,7862]`func`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [0,func,Illegal]
@@ -3295,9 +3131,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [8325,8719]`CodeType(↵          ...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 GetAttributeNodeGen SourceSection: [8351,8365]`co.co_argcount`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: co_argcount
@@ -3458,9 +3292,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [5,wrapped,Illegal]
                       PythonCallNodeGen SourceSection: [9033,9055]`@functools.wraps(fun...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         FunctionDefinitionNode Name: wrapped SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3504,9 +3336,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,coro,Illegal]
                                       PythonCallNodeGen SourceSection: [9105,9126]`func(*args, **kwargs...`
-                                        CachedCallNodeGen SourceSection: None
-                                          CreateArgumentsNodeGen SourceSection: None
-                                          CallDispatchNodeGen SourceSection: None
+                                        CallNodeGen SourceSection: None
                                         PositionalArgumentsNode SourceSection: None
                                           ReadLocalVariableNode SourceSection: [9111,9115]`args`
                                             Frame: [0,args,Illegal]
@@ -3584,9 +3414,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       YesNodeGen SourceSection: None
                                         AndNode SourceSection: [9365,9474]`isinstance(coro, _co...`
                                           PythonCallNodeGen SourceSection: [9365,9409]`isinstance(coro, _co...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [9376,9380]`coro`
                                               Frame: [2,coro,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3605,9 +3433,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [9426,9474]`not isinstance(coro,...`
                                             PythonCallNodeGen SourceSection: [9430,9474]`isinstance(coro, _co...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [9441,9445]`coro`
                                                 Frame: [2,coro,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3631,9 +3457,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [5,<return_val>,Illegal]
                                           PythonCallNodeGen SourceSection: [9684,9707]`_GeneratorWrapper(co...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [9702,9706]`coro`
                                               Frame: [2,coro,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3653,9 +3477,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [9033,9055]`@functools.wraps(fun...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [9050,9054]`func`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,func,Illegal]
@@ -3683,9 +3505,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           WriteNameNodeGen SourceSection: [9869,9917]`__all__ = [n for n i...`
             Identifier: __all__
             PythonCallNodeGen SourceSection: [9880,9916]`n for n in globals()...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               GeneratorExpressionNode SourceSection: [9882,9916]`for n in globals() i...`
                 Name: [].<locals>.<genexp>:types:295
                 FrameDescriptor: 2 slots [n, <return_val>]
@@ -3754,9 +3574,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 GetIteratorExpressionNodeGen SourceSection: [9891,9900]`globals()`
                   GetIteratorNodeGen SourceSection: None
                   PythonCallNodeGen SourceSection: [9891,9900]`globals()`
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: None
                       Identifier: globals
                 PythonObjectFactoryNodeGen SourceSection: None

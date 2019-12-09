@@ -46,12 +46,8 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None

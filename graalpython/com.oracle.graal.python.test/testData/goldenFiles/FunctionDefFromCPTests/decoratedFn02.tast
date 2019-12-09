@@ -12,13 +12,9 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
         WriteNameNodeGen SourceSection: [0,44]`@staticmethod↵@funca...`
           Identifier: f
           PythonCallNodeGen SourceSection: [0,13]`@staticmethod`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [14,30]`@funcattrs(x, y)`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: f SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -47,9 +43,7 @@ ModuleRootNode Name: <module 'decoratedFn02'> SourceSection: [0,44]`@staticmetho
                         Frame: [0,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [14,30]`@funcattrs(x, y)`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [25,26]`x`
                   Identifier: x
                 ReadNameNodeGen SourceSection: [28,29]`y`
