@@ -17,9 +17,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               PythonCallNodeGen SourceSection: [0,76]`class Test():â†µ    ""...`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 FunctionDefinitionNode Name: Test SourceSection: None
                   Arguments: None
                   KwArguments: None

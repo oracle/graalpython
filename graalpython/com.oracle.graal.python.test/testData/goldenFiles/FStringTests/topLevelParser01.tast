@@ -8,9 +8,7 @@ ModuleRootNode Name: <module 'topLevelParser01'> SourceSection: [0,36]`name = 'P
     ExpressionWithSideEffect SourceSection: [0,36]`name = 'Pepa'↵print(...`
       Expression:
         PythonCallNodeGen SourceSection: [14,36]`print(f"hello {name}...`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           FormatStringLiteralNode SourceSection: [20,35]`f"hello {name}"`
             Values: <f>hello {name}
           ReadNameNodeGen SourceSection: None

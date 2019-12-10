@@ -100,7 +100,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonDataModelLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -2568,7 +2568,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "!isInt(times)", limit = "1")
         SequenceStorage doNonInt(VirtualFrame frame, SequenceStorage s, Object times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("times") PythonDataModelLibrary lib) {
+                        @CachedLibrary("times") PythonObjectLibrary lib) {
             int i = toIndex(frame, times, raiseNode, lib);
             if (recursive == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2595,7 +2595,7 @@ public abstract class SequenceStorageNodes {
             return times instanceof Integer;
         }
 
-        private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonDataModelLibrary lib) {
+        private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonObjectLibrary lib) {
             if (lib.canBeIndex(times)) {
                 if (castToindexNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

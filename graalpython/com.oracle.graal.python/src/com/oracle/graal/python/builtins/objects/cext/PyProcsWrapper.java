@@ -132,7 +132,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedMessageException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
@@ -162,7 +162,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Cached("createBinaryProfile()") ConditionProfile arityProfile,
                         @Cached BranchProfile errorProfile,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedMessageException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arityProfile.profile(arguments.length != 3)) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -192,7 +192,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedMessageException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }

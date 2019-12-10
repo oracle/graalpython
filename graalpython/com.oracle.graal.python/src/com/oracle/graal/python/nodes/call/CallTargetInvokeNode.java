@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -53,10 +54,13 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     @Child private DirectCallNode callNode;
@@ -100,9 +104,11 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
 
     @Specialization(guards = {"globals == null", "closure == null"})
-    protected Object doNoClosure(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments) {
+    protected Object doNoClosure(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
+                    @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct);
+        optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
 
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
         // state) in the context. There are two common reasons for having a 'null' frame:
@@ -110,7 +116,6 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
         // 2. This invoke node is (indirectly) used behind a TruffleBoundary.
         // This is preferably prepared using 'IndirectCallContext.enter'.
         if (profileIsNullFrame(frame == null)) {
-            PythonContext context = getContextRef().get();
             PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
             try {
                 return callNode.call(arguments);
@@ -124,10 +129,12 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
     }
 
     @Specialization(replaces = "doNoClosure")
-    protected Object doGeneric(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments) {
+    protected Object doGeneric(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments,
+                    @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, null, null, arguments);
+        return doNoClosure(frame, null, null, arguments, classBodyProfile, context);
     }
 
     public final CallTarget getCallTarget() {

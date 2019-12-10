@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
   Documentation: None
   InnerRootNode SourceSection: [0,19]`{f(x) for x in seq}`
     PythonCallNodeGen SourceSection: [0,19]`{f(x) for x in seq}`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,18]`for x in seq`
         Name: [].<locals>.<genexp>:setComprehensions02:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -36,9 +34,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
                   YieldNode SourceSection: [1,5]`f(x)`
                     flagSlot: 0
                     PythonCallNodeGen SourceSection: [1,5]`f(x)`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None

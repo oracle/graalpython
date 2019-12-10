@@ -70,18 +70,14 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [1,value,Illegal]
                             PythonCallNodeGen SourceSection: [56,62]`next()`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: next
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [35,38]`b()`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [35,38]`b()`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: b
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -100,9 +96,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __gt__
                             PythonCallNodeGen SourceSection: [73,79]`len(h)`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
                                 Frame: [0,h,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

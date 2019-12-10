@@ -90,9 +90,7 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                         GetIteratorExpressionNodeGen SourceSection: [26,35]`range(10)`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [26,35]`range(10)`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [32,34]`10`
                               Value: 10
                             ReadGlobalOrBuiltinNodeGen SourceSection: None

@@ -12,22 +12,16 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
         WriteNameNodeGen SourceSection: [0,40]`@decorator1↵@decorat...`
           Identifier: foo
           PythonCallNodeGen SourceSection: [0,11]`@decorator1`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [12,23]`@decorator1`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               ExpressionWithSideEffects SourceSection: None
                 WriteLocalVariableNodeGen SourceSection: None
                   Identifier: <>temp0
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [0,<>temp0,Illegal]
                   PythonCallNodeGen SourceSection: [24,40]`class foo():pass`
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
                     FunctionDefinitionNode Name: foo SourceSection: None
                       Arguments: None
                       KwArguments: None

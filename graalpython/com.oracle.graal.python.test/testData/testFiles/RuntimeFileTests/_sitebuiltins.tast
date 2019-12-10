@@ -21,9 +21,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [0,<>temp0,Illegal]
             PythonCallNodeGen SourceSection: [329,773]`class Quitter(object...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: Quitter SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -236,9 +234,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         TryExceptNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [689,706]`sys.stdin.close()`
                                             PythonCallNodeGen SourceSection: [689,706]`sys.stdin.close()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [689,698]`sys.stdin`
                                                   GetFixedAttributeNodeGen SourceSection: None
@@ -255,9 +251,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           SaveExceptionStateNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [748,770]`raise SystemExit(cod...`
                                         PythonCallNodeGen SourceSection: [754,770]`SystemExit(code)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [765,769]`code`
                                             Frame: [1,code,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -289,9 +283,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
             WriteLocalFrameSlotNodeGen SourceSection: None
               Frame: [1,<>temp1,Illegal]
             PythonCallNodeGen SourceSection: [773,2538]`class _Printer(objec...`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               FunctionDefinitionNode Name: _Printer SourceSection: None
                 Arguments: None
                 KwArguments: None
@@ -441,9 +433,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [1121,1242]`os.path.join(dir, fi...`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GeneratorExpressionNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
                                             Name: __init__.<locals>.<genexp>:_sitebuiltins:41
                                             FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
@@ -472,9 +462,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         YieldNode SourceSection: [1121,1148]`os.path.join(dir, fi...`
                                                           flagSlot: 0
                                                           PythonCallNodeGen SourceSection: [1121,1148]`os.path.join(dir, fi...`
-                                                            CachedCallNodeGen SourceSection: None
-                                                              CreateArgumentsNodeGen SourceSection: None
-                                                              CallDispatchNodeGen SourceSection: None
+                                                            CallNodeGen SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [1134,1137]`dir`
                                                               Frame: [1,dir,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -606,9 +594,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,data,Illegal]
                                                       PythonCallNodeGen SourceSection: [1466,1475]`fp.read()`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [1466,1468]`fp`
                                                             Frame: [2,fp,Illegal]
@@ -618,9 +604,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [2,fp,Illegal]
                                                     PythonCallNodeGen SourceSection: [1412,1431]`open(filename, "r")`
-                                                      CachedCallNodeGen SourceSection: None
-                                                        CreateArgumentsNodeGen SourceSection: None
-                                                        CallDispatchNodeGen SourceSection: None
+                                                      CallNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [1417,1425]`filename`
                                                         Frame: [3,filename,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -636,12 +620,8 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       LookupAttributeInMRONodeGen SourceSection: None
                                                         IsSameTypeNodeGen SourceSection: None
                                                       GetLazyClassNodeGen SourceSection: None
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
-                                                    CachedCallNodeGen SourceSection: None
-                                                      CreateArgumentsNodeGen SourceSection: None
-                                                      CallDispatchNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
+                                                    CallNodeGen SourceSection: None
                                                     YesNodeGen SourceSection: None
                                                     GetClassNodeGen SourceSection: None
                                                     SaveExceptionStateNodeGen SourceSection: None
@@ -689,9 +669,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [1622,1638]`data.split('\n')`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [1633,1637]`'\n'`
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1622,1626]`data`
@@ -703,9 +681,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [1664,1681]`len(self.__lines)`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [1668,1680]`self.__lines`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __lines
@@ -757,9 +733,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [1715,1729]`self.__setup()`
                                         PythonCallNodeGen SourceSection: [1715,1729]`self.__setup()`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1715,1719]`self`
                                               Frame: [0,self,Illegal]
@@ -770,9 +744,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __le__
                                             PythonCallNodeGen SourceSection: [1741,1758]`len(self.__lines)`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [1745,1757]`self.__lines`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __lines
@@ -798,9 +770,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             PythonCallNodeGen SourceSection: [1796,1819]`"\n".join(self.__lin...`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [1806,1818]`self.__lines`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __lines
@@ -875,9 +845,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                     BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [1943,1957]`self.__setup()`
                                         PythonCallNodeGen SourceSection: [1943,1957]`self.__setup()`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1943,1947]`self`
                                               Frame: [0,self,Illegal]
@@ -911,9 +879,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             Frame: [3,i,Illegal]
                                                       ExpressionStatementNode SourceSection: [2163,2185]`print(self.__lines[i...`
                                                         PythonCallNodeGen SourceSection: [2163,2185]`print(self.__lines[i...`
-                                                          CachedCallNodeGen SourceSection: None
-                                                            CreateArgumentsNodeGen SourceSection: None
-                                                            CallDispatchNodeGen SourceSection: None
+                                                          CallNodeGen SourceSection: None
                                                           GetItemNodeGen SourceSection: [2169,2184]`self.__lines[i]`
                                                             GetAttributeNodeGen SourceSection: None
                                                               GetFixedAttributeNodeGen SourceSection: None
@@ -932,9 +898,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     GetIteratorExpressionNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
                                                       GetIteratorNodeGen SourceSection: None
                                                       PythonCallNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
-                                                        CachedCallNodeGen SourceSection: None
-                                                          CreateArgumentsNodeGen SourceSection: None
-                                                          CallDispatchNodeGen SourceSection: None
+                                                        CallNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [2110,2116]`lineno`
                                                           Frame: [2,lineno,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -998,9 +962,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                                               Frame: [4,key,Illegal]
                                                             PythonCallNodeGen SourceSection: [2385,2398]`input(prompt)`
-                                                              CachedCallNodeGen SourceSection: None
-                                                                CreateArgumentsNodeGen SourceSection: None
-                                                                CallDispatchNodeGen SourceSection: None
+                                                              CallNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [2391,2397]`prompt`
                                                                 Frame: [1,prompt,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1068,9 +1030,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                 WriteLocalFrameSlotNodeGen SourceSection: None
                   Frame: [2,<>temp2,Illegal]
                 PythonCallNodeGen SourceSection: [2538,3115]`class _Helper(object...`
-                  CachedCallNodeGen SourceSection: None
-                    CreateArgumentsNodeGen SourceSection: None
-                    CallDispatchNodeGen SourceSection: None
+                  CallNodeGen SourceSection: None
                   FunctionDefinitionNode Name: _Helper SourceSection: None
                     Arguments: None
                     KwArguments: None
@@ -1215,9 +1175,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [5,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [3089,3114]`pydoc.help(*args, **...`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 PositionalArgumentsNode SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [3101,3105]`args`
                                                     Frame: [1,args,Illegal]

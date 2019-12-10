@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -48,37 +49,61 @@ import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 public abstract class GenericInvokeNode extends AbstractInvokeNode {
-    private static final GenericInvokeUncachedNode UNCACHED = new GenericInvokeUncachedNode();
-
-    @Child private IndirectCallNode callNode;
-    @Child private CallContext callContext;
-
-    private final ConditionProfile isNullFrameProfile;
-
     public static GenericInvokeNode create() {
-        return new GenericInvokeCachedNode();
+        return GenericInvokeNodeGen.create();
     }
 
     public static GenericInvokeNode getUncached() {
-        return UNCACHED;
+        return GenericInvokeNodeGen.getUncached();
     }
 
-    public GenericInvokeNode(IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile) {
-        this.callNode = callNode;
-        this.callContext = callContext;
-        this.isNullFrameProfile = isNullFrameProfile;
+    protected GenericInvokeNode() {
     }
 
-    private Object doCall(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
-        optionallySetClassBodySpecial(arguments, callTarget);
+    /**
+     * To be used when this node is called adopted.
+     *
+     * @param frame - the current frame
+     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
+     *            {@link RootCallTarget}.
+     * @param arguments - the complete (runtime + user) frame arguments for the call
+     */
+    public final Object execute(VirtualFrame frame, Object callee, Object[] arguments) {
+        assert frame != null;
+        return executeInternal(frame, callee, arguments);
+    }
+
+    protected abstract Object executeInternal(Frame frame, Object callee, Object[] arguments);
+
+    /**
+     * Can be used when this node is called unadopted or from a place where no frame is available.
+     * However, it will be slower than passing a frame, because the threadstate is read from the
+     * Python context.
+     *
+     * @param callee - either a {@link PFunction}, {@link PBuiltinFunction}, or
+     *            {@link RootCallTarget}.
+     * @param arguments - the complete (runtime + user) frame arguments for the call
+     */
+    public final Object execute(Object callee, Object[] arguments) {
+        return executeInternal(null, callee, arguments);
+    }
+
+    private Object doCall(Frame frame, RootCallTarget callTarget, Object[] arguments,
+                    PythonContext context, IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile, ConditionProfile isClassBodyProfile) {
+        optionallySetClassBodySpecial(arguments, callTarget, isClassBodyProfile);
         if (isNullFrameProfile.profile(frame == null)) {
-            PythonContext context = getContextRef().get();
             PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, callTarget);
             try {
                 return callNode.call(callTarget, arguments);
@@ -86,48 +111,43 @@ public abstract class GenericInvokeNode extends AbstractInvokeNode {
                 IndirectCalleeContext.exit(context, frameInfo);
             }
         } else {
-            callContext.prepareCall(frame, arguments, callTarget, this);
+            assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
+            callContext.prepareCall((VirtualFrame) frame, arguments, callTarget, this);
             return callNode.call(callTarget, arguments);
         }
     }
 
-    public Object execute(VirtualFrame frame, PFunction callee, Object[] arguments) {
+    @Specialization
+    Object invokeFunction(Frame frame, PFunction callee, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
+                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments);
+        return doCall(frame, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile);
     }
 
-    public Object execute(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments) {
+    @Specialization
+    Object invokeBuiltin(Frame frame, PBuiltinFunction callee, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
+                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callTarget, arguments);
+        return doCall(frame, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile);
     }
 
-    public Object execute(VirtualFrame frame, RootCallTarget callTarget, Object[] arguments) {
-        return doCall(frame, callTarget, arguments);
-    }
-
-    private static final class GenericInvokeCachedNode extends GenericInvokeNode {
-
-        public GenericInvokeCachedNode() {
-            super(IndirectCallNode.create(), CallContext.create(), ConditionProfile.createBinaryProfile());
-        }
-
-    }
-
-    private static final class GenericInvokeUncachedNode extends GenericInvokeNode {
-        public GenericInvokeUncachedNode() {
-            super(IndirectCallNode.getUncached(), CallContext.getUncached(), ConditionProfile.getUncached());
-        }
-
-        @Override
-        public boolean isAdoptable() {
-            return false;
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.MEGAMORPHIC;
-        }
+    @Specialization
+    Object invokeCallTarget(Frame frame, RootCallTarget callTarget, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Shared("callNode") @Cached IndirectCallNode callNode,
+                    @Shared("callContext") @Cached CallContext callContext,
+                    @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
+                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
+        return doCall(frame, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile);
     }
 }

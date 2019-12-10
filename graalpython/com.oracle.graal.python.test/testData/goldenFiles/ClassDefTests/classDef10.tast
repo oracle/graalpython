@@ -19,9 +19,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                   WriteLocalFrameSlotNodeGen SourceSection: None
                     Frame: [0,<>temp0,Illegal]
                   PythonCallNodeGen SourceSection: [22,83]`class FalseRec:â†µ  de...`
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
                     FunctionDefinitionNode Name: FalseRec SourceSection: None
                       Arguments: None
                       KwArguments: None
@@ -101,9 +99,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,<return_val>,Illegal]
                                               PythonCallNodeGen SourceSection: [72,83]`test(arg+1)`
-                                                CachedCallNodeGen SourceSection: None
-                                                  CreateArgumentsNodeGen SourceSection: None
-                                                  CallDispatchNodeGen SourceSection: None
+                                                CallNodeGen SourceSection: None
                                                 BinaryArithmeticExpression SourceSection: [77,82]`arg+1`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__

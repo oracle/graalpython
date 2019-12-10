@@ -334,7 +334,7 @@ public abstract class ChannelNodes {
         }
 
         @Specialization
-        int writeGeneric(VirtualFrame frame, Channel channel, SequenceStorage s, int len,
+        int writeGeneric(Channel channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
                         @Shared("gotException") @Cached BranchProfile gotException,

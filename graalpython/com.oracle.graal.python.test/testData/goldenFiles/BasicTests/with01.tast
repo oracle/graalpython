@@ -15,9 +15,7 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
           WriteNameNodeGen SourceSection: None
             Identifier: a
           PythonCallNodeGen SourceSection: [5,8]`A()`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: A
           LookupInheritedAttributeNode SourceSection: None
@@ -28,12 +26,8 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
             LookupAttributeInMRONodeGen SourceSection: None
               IsSameTypeNodeGen SourceSection: None
             GetLazyClassNodeGen SourceSection: None
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           YesNodeGen SourceSection: None
           GetClassNodeGen SourceSection: None
           SaveExceptionStateNodeGen SourceSection: None

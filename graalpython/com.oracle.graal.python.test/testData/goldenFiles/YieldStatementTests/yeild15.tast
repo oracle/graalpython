@@ -52,9 +52,7 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                       GetIteratorExpressionNodeGen SourceSection: [22,31]`range(30)`
                         GetIteratorNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [22,31]`range(30)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [28,30]`30`
                             Value: 30
                           ReadGlobalOrBuiltinNodeGen SourceSection: None

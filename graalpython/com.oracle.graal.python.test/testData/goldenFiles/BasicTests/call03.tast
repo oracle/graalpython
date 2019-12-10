@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'call03'> SourceSection: [0,12]`foo(arg = 1)`
   Documentation: None
   InnerRootNode SourceSection: [0,12]`foo(arg = 1)`
     PythonCallNodeGen SourceSection: [0,12]`foo(arg = 1)`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
         KeywordLiteralNode SourceSection: None
           IntegerLiteralNode SourceSection: [10,11]`1`

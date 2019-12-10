@@ -42,9 +42,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                       GeneratorAccessNode SourceSection: None
                       YesNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [44,47]`a()`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: a
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -111,9 +109,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                           YieldNode SourceSection: [213,224]`c.isspace()`
                                             flagSlot: 0
                                             PythonCallNodeGen SourceSection: [213,224]`c.isspace()`
-                                              CachedCallNodeGen SourceSection: None
-                                                CreateArgumentsNodeGen SourceSection: None
-                                                CallDispatchNodeGen SourceSection: None
+                                              CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [213,214]`c`
                                                   Frame: [0,c,Illegal]

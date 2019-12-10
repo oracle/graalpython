@@ -17,9 +17,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               PythonCallNodeGen SourceSection: [0,73]`class A:↵    @classm...`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 FunctionDefinitionNode Name: A SourceSection: None
                   Arguments: None
                   KwArguments: None
@@ -57,9 +55,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             PythonCallNodeGen SourceSection: [13,25]`@classmethod`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               FunctionDefinitionNode Name: method SourceSection: None
                                 Arguments: None
                                 KwArguments: None

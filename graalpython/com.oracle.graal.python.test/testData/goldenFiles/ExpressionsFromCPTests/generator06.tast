@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
   Documentation: None
   InnerRootNode SourceSection: [0,47]`list(x**3 for x in r...`
     PythonCallNodeGen SourceSection: [0,47]`list(x**3 for x in r...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [10,46]`for x in range(20) i...`
         Name: [].<locals>.<genexp>:generator06:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -86,9 +84,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,47]`list(x**3 for 
         GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [19,28]`range(20)`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [25,27]`20`
               Value: 20
             ReadNameNodeGen SourceSection: None

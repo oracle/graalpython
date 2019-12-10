@@ -151,9 +151,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                       GetIteratorExpressionNodeGen SourceSection: [146,152]`doit()`
                                         GetIteratorNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [146,152]`doit()`
-                                          CachedCallNodeGen SourceSection: None
-                                            CreateArgumentsNodeGen SourceSection: None
-                                            CallDispatchNodeGen SourceSection: None
+                                          CallNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [0,doit,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -174,9 +172,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,gen,Illegal]
                         PythonCallNodeGen SourceSection: [196,209]`_inner_func()`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: None
                             Frame: [1,_inner_func,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -193,9 +189,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                             Value: 2
                       ExpressionStatementNode SourceSection: [225,234]`list(gen)`
                         PythonCallNodeGen SourceSection: [225,234]`list(gen)`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [230,233]`gen`
                             Frame: [2,gen,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

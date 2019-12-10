@@ -11,9 +11,7 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
           Key: displayhook
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: [0,35]`class A:↵    class B...`
         Expression:
           EmptyNode SourceSection: None
@@ -26,9 +24,7 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
                 WriteLocalFrameSlotNodeGen SourceSection: None
                   Frame: [0,<>temp0,Illegal]
                 PythonCallNodeGen SourceSection: [0,35]`class A:↵    class B...`
-                  CachedCallNodeGen SourceSection: None
-                    CreateArgumentsNodeGen SourceSection: None
-                    CallDispatchNodeGen SourceSection: None
+                  CallNodeGen SourceSection: None
                   FunctionDefinitionNode Name: A SourceSection: None
                     Arguments: None
                     KwArguments: None
@@ -71,9 +67,7 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
                                   PythonCallNodeGen SourceSection: [13,35]`class B:↵        pas...`
-                                    CachedCallNodeGen SourceSection: None
-                                      CreateArgumentsNodeGen SourceSection: None
-                                      CallDispatchNodeGen SourceSection: None
+                                    CallNodeGen SourceSection: None
                                     FunctionDefinitionNode Name: B SourceSection: None
                                       Arguments: None
                                       KwArguments: None

@@ -12,9 +12,7 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
         WriteNameNodeGen SourceSection: [0,26]`@funcattrs()↵def f()...`
           Identifier: f
           PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             FunctionDefinitionNode Name: f SourceSection: None
               Arguments: None
               KwArguments: None
@@ -43,8 +41,6 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [0,12]`@funcattrs()`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: funcattrs

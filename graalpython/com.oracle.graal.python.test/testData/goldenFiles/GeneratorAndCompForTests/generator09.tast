@@ -48,9 +48,7 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [1,value,Illegal]
                             PythonCallNodeGen SourceSection: [46,52]`next()`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: next
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
