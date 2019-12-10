@@ -77,9 +77,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [2,<>temp2,Illegal]
                                           PythonCallNodeGen SourceSection: [64,190]`class C(object):â†µ   ...`
-                                            CachedCallNodeGen SourceSection: None
-                                              CreateArgumentsNodeGen SourceSection: None
-                                              CallDispatchNodeGen SourceSection: None
+                                            CallNodeGen SourceSection: None
                                             FunctionDefinitionNode Name: C SourceSection: None
                                               Arguments: None
                                               KwArguments: None

@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
   Documentation: None
   InnerRootNode SourceSection: [0,31]`[b for b in [a for a...`
     PythonCallNodeGen SourceSection: [0,31]`[b for b in [a for a...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [3,30]`for b in [a for a in...`
         Name: [].<locals>.<genexp>:issueGR18174:1
         FrameDescriptor: 2 slots [b, <return_val>]
@@ -59,9 +57,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
         GetIteratorExpressionNodeGen SourceSection: [13,29]`a for a in (1,2)`
           GetIteratorNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [13,29]`a for a in (1,2)`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [15,29]`for a in (1,2)`
               Name: [].<locals>.<genexp>:issueGR18174:1
               FrameDescriptor: 2 slots [a, <return_val>]

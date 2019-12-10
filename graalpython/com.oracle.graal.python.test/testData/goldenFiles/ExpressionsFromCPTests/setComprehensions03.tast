@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
   Documentation: None
   InnerRootNode SourceSection: [0,35]`{f(x) for x in seq i...`
     PythonCallNodeGen SourceSection: [0,35]`{f(x) for x in seq i...`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [6,34]`for x in seq if cond...`
         Name: [].<locals>.<genexp>:setComprehensions03:1
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -36,9 +34,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [22,34]`condition(x)`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -49,9 +45,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                     YieldNode SourceSection: [1,5]`f(x)`
                       flagSlot: 0
                       PythonCallNodeGen SourceSection: [1,5]`f(x)`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None

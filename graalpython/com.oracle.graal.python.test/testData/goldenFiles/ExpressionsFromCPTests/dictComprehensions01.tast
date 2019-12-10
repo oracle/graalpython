@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'dictComprehensions01'> SourceSection: [0,18]`{x:x 
   Documentation: None
   InnerRootNode SourceSection: [0,18]`{x:x for x in seq}`
     PythonCallNodeGen SourceSection: [0,18]`{x:x for x in seq}`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [5,17]`for x in seq`
         Name: [].<locals>.<genexp>:dictComprehensions01:1
         FrameDescriptor: 2 slots [x, <return_val>]

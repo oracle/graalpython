@@ -11,8 +11,6 @@ ModuleRootNode Name: <module 'getAttr02'> SourceSection: [0,5]`a().b`
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
       PythonCallNodeGen SourceSection: [0,3]`a()`
-        CachedCallNodeGen SourceSection: None
-          CreateArgumentsNodeGen SourceSection: None
-          CallDispatchNodeGen SourceSection: None
+        CallNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: None
           Identifier: a

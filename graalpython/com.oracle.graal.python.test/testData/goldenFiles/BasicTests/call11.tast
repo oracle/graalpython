@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'call11'> SourceSection: [0,13]`foo(**mydict)`
   Documentation: None
   InnerRootNode SourceSection: [0,13]`foo(**mydict)`
     PythonCallNodeGen SourceSection: [0,13]`foo(**mydict)`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None

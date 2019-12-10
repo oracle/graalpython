@@ -6,9 +6,7 @@ ModuleRootNode Name: <module 'call16'> SourceSection: [0,11]`a.b.c.foo()`
   Documentation: None
   InnerRootNode SourceSection: [0,11]`a.b.c.foo()`
     PythonCallNodeGen SourceSection: [0,11]`a.b.c.foo()`
-      CachedCallNodeGen SourceSection: None
-        CreateArgumentsNodeGen SourceSection: None
-        CallDispatchNodeGen SourceSection: None
+      CallNodeGen SourceSection: None
       GetCallAttributeNodeGen SourceSection: None
         GetAttributeNodeGen SourceSection: [0,5]`a.b.c`
           GetFixedAttributeNodeGen SourceSection: None

@@ -66,9 +66,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                         ExceptNode SourceSection: None
                           ExpressionStatementNode SourceSection: [88,114]`print("division by z...`
                             PythonCallNodeGen SourceSection: [88,114]`print("division by z...`
-                              CachedCallNodeGen SourceSection: None
-                                CreateArgumentsNodeGen SourceSection: None
-                                CallDispatchNodeGen SourceSection: None
+                              CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [94,113]`"division by zero!"`
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: print
@@ -78,9 +76,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [133,159]`print("result is", r...`
                           PythonCallNodeGen SourceSection: [133,159]`print("result is", r...`
-                            CachedCallNodeGen SourceSection: None
-                              CreateArgumentsNodeGen SourceSection: None
-                              CallDispatchNodeGen SourceSection: None
+                            CallNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [139,150]`"result is"`
                             ReadLocalVariableNode SourceSection: [152,158]`result`
                               Frame: [2,result,Illegal]
@@ -91,9 +87,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                         SaveExceptionStateNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [181,214]`print("executing fin...`
                         PythonCallNodeGen SourceSection: [181,214]`print("executing fin...`
-                          CachedCallNodeGen SourceSection: None
-                            CreateArgumentsNodeGen SourceSection: None
-                            CallDispatchNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [187,213]`"executing finally c...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: print

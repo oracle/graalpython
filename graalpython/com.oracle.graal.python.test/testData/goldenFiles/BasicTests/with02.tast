@@ -16,9 +16,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             WriteNameNodeGen SourceSection: None
               Identifier: b
             PythonCallNodeGen SourceSection: [15,18]`B()`
-              CachedCallNodeGen SourceSection: None
-                CreateArgumentsNodeGen SourceSection: None
-                CallDispatchNodeGen SourceSection: None
+              CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: None
                 Identifier: B
             LookupInheritedAttributeNode SourceSection: None
@@ -29,21 +27,15 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
               LookupAttributeInMRONodeGen SourceSection: None
                 IsSameTypeNodeGen SourceSection: None
               GetLazyClassNodeGen SourceSection: None
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             YesNodeGen SourceSection: None
             GetClassNodeGen SourceSection: None
             SaveExceptionStateNodeGen SourceSection: None
           WriteNameNodeGen SourceSection: None
             Identifier: a
           PythonCallNodeGen SourceSection: [5,8]`A()`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: None
               Identifier: A
           LookupInheritedAttributeNode SourceSection: None
@@ -54,12 +46,8 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             LookupAttributeInMRONodeGen SourceSection: None
               IsSameTypeNodeGen SourceSection: None
             GetLazyClassNodeGen SourceSection: None
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           YesNodeGen SourceSection: None
           GetClassNodeGen SourceSection: None
           SaveExceptionStateNodeGen SourceSection: None

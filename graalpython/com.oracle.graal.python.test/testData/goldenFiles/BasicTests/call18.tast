@@ -48,9 +48,7 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
                           Index: 0
                     ExpressionStatementNode SourceSection: [21,35]`foo(arg = [1])`
                       PythonCallNodeGen SourceSection: [21,35]`foo(arg = [1])`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             ListLiteralNode SourceSection: [31,34]`[1]`

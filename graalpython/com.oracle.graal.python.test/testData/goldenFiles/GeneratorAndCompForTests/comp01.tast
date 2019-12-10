@@ -12,9 +12,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
         WriteNameNodeGen SourceSection: [0,94]`resutl = {i: tuple(j...`
           Identifier: resutl
           PythonCallNodeGen SourceSection: [10,93]`i: tuple(j for j in ...`
-            CachedCallNodeGen SourceSection: None
-              CreateArgumentsNodeGen SourceSection: None
-              CallDispatchNodeGen SourceSection: None
+            CallNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [64,93]`for t in something f...`
               Name: [].<locals>.<genexp>:comp01:2
               FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -50,9 +48,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [13,42]`tuple(j for j in t i...`
-                                CachedCallNodeGen SourceSection: None
-                                  CreateArgumentsNodeGen SourceSection: None
-                                  CallDispatchNodeGen SourceSection: None
+                                CallNodeGen SourceSection: None
                                 GeneratorExpressionNode SourceSection: [21,41]`for j in t if i != j...`
                                   Name: generator10.<locals>.<genexp>:comp01:1
                                   FrameDescriptor: 3 slots [j, i, <return_val>]

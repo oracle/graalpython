@@ -76,9 +76,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                     BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [13,36]`install(extra_opts=[...`
                       PythonCallNodeGen SourceSection: [13,36]`install(extra_opts=[...`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
                             ListLiteralNode SourceSection: [32,35]`[1]`

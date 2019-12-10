@@ -13,9 +13,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __lt__
               PythonCallNodeGen SourceSection: [0,3]`x()`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: None
                   Identifier: x
               ReadLocalVariableNode SourceSection: None
@@ -27,9 +25,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
               PythonCallNodeGen SourceSection: [6,9]`y()`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: None
                   Identifier: y
         ExpressionWithSideEffect SourceSection: None
@@ -49,9 +45,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
               WriteLocalFrameSlotNodeGen SourceSection: None
                 Frame: [1,<>temp1,Illegal]
               PythonCallNodeGen SourceSection: [12,15]`y()`
-                CachedCallNodeGen SourceSection: None
-                  CreateArgumentsNodeGen SourceSection: None
-                  CallDispatchNodeGen SourceSection: None
+                CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: None
                   Identifier: y
         YesNodeGen SourceSection: None
@@ -62,9 +56,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
           Frame: [1,<>temp1,Illegal]
           ReadVariableFromFrameNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [19,22]`z()`
-          CachedCallNodeGen SourceSection: None
-            CreateArgumentsNodeGen SourceSection: None
-            CallDispatchNodeGen SourceSection: None
+          CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: None
             Identifier: z
       YesNodeGen SourceSection: None

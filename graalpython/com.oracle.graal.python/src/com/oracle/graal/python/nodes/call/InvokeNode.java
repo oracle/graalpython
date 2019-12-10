@@ -44,7 +44,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
@@ -53,11 +54,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 abstract class AbstractInvokeNode extends Node {
-
-    private final ConditionProfile isClassBodyProfile = ConditionProfile.createBinaryProfile();
-
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-
     protected static boolean shouldInlineGenerators() {
         return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
     }
@@ -76,7 +72,7 @@ abstract class AbstractInvokeNode extends Node {
         return callTarget;
     }
 
-    protected final void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget) {
+    protected static final void optionallySetClassBodySpecial(Object[] arguments, CallTarget callTarget, ConditionProfile isClassBodyProfile) {
         RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
         if (isClassBodyProfile.profile(rootNode instanceof ClassBodyRootNode)) {
             assert PArguments.getSpecialArgument(arguments) == null : "there cannot be a special argument in a class body";
@@ -86,14 +82,6 @@ abstract class AbstractInvokeNode extends Node {
 
     protected static boolean isBuiltin(Object callee) {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
-    }
-
-    protected ContextReference<PythonContext> getContextRef() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef;
     }
 
     @Override
@@ -173,26 +161,23 @@ public abstract class InvokeNode extends DirectInvokeNode {
         return InvokeNodeGen.create(callTarget, null, null, builtin, false);
     }
 
-    public static Object invokeUncached(PFunction callee, Object[] arguments) {
-        return GenericInvokeNode.getUncached().execute(null, callee, arguments);
-    }
-
     public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
-        return GenericInvokeNode.getUncached().execute(null, callee, arguments);
+        return GenericInvokeNode.getUncached().execute(callee, arguments);
     }
 
     public static Object invokeUncached(RootCallTarget ct, Object[] arguments) {
-        return GenericInvokeNode.getUncached().execute(null, ct, arguments);
+        return GenericInvokeNode.getUncached().execute(ct, arguments);
     }
 
     @Specialization
-    protected Object doDirect(VirtualFrame frame, Object[] arguments) {
+    protected Object doDirect(VirtualFrame frame, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct);
+        optionallySetClassBodySpecial(arguments, ct, isClassBodyProfile);
         if (profileIsNullFrame(frame == null)) {
-            PythonContext context = getContextRef().get();
             PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
             try {
                 return callNode.call(arguments);

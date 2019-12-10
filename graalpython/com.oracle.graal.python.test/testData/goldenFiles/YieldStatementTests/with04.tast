@@ -50,9 +50,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [0,b,Illegal]
                       PythonCallNodeGen SourceSection: [28,31]`B()`
-                        CachedCallNodeGen SourceSection: None
-                          CreateArgumentsNodeGen SourceSection: None
-                          CallDispatchNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: B
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -64,12 +62,8 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
                         GetLazyClassNodeGen SourceSection: None
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
                       SaveExceptionStateNodeGen SourceSection: None
@@ -79,9 +73,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [1,a,Illegal]
                     PythonCallNodeGen SourceSection: [18,21]`A()`
-                      CachedCallNodeGen SourceSection: None
-                        CreateArgumentsNodeGen SourceSection: None
-                        CallDispatchNodeGen SourceSection: None
+                      CallNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: A
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -93,12 +85,8 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,49]`def gen():↵  with
                       LookupAttributeInMRONodeGen SourceSection: None
                         IsSameTypeNodeGen SourceSection: None
                       GetLazyClassNodeGen SourceSection: None
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
-                    CachedCallNodeGen SourceSection: None
-                      CreateArgumentsNodeGen SourceSection: None
-                      CallDispatchNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
+                    CallNodeGen SourceSection: None
                     YesNodeGen SourceSection: None
                     GetClassNodeGen SourceSection: None
                     SaveExceptionStateNodeGen SourceSection: None
