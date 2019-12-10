@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -94,11 +93,6 @@ public abstract class CoerceToStringNode extends PNodeWithContext {
     @TruffleBoundary
     static String doLong(long x) {
         return Long.toString(x);
-    }
-
-    @Specialization
-    static String doDouble(double x) {
-        return PFloat.doubleToString(x);
     }
 
     @Specialization
