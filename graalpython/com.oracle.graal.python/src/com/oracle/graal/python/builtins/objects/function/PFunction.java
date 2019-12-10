@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -63,20 +62,20 @@ public class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        this(clazz, name, enclosingClassName, callTarget, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
+        this(clazz, name, enclosingClassName, code, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        this(clazz, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, null, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+        this(clazz, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, null, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
-    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(LazyPythonClass clazz, String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         super(clazz);
         this.name = name;
-        this.code = new PCode(PythonBuiltinClassType.PCode, callTarget);
+        this.code = code;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;

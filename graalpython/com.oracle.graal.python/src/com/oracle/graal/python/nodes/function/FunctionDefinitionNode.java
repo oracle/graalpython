@@ -31,6 +31,7 @@ import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -45,6 +46,7 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -59,6 +61,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final String functionName;
     protected final String enclosingClassName;
     protected final RootCallTarget callTarget;
+    @CompilationFinal private PCode cachedCode;
 
     @Children protected ExpressionNode[] defaults;
     @Children protected KwDefaultExpressionNode[] kwDefaults;
@@ -68,7 +71,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private HashingCollectionNodes.SetItemNode setItemNode;
 
-    @CompilerDirectives.CompilationFinal(dimensions = 1) private final String[] annotationNames;
+    @CompilationFinal(dimensions = 1) private final String[] annotationNames;
     @Children private ExpressionNode[] annotationTypes;
 
     private final Assumption sharedCodeStableAssumption = Truffle.getRuntime().createAssumption("shared code stable assumption");
@@ -132,8 +135,22 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             codeStableAssumption = Truffle.getRuntime().createAssumption();
             defaultsStableAssumption = Truffle.getRuntime().createAssumption();
         }
-        PFunction func = withDocString(frame,
-                        factory().createFunction(functionName, enclosingClassName, callTarget, PArguments.getGlobals(frame), defaultValues, kwDefaultValues, closure, writeNameNode,
+
+        PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
+        CompilerAsserts.partialEvaluationConstant(lang);
+        PCode code;
+        if (lang.singleContextAssumption.isValid()) {
+            if (cachedCode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cachedCode = factory().createCode(callTarget);
+            }
+            code = cachedCode;
+        } else {
+            code = factory().createCode(callTarget);
+        }
+
+        PFunction func = withDocString(frame, factory().createFunction(functionName, enclosingClassName, code, PArguments.getGlobals(frame),
+                                        defaultValues, kwDefaultValues, closure, writeNameNode,
                                         codeStableAssumption, defaultsStableAssumption));
 
         // Processing annotated arguments.

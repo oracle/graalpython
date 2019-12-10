@@ -1945,27 +1945,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, null);
+            return factory().createFunction(name, getTypeName(cls), code, globals, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, (PCell[]) getObjectArrayNode.execute(closure));
+            return factory().createFunction(name, getTypeName(cls), code, globals, (PCell[]) getObjectArrayNode.execute(closure));
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, getObjectArrayNode.execute(defaultArgs), null, null);
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, getObjectArrayNode.execute(defaultArgs), null, (PCell[]) getObjectArrayNode.execute(closure));
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, (PCell[]) getObjectArrayNode.execute(closure));
         }
 
         @Fallback
