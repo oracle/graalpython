@@ -37,7 +37,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class PString extends PImmutableSequence {
 
-    private final CharSequence value;
+    private CharSequence value;
 
     public PString(LazyPythonClass clazz, CharSequence value) {
         super(clazz);
@@ -59,6 +59,10 @@ public final class PString extends PImmutableSequence {
 
     public CharSequence getCharSequence() {
         return value;
+    }
+
+    void setCharSequence(String materialized) {
+        this.value = materialized;
     }
 
     public int len() {
@@ -103,6 +107,12 @@ public final class PString extends PImmutableSequence {
         return getValue();
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isHashable() {
+        return true;
+    }
+
     @TruffleBoundary(allowInlining = true)
     public static int length(String s) {
         return s.length();
@@ -118,9 +128,29 @@ public final class PString extends PImmutableSequence {
         return s.charAt(i);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isHashable() {
-        return true;
+    @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, String sub, int fromIndex) {
+        return s.indexOf(sub, fromIndex);
     }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String substring(String str, int start, int end) {
+        return str.substring(start, end);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String substring(String str, int start) {
+        return str.substring(start);
+    }
+
+    @TruffleBoundary
+    public static boolean isWhitespace(char c) {
+        return Character.isWhitespace(c);
+    }
+
+    @TruffleBoundary
+    public static boolean isWhitespace(int codePoint) {
+        return Character.isWhitespace(codePoint);
+    }
+
 }

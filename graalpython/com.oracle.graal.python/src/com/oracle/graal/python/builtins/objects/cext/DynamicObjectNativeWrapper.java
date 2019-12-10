@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.util.logging.Level;
 
@@ -105,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -127,7 +129,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrame
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
@@ -520,6 +521,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(lookupAttrNode.execute(object, __NEXT__));
         }
 
+        @Specialization(guards = "eq(TP_STR, key)")
+        Object doTpStr(PythonManagedClass object, @SuppressWarnings("unused") String key,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(lookupAttrNode.execute(object, __STR__));
+        }
+
         @Specialization(guards = "eq(TP_REPR, key)")
         Object doTpRepr(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
@@ -699,10 +707,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             PHashingCollection dict = lib.getDict(object);
             if (!(dict instanceof PDict)) {
                 assert dict instanceof PMappingproxy || dict == null;
-                // If 'dict instanceof PMappingproxy', it seems that someone already used
-                // '__dict__'
-                // on this type and created a mappingproxy object. We need to replace it by a
-                // dict.
+                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
+                // on this type and created a mappingproxy object. We need to replace it by a dict.
                 dict = factory.createDictFixedStorage(object);
                 lib.setDict(object, dict);
             }

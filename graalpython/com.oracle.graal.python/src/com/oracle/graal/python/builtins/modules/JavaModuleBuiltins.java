@@ -55,7 +55,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -122,13 +122,13 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
         PNone add(VirtualFrame frame, Object[] args,
-                        @Cached CastToStringNode castToString) {
+                        @Cached CastToJavaStringNode castToString) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, "host access is not allowed");
             }
             for (Object arg : args) {
-                String entry = castToString.execute(frame, arg);
+                String entry = castToString.execute(arg);
                 try {
                     // Always allow accessing JAR files in the language home; folders are allowed
                     // implicitly

@@ -200,7 +200,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
-            if (byteIdx == len) {
+            if (byteIdx >= len) {
+                assert byteIdx < len + 8;
                 return 0L;
             }
             int i = (int) byteIdx;

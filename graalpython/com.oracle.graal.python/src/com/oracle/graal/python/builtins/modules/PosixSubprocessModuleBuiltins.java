@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToL
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -232,20 +232,20 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
                         Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
                         Object restore_signals, Object call_setsid, PNone preexec_fn,
-                        @Cached("create()") CastToListNode castArgs,
-                        @Cached("create()") CastToListNode castExecList,
+                        @Cached CastToListNode castArgs,
+                        @Cached CastToListNode castExecList,
                         @Cached("createIfTrueNode()") CastToBooleanNode castCloseFds,
-                        @Cached("create()") CastToListNode castFdsToKeep,
-                        @Cached("create()") CastToStringNode castCwd,
-                        @Cached("create()") CastToListNode castEnv,
-                        @Cached("create()") CastToIndexNode castP2cread,
-                        @Cached("create()") CastToIndexNode castP2cwrite,
-                        @Cached("create()") CastToIndexNode castC2pread,
-                        @Cached("create()") CastToIndexNode castC2pwrite,
-                        @Cached("create()") CastToIndexNode castErrread,
-                        @Cached("create()") CastToIndexNode castErrwrite,
-                        @Cached("create()") CastToIndexNode castErrpipeRead,
-                        @Cached("create()") CastToIndexNode castErrpipeWrite,
+                        @Cached CastToListNode castFdsToKeep,
+                        @Cached CastToJavaStringNode castCwd,
+                        @Cached CastToListNode castEnv,
+                        @Cached CastToIndexNode castP2cread,
+                        @Cached CastToIndexNode castP2cwrite,
+                        @Cached CastToIndexNode castC2pread,
+                        @Cached CastToIndexNode castC2pwrite,
+                        @Cached CastToIndexNode castErrread,
+                        @Cached CastToIndexNode castErrwrite,
+                        @Cached CastToIndexNode castErrpipeRead,
+                        @Cached CastToIndexNode castErrpipeWrite,
                         @Cached("createIfTrueNode()") CastToBooleanNode castRestoreSignals,
                         @Cached("createIfTrueNode()") CastToBooleanNode castSetsid) {
 
@@ -253,7 +253,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (cwd instanceof PNone) {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
             } else {
-                actualCwd = castCwd.execute(frame, cwd);
+                actualCwd = castCwd.execute(cwd);
             }
 
             PList actualEnv;

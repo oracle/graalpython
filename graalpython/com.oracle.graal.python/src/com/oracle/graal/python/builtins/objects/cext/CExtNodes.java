@@ -286,6 +286,27 @@ public abstract class CExtNodes {
         }
     }
 
+    public abstract static class StringSubtypeNew extends SubtypeNew {
+        @Child private ToSulongNode toSulongNode;
+
+        @Override
+        protected final String getTypenamePrefix() {
+            return "unicode";
+        }
+
+        public final Object call(PythonNativeClass object, Object arg) {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return execute(object, toSulongNode.execute(arg));
+        }
+
+        public static StringSubtypeNew create() {
+            return CExtNodesFactory.StringSubtypeNewNodeGen.create();
+        }
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     public abstract static class FromNativeSubclassNode extends CExtBaseNode {
 

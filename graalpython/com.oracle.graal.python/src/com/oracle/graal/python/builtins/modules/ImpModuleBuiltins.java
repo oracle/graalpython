@@ -82,7 +82,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -452,9 +452,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object run(VirtualFrame frame, String modulename, String moduleFile, PList modulepath,
+        public Object run(String modulename, String moduleFile, PList modulepath,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("cast") @Cached CastToStringNode castString,
+                        @Shared("cast") @Cached CastToJavaStringNode castString,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             SequenceStorage sequenceStorage = modulepath.getSequenceStorage();
@@ -463,7 +463,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             assert n <= pathList.length;
             String[] paths = new String[n];
             for (int i = 0; i < n; i++) {
-                paths[i] = castString.execute(frame, pathList[i]);
+                paths[i] = castString.execute(pathList[i]);
             }
             return doCache(modulename, moduleFile, paths, ctxt, lang);
         }
@@ -496,8 +496,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object run(VirtualFrame frame, String modulename, PCode code, PList modulepath,
-                        @Shared("cast") @Cached CastToStringNode castString,
+        public Object run(String modulename, PCode code, PList modulepath,
+                        @Shared("cast") @Cached CastToJavaStringNode castString,
                         @CachedLanguage PythonLanguage lang) {
             final CallTarget ct = code.getRootCallTarget();
             if (ct == null) {
@@ -506,7 +506,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
             String[] paths = new String[pathList.length];
             for (int i = 0; i < pathList.length; i++) {
-                paths[i] = castString.execute(frame, pathList[i]);
+                paths[i] = castString.execute(pathList[i]);
             }
             return cacheWithModulePath(modulename, paths, lang, ct);
         }

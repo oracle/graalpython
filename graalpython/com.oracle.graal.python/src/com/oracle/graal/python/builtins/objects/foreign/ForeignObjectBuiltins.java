@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -735,9 +736,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         protected Object doIt(Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("object") InteropLibrary lib) {
+            if (lib.isBoolean(object)) {
+                try {
+                    return PInt.intValue(lib.asBoolean(object));
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("foreign value claims to be a boolean but isn't");
+                }
+            }
             if (lib.fitsInInt(object)) {
                 try {
                     return lib.asInt(object);

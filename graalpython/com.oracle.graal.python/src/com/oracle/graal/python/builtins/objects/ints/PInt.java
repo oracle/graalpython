@@ -288,6 +288,22 @@ public final class PInt extends PythonBuiltinObject {
         return (int) val;
     }
 
+    public static char charValueExact(int val) {
+        char t = (char) val;
+        if (t != val) {
+            throw new ArithmeticException();
+        }
+        return t;
+    }
+
+    public static char charValueExact(long val) {
+        char t = (char) val;
+        if (t != val) {
+            throw new ArithmeticException();
+        }
+        return t;
+    }
+
     public static boolean isByteRange(int val) {
         return val >= 0 && val < 256;
     }

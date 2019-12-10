@@ -54,6 +54,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -75,7 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -90,8 +92,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
@@ -460,7 +460,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntNode castFlags,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem,
-                        @Cached CastToStringNode castAddress,
+                        @Cached CastToJavaStringNode castAddress,
                         @Cached CastToJavaIntNode castPort) {
             int flags = castFlags.execute(flagArg);
             SequenceStorage addr = sockaddr.getSequenceStorage();
@@ -468,7 +468,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (addLen != 2 && addLen != 4) {
                 throw raise(PythonBuiltinClassType.OSError);
             }
-            String address = castAddress.execute(frame, getItem.execute(frame, addr, 0));
+            String address = castAddress.execute(getItem.execute(frame, addr, 0));
             int port = castPort.execute(getItem.execute(frame, addr, 1));
 
             if ((flags & PSocket.NI_NUMERICHOST) != PSocket.NI_NUMERICHOST) {

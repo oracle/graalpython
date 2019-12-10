@@ -120,56 +120,58 @@ public class PSlice extends PythonBuiltinObject {
     }
 
     public SliceInfo computeIndices(int length) {
-        int newStart = this.start;
-        int newStop = this.stop;
-        int newStep = this.step;
+        return PSlice.computeIndices(start, stop, step, length);
+
+    }
+
+    public static SliceInfo computeIndices(int start, int stop, int step, int length) {
         int tmpStart, tmpStop;
         int newLen;
 
-        if (newStep == MISSING_INDEX) {
-            newStep = 1;
+        if (step == MISSING_INDEX) {
+            step = 1;
         } else {
-            if (newStep == 0) {
+            if (step == 0) {
                 CompilerDirectives.transferToInterpreter();
                 throw PythonLanguage.getCore().raise(ValueError, "slice step cannot be zero");
             }
         }
-        tmpStart = newStep < 0 ? length - 1 : 0;
-        tmpStop = newStep < 0 ? -1 : length;
+        tmpStart = step < 0 ? length - 1 : 0;
+        tmpStop = step < 0 ? -1 : length;
 
-        if (newStart == MISSING_INDEX) {
-            newStart = tmpStart;
+        if (start == MISSING_INDEX) {
+            start = tmpStart;
         } else {
-            if (newStart < 0) {
-                newStart += length;
+            if (start < 0) {
+                start += length;
             }
-            if (newStart < 0) {
-                newStart = newStep < 0 ? -1 : 0;
+            if (start < 0) {
+                start = step < 0 ? -1 : 0;
             }
-            if (newStart >= length) {
-                newStart = newStep < 0 ? length - 1 : length;
+            if (start >= length) {
+                start = step < 0 ? length - 1 : length;
             }
         }
-        if (newStop == MISSING_INDEX) {
-            newStop = tmpStop;
+        if (stop == MISSING_INDEX) {
+            stop = tmpStop;
         } else {
-            if (newStop < 0) {
-                newStop += length;
+            if (stop < 0) {
+                stop += length;
             }
-            if (newStop < 0) {
-                newStop = newStep < 0 ? -1 : 0;
+            if (stop < 0) {
+                stop = step < 0 ? -1 : 0;
             }
-            if (newStop >= length) {
-                newStop = newStep < 0 ? length - 1 : length;
+            if (stop >= length) {
+                stop = step < 0 ? length - 1 : length;
             }
         }
-        if ((newStep < 0 && newStop >= newStart) || (newStep > 0 && newStart >= newStop)) {
+        if ((step < 0 && stop >= start) || (step > 0 && start >= stop)) {
             newLen = 0;
-        } else if (newStep < 0) {
-            newLen = (newStop - newStart + 1) / newStep + 1;
+        } else if (step < 0) {
+            newLen = (stop - start + 1) / step + 1;
         } else {
-            newLen = (newStop - newStart - 1) / newStep + 1;
+            newLen = (stop - start - 1) / step + 1;
         }
-        return new SliceInfo(newStart, newStop, newStep, newLen);
+        return new SliceInfo(start, stop, step, newLen);
     }
 }
