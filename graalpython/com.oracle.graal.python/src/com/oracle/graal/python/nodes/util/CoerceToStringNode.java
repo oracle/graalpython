@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -81,11 +80,6 @@ public abstract class CoerceToStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static PString doPString(PString x) {
-        return x;
-    }
-
-    @Specialization
     static String doBoolean(boolean x) {
         return x ? "True" : "False";
     }
@@ -108,7 +102,7 @@ public abstract class CoerceToStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    Object doGeneric(VirtualFrame frame, Object x,
+    static Object doGeneric(VirtualFrame frame, Object x,
                     @Cached("create(__STR__)") LookupAndCallUnaryNode callStrNode,
                     @Cached GetLazyClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
