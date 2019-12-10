@@ -119,7 +119,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public boolean isSyntaxError() {
-        return IsBuiltinClassProfile.profileClassSlowPath(getExceptionObject().getLazyPythonClass(), PythonBuiltinClassType.SyntaxError);
+        return pythonException != null && IsBuiltinClassProfile.profileClassSlowPath(pythonException.getLazyPythonClass(), PythonBuiltinClassType.SyntaxError);
     }
 
     public void setIncompleteSource(boolean val) {
