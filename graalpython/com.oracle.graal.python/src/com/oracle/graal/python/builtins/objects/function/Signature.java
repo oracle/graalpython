@@ -32,24 +32,38 @@ import java.util.List;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class Signature {
-    public static final Signature EMPTY = new Signature(false, -1, false, new String[0], new String[0]);
+    public static final Signature EMPTY = new Signature(-1, false, -1, false, new String[0], new String[0]);
 
     private final int varArgIndex;
+    private final int positionalOnlyArgIndex;
     private final boolean isVarArgsMarker;
     private final boolean takesVarKeywordArgs;
 
     @CompilationFinal(dimensions = 1) private final String[] positionalParameterNames;
     @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
 
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    List<String> parameterIds, List<String> keywordNames) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker,
+                        parameterIds != null ? parameterIds.toArray(new String[0]) : null,
+                        keywordNames != null ? keywordNames.toArray(new String[0]) : null);
+    }
+
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     List<String> parameterIds, List<String> keywordNames) {
-        this(takesVarKeywordArgs, takesVarArgs, varArgsMarker,
+        this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker,
                         parameterIds != null ? parameterIds.toArray(new String[0]) : null,
                         keywordNames != null ? keywordNames.toArray(new String[0]) : null);
     }
 
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     String[] parameterIds, String[] keywordNames) {
+        this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames);
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, String[] keywordNames) {
+        this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
         this.isVarArgsMarker = varArgsMarker;
@@ -58,11 +72,11 @@ public final class Signature {
     }
 
     public static Signature createOneArgumentWithVarKwArgs() {
-        return new Signature(true, -1, false, new String[]{"a"}, null);
+        return new Signature(-1, true, -1, false, new String[]{"a"}, null);
     }
 
     public static Signature createVarArgsAndKwArgsOnly() {
-        return new Signature(true, 0, false, (String[]) null, (String[]) null);
+        return new Signature(-1, true, 0, false, (String[]) null, (String[]) null);
     }
 
     public Signature createWithSelf() {
@@ -70,7 +84,7 @@ public final class Signature {
         parameterIdsWithSelf[0] = SELF;
         System.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
 
-        return new Signature(takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
+        return new Signature(-1, takesVarKeywordArgs, varArgIndex, isVarArgsMarker,
                         parameterIdsWithSelf, keywordOnlyNames);
     }
 
@@ -80,6 +94,15 @@ public final class Signature {
 
     public final int getMaxNumOfPositionalArgs() {
         return positionalParameterNames.length;
+    }
+
+    /**
+     * 
+     * @return The index to the positional only argument marker ('/'). Which means that all
+     *         positional only argument have index smaller then this.
+     */
+    public final int getPositionalOnlyArgIndex() {
+        return positionalOnlyArgIndex;
     }
 
     public final int getVarargsIdx() {

@@ -1658,7 +1658,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     static class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
@@ -1690,7 +1690,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     static class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private ReadVarArgsNode readVarargsNode;
 
         protected MethVarargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
@@ -1719,7 +1719,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     static class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
 
         protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
             super(language, factory, callTarget);
@@ -1745,7 +1745,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     static class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "arg"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         protected MethORoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
@@ -1774,7 +1774,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     static class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private ReadVarArgsNode readVarargsNode;
 
         protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
@@ -1803,7 +1803,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     static class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 

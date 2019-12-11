@@ -9,6 +9,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Jython Compatiblity: Implement importing Python code from inside JAR files by adding `path/to/jarfile.jar!path/inside/jar` to `sys.path`
 * Added support for date and time interop.
 * Added support for setting the time zone via `Context.Builder.timeZone`.
+* PEP 570 - Python Positional-Only Parameters implemented
 
 ## Version 19.3.0
 
