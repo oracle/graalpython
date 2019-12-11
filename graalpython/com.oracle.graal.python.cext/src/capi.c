@@ -264,7 +264,7 @@ PyObject* to_sulong(void *o) {
 
 /** to be used from Java code only; reads native 'ob_type' field */
 PyTypeObject* get_ob_type(PyObject* obj) {
-    return polyglot_from__typeobject(native_type_to_java(obj->ob_type));
+    return native_type_to_java(obj->ob_type);
 }
 
 /** to be used from Java code only; reads native 'tp_dict' field */
