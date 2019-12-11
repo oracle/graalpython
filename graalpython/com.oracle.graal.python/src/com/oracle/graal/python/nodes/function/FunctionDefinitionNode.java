@@ -150,8 +150,8 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
 
         PFunction func = withDocString(frame, factory().createFunction(functionName, enclosingClassName, code, PArguments.getGlobals(frame),
-                                        defaultValues, kwDefaultValues, closure, writeNameNode,
-                                        codeStableAssumption, defaultsStableAssumption));
+                        defaultValues, kwDefaultValues, closure, writeNameNode,
+                        codeStableAssumption, defaultsStableAssumption));
 
         // Processing annotated arguments.
         // The __annotations__ dictionary is created even there are is not any annotated arg.

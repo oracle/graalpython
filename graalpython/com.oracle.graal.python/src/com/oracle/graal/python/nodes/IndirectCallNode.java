@@ -66,8 +66,8 @@ public interface IndirectCallNode extends NodeInterface {
     }
 
     /**
-     * Finds the parent of {@code callNode} that is an {@link IndirectCallNode}
-     * and marks it so it will pass the state via the context the next time.
+     * Finds the parent of {@code callNode} that is an {@link IndirectCallNode} and marks it so it
+     * will pass the state via the context the next time.
      *
      * @return {@code true} if the marking was successful, {@code false} otherwise
      */

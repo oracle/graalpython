@@ -330,7 +330,7 @@ public abstract class ExecutionContext {
             if (callNode.calleeNeedsCallerFrame()) {
                 PFrame.Reference prev = context.popTopFrameInfo();
                 assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
-                    "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
+                                "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
                 info = PArguments.getCurrentFrameInfo(frame);
                 info.setCallNode((Node) callNode);
                 context.setTopFrameInfo(info);
@@ -350,8 +350,7 @@ public abstract class ExecutionContext {
         }
 
         /**
-         * Cleanup after a call without frame. For more details, see
-         * {@link #enter}.
+         * Cleanup after a call without frame. For more details, see {@link #enter}.
          */
         public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
             if (frame == null || context == null || savedState == null) {
@@ -370,11 +369,10 @@ public abstract class ExecutionContext {
     public abstract static class ForeignCallContext {
 
         /**
-         * Prepare a call from a Python frame to foreign callable. This will
-         * also call {@link IndirectCallContext#enter} to transfer the state to
-         * the context. In addition, this will acquire the interop lock from the
-         * {@link PythonContext} to ensure exclusive execution to prevent
-         * unsynchronized global state modification (which is in particular a
+         * Prepare a call from a Python frame to foreign callable. This will also call
+         * {@link IndirectCallContext#enter} to transfer the state to the context. In addition, this
+         * will acquire the interop lock from the {@link PythonContext} to ensure exclusive
+         * execution to prevent unsynchronized global state modification (which is in particular a
          * problem when calling native code).
          *
          * <pre>
@@ -411,8 +409,7 @@ public abstract class ExecutionContext {
         }
 
         /**
-         * Cleanup after an interop call. For more details, see
-         * {@link #enter}.
+         * Cleanup after an interop call. For more details, see {@link #enter}.
          */
         public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
             if (context != null) {

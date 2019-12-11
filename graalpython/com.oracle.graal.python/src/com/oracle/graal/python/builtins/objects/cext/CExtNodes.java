@@ -2281,7 +2281,8 @@ public abstract class CExtNodes {
             PFrame.Reference ref = context.peekTopFrameInfo();
             if (flag[0] == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // executed the first time, don't pollute the profile, we'll mark the caller to pass the info on the next call
+                // executed the first time, don't pollute the profile, we'll mark the caller to pass
+                // the info on the next call
                 flag[0] = ConditionProfile.createBinaryProfile();
                 if (ref == null) {
                     ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));

@@ -140,13 +140,13 @@ public final class ReadCallerFrameNode extends Node {
     /**
      * Walk up the stack to find the {@code startFrame} and from then ({@code
      * level} + 1)-times (counting only non-internal Python frames if {@code
-     * skipInternal} is true). If {@code startFrame} is {@code null}, return the
-     * currently top Python frame.
+     * skipInternal} is true). If {@code startFrame} is {@code null}, return the currently top
+     * Python frame.
      *
-     * @param startFrame   - the frame to start counting from or {@code null} to return the top frame
-     * @param frameAccess  - the desired {@link FrameInstance} access kind
+     * @param startFrame - the frame to start counting from or {@code null} to return the top frame
+     * @param frameAccess - the desired {@link FrameInstance} access kind
      * @param skipInternal - declares if Python internal frames should be skipped or counted
-     * @param level        - the stack depth to go to. Ignored if {@code startFrame} is {@code null}
+     * @param level - the stack depth to go to. Ignored if {@code startFrame} is {@code null}
      */
     public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -155,19 +155,17 @@ public final class ReadCallerFrameNode extends Node {
             int i = -1;
 
             /**
-             * We may find the Python frame at the level we desire, but the
-             * {@link PRootNode} associated with it may have been called from a
-             * different language, and thus not a Python {@link
-             * IndirectCallNode}.  That means that we cannot immediately return
-             * when we find the correct level frame, but instead we need to
-             * remember the frame in {@code outputFrame} and then keep going
-             * until we find the previous Python caller on the stack (or
-             * not). That last Python caller before the Python frame we need
-             * must push the info.
+             * We may find the Python frame at the level we desire, but the {@link PRootNode}
+             * associated with it may have been called from a different language, and thus not a
+             * Python {@link IndirectCallNode}. That means that we cannot immediately return when we
+             * find the correct level frame, but instead we need to remember the frame in
+             * {@code outputFrame} and then keep going until we find the previous Python caller on
+             * the stack (or not). That last Python caller before the Python frame we need must push
+             * the info.
              *
-             * This can easily be seen when this is used to {@link
-             * PythonContext#peekTopFrameInfo()}, because in that case, that
-             * info must be set by the caller that is somewhere up the stack.
+             * This can easily be seen when this is used to {@link PythonContext#peekTopFrameInfo()}
+             * , because in that case, that info must be set by the caller that is somewhere up the
+             * stack.
              *
              * <pre>
              *                      ================
