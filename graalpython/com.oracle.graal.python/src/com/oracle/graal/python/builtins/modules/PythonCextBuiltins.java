@@ -144,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -161,7 +162,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -196,8 +197,10 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -767,7 +770,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ExternalFunctionNode extends PRootNode {
+    abstract static class ExternalFunctionNode extends PRootNode implements IndirectCallNode {
         private final Signature signature;
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
@@ -777,6 +780,26 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private InteropLibrary lib;
         @Child private CalleeContext calleeContext = CalleeContext.create();
+        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return nativeCodeDoesntNeedMyFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return nativeCodeDoesntNeedExceptionState;
+        }
+
+        @Override
+        public Node copy() {
+            ExternalFunctionNode node = (ExternalFunctionNode) super.copy();
+            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+            return node;
+        }
 
         ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
             super(lang);
@@ -815,19 +838,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            PException savedExceptionState = ForeignCallContext.enter(frame, ctx, this);
+            Object state = ForeignCallContext.enter(frame, ctx, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
+                CompilerDirectives.transferToInterpreter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, savedExceptionState);
+                ForeignCallContext.exit(frame, ctx, state);
                 calleeContext.exit(frame, this);
             }
         }
@@ -1612,7 +1637,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     abstract static class MethodDescriptorRoot extends PRootNode {
-        @Child protected InvokeNode invokeNode;
+        @Child protected FunctionInvokeNode invokeNode;
         @Child protected ReadIndexedArgumentNode readSelfNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
@@ -1625,7 +1650,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             this.factory = factory;
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
             assert builtinFunction.getCallTarget().getRootNode() instanceof ExternalFunctionNode;
-            this.invokeNode = InvokeNode.create(builtinFunction);
+            this.invokeNode = FunctionInvokeNode.create(builtinFunction);
         }
 
         @Override
@@ -2446,11 +2471,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Shared("asDoubleNode") @Cached CExtNodes.AsNativeDoubleNode asDoubleNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PException exceptionState = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return asDoubleNode.execute(asPythonObjectNode.execute(object));
             } finally {
-                IndirectCallContext.exit(frame, context, exceptionState);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -2684,11 +2709,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return dataModelLibrary.isSequence(object);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
     }

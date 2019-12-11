@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -60,20 +61,34 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
-public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
+public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements IndirectCallNode {
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
     @Child private PRaiseOSErrorNode raiseOSNode;
     @Child private PassCaughtExceptionNode passExceptionNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+    private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+
+    @Override
+    public Assumption needNotPassFrameAssumption() {
+        return dontNeedCallerFrame;
+    }
+
+    @Override
+    public Assumption needNotPassExceptionAssumption() {
+        return dontNeedExceptionState;
+    }
 
     protected final PythonObjectFactory factory() {
         if (objectFactory == null) {

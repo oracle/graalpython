@@ -176,11 +176,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
             PythonContext context = getContextRef().get();
-            PException caughtException = ForeignCallContext.enter(frame, context, this);
+            Object state = ForeignCallContext.enter(frame, context, this);
             try {
                 return run(moduleSpec, interop);
             } finally {
-                ForeignCallContext.exit(frame, context, caughtException);
+                ForeignCallContext.exit(frame, context, state);
             }
         }
 

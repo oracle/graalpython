@@ -377,18 +377,18 @@ public abstract class PythonObjectFactory extends Node {
         return createBuiltinMethod(PythonBuiltinClassType.PBuiltinMethod, self, function);
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, closure));
+    public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, code, globals, closure));
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure));
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
-    public PFunction createFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure, WriteAttributeToDynamicObjectNode writeAttrNode, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, defaultValues, kwDefaultValues, closure, writeAttrNode, codeStableAssumption,
+        return trace(new PFunction(PythonBuiltinClassType.PFunction, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, writeAttrNode, codeStableAssumption,
                         defaultsStableAssumption));
     }
 
@@ -538,9 +538,9 @@ public abstract class PythonObjectFactory extends Node {
                         numOfGeneratorForNode, this));
     }
 
-    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, RootCallTarget callTarget, PythonObject globals, PCell[] closure, Object[] defaultValues,
+    public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
                     PKeyword[] kwDefaultValues) {
-        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, callTarget, globals, closure, defaultValues, kwDefaultValues));
+        return trace(PGeneratorFunction.create(PythonBuiltinClassType.PFunction, name, enclosingClassName, code, globals, closure, defaultValues, kwDefaultValues));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

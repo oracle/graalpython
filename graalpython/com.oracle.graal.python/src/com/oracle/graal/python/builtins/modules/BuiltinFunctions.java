@@ -1863,10 +1863,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 });
 
                 String name = func.getName();
-                builtinFunc =
-
-                                factory().createFunction(name, func.getEnclosingClassName(), Truffle.getRuntime().createCallTarget(functionRootNode),
-                                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
+                                new PCode(PythonBuiltinClassType.PCode, Truffle.getRuntime().createCallTarget(functionRootNode)),
+                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 
             return builtinFunc;

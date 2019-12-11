@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.RestoreExceptionStateNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodesFactory.SaveExceptionStateNodeGen;
@@ -150,6 +151,8 @@ public abstract class ExceptionStateNodes {
                 public PException visitFrame(FrameInstance frameInstance) {
                     RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
                     RootNode rootNode = target.getRootNode();
+                    Node callNode = frameInstance.getCallNode();
+                    IndirectCallNode.setEncapsulatingNeedsToPassExceptionState(callNode);
                     if (rootNode instanceof PRootNode) {
                         PRootNode pRootNode = (PRootNode) rootNode;
                         pRootNode.setNeedsExceptionState();

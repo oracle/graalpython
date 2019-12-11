@@ -43,10 +43,10 @@ package com.oracle.graal.python.builtins.objects.object;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -55,7 +55,6 @@ import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
-import com.oracle.truffle.api.nodes.Node;
 
 @GenerateLibrary
 @DefaultExport(DefaultPythonBooleanExports.class)
@@ -300,13 +299,13 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
-    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
+    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
         PythonContext context = contextRef.get();
-        PException caughtException = IndirectCallContext.enter(frame, context, callNode);
+        Object state = IndirectCallContext.enter(frame, context, callNode);
         try {
             return library.isIterable(object);
         } finally {
-            IndirectCallContext.exit(frame, context, caughtException);
+            IndirectCallContext.exit(frame, context, state);
         }
     }
 

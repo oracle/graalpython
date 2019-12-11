@@ -254,11 +254,11 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         private boolean isSequence(VirtualFrame frame, ContextReference<PythonContext> contextRef, Object obj, PythonObjectLibrary library) {
             PythonContext context = contextRef.get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return library.isSequence(obj);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 
