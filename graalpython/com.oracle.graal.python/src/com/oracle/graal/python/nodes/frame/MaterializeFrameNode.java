@@ -309,7 +309,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(VirtualFrame frame, PFrame pyframe, Frame frameToSync);
 
-        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd", "cachedSlots.length < 32"}, //
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd", "cachedSlots.length < 64"}, //
                         assumptions = "cachedFd.getVersion()", //
                         limit = "1")
         @ExplodeLoop
