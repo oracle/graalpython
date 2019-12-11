@@ -149,7 +149,7 @@ public final class ReadCallerFrameNode extends Node {
      * @param level        - the stack depth to go to. Ignored if {@code startFrame} is {@code null}
      */
     public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         final Frame[] outputFrame = new Frame[1];
         Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;
