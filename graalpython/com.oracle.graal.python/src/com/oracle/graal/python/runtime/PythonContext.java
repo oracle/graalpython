@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -203,6 +204,7 @@ public final class PythonContext {
     private OutputStream err;
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
+    @CompilationFinal private GraalHPyContext hPyContext;
     private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
@@ -982,5 +984,13 @@ public final class PythonContext {
     public void setCapiWasLoaded(Object capiLibrary) {
         assert cApiContext == null : "tried to create new C API context but it was already created";
         cApiContext = new CApiContext(this, capiLibrary);
+    }
+
+    public GraalHPyContext getHPyContext() {
+        if (hPyContext == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            hPyContext = new GraalHPyContext(this);
+        }
+        return hPyContext;
     }
 }

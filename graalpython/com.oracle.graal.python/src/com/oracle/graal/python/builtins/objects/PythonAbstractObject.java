@@ -1728,7 +1728,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         private final Object[] keys;
 
-        Keys(Object[] keys) {
+        public Keys(Object[] keys) {
             this.keys = keys;
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,27 +38,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.Library;
-import com.oracle.truffle.api.library.LibraryFactory;
+public class GraalHPyNodes {
 
-@GenerateLibrary
-public abstract class PythonNativeWrapperLibrary extends Library {
-    public abstract Object getDelegate(Object wrapper);
-
-    public abstract Object getNativePointer(Object wrapper);
-
-    public abstract boolean isNative(Object wrapper);
-
-    static final LibraryFactory<PythonNativeWrapperLibrary> FACTORY = LibraryFactory.resolve(PythonNativeWrapperLibrary.class);
-
-    public static LibraryFactory<PythonNativeWrapperLibrary> getFactory() {
-        return FACTORY;
-    }
-
-    public static PythonNativeWrapperLibrary getUncached() {
-        return FACTORY.getUncached();
-    }
 }

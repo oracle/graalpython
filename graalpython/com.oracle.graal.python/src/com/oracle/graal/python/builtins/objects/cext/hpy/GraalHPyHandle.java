@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,27 +38,76 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.Library;
-import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
-@GenerateLibrary
-public abstract class PythonNativeWrapperLibrary extends Library {
-    public abstract Object getDelegate(Object wrapper);
+@ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(PythonNativeWrapperLibrary.class)
+public final class GraalHPyHandle implements TruffleObject {
 
-    public abstract Object getNativePointer(Object wrapper);
+    private final Object delegate;
+    private int id = -1;
 
-    public abstract boolean isNative(Object wrapper);
-
-    static final LibraryFactory<PythonNativeWrapperLibrary> FACTORY = LibraryFactory.resolve(PythonNativeWrapperLibrary.class);
-
-    public static LibraryFactory<PythonNativeWrapperLibrary> getFactory() {
-        return FACTORY;
+    public GraalHPyHandle(Object delegate) {
+        this.delegate = delegate;
     }
 
-    public static PythonNativeWrapperLibrary getUncached() {
-        return FACTORY.getUncached();
+    @ExportMessage
+    boolean isPointer() {
+        return id != -1;
+    }
+
+    @ExportMessage
+    long asPointer() throws UnsupportedMessageException {
+        if (!isPointer()) {
+            throw UnsupportedMessageException.create();
+        }
+        return id;
+    }
+
+    @ExportMessage
+    void toNative(
+                    @CachedContext(PythonLanguage.class) PythonContext context) {
+        this.id = context.getHPyContext().getHPyHandleForObject(this);
+    }
+
+    @ExportMessage
+    boolean hasNativeType() {
+        return false;
+    }
+
+    @ExportMessage
+    Object getNativeType() {
+        return null;
+    }
+
+    @ExportMessage
+    Object getDelegate() {
+        return delegate;
+    }
+
+    @ExportMessage
+    Object getNativePointer() {
+        return isPointer() ? id : null;
+    }
+
+    @ExportMessage
+    boolean isNative() {
+        return isPointer();
+    }
+
+    public GraalHPyHandle copy() {
+        return new GraalHPyHandle(delegate);
     }
 }
