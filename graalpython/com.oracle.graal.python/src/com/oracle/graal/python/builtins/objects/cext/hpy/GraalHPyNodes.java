@@ -40,6 +40,150 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
+
 public class GraalHPyNodes {
+
+    @GenerateUncached
+    abstract static class ImportHPySymbolNode extends PNodeWithContext {
+
+        public abstract Object execute(GraalHPyContext context, String name);
+
+        @Specialization(guards = "cachedName == name", limit = "1", assumptions = "singleContextAssumption()")
+        Object doReceiverCachedIdentity(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String name,
+                        @Cached("name") @SuppressWarnings("unused") String cachedName,
+                        @Cached("importHPySymbolUncached(context, name)") Object sym) {
+            return sym;
+        }
+
+        @Specialization(guards = "cachedName.equals(name)", limit = "1", assumptions = "singleContextAssumption()", replaces = "doReceiverCachedIdentity")
+        Object doReceiverCached(GraalHPyContext context, @SuppressWarnings("unused") String name,
+                        @Cached("name") @SuppressWarnings("unused") String cachedName,
+                        @Cached("importHPySymbolUncached(context, name)") Object sym) {
+            return sym;
+        }
+
+        @Specialization(replaces = {"doReceiverCached", "doReceiverCachedIdentity"})
+        Object doGeneric(GraalHPyContext context, String name,
+                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
+                        @Cached PRaiseNode raiseNode) {
+            return importHPySymbol(raiseNode, interopLib, context.getHPyLibrary(), name);
+        }
+
+        protected static Object importHPySymbolUncached(GraalHPyContext context, String name) {
+            Object hpyLibrary = context.getHPyLibrary();
+            InteropLibrary uncached = InteropLibrary.getFactory().getUncached(hpyLibrary);
+            return importHPySymbol(PRaiseNode.getUncached(), uncached, hpyLibrary, name);
+        }
+
+        private static Object importHPySymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
+            try {
+                return library.readMember(capiLibrary, name);
+            } catch (UnknownIdentifierException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid C API function: %s", name);
+            } catch (UnsupportedMessageException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "corrupted C API library object: %s", capiLibrary);
+            }
+        }
+
+    }
+
+    @GenerateUncached
+    public abstract static class PCallHPyFunction extends PNodeWithContext {
+
+        public final Object call(GraalHPyContext context, String name, Object... args) {
+            return execute(context, name, args);
+        }
+
+        public abstract Object execute(GraalHPyContext context, String name, Object[] args);
+
+        @Specialization
+        Object doIt(GraalHPyContext context, String name, Object[] args,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Cached ImportHPySymbolNode importCAPISymbolNode,
+                        @Cached BranchProfile profile,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return interopLibrary.execute(importCAPISymbolNode.execute(context, name), args);
+            } catch (UnsupportedTypeException | ArityException e) {
+                profile.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
+            } catch (UnsupportedMessageException e) {
+                profile.enter();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "HPy C API symbol %s is not callable", name);
+            }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyAsPythonObjectNode extends PNodeWithContext {
+
+        public abstract Object execute(GraalHPyContext hpyContext, Object object);
+
+        public abstract Object executeInt(GraalHPyContext hpyContext, int l);
+
+        public abstract Object executeLong(GraalHPyContext hpyContext, long l);
+
+        @Specialization
+        static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization(guards = "hpyContext == null")
+        static Object doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getHPyContext().getObjectForHPyHandle(handle).getDelegate();
+        }
+
+        @Specialization(guards = "hpyContext == null", rewriteOn = ArithmeticException.class)
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle)).getDelegate();
+        }
+
+        @Specialization(guards = "hpyContext == null", replaces = "doLong")
+        static Object doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            return doLongOvfWithContext(context.getHPyContext(), handle, raiseNode);
+        }
+
+        @Specialization(guards = "hpyContext != null")
+        static Object doIntWithContext(GraalHPyContext hpyContext, int handle) {
+            return hpyContext.getObjectForHPyHandle(handle).getDelegate();
+        }
+
+        @Specialization(guards = "hpyContext != null", rewriteOn = ArithmeticException.class)
+        static Object doLongWithContext(GraalHPyContext hpyContext, long handle) {
+            return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle)).getDelegate();
+        }
+
+        @Specialization(guards = "hpyContext != null", replaces = "doLongWithContext")
+        static Object doLongOvfWithContext(GraalHPyContext hpyContext, long handle,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle)).getDelegate();
+            } catch (ArithmeticException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "unknown handle: %d", handle);
+            }
+        }
+    }
 
 }

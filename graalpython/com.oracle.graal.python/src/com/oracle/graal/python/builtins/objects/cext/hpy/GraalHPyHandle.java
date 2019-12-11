@@ -43,7 +43,10 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -84,12 +87,30 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     boolean hasNativeType() {
-        return false;
+        return true;
     }
 
     @ExportMessage
-    Object getNativeType() {
-        return null;
+    static class GetNativeType {
+        @Specialization(assumptions = "singleContextAssumption()")
+        static Object doSingleContext(@SuppressWarnings("unused") GraalHPyHandle handle,
+                                      @Cached("getHPyNativeType()") Object hpyNativeType) {
+            return hpyNativeType;
+        }
+
+        @Specialization(replaces = "doSingleContext")
+        static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
+                                      @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getHPyContext().getHPyNativeType();
+        }
+
+        static Object getHPyNativeType() {
+            return PythonLanguage.getContext().getHPyContext().getHPyNativeType();
+        }
+
+        static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
     }
 
     @ExportMessage

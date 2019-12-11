@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -137,9 +138,10 @@ public final class GraalHPyContext implements TruffleObject {
             values = new String[declaredFields.length - 1]; // omit the values field
             for (int i = 0; i < declaredFields.length; i++) {
                 Field s = declaredFields[i];
-                if (s.getType() == String.class) {
+                if (s.getType() == HPyContextMembers.class) {
                     try {
-                        values[i] = ((HPyContextMembers) s.get(HPyContextMembers.class)).name;
+                        HPyContextMembers member = ((HPyContextMembers) s.get(HPyContextMembers.class));
+                        values[member.ordinal()] = member.name;
                     } catch (IllegalArgumentException | IllegalAccessException e) {
                     }
                 }
@@ -155,19 +157,49 @@ public final class GraalHPyContext implements TruffleObject {
             }
             return false;
         }
+
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+        public static int getOrdinal(String name) {
+            for (int i = 0; i < values.length; i++) {
+                if (values[i].equals(name)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
     }
 
-    private Object[] hpyHandleTable = new Object[0];
+    private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[0];
     private final PythonContext context;
+
+    /** The LLVM bitcode library object representing 'libhpy'. */
+    private final Object hpyLibrary;
+
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
 
-    public GraalHPyContext(PythonContext context) {
+    /** the native type ID of C struct 'HPy' */
+    private Object hpyNativeTypeID;
+
+    public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         this.context = context;
         this.hpyContextMembers = createMembers(context);
+        this.hpyLibrary = hpyLibrary;
     }
 
     public PythonContext getContext() {
         return context;
+    }
+
+    public Object getHPyLibrary() {
+        return hpyLibrary;
+    }
+
+    void setHPyNativeType(Object hpyNativeTypeID) {
+        this.hpyNativeTypeID = hpyNativeTypeID;
+    }
+
+    public Object getHPyNativeType() {
+        return hpyNativeTypeID;
     }
 
     @ExportMessage
@@ -189,7 +221,6 @@ public final class GraalHPyContext implements TruffleObject {
     Object readMember(String key,
                     @Cached GraalHPyReadMemberNode readMemberNode) {
         return readMemberNode.execute(this, key);
-
     }
 
     @GenerateUncached
@@ -206,7 +237,7 @@ public final class GraalHPyContext implements TruffleObject {
         }
 
         static int getIndex(String key) {
-            return HPyContextMembers.valueOf(key).ordinal();
+            return HPyContextMembers.getOrdinal(key);
         }
 
     }
@@ -220,38 +251,44 @@ public final class GraalHPyContext implements TruffleObject {
         members[HPyContextMembers.H_TYPE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonBuiltinClassType.TypeError));
         members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
+        members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
         return members;
     }
 
-
-    private int allocateHandle(Object object) {
-        for(int i=0; i < hpyHandleTable.length; i++) {
-            if(hpyHandleTable[i] != null) {
+    private int allocateHandle(GraalHPyHandle object) {
+        for (int i = 0; i < hpyHandleTable.length; i++) {
+            if (hpyHandleTable[i] == null) {
                 hpyHandleTable[i] = object;
                 // TODO(fa) log new handle allocation
-                return i;
+                return i + 1;
             }
         }
         return -1;
     }
 
-    public int getHPyHandleForObject(Object object) {
+    public int getHPyHandleForObject(GraalHPyHandle object) {
         // find free association
         int handle = allocateHandle(object);
-        if(handle == -1) {
+        if (handle == -1) {
             // resize
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, Math.max(16, hpyHandleTable.length * 2));
             // TODO(fa) log array resize
         }
         handle = allocateHandle(object);
-        assert handle != -1;
+        assert handle > 0;
         return handle;
     }
 
+    public GraalHPyHandle getObjectForHPyHandle(int handle) {
+        // find free association
+        assert handle > 0;
+        return hpyHandleTable[handle - 1];
+    }
+
     public void releaseHPyHandleForObject(int handle) {
-        assert hpyHandleTable[handle] != null : "releasing handle that has already been released: " + handle;
+        assert hpyHandleTable[handle - 1] != null : "releasing handle that has already been released: " + handle;
         // TODO(fa) log handle dealloc
-        hpyHandleTable[handle] = null;
+        hpyHandleTable[handle - 1] = null;
     }
 
 }

@@ -986,11 +986,18 @@ public final class PythonContext {
         cApiContext = new CApiContext(this, capiLibrary);
     }
 
+    public boolean hasHPyContext() {
+        return hPyContext != null;
+    }
+
+    public void createHPyContext(Object hpyLibrary) {
+        assert hPyContext == null : "tried to create new HPy context but it was already created";
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        hPyContext = new GraalHPyContext(this, hpyLibrary);
+    }
+
     public GraalHPyContext getHPyContext() {
-        if (hPyContext == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            hPyContext = new GraalHPyContext(this);
-        }
+        assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
     }
 }
