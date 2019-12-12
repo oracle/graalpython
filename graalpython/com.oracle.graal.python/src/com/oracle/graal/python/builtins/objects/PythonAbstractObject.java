@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -58,13 +57,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -112,8 +118,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -126,10 +130,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -663,35 +663,27 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean isHashable(@Shared("lookupHash") @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+    public final boolean isHashable(@Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         return dataModelLibrary.isCallable(hashAttr);
     }
 
     @ExportMessage
-    public long hash(@Shared("lookupHash") @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
-                    @Shared("raiseHash") @Cached PRaiseNode raise,
+    public long hashWithState(ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
-        Object result = CallNode.getUncached().execute(hashAttr, this);
-        return callHashAttr(raise, interopLib, hashAttr, result);
-    }
-
-    @ExportMessage
-    public long withFrameHash(Frame frame,
-                    @Shared("lookupHash") @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
-                    @Cached CallNode callNode,
-                    @Shared("raiseHash") @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
-        Object result = callNode.execute((VirtualFrame) frame, hashAttr, this);
-        return callHashAttr(raise, interopLib, hashAttr, result);
-    }
-
-    private static long callHashAttr(PRaiseNode raise, InteropLibrary interopLib, Object hashAttr, Object result) {
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.execute(hashAttr, this);
+        } else {
+            result = callNode.execute(PArguments.frameForCall(state), hashAttr, this);
+        }
         if (interopLib.fitsInLong(hashAttr)) {
             try {
                 return interopLib.asLong(result);

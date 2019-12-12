@@ -42,12 +42,13 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -191,15 +192,27 @@ public abstract class PythonObjectLibrary extends Library {
         return false;
     }
 
-    public final long hash(VirtualFrame frame, Object receiver) {
-        return withFrameHash(receiver, frame);
-    }
-
-    public long withFrameHash(Object receiver, Frame frame) {
+    /**
+     * Returns the Python hash to use for the receiver. The {@code threadState}
+     * argument must be the result of a {@link PArguments#getThreadState}
+     * call. It ensures that we can use fastcalls and pass the thread state in
+     * the frame arguments.
+     */
+    public long hashWithState(Object receiver, ThreadState threadState) throws UnsupportedMessageException {
+        if (threadState == null) {
+            throw UnsupportedMessageException.create();
+        }
         return hash(receiver);
     }
 
-    public abstract long hash(Object receiver);
+    /**
+     * Potentially slower way to get the Python hash for the receiver. If a
+     * Python {@link Frame} is available to the caller, {@link #hashWithState}
+     * should be preferred.
+     */
+    public long hash(Object receiver) throws UnsupportedMessageException {
+        return hashWithState(receiver, null);
+    }
 
     /**
      * Checks whether the receiver is a Python an indexable object. As described in the

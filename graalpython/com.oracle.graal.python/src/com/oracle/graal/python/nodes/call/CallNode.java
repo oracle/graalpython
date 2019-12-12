@@ -92,6 +92,11 @@ public abstract class CallNode extends PNodeWithContext {
         return executeInternal(null, callableObject, arguments, keywords);
     }
 
+    /**
+     * To be used when this node is called uncached or when no frame is available. Note that the
+     * current thread state will be read from the context, so calls through this entry point are
+     * potentially slower than if a frame is available.
+     */
     public final Object execute(Object callableObject, Object... arguments) {
         return executeInternal(null, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
