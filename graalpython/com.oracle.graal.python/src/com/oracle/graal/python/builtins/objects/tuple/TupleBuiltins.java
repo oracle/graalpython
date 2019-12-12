@@ -61,8 +61,10 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
@@ -86,6 +88,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -584,22 +587,15 @@ public class TupleBuiltins extends PythonBuiltins {
         public long computeHash(VirtualFrame frame, PTuple self,
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create()") BuiltinFunctions.HashNode hashNode,
-                        @Cached("createLossy()") CoerceToJavaLongNode castToLongNode) {
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             long multiplier = 0xf4243;
             long hash = 0x345678;
-            long tmp;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, tupleStore, i);
-                Object hashValue = hashNode.execute(frame, item);
-                tmp = castToLongNode.execute(hashValue);
-                if (tmp == -1) {
-                    return -1;
-                }
-
+                long tmp = lib.hashWithState(item, PArguments.getThreadState(frame));
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }
