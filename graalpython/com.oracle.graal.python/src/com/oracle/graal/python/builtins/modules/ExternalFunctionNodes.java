@@ -337,7 +337,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    abstract static class MethodDescriptorRoot extends PRootNode {
+    public abstract static class MethodDescriptorRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
@@ -348,12 +348,12 @@ public abstract class ExternalFunctionNodes {
         private final String name;
         private final Object callable;
 
-        MethodDescriptorRoot(PythonLanguage language, String name, Object callable) {
+        public MethodDescriptorRoot(PythonLanguage language, String name, Object callable) {
             this(language, name, callable, null);
         }
 
         @TruffleBoundary
-        MethodDescriptorRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethodDescriptorRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language);
             this.name = name;
             this.callable = callable;
@@ -438,17 +438,17 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    static final class MethKeywordsRoot extends MethodDescriptorRoot {
+    public static final class MethKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        MethKeywordsRoot(PythonLanguage language, String name, Object callable) {
+        public MethKeywordsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
         }
 
-        MethKeywordsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethKeywordsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language, name, callable, convertArgsToSulongNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
@@ -469,16 +469,16 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    static final class MethVarargsRoot extends MethodDescriptorRoot {
+    public static final class MethVarargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
-        MethVarargsRoot(PythonLanguage language, String name, Object callable) {
+        public MethVarargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
         }
 
-        MethVarargsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethVarargsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language, name, callable, convertArgsToSulongNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
@@ -497,14 +497,14 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    static final class MethNoargsRoot extends MethodDescriptorRoot {
+    public static final class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
 
-        MethNoargsRoot(PythonLanguage language, String name, Object callable) {
+        public MethNoargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
         }
 
-        MethNoargsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethNoargsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language, name, callable, convertArgsToSulongNode);
         }
 
@@ -520,15 +520,15 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    static final class MethORoot extends MethodDescriptorRoot {
+    public static final class MethORoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        MethORoot(PythonLanguage language, String name, Object callable) {
+        public MethORoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
         }
 
-        MethORoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethORoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language, name, callable, convertArgsToSulongNode);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
         }
@@ -546,17 +546,17 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
+    public static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        MethFastcallWithKeywordsRoot(PythonLanguage language, String name, Object callable) {
+        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
         }
 
-        MethFastcallWithKeywordsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language, name, callable, convertArgsToSulongNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
@@ -584,16 +584,16 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    static final class MethFastcallRoot extends MethodDescriptorRoot {
+    public static final class MethFastcallRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
-        MethFastcallRoot(PythonLanguage language, String name, Object callable) {
+        public MethFastcallRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
         }
 
-        MethFastcallRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        public MethFastcallRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language, name, callable, convertArgsToSulongNode);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);

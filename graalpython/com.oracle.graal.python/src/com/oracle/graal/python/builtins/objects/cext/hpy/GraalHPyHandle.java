@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
@@ -49,6 +50,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -59,6 +61,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
 
+    public static final String I = "_i";
     private final Object delegate;
     private int id = -1;
 
@@ -94,13 +97,13 @@ public final class GraalHPyHandle implements TruffleObject {
     static class GetNativeType {
         @Specialization(assumptions = "singleContextAssumption()")
         static Object doSingleContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                                      @Cached("getHPyNativeType()") Object hpyNativeType) {
+                        @Cached("getHPyNativeType()") Object hpyNativeType) {
             return hpyNativeType;
         }
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                                      @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext().getHPyNativeType();
         }
 
@@ -126,6 +129,29 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     boolean isNative() {
         return isPointer();
+    }
+
+    @ExportMessage
+    boolean hasMembers() {
+        return true;
+    }
+
+    @ExportMessage
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+        return new PythonAbstractObject.Keys(new String[]{I});
+    }
+
+    @ExportMessage
+    boolean isMemberReadable(String key) {
+        return I.equals(key);
+    }
+
+    @ExportMessage
+    Object readMember(String key) throws UnknownIdentifierException {
+        if (I.equals(key)) {
+            return this;
+        }
+        throw UnknownIdentifierException.create(key);
     }
 
     public GraalHPyHandle copy() {

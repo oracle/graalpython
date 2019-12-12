@@ -70,6 +70,14 @@ void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
 	return polyglot_from_string(moduleDef->m_doc, SRC_CS);
 }
 
+void* graal_hpy_get_ml_name(HPyMethodDef *methodDef) {
+	return polyglot_from_string(methodDef->ml_name, SRC_CS);
+}
+
+void* graal_hpy_get_ml_doc(HPyMethodDef *methodDef) {
+	return polyglot_from_string(methodDef->ml_doc, SRC_CS);
+}
+
 void* graal_hpy_get_m_methods(HPyModuleDef *moduleDef) {
 	uint64_t len=0;
 	while ((moduleDef->m_methods[len]).ml_name != NULL) {

@@ -90,7 +90,7 @@ public final class GraalHPyContext implements TruffleObject {
      * *(*ctx_CallRealFunctionFromTrampoline)(HPyContext ctx, struct _object *self, struct _object
      * *args, void *func, int ml_flags);
      */
-    public enum HPyContextMembers {
+    enum HPyContextMembers {
 
         CTX_VERSION("ctx_version"),
         H_NONE("h_None"),
@@ -291,4 +291,29 @@ public final class GraalHPyContext implements TruffleObject {
         hpyHandleTable[handle - 1] = null;
     }
 
+    // nb. keep in sync with 'meth.h'
+    private static final int _HPy_METH = 0x100000;
+    private static final int HPy_METH_VARARGS = (0x0001 | _HPy_METH);
+    private static final int HPy_METH_KEYWORDS = (0x0002 | _HPy_METH);
+    private static final int HPy_METH_NOARGS = (0x0004 | _HPy_METH);
+    private static final int HPy_METH_O = (0x0008 | _HPy_METH);
+
+    // These methods could be static but they are deliberately implemented as member methods because
+    // we may fetch the constants from the native library at initialization time.
+
+    public boolean isMethVarargs(int flags) {
+        return (flags & HPy_METH_VARARGS) != 0;
+    }
+
+    public boolean isMethKeywords(int flags) {
+        return (flags & HPy_METH_KEYWORDS) != 0;
+    }
+
+    public boolean isMethNoArgs(int flags) {
+        return (flags & HPy_METH_NOARGS) != 0;
+    }
+
+    public boolean isMethO(int flags) {
+        return (flags & HPy_METH_O) != 0;
+    }
 }
