@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -116,7 +116,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         long computeHash(VirtualFrame frame, PReferenceType self,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
                         @Cached IsInstanceNode isInstanceNode,
-                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+                        @Cached("createLossy()") CoerceToJavaLongNode castToLongNode) {
             Object referent = self.getObject();
             Object hashValue = dispatchHash.executeObject(frame, referent);
             if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {

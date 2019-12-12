@@ -71,7 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -626,7 +626,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
-                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+                        @Cached("createLossy()") CoerceToJavaLongNode castToLongNode) {
             // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
             HashingStorage storage = self.getDictStorage();
             int len = getLen.execute(storage);

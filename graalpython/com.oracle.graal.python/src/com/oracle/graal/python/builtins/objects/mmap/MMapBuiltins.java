@@ -92,12 +92,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteByteToChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteToChannelNode;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -245,7 +245,7 @@ public class MMapBuiltins extends PythonBuiltins {
         int doSingle(PMMap self, Object idxObj,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
-                        @Cached("create()") CastToJavaLongNode castToLongNode,
+                        @Cached("create()") CoerceToJavaLongNode castToLongNode,
                         @Cached("create()") InternalLenNode lenNode) {
 
             try {
@@ -307,7 +307,7 @@ public class MMapBuiltins extends PythonBuiltins {
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
-                        @Cached("create()") CastToJavaLongNode castToLongNode,
+                        @Cached("create()") CoerceToJavaLongNode castToLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached("create()") InternalLenNode lenNode,
                         @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {

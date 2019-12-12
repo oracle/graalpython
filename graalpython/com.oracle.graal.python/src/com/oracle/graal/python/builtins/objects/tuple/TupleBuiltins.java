@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -295,7 +295,7 @@ public class TupleBuiltins extends PythonBuiltins {
         public int doNative(PythonNativeObject self,
                         @Cached PCallCapiFunction callSizeNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CastToJavaLongNode castToLongNode) {
+                        @Cached CoerceToJavaLongNode castToLongNode) {
             return (int) castToLongNode.execute(callSizeNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
         }
     }
@@ -585,7 +585,7 @@ public class TupleBuiltins extends PythonBuiltins {
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") BuiltinFunctions.HashNode hashNode,
-                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+                        @Cached("createLossy()") CoerceToJavaLongNode castToLongNode) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
