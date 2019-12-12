@@ -139,7 +139,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -490,39 +489,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    // hash([object])
+    // hash(object)
     @Builtin(name = HASH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization  // tfel: TODO: this shouldn't be needed!
-        Object hash(PException exception) {
-            return exception.hashCode();
-        }
-
-        protected boolean isPException(Object object) {
-            return object instanceof PException;
-        }
-
-        @Specialization(guards = "!isPException(object)")
-        Object hash(VirtualFrame frame, Object object,
-                        @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
-                        @Cached("create(__HASH__)") LookupInheritedAttributeNode lookupHash,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
-                        @Cached CallUnaryMethodNode callUnary,
-                        @Cached("createIfTrueNode()") CastToBooleanNode trueNode,
-                        @Cached IsInstanceNode isInstanceNode) {
-            if (trueNode.executeBoolean(frame, lookupDirNode.execute(object))) {
-                Object hashAttr = lookupHash.execute(object);
-                if (!dataModelLibrary.isCallable(hashAttr)) {
-                    throw raise(PythonErrorType.TypeError, "unhashable type: '%p'", object);
-                }
-                Object hashValue = callUnary.executeObject(frame, hashAttr, object);
-                if (isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
-                    return hashValue;
-                }
-                throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        long hash(VirtualFrame frame, Object object,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            if (profile.profile(frame != null)) {
+                return lib.hashWithState(object, PArguments.getThreadState(frame));
+            } else {
+                return lib.hash(object);
             }
-            return object.hashCode();
         }
     }
 

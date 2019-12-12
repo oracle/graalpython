@@ -108,6 +108,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -675,8 +676,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @Exclusive @Cached CallNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+                    @Cached CastToJavaLongNode castToLong,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
         Object result;
         if (gotState.profile(state == null)) {
@@ -684,15 +685,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             result = callNode.execute(PArguments.frameForCall(state), hashAttr, this);
         }
-        if (interopLib.fitsInLong(hashAttr)) {
-            try {
-                return interopLib.asLong(result);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException(e);
-            }
+        // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
+        // hash call is always a plain long, forcibly and lossy read from memory.
+        try {
+            return castToLong.execute(result);
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
         }
-        throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
     }
 
     private Object getHashAttr(LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode, PRaiseNode raise, PythonObjectLibrary lib) {

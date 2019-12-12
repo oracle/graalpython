@@ -198,9 +198,9 @@ public abstract class PythonObjectLibrary extends Library {
      * call. It ensures that we can use fastcalls and pass the thread state in
      * the frame arguments.
      */
-    public long hashWithState(Object receiver, ThreadState threadState) throws UnsupportedMessageException {
+    public long hashWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
-            throw UnsupportedMessageException.create();
+            throw new AbstractMethodError();
         }
         return hash(receiver);
     }
@@ -210,7 +210,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Python {@link Frame} is available to the caller, {@link #hashWithState}
      * should be preferred.
      */
-    public long hash(Object receiver) throws UnsupportedMessageException {
+    public long hash(Object receiver) {
         return hashWithState(receiver, null);
     }
 

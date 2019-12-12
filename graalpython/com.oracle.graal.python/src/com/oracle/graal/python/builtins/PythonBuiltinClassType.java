@@ -461,7 +461,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     @ExportMessage
     static long hash(PythonBuiltinClassType type,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) throws UnsupportedMessageException {
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         return lib.hash(context.getCore().lookupType(type));
     }
 
