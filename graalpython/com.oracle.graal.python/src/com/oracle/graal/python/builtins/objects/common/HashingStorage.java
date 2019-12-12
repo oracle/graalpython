@@ -42,13 +42,12 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -163,20 +162,12 @@ public abstract class HashingStorage {
     }
 
     public static class SlowPathEquivalence extends Equivalence {
-
-        private final HashRootNode hashRootNode = new HashRootNode();
         private final EqualsRootNode eqRootNode = new EqualsRootNode();
 
         @Override
         public int hashCode(Object o) {
-            Object result = hashRootNode.getCallTarget().call(o);
-            if (result instanceof Integer) {
-                return (int) result;
-            } else if (result instanceof Long) {
-                return ((Long) result).intValue();
-            } else {
-                throw PRaiseNode.getUncached().raise(TypeError, "__hash__ method should return an integer");
-            }
+            long hash = PythonObjectLibrary.getUncached().hash(o);
+            return Long.hashCode(hash);
         }
 
         @Override
