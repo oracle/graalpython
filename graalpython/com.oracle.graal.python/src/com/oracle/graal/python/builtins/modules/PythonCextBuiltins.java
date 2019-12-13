@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodes;
@@ -3015,7 +3016,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // sort out if kwdnames is native NULL
             Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isSame(nativeKwdnames, nativeNull)) ? null : nativeKwdnames;
 
-            return parseTupleAndKeywordsNode.execute(functionName, argv, kwdsProfile.profile(kwds), format, kwdnames, nativeVarargs);
+            return parseTupleAndKeywordsNode.execute(functionName, argv, kwdsProfile.profile(kwds), format, kwdnames, nativeVarargs, CAPIConversionNodeSupplier.INSTANCE);
         }
 
         static Object getKwds(Object[] arguments) {
