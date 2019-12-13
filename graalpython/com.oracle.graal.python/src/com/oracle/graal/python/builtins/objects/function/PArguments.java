@@ -32,11 +32,10 @@ import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -90,6 +89,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 //@formatter:on
 public final class PArguments {
     public static final Object[] EMPTY_VARARGS = new Object[0];
+
+    private static final FrameDescriptor EMTPY_FD = new FrameDescriptor();
 
     private static final int INDEX_VARIABLE_ARGUMENTS = 0;
     private static final int INDEX_KEYWORD_ARGUMENTS = 1;
@@ -351,83 +352,28 @@ public final class PArguments {
     }
 
     public static ThreadState getThreadState(VirtualFrame frame) {
-        return new ThreadStateImpl(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
+        return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
     }
 
     public static VirtualFrame frameForCall(ThreadState frame) {
-        return (ThreadStateImpl) frame;
+        Object[] args = PArguments.create();
+        PArguments.setCurrentFrameInfo(args, frame.info);
+        PArguments.setException(args, frame.exc);
+        return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
     }
 
     /**
      * Represents the current thread state information that needs to be passed
-     * between calls. Should only have one implementation.
+     * between calls.
      */
-    public interface ThreadState {
-    }
-
     @ValueType
-    private static final class ThreadStateImpl implements VirtualFrame, ThreadState {
-        @CompilationFinal(dimensions = 1) private final Object[] args = PArguments.create();
+    public static final class ThreadState {
+        private final PFrame.Reference info;
+        private final PException exc;
 
-        private ThreadStateImpl(PFrame.Reference info, PException exc) {
-            PArguments.setCurrentFrameInfo(args, info);
-            PArguments.setException(args, exc);
+        private ThreadState(PFrame.Reference info, PException exc) {
+            this.info = info;
+            this.exc = exc;
         }
-
-        public Object[] getArguments() {
-            return args;
-        }
-
-        private static AbstractMethodError error() {
-            return new AbstractMethodError("FrameState shouldn't be used as proper frame");
-        }
-
-        public FrameDescriptor getFrameDescriptor() { throw error(); }
-
-        public Object getObject(FrameSlot slot) { throw error(); }
-
-        public void setObject(FrameSlot slot, Object value) { throw error(); }
-
-        public byte getByte(FrameSlot slot) { throw error(); }
-
-        public void setByte(FrameSlot slot, byte value) { throw error(); }
-
-        public boolean getBoolean(FrameSlot slot) { throw error(); }
-
-        public void setBoolean(FrameSlot slot, boolean value) { throw error(); }
-
-        public int getInt(FrameSlot slot) { throw error(); }
-
-        public void setInt(FrameSlot slot, int value) { throw error(); }
-
-        public long getLong(FrameSlot slot) { throw error(); }
-
-        public void setLong(FrameSlot slot, long value) { throw error(); }
-
-        public float getFloat(FrameSlot slot) { throw error(); }
-
-        public void setFloat(FrameSlot slot, float value) { throw error(); }
-
-        public double getDouble(FrameSlot slot) { throw error(); }
-
-        public void setDouble(FrameSlot slot, double value) { throw error(); }
-
-        public Object getValue(FrameSlot slot) { throw error(); }
-
-        public MaterializedFrame materialize() { throw error(); }
-
-        public boolean isObject(FrameSlot slot) { throw error(); }
-
-        public boolean isByte(FrameSlot slot) { throw error(); }
-
-        public boolean isBoolean(FrameSlot slot) { throw error(); }
-
-        public boolean isInt(FrameSlot slot) { throw error(); }
-
-        public boolean isLong(FrameSlot slot) { throw error(); }
-
-        public boolean isFloat(FrameSlot slot) { throw error(); }
-
-        public boolean isDouble(FrameSlot slot) { throw error(); }
     }
 }
