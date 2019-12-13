@@ -47,6 +47,8 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargs
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethodDescriptorRoot;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -102,11 +104,11 @@ public class GraalHPyNodes {
         Object doGeneric(GraalHPyContext context, String name,
                         @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
                         @Cached PRaiseNode raiseNode) {
-            return importHPySymbol(raiseNode, interopLib, context.getHPyLibrary(), name);
+            return importHPySymbol(raiseNode, interopLib, context.getLLVMLibrary(), name);
         }
 
         protected static Object importHPySymbolUncached(GraalHPyContext context, String name) {
-            Object hpyLibrary = context.getHPyLibrary();
+            Object hpyLibrary = context.getLLVMLibrary();
             InteropLibrary uncached = InteropLibrary.getFactory().getUncached(hpyLibrary);
             return importHPySymbol(PRaiseNode.getUncached(), uncached, hpyLibrary, name);
         }
@@ -357,13 +359,7 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
-    public abstract static class HPyAsPythonObjectNode extends PNodeWithContext {
-
-        public abstract Object execute(GraalHPyContext hpyContext, Object object);
-
-        public abstract Object executeInt(GraalHPyContext hpyContext, int l);
-
-        public abstract Object executeLong(GraalHPyContext hpyContext, long l);
+    public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
         @Specialization
         static Object doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
@@ -385,9 +381,7 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
-    public abstract static class HPyAsHandleNode extends PNodeWithContext {
-
-        public abstract Object execute(GraalHPyContext hpyContext, Object object);
+    public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 
         @Specialization
         static GraalHPyHandle doObject(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object) {

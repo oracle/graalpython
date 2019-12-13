@@ -46,6 +46,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
@@ -64,34 +65,12 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
-public final class GraalHPyContext implements TruffleObject {
+public final class GraalHPyContext extends CExtContext implements TruffleObject {
 
     /**
-     * int ctx_version; HPy h_None; HPy h_True; HPy h_False; HPy h_ValueError; HPy h_TypeError; HPy
-     * (*ctx_Module_Create)(HPyContext ctx, HPyModuleDef *def); HPy (*ctx_Dup)(HPyContext ctx, HPy
-     * h); void (*ctx_Close)(HPyContext ctx, HPy h); HPy (*ctx_Long_FromLong)(HPyContext ctx, long
-     * value); HPy (*ctx_Long_FromLongLong)(HPyContext ctx, long long v); HPy
-     * (*ctx_Long_FromUnsignedLongLong)(HPyContext ctx, unsigned long long v); long
-     * (*ctx_Long_AsLong)(HPyContext ctx, HPy h); HPy (*ctx_Float_FromDouble)(HPyContext ctx, double
-     * v); int (*ctx_Arg_Parse)(HPyContext ctx, HPy *args, HPy_ssize_t nargs, const char *fmt,
-     * va_list _vl); HPy (*ctx_Number_Add)(HPyContext ctx, HPy h1, HPy h2); void
-     * (*ctx_Err_SetString)(HPyContext ctx, HPy h_type, const char *message); int
-     * (*ctx_Bytes_Check)(HPyContext ctx, HPy h); HPy_ssize_t (*ctx_Bytes_Size)(HPyContext ctx, HPy
-     * h); HPy_ssize_t (*ctx_Bytes_GET_SIZE)(HPyContext ctx, HPy h); char
-     * *(*ctx_Bytes_AsString)(HPyContext ctx, HPy h); char *(*ctx_Bytes_AS_STRING)(HPyContext ctx,
-     * HPy h); HPy (*ctx_Unicode_FromString)(HPyContext ctx, const char *utf8); int
-     * (*ctx_Unicode_Check)(HPyContext ctx, HPy h); HPy (*ctx_Unicode_AsUTF8String)(HPyContext ctx,
-     * HPy h); HPy (*ctx_Unicode_FromWideChar)(HPyContext ctx, const wchar_t *w, HPy_ssize_t size);
-     * HPy (*ctx_List_New)(HPyContext ctx, HPy_ssize_t len); int (*ctx_List_Append)(HPyContext ctx,
-     * HPy h_list, HPy h_item); HPy (*ctx_Dict_New)(HPyContext ctx); int
-     * (*ctx_Dict_SetItem)(HPyContext ctx, HPy h_dict, HPy h_key, HPy h_val); HPy
-     * (*ctx_FromPyObject)(HPyContext ctx, struct _object *obj); struct _object
-     * *(*ctx_AsPyObject)(HPyContext ctx, HPy h); struct _object
-     * *(*ctx_CallRealFunctionFromTrampoline)(HPyContext ctx, struct _object *self, struct _object
-     * *args, void *func, int ml_flags);
+     * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMembers {
-
         CTX_VERSION("ctx_version"),
         H_NONE("h_None"),
         H_TRUE("h_True"),
@@ -190,7 +169,8 @@ public final class GraalHPyContext implements TruffleObject {
         return context;
     }
 
-    public Object getHPyLibrary() {
+    @Override
+    public Object getLLVMLibrary() {
         return hpyLibrary;
     }
 
