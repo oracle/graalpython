@@ -1148,10 +1148,15 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("unused")
         Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib) {
             // n.b.: we need to call the __hash__ function here for the
             // side-effect to comply with Python semantics.
-            lib.hashWithState(key, PArguments.getThreadState(frame));
+            if (profile.profile(frame == null)) {
+                lib.hash(key);
+            } else {
+                lib.hashWithState(key, PArguments.getThreadState(frame));
+            }
             return null;
         }
 
