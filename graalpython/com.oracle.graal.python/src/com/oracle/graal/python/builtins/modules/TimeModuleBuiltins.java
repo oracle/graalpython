@@ -182,34 +182,35 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return timeSeconds();
         }
     }
-    
+
     // time.time_ns()
-    @Builtin(name = "time_ns", minNumOfPositionalArgs = 0, 
-            doc = "Similar to time() but returns time as an integer number of nanoseconds since the epoch.")
+    @Builtin(name = "time_ns", minNumOfPositionalArgs = 0, doc = "Similar to time() but returns time as an integer number of nanoseconds since the epoch.")
     @GenerateNodeFactory
     public abstract static class PythonTimeNsNode extends PythonBuiltinNode {
 
         /**
-         * The maximum date, which are systems able to handle is 2262 04 11. This 
-         * corresponds to the 64 bit long. 
-         * @return 
+         * The maximum date, which are systems able to handle is 2262 04 11. This corresponds to the
+         * 64 bit long.
+         * 
+         * @return
          */
         @Specialization
         public long time() {
             return timeNanoSeconds();
         }
-        
+
         @TruffleBoundary
         private static long timeNanoSeconds() {
             Instant now = Instant.now();
-            // From java we are not able to obtain the nano seconds resolution. It depends on the jdk
+            // From java we are not able to obtain the nano seconds resolution. It depends on the
+            // jdk
             // JKD 1.8 the resolution is usually miliseconds (for example 1576081173486000000)
-            // From JDK 9 including JDK 11 the resolution is usually microseconds (for example 1576082578022393000)
+            // From JDK 9 including JDK 11 the resolution is usually microseconds (for example
+            // 1576082578022393000)
             // To obtain really nanosecond resulution we have to fake the nanoseconds
             return now.getEpochSecond() * 1000000000L + now.getNano();
         }
     }
-    
 
     // time.monotonic()
     @Builtin(name = "monotonic", minNumOfPositionalArgs = 0)
@@ -222,7 +223,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return System.nanoTime() / 1000000000D;
         }
     }
-    
+
     // time.monotonic_ns()
     @Builtin(name = "monotonic_ns", minNumOfPositionalArgs = 0, doc = "Similar to monotonic(), but return time as nanoseconds.")
     @GenerateNodeFactory
@@ -244,11 +245,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return (System.nanoTime() - PERF_COUNTER_START) / 1000_000_000.0;
         }
     }
-    
+
     @Builtin(name = "perf_counter_ns", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonPerfCounterNsNode extends PythonBuiltinNode {
-        
+
         @Specialization
         @TruffleBoundary
         public long counter() {
