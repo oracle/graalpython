@@ -41,14 +41,12 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -110,31 +108,6 @@ public abstract class HashingStorage {
             return a.equals(b);
         }
     };
-
-    public static class HashRootNode extends RootNode {
-        @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
-
-        protected HashRootNode() {
-            super(PythonLanguage.getCurrent());
-            Truffle.getRuntime().createCallTarget(this);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            Object[] args = frame.getArguments();
-            return callHashNode.executeObject(frame, args[0]);
-        }
-
-        @Override
-        public SourceSection getSourceSection() {
-            return null;
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
-        }
-    }
 
     private static class EqualsRootNode extends RootNode {
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");

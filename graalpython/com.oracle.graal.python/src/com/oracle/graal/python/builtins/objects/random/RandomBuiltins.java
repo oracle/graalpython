@@ -49,16 +49,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -67,7 +66,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
@@ -106,44 +104,18 @@ public class RandomBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @CompilationFinal boolean gotUnexpectedHashResult = false;
-        @Child LookupAndCallUnaryNode callHash;
+        @Child PythonObjectLibrary objectLib;
 
         @Fallback
         PNone seedNonLong(VirtualFrame frame, Object random, Object inputSeed) {
             if (random instanceof PRandom) {
-                if (callHash == null) {
+                if (objectLib == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callHash = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__HASH__));
+                    objectLib = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
                 }
-                Object hashResult = null;
-                if (!gotUnexpectedHashResult) {
-                    try {
-                        long hash = callHash.executeLong(frame, inputSeed);
-                        ((PRandom) random).setSeed(hash);
-                        return PNone.NONE;
-                    } catch (UnexpectedResultException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        gotUnexpectedHashResult = true;
-                        hashResult = e.getResult();
-                    }
-                }
-                if (gotUnexpectedHashResult) {
-                    if (hashResult == null) {
-                        hashResult = callHash.executeObject(frame, inputSeed);
-                    }
-                    if (PGuards.isInteger(hashResult)) {
-                        ((PRandom) random).setSeed(((Number) hashResult).intValue());
-                    } else if (PGuards.isPInt(hashResult)) {
-                        ((PRandom) random).setSeed(((PInt) hashResult).intValue());
-                    } else {
-                        throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
-                    }
-                    return PNone.NONE;
-                } else {
-                    assert false : "cannot reach here";
-                    return PNone.NONE;
-                }
+                long hash = objectLib.hashWithState(inputSeed, PArguments.getThreadState(frame));
+                ((PRandom) random).setSeed(hash);
+                return PNone.NONE;
             } else {
                 throw raise(PythonErrorType.TypeError, "descriptor 'seed' requires a '_random.Random' object but received a '%p'", random);
             }
