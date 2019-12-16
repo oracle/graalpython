@@ -59,13 +59,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -237,14 +239,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castFdsToKeep,
                         @Cached CastToJavaStringNode castCwd,
                         @Cached CastToListNode castEnv,
-                        @Cached CastToIndexNode castP2cread,
-                        @Cached CastToIndexNode castP2cwrite,
-                        @Cached CastToIndexNode castC2pread,
-                        @Cached CastToIndexNode castC2pwrite,
-                        @Cached CastToIndexNode castErrread,
-                        @Cached CastToIndexNode castErrwrite,
-                        @Cached CastToIndexNode castErrpipeRead,
-                        @Cached CastToIndexNode castErrpipeWrite,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createIfTrueNode()") CastToBooleanNode castRestoreSignals,
                         @Cached("createIfTrueNode()") CastToBooleanNode castSetsid) {
 
@@ -264,8 +259,14 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
                             castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
-                            castP2cread.execute(frame, p2cread), castP2cwrite.execute(frame, p2cwrite), castC2pread.execute(frame, c2pread), castC2pwrite.execute(frame, c2pwrite),
-                            castErrread.execute(frame, errread), castErrwrite.execute(frame, errwrite), castErrpipeRead.execute(frame, errpipe_read), castErrpipeWrite.execute(frame, errpipe_write),
+                            lib.asIndexWithState(p2cread, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(p2cwrite, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(c2pread, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(c2pwrite, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(errread, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(errwrite, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(errpipe_read, PArguments.getThreadState(frame)),
+                            lib.asIndexWithState(errpipe_write, PArguments.getThreadState(frame)),
                             castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
         }
     }
