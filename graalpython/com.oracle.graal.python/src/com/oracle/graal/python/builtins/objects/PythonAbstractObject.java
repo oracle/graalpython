@@ -130,6 +130,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -676,7 +677,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @Exclusive @Cached CallNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached CastToJavaLongNode castToLong,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
         Object result;
@@ -705,6 +706,35 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
         return hasIndexAttribute.execute(this, __INDEX__);
+    }
+
+    @ExportMessage
+    public int asIndexWithState(ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Exclusive @Cached BranchProfile overflow,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CastToJavaLongNode castToLong) {
+        Object indexAttr = lookupIndex.execute(this, __INDEX__);
+        if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", this);
+        }
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.execute(indexAttr, this);
+        } else {
+            result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+        }
+        try {
+            return PInt.intValueExact(castToLong.execute(result));
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+        } catch (ArithmeticException e) {
+            overflow.enter();
+            throw raise.raise(PythonBuiltinClassType.OverflowError, "cannot fit '%p' into an index-sized integer", result);
+        }
     }
 
     @ExportMessage

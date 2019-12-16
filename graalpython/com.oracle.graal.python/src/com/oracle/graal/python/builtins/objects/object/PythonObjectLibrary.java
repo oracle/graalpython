@@ -230,6 +230,34 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Coerces the receiver into an index-sized integer, using the same
+     * mechanism as {@code PyNumber_AsSsize_t}:
+     * <ol>
+     * <li> Call <code>__index__</code> (resp. <code>PyNumber_Index</code>) </li>
+     * <li> Do a hard cast to long as per <code>PyLong_AsSsize_t</code> </li>
+     * </ol>
+     * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
+     */
+    public int asIndexWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw new AbstractMethodError();
+        }
+        return asIndex(receiver);
+    }
+
+    /**
+     * Coerces the receiver into an index-sized integer, using the same
+     * mechanism as {@code PyNumber_AsSsize_t}:
+     * <ol>
+     * <li> Call <code>__index__</code> (resp. <code>PyNumber_Index</code>)
+     * <li> Do a hard cast to long as per <code>PyLong_AsSsize_t</code>
+     * </ol>
+     */
+    public int asIndex(Object receiver) {
+        return asIndexWithState(receiver, null);
+    }
+
+    /**
      * Checks whether the receiver is a Python sequence. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for

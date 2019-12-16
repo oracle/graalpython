@@ -41,7 +41,9 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -55,6 +57,23 @@ final class DefaultPythonLongExports {
     @ExportMessage
     static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
         return true;
+    }
+
+    @ExportMessage
+    static class AsIndex {
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static int noOverflow(Long self) {
+            return PInt.intValueExact(self);
+        }
+
+        @Specialization(replaces = "noOverflow")
+        static int withOverflow(Long self) {
+            try {
+                return PInt.intValueExact(self);
+            } catch (ArithmeticException e) {
+                return -1;
+            }
+        }
     }
 
     @ExportMessage

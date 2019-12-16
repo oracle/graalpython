@@ -53,6 +53,11 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
+    static int asIndex(Boolean value) {
+        return value ? 1 : 0;
+    }
+
+    @ExportMessage
     static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
         return true;
     }
