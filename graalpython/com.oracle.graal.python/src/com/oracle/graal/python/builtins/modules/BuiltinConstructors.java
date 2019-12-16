@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -169,7 +170,7 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CoerceToStringNode;
@@ -222,8 +223,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
-        @Child private CastToIndexNode castToIndexNode;
-
         private final IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
 
         @SuppressWarnings("unused")
@@ -239,7 +238,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            int cap = getCastToIndexNode().execute(frame, capObj);
+            int cap = lib.asIndexWithState(capObj, PArguments.getThreadState(frame));
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
@@ -300,14 +299,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static byte[] resize(byte[] arr, int len) {
             return Arrays.copyOf(arr, len);
-        }
-
-        protected CastToIndexNode getCastToIndexNode() {
-            if (castToIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIndexNode = insert(CastToIndexNode.createOverflow());
-            }
-            return castToIndexNode;
         }
     }
 
@@ -1205,10 +1196,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return stringToInt(cls, number, base);
         }
 
-        @Specialization(guards = "!isNoValue(base)")
+        @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object createIntError(VirtualFrame frame, LazyPythonClass cls, String number, Object base,
-                        @Cached CastToIndexNode castToIndexNode) {
-            int intBase = castToIndexNode.execute(frame, base);
+                        @CachedLibrary("base") PythonObjectLibrary lib) {
+            int intBase = lib.asIndexWithState(base, PArguments.getThreadState(frame));
             checkBase(intBase);
             return stringToInt(cls, number, intBase);
         }
@@ -2006,7 +1997,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private SetAttributeNode.Dynamic writeAttrNode;
         @Child private GetAnyAttributeNode getAttrNode;
-        @Child private CastToIndexNode castToInt;
+        @Child private CastToJavaIntNode castToInt;
         @Child private CastToListNode castToList;
         @Child private CastToJavaStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
@@ -2345,9 +2336,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 for (Object cls : getMro(pythonClass)) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
-                        long dictoffset = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
-                        long itemsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
+                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2454,10 +2445,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return writeAttrNode;
         }
 
-        private CastToIndexNode ensureCastToIntNode() {
+        private CastToJavaIntNode ensureCastToIntNode() {
             if (castToInt == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToInt = insert(CastToIndexNode.create());
+                castToInt = insert(CastToJavaIntNode.create());
             }
             return castToInt;
         }
