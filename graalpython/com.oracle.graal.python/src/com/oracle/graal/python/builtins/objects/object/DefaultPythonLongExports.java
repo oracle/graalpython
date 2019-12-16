@@ -48,6 +48,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Long.class)
 final class DefaultPythonLongExports {
@@ -91,6 +92,11 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     static long hash(Long value) {
+        return value;
+    }
+
+    @Ignore
+    static long hash(long value) {
         return value;
     }
 

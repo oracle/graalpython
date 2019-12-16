@@ -219,6 +219,26 @@ public abstract class PythonObjectLibrary extends Library {
         return hashWithState(receiver, null);
     }
 
+    @SuppressWarnings("static-method")
+    public final long hash(boolean receiver) {
+        return DefaultPythonBooleanExports.hash(receiver);
+    }
+
+    @SuppressWarnings("static-method")
+    public final long hash(int receiver) {
+        return DefaultPythonIntegerExports.hash(receiver);
+    }
+
+    @SuppressWarnings("static-method")
+    public final long hash(long receiver) {
+        return DefaultPythonLongExports.hash(receiver);
+    }
+
+    @SuppressWarnings("static-method")
+    public final long hash(double receiver) {
+        return DefaultPythonDoubleExports.hash(receiver);
+    }
+
     /**
      * Checks whether the receiver is a Python an indexable object. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and

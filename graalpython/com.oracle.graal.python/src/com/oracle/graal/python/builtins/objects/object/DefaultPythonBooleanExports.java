@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Boolean.class)
 final class DefaultPythonBooleanExports {
@@ -74,6 +75,11 @@ final class DefaultPythonBooleanExports {
 
     @ExportMessage
     static long hash(Boolean value) {
+        return hash((boolean) value);
+    }
+
+    @Ignore
+    static long hash(boolean value) {
         return value ? 1 : 0;
     }
 

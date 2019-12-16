@@ -42,9 +42,9 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
 final class DefaultPythonDoubleExports {
@@ -59,19 +59,16 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static class Hash {
-        protected static boolean noDecimals(double num) {
-            return num % 1 == 0;
-        }
+    static long hash(Double number) {
+        return hash(number.doubleValue());
+    }
 
-        @Specialization(guards = {"noDecimals(self)"})
-        static long hashDoubleNoDecimals(Double self) {
-            return self.longValue();
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        static long hashDoubleWithDecimals(Double self) {
-            return self.hashCode();
+    @Ignore
+    static long hash(double number) {
+        if (number % 1 == 0) {
+            return (long) number;
+        } else {
+            return Double.doubleToLongBits(number);
         }
     }
 

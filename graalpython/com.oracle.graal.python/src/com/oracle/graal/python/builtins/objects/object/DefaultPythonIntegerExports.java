@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Integer.class)
 final class DefaultPythonIntegerExports {
@@ -74,6 +75,11 @@ final class DefaultPythonIntegerExports {
 
     @ExportMessage
     static long hash(Integer value) {
+        return value;
+    }
+
+    @Ignore
+    static long hash(int value) {
         return value;
     }
 
