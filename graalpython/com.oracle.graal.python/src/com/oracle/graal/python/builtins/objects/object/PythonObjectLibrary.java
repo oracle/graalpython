@@ -193,10 +193,9 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Returns the Python hash to use for the receiver. The {@code threadState}
-     * argument must be the result of a {@link PArguments#getThreadState}
-     * call. It ensures that we can use fastcalls and pass the thread state in
-     * the frame arguments.
+     * Returns the Python hash to use for the receiver. The {@code threadState} argument must be the
+     * result of a {@link PArguments#getThreadState} call. It ensures that we can use fastcalls and
+     * pass the thread state in the frame arguments.
      */
     public long hashWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
@@ -206,9 +205,8 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Potentially slower way to get the Python hash for the receiver. If a
-     * Python {@link Frame} is available to the caller, {@link #hashWithState}
-     * should be preferred.
+     * Potentially slower way to get the Python hash for the receiver. If a Python {@link Frame} is
+     * available to the caller, {@link #hashWithState} should be preferred.
      */
     public long hash(Object receiver) {
         return hashWithState(receiver, null);

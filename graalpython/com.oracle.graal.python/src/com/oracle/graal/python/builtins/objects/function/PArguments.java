@@ -363,8 +363,7 @@ public final class PArguments {
     }
 
     /**
-     * Represents the current thread state information that needs to be passed
-     * between calls.
+     * Represents the current thread state information that needs to be passed between calls.
      */
     @ValueType
     public static final class ThreadState {

@@ -56,9 +56,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 /**
- * Casts a Python integer to a Java long, lossy and without
- * coercion. <b>ATTENTION:</b> If the cast fails, the node will throw a {@link
- * CannotCastException}.
+ * Casts a Python integer to a Java long, lossy and without coercion. <b>ATTENTION:</b> If the cast
+ * fails, the node will throw a {@link CannotCastException}.
  */
 @GenerateUncached
 @ImportStatic(PGuards.class)
