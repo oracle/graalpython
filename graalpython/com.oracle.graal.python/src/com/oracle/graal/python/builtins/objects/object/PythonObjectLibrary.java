@@ -59,6 +59,7 @@ import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * The standard Python object library. This implements a general-purpose Python object interface.
@@ -238,6 +239,49 @@ public abstract class PythonObjectLibrary extends Library {
     public final long hash(double receiver) {
         return DefaultPythonDoubleExports.hash(receiver);
     }
+
+    private final BranchProfile reverseEquals = BranchProfile.create();
+
+    /**
+     * Compare {@code receiver} to {@code other}. If the receiver does not know
+     * how to compare itself to the argument, the comparison is tried in
+     * reverse. This implements {@code PyObject_RichCompareBool} for the {@code
+     * __eq__} operator.
+     *
+     * Exporters of this library can override this message for performance.
+     *
+     * @param receiver - the lhs, tried first
+     * @param other - the rhs, tried only if lhs does not know how to compare itself here
+     * @param otherLibrary - a PythonObjectLibrary that accepts {@code other}. Used for the reverse dispatch.
+     */
+    public boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary otherLibrary, ThreadState threadState) {
+        if (receiver == other) {
+            return true; // guarantee
+        }
+        int result = equalsInternal(receiver, other, threadState);
+        if (result == -1) {
+            reverseEquals.enter();
+            result = otherLibrary.equalsInternal(other, receiver, threadState);
+        }
+        // we already checked for identity equality above, so if neither side
+        // knows what to do, they are not equal
+        return result == 1;
+    }
+
+    /**
+     * @see #equalsWithState
+     */
+    public boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
+        return equalsWithState(receiver, other, otherLibrary, null);
+    }
+
+    /**
+     * Compare {@code receiver} to {@code other} using {@code __eq__}.
+     *
+     * @param threadState may be {@code null}
+     * @return 0 if not equal, 1 if equal, -1 if {@code __eq__} returns {@code NotImplemented}
+     */
+    public abstract int equalsInternal(Object receiver, Object other, ThreadState threadState);
 
     /**
      * Checks whether the receiver is a Python an indexable object. As described in the

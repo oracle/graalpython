@@ -80,6 +80,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -123,6 +124,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         return Objects.hashCode(object);
     }
 
+    @Ignore
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

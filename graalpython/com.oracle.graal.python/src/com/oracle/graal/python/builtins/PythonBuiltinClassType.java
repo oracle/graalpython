@@ -28,8 +28,10 @@ package com.oracle.graal.python.builtins;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -468,5 +470,16 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
         return PythonClass;
+    }
+
+    @ExportMessage
+    static int equalsInternal(PythonBuiltinClassType self, Object other, @SuppressWarnings("unused") ThreadState state) {
+        if (self == other) {
+            return 1;
+        } else if (other instanceof PythonBuiltinClass) {
+            return self == ((PythonBuiltinClass) other).getType() ? 1 : 0;
+        } else {
+            return 0;
+        }
     }
 }

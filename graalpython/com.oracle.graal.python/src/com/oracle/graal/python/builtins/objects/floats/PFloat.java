@@ -35,6 +35,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(InteropLibrary.class)
 public class PFloat extends PythonBuiltinObject {
@@ -55,6 +56,7 @@ public class PFloat extends PythonBuiltinObject {
         return Double.valueOf(value).hashCode();
     }
 
+    @Ignore
     @Override
     public boolean equals(Object obj) {
         return obj != null && PFloat.class == obj.getClass() && value == (((PFloat) obj).getValue());

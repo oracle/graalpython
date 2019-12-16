@@ -208,26 +208,14 @@ public final class PInt extends PythonBuiltinObject {
         return value.hashCode();
     }
 
-    @Override
-    @TruffleBoundary
-    public boolean equals(Object obj) {
-        if (obj instanceof PInt) {
-            return value.equals(((PInt) obj).getValue());
-        }
-        return false;
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        if (o != null && PInt.class == o.getClass()) {
-            return compareTo((PInt) o);
-        }
-        return super.compareTo(o);
-    }
-
     @TruffleBoundary
     private int compareTo(PInt o) {
         return value.compareTo(o.value);
+    }
+
+    @TruffleBoundary
+    public int compareToInteger(long i) {
+        return value.compareTo(BigInteger.valueOf(i));
     }
 
     @Override
