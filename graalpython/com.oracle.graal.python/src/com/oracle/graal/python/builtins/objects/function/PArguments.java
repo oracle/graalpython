@@ -32,7 +32,10 @@ import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -86,6 +89,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 //@formatter:on
 public final class PArguments {
     public static final Object[] EMPTY_VARARGS = new Object[0];
+
+    private static final FrameDescriptor EMTPY_FD = new FrameDescriptor();
 
     private static final int INDEX_VARIABLE_ARGUMENTS = 0;
     private static final int INDEX_KEYWORD_ARGUMENTS = 1;
@@ -344,5 +349,30 @@ public final class PArguments {
 
     public static PDict getGeneratorFrameLocals(Object[] arguments) {
         return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
+    }
+
+    public static ThreadState getThreadState(VirtualFrame frame) {
+        return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
+    }
+
+    public static VirtualFrame frameForCall(ThreadState frame) {
+        Object[] args = PArguments.create();
+        PArguments.setCurrentFrameInfo(args, frame.info);
+        PArguments.setException(args, frame.exc);
+        return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
+    }
+
+    /**
+     * Represents the current thread state information that needs to be passed between calls.
+     */
+    @ValueType
+    public static final class ThreadState {
+        private final PFrame.Reference info;
+        private final PException exc;
+
+        private ThreadState(PFrame.Reference info, PException exc) {
+            this.info = info;
+            this.exc = exc;
+        }
     }
 }

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -58,13 +57,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -102,6 +108,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -124,10 +131,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -665,6 +668,38 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
         Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
         return dataModelLibrary.isCallable(hashAttr);
+    }
+
+    @ExportMessage
+    public long hashWithState(ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Cached CastToJavaLongNode castToLong,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.execute(hashAttr, this);
+        } else {
+            result = callNode.execute(PArguments.frameForCall(state), hashAttr, this);
+        }
+        // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
+        // hash call is always a plain long, forcibly and lossy read from memory.
+        try {
+            return castToLong.execute(result);
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
+        }
+    }
+
+    private Object getHashAttr(LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode, PRaiseNode raise, PythonObjectLibrary lib) {
+        Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
+        if (!lib.isCallable(hashAttr)) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "unhashable type: '%p'", this);
+        }
+        return hashAttr;
     }
 
     @ExportMessage

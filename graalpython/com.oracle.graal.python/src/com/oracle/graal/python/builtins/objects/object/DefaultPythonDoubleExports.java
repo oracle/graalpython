@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -55,5 +56,22 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Double value) {
         return PythonBuiltinClassType.PFloat;
+    }
+
+    @ExportMessage
+    static class Hash {
+        protected static boolean noDecimals(double num) {
+            return num % 1 == 0;
+        }
+
+        @Specialization(guards = {"noDecimals(self)"})
+        static long hashDoubleNoDecimals(Double self) {
+            return self.longValue();
+        }
+
+        @Specialization(guards = {"!noDecimals(self)"})
+        static long hashDoubleWithDecimals(Double self) {
+            return self.hashCode();
+        }
     }
 }

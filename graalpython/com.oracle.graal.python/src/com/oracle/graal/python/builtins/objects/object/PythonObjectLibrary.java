@@ -42,12 +42,15 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
@@ -187,6 +190,26 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public boolean isHashable(Object receiver) {
         return false;
+    }
+
+    /**
+     * Returns the Python hash to use for the receiver. The {@code threadState} argument must be the
+     * result of a {@link PArguments#getThreadState} call. It ensures that we can use fastcalls and
+     * pass the thread state in the frame arguments.
+     */
+    public long hashWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw new AbstractMethodError();
+        }
+        return hash(receiver);
+    }
+
+    /**
+     * Potentially slower way to get the Python hash for the receiver. If a Python {@link Frame} is
+     * available to the caller, {@link #hashWithState} should be preferred.
+     */
+    public long hash(Object receiver) {
+        return hashWithState(receiver, null);
     }
 
     /**

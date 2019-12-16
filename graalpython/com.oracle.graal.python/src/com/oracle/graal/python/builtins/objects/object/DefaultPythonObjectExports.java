@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -64,5 +65,11 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Object value) {
         return PythonBuiltinClassType.ForeignObject;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    static long hash(Object receiver) {
+        return receiver.hashCode();
     }
 }

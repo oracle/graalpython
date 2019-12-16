@@ -73,8 +73,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.UnionNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -102,7 +102,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptio
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -125,7 +124,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.FinalLocationException;
 import com.oracle.truffle.api.object.IncompatibleLocationException;
@@ -141,60 +139,15 @@ public abstract class HashingStorageNodes {
     private static final int MAX_STORAGES = 8;
 
     public static class PythonEquivalence extends Equivalence {
-        @Child private PRaiseNode raise;
-        @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
+        @Child private PythonObjectLibrary library = PythonObjectLibrary.getFactory().createDispatched(3);
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==", null, null);
         @Child private CastToBooleanNode castToBoolean = CastToBooleanNode.createIfTrueNode();
-        @CompilationFinal private int state = 0;
 
         @Override
         public int hashCode(Object o) {
-            try {
-                if (state == 0) { // int hash
-                    return callHashNode.executeInt(null, o);
-                } else if (state == 1) { // long hash
-                    return (int) (callHashNode.executeLong(null, o));
-                } else if (state == 2) { // object hash
-                    Object hash = callHashNode.executeObject(null, o);
-                    if (hash instanceof Integer) {
-                        return (int) hash;
-                    } else if (hash instanceof Long) {
-                        return (int) ((long) hash);
-                    } else if (hash instanceof PInt) {
-                        return ((PInt) hash).intValue();
-                    } else {
-                        throw hashCodeTypeError();
-                    }
-                } else {
-                    throw new IllegalStateException();
-                }
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (ex.getResult() instanceof Integer) {
-                    // the default state is executeInt, so when we get here, we already
-                    // switched to executeLong and now got an int again, so we cannot
-                    // specialize on either primitive type and have to switch to
-                    // the executeObject state.
-                    state = 2;
-                    return (int) ex.getResult();
-                } else if (ex.getResult() instanceof Long) {
-                    state = 1;
-                    return (int) ((long) ex.getResult());
-                } else if (ex.getResult() instanceof PInt) {
-                    state = 2;
-                    return ((PInt) ex.getResult()).intValue();
-                } else {
-                    throw hashCodeTypeError();
-                }
-            }
-        }
-
-        private PException hashCodeTypeError() {
-            if (raise == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raise = insert(PRaiseNode.create());
-            }
-            return raise.raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+            long hash = library.hash(o);
+            // Use a sufficiently bit-mixing narrowing conversion...
+            return Long.hashCode(hash);
         }
 
         @Override
@@ -1195,11 +1148,15 @@ public abstract class HashingStorageNodes {
         @Specialization(guards = "lib.isHashable(key)", limit = "1")
         @SuppressWarnings("unused")
         Object doEmptyStorage(VirtualFrame frame, EmptyStorage storage, Object key,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode hashNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib) {
             // n.b.: we need to call the __hash__ function here for the
             // side-effect to comply with Python semantics.
-            hashNode.executeObject(frame, key);
+            if (profile.profile(frame == null)) {
+                lib.hash(key);
+            } else {
+                lib.hashWithState(key, PArguments.getThreadState(frame));
+            }
             return null;
         }
 

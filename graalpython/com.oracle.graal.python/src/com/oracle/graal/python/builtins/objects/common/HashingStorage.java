@@ -41,15 +41,12 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -98,7 +95,7 @@ public abstract class HashingStorage {
 
         @Override
         public int hashCode(Object o) {
-            return o.hashCode();
+            return Long.hashCode(o.hashCode());
         }
 
         @Override
@@ -111,31 +108,6 @@ public abstract class HashingStorage {
             return a.equals(b);
         }
     };
-
-    public static class HashRootNode extends RootNode {
-        @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
-
-        protected HashRootNode() {
-            super(PythonLanguage.getCurrent());
-            Truffle.getRuntime().createCallTarget(this);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            Object[] args = frame.getArguments();
-            return callHashNode.executeObject(frame, args[0]);
-        }
-
-        @Override
-        public SourceSection getSourceSection() {
-            return null;
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
-        }
-    }
 
     private static class EqualsRootNode extends RootNode {
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
@@ -163,20 +135,12 @@ public abstract class HashingStorage {
     }
 
     public static class SlowPathEquivalence extends Equivalence {
-
-        private final HashRootNode hashRootNode = new HashRootNode();
         private final EqualsRootNode eqRootNode = new EqualsRootNode();
 
         @Override
         public int hashCode(Object o) {
-            Object result = hashRootNode.getCallTarget().call(o);
-            if (result instanceof Integer) {
-                return (int) result;
-            } else if (result instanceof Long) {
-                return ((Long) result).intValue();
-            } else {
-                throw PRaiseNode.getUncached().raise(TypeError, "__hash__ method should return an integer");
-            }
+            long hash = PythonObjectLibrary.getUncached().hash(o);
+            return Long.hashCode(hash);
         }
 
         @Override

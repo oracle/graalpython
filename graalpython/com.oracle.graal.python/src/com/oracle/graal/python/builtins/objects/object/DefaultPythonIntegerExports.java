@@ -61,4 +61,9 @@ final class DefaultPythonIntegerExports {
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
         return PythonBuiltinClassType.PInt;
     }
+
+    @ExportMessage
+    static long hash(Integer value) {
+        return value;
+    }
 }
