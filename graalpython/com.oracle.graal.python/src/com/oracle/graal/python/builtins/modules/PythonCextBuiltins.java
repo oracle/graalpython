@@ -181,7 +181,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
@@ -354,10 +353,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         PTuple doGeneric(VirtualFrame frame, Object size,
-                        @Cached CastToIndexNode castToIntNode) {
-            return factory().createTuple(new Object[castToIntNode.execute(frame, size)]);
+                        @CachedLibrary("size") PythonObjectLibrary lib) {
+            return factory().createTuple(new Object[lib.asIndexWithState(size, PArguments.getThreadState(frame))]);
         }
     }
 
@@ -2564,15 +2563,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         int resize(VirtualFrame frame, PBytes self, long newSizeL,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToIndexNode castToIndexNode,
+                        @CachedLibrary("newSizeL") PythonObjectLibrary lib,
                         @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
-            int newSize = castToIndexNode.execute(newSizeL);
+            int newSize = lib.asIndex(newSizeL);
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
