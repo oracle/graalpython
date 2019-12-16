@@ -95,7 +95,7 @@ public abstract class HashingStorage {
 
         @Override
         public int hashCode(Object o) {
-            return o.hashCode();
+            return Long.hashCode(o.hashCode());
         }
 
         @Override
