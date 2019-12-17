@@ -47,6 +47,7 @@
 POLYGLOT_DECLARE_TYPE(HPy);
 POLYGLOT_DECLARE_TYPE(HPyMethodDef);
 POLYGLOT_DECLARE_TYPE(HPyModuleDef);
+POLYGLOT_DECLARE_TYPE(wchar_t);
 
 int graal_hpy_init(void *initObject) {
 	// register the native type of HPy
@@ -56,12 +57,19 @@ int graal_hpy_init(void *initObject) {
 	// register null handle
 	polyglot_invoke(initObject, "setHPyNullHandle", HPy_NULL);
 
+	// register size of wchar_t
+	polyglot_invoke(initObject, "setWcharSize", sizeof(wchar_t));
+
 	return 0;
 }
 
 
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
 	return polyglot_from_HPy_array(arr, len);
+}
+
+void* graal_hpy_from_wchar_array(void *arr, uint64_t len) {
+	return polyglot_from_wchar_t_array(arr, len);
 }
 
 void* graal_hpy_from_HPyMethodDef(void *ptr) {

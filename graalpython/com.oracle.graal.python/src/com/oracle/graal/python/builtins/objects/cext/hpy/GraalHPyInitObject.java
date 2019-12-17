@@ -59,6 +59,7 @@ public class GraalHPyInitObject implements TruffleObject {
     public static final String SET_HPY_NATIVE_TYPE = "setHPyNativeType";
     public static final String SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
     public static final String SET_HPY_NULL_HANDLE = "setHPyNullHandle";
+    public static final String SET_WCHAR_SIZE = "setWcharSize";
     private final GraalHPyContext hpyContext;
 
     public GraalHPyInitObject(GraalHPyContext hpyContext) {
@@ -81,6 +82,7 @@ public class GraalHPyInitObject implements TruffleObject {
             case SET_HPY_NATIVE_TYPE:
             case SET_HPY_ARRAY_NATIVE_TYPE:
             case SET_HPY_NULL_HANDLE:
+            case SET_WCHAR_SIZE:
                 return true;
         }
         return false;
@@ -103,6 +105,9 @@ public class GraalHPyInitObject implements TruffleObject {
                 return 0;
             case SET_HPY_NULL_HANDLE:
                 hpyContext.setNullHandle(ensureHandleNode.execute(hpyContext, arguments[0]));
+                return 0;
+            case SET_WCHAR_SIZE:
+                hpyContext.setWcharSize(((Number) arguments[0]).longValue());
                 return 0;
         }
         throw UnsupportedMessageException.create();

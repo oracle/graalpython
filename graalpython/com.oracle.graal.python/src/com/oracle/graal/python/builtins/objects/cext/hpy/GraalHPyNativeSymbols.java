@@ -51,4 +51,5 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_FROM_STRING = "graal_hpy_from_string";
     public static final String GRAAL_HPY_ALLOCATE_OUTVAR = "graal_hpy_allocate_outvar";
     public static final String GRAAL_HPY_ARRAY_TO_NATIVE = "graal_hpy_array_to_native";
+    public static final String GRAAL_HPY_FROM_WCHAR_ARRAY ="graal_hpy_from_wchar_array";
 }

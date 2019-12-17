@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
+
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
@@ -47,7 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesCheck;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCheckBuiltinType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
@@ -61,6 +64,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyParseArgs;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8String;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -168,6 +173,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     /** the native type ID of C struct 'HPy' */
     @CompilationFinal private Object hpyNativeTypeID;
     @CompilationFinal private Object hpyArrayNativeTypeID;
+    @CompilationFinal private long wcharSize = -1;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.INSTANCE);
@@ -192,6 +198,16 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public Object getHPyArrayNativeType() {
         assert this.hpyArrayNativeTypeID != null : "HPy* native type ID not available";
         return hpyArrayNativeTypeID;
+    }
+
+    void setWcharSize(long wcharSize) {
+        assert this.wcharSize == -1 : "setting wchar size a second time";
+        this.wcharSize = wcharSize;
+    }
+
+    public long getWcharSize() {
+        assert this.wcharSize >= 0 : "wchar size is not available";
+        return wcharSize;
     }
 
     @ExportMessage
@@ -259,8 +275,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_LIST_NEW.ordinal()] = new GraalHPyListNew();
         members[HPyContextMembers.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
         members[HPyContextMembers.CTX_FLOAT_FROMDOUBLE.ordinal()] = new GraalHPyFloatFromDouble();
-        members[HPyContextMembers.CTX_BYTES_CHECK.ordinal()] = new GraalHPyBytesCheck();
+        members[HPyContextMembers.CTX_BYTES_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PBytes);
         members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString();
+        members[HPyContextMembers.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
+        members[HPyContextMembers.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
+        members[HPyContextMembers.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
         return members;
     }
 
