@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCom
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -176,48 +177,16 @@ public abstract class CExtNodes {
 
         public abstract Object execute(String name);
 
-        @Specialization(guards = "cachedName == name", limit = "1", assumptions = "singleContextAssumption()")
-        Object doReceiverCachedIdentity(@SuppressWarnings("unused") String name,
-                        @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Cached("importCAPISymbolUncached(context, name)") Object sym) {
-            return sym;
+        @Specialization
+        static Object doGeneric(String name,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode) {
+            return importCExtSymbolNode.execute(context.getCApiContext(), name);
         }
-
-        @Specialization(guards = "cachedName.equals(name)", limit = "1", assumptions = "singleContextAssumption()", replaces = "doReceiverCachedIdentity")
-        Object doReceiverCached(@SuppressWarnings("unused") String name,
-                        @Cached("name") @SuppressWarnings("unused") String cachedName,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Cached("importCAPISymbolUncached(context, name)") Object sym) {
-            return sym;
-        }
-
-        @Specialization(replaces = {"doReceiverCached", "doReceiverCachedIdentity"})
-        Object doGeneric(String name,
-                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Cached PRaiseNode raiseNode) {
-            return importCAPISymbol(raiseNode, interopLib, context.getCApiContext(), name);
-        }
-
-        protected static Object importCAPISymbolUncached(PythonContext context, String name) {
-            Object capiLibrary = context.getCApiContext().getLLVMLibrary();
-            return importCAPISymbol(PRaiseNode.getUncached(), InteropLibrary.getFactory().getUncached(capiLibrary), capiLibrary, name);
-        }
-
-        private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
-            try {
-                return library.readMember(capiLibrary, name);
-            } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid C API function: %s", name);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "corrupted C API library object: %s", capiLibrary);
-            }
-        }
-
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
     /**
      * For some builtin classes, the CPython approach to creating a subclass instance is to just
      * call the alloc function and then assign some fields. This needs to be done in C. This node
@@ -1778,13 +1747,14 @@ public abstract class CExtNodes {
         public abstract Object execute(String name, Object[] args);
 
         @Specialization
-        Object doIt(String name, Object[] args,
+        static Object doIt(String name, Object[] args,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached ImportCAPISymbolNode importCAPISymbolNode,
                         @Cached BranchProfile profile,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return interopLibrary.execute(importCAPISymbolNode.execute(name), args);
+                return interopLibrary.execute(importCExtSymbolNode.execute(context.getCApiContext(), name), args);
             } catch (UnsupportedTypeException | ArityException e) {
                 profile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
