@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromUnsignedLongLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
@@ -221,7 +223,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                         @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
                         @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
             // TODO(fa) once everything is implemented, remove this check
-            if(cachedIdx != -1) {
+            if (cachedIdx != -1) {
                 return hpyContext.hpyContextMembers[cachedIdx];
             }
             CompilerDirectives.transferToInterpreter();
@@ -251,6 +253,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_NUMBER_ADD.ordinal()] = new GraalHPyNumberAdd();
         members[HPyContextMembers.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
         members[HPyContextMembers.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
+        members[HPyContextMembers.CTX_LIST_NEW.ordinal()] = new GraalHPyListNew();
+        members[HPyContextMembers.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
         return members;
     }
 

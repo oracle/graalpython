@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.ParseTupleAndKeywordsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMembers;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFr
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -79,6 +81,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -372,6 +375,57 @@ public abstract class GraalHPyContextFunctions {
                 setItemNode.execute(dict, key, value);
                 return 0;
             } catch (UnsupportedMessageException e) {
+                return -1;
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyListNew extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
+            }
+            return asHandleNode.execute(asContextNode.execute(arguments[0]), factory.createList());
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyListAppend extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode listAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupAppendNode,
+                        @Cached CallBinaryMethodNode callAppendNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached PRaiseNativeNode raiseNode) throws ArityException {
+            if (arguments.length != 4) {
+                throw ArityException.create(4, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object left = listAsPythonObjectNode.execute(context, arguments[1]);
+            if (!PGuards.isList(left)) {
+                return raiseNode.raiseIntWithoutFrame(-1, SystemError, "bad internal call");
+            }
+            PList list = (PList) left;
+            Object value = valueAsPythonObjectNode.execute(context, arguments[2]);
+            Object attrAppend = lookupAppendNode.execute(list, "append");
+            if (attrAppend == PNone.NO_VALUE) {
+                return raiseNode.raiseIntWithoutFrame(-1, SystemError, "list does not have attribute 'append'");
+            }
+            try {
+                callAppendNode.executeObject(null, attrAppend, list, value);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, e);
                 return -1;
             }
         }
