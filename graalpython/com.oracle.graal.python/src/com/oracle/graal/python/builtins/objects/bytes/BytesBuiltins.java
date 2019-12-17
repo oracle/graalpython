@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -84,7 +85,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
 
-    public static CodingErrorAction toCodingErrorAction(String errors, PythonBuiltinBaseNode n) {
+    public static CodingErrorAction toCodingErrorAction(String errors) {
         switch (errors) {
             case "strict":
                 return CodingErrorAction.REPORT;
@@ -92,6 +93,22 @@ public class BytesBuiltins extends PythonBuiltins {
                 return CodingErrorAction.IGNORE;
             case "replace":
                 return CodingErrorAction.REPLACE;
+        }
+        return null;
+    }
+
+    public static CodingErrorAction toCodingErrorAction(String errors, PRaiseNode n) {
+        CodingErrorAction action = toCodingErrorAction(errors);
+        if (action != null) {
+            return action;
+        }
+        throw n.raise(PythonErrorType.LookupError, "unknown error handler name '%s'", errors);
+    }
+
+    public static CodingErrorAction toCodingErrorAction(String errors, PythonBuiltinBaseNode n) {
+        CodingErrorAction action = toCodingErrorAction(errors);
+        if (action != null) {
+            return action;
         }
         throw n.raise(PythonErrorType.LookupError, "unknown error handler name '%s'", errors);
     }

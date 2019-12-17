@@ -40,10 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
+
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -137,4 +152,42 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    @GenerateUncached
+    public abstract static class EncodeNativeStringNode extends PNodeWithContext {
+
+        public abstract PBytes execute(Charset charset, Object string, String errors);
+
+        @Specialization
+        static PBytes doJavaString(Charset charset, String s, String errors,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            try {
+                CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode);
+                return factory.createBytes(doEncode(charset, s, action));
+            } catch (CharacterCodingException e) {
+                throw raiseNode.raise(UnicodeEncodeError, "%m", e);
+            }
+        }
+
+        @Specialization(replaces = "doJavaString")
+        static PBytes doGeneric(Charset charset, Object stringObj, String errors,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            return doJavaString(charset, castToJavaStringNode.execute(stringObj), errors, factory, raiseNode);
+        }
+
+        @TruffleBoundary
+        private static byte[] doEncode(Charset charset, String string, CodingErrorAction action) throws CharacterCodingException {
+            CharsetEncoder encoder = charset.newEncoder();
+            encoder.onMalformedInput(action).onUnmappableCharacter(action);
+            CharBuffer buf = CharBuffer.allocate(string.length());
+            buf.put(string);
+            buf.flip();
+            ByteBuffer encoded = encoder.encode(buf);
+            byte[] barr = new byte[encoded.remaining()];
+            encoded.get(barr);
+            return barr;
+        }
+    }
 }
