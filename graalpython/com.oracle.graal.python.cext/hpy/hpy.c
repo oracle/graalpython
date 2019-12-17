@@ -85,7 +85,11 @@ void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
 }
 
 void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
-	return polyglot_from_string(moduleDef->m_doc, SRC_CS);
+	const char *m_doc = moduleDef->m_doc;
+	if (m_doc) {
+		return polyglot_from_string(m_doc, SRC_CS);
+	}
+	return polyglot_from_string("", SRC_CS);
 }
 
 void* graal_hpy_get_ml_name(HPyMethodDef *methodDef) {
