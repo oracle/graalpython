@@ -72,11 +72,16 @@ public abstract class HPyExternalFunctionNodes {
         private final Object callable;
         private final String name;
 
-        HPyExternalFunctionNode(PythonLanguage lang, String name, Object callable, Signature signature) {
+        // TODO(fa): this flag is just a temporary solution; remove it and do proper argument
+        // conversion in the calling root node
+        private final boolean doConversion;
+
+        HPyExternalFunctionNode(PythonLanguage lang, String name, Object callable, Signature signature, boolean doConversion) {
             super(lang);
             this.signature = signature;
             this.callable = callable;
             this.name = name;
+            this.doConversion = doConversion;
         }
 
         public Object getCallable() {
@@ -97,7 +102,11 @@ public abstract class HPyExternalFunctionNodes {
             Object[] frameArgs = PArguments.getVariableArguments(frame);
             Object[] arguments = new Object[frameArgs.length + 1];
             GraalHPyContext hPyContext = ctx.getHPyContext();
-            allAsHandleNode.executeInto(hPyContext, frameArgs, 0, arguments, 1);
+            if (doConversion) {
+                allAsHandleNode.executeInto(hPyContext, frameArgs, 0, arguments, 1);
+            } else {
+                System.arraycopy(frameArgs, 0, arguments, 1, frameArgs.length);
+            }
 
             // first arg is always the HPyContext
             arguments[0] = hPyContext;
@@ -147,8 +156,8 @@ public abstract class HPyExternalFunctionNodes {
             return true;
         }
 
-        public static HPyExternalFunctionNode create(PythonLanguage lang, String name, Object callable, Signature signature) {
-            return HPyExternalFunctionNodeGen.create(lang, name, callable, signature);
+        public static HPyExternalFunctionNode create(PythonLanguage lang, String name, Object callable, Signature signature, boolean doConversion) {
+            return HPyExternalFunctionNodeGen.create(lang, name, callable, signature, doConversion);
         }
     }
 

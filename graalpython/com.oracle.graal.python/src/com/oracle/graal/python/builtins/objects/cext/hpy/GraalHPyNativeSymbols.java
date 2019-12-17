@@ -47,4 +47,8 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_GET_M_METHODS = "graal_hpy_get_m_methods";
     public static final String GRAAL_HPY_GET_ML_NAME = "graal_hpy_get_ml_name";
     public static final String GRAAL_HPY_GET_ML_DOC = "graal_hpy_get_ml_doc";
+    public static final String GRAAL_HPY_FROM_HPY_ARRAY = "graal_hpy_from_HPy_array";
+    public static final String GRAAL_HPY_FROM_STRING = "graal_hpy_from_string";
+    public static final String GRAAL_HPY_ALLOCATE_OUTVAR = "graal_hpy_allocate_outvar";
+    public static final String GRAAL_HPY_ARRAY_TO_NATIVE = "graal_hpy_array_to_native";
 }

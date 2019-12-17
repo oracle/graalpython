@@ -49,7 +49,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyParseArgs;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -148,12 +150,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[0];
+    private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
+    @CompilationFinal private GraalHPyHandle hpyNullHandle;
 
     /** the native type ID of C struct 'HPy' */
-    private Object hpyNativeTypeID;
+    @CompilationFinal private Object hpyNativeTypeID;
+    @CompilationFinal private Object hpyArrayNativeTypeID;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.INSTANCE);
@@ -161,11 +165,23 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     void setHPyNativeType(Object hpyNativeTypeID) {
+        assert this.hpyNativeTypeID == null : "setting HPy native type ID a second time";
         this.hpyNativeTypeID = hpyNativeTypeID;
     }
 
     public Object getHPyNativeType() {
+        assert this.hpyNativeTypeID == null : "HPy native type ID not available";
         return hpyNativeTypeID;
+    }
+
+    void setHPyArrayNativeType(Object hpyArrayNativeTypeID) {
+        assert this.hpyArrayNativeTypeID == null : "setting HPy* native type ID a second time";
+        this.hpyArrayNativeTypeID = hpyArrayNativeTypeID;
+    }
+
+    public Object getHPyArrayNativeType() {
+        assert this.hpyArrayNativeTypeID != null : "HPy* native type ID not available";
+        return hpyArrayNativeTypeID;
     }
 
     @ExportMessage
@@ -218,15 +234,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
         members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
+        members[HPyContextMembers.CTX_ARG_PARSE.ordinal()] = new GraalHPyParseArgs();
+        members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = new GraalHPyLongFromLong();
         return members;
     }
 
     private int allocateHandle(GraalHPyHandle object) {
-        for (int i = 0; i < hpyHandleTable.length; i++) {
+        for (int i = 1; i < hpyHandleTable.length; i++) {
             if (hpyHandleTable[i] == null) {
                 hpyHandleTable[i] = object;
                 // TODO(fa) log new handle allocation
-                return i + 1;
+                return i;
             }
         }
         return -1;
@@ -239,47 +257,63 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             // resize
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, Math.max(16, hpyHandleTable.length * 2));
             // TODO(fa) log array resize
+            handle = allocateHandle(object);
         }
-        handle = allocateHandle(object);
         assert handle > 0;
         return handle;
     }
 
     public GraalHPyHandle getObjectForHPyHandle(int handle) {
         // find free association
-        assert handle > 0;
-        return hpyHandleTable[handle - 1];
+        return hpyHandleTable[handle];
     }
 
     public void releaseHPyHandleForObject(int handle) {
-        assert hpyHandleTable[handle - 1] != null : "releasing handle that has already been released: " + handle;
+        assert hpyHandleTable[handle] != null : "releasing handle that has already been released: " + handle;
         // TODO(fa) log handle dealloc
-        hpyHandleTable[handle - 1] = null;
+        hpyHandleTable[handle] = null;
     }
 
     // nb. keep in sync with 'meth.h'
-    private static final int _HPy_METH = 0x100000;
-    private static final int HPy_METH_VARARGS = (0x0001 | _HPy_METH);
-    private static final int HPy_METH_KEYWORDS = (0x0002 | _HPy_METH);
-    private static final int HPy_METH_NOARGS = (0x0004 | _HPy_METH);
-    private static final int HPy_METH_O = (0x0008 | _HPy_METH);
+    private static final int HPy_METH = 0x100000;
+    private static final int HPy_METH_VARARGS = 0x0001;
+    private static final int HPy_METH_KEYWORDS = 0x0002;
+    private static final int HPy_METH_NOARGS = 0x0004;
+    private static final int HPy_METH_O = 0x0008;
 
     // These methods could be static but they are deliberately implemented as member methods because
     // we may fetch the constants from the native library at initialization time.
 
+    public boolean isHPyMeth(int flags) {
+        return (flags & HPy_METH) != 0;
+    }
+
     public boolean isMethVarargs(int flags) {
+        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
         return (flags & HPy_METH_VARARGS) != 0;
     }
 
     public boolean isMethKeywords(int flags) {
+        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
         return (flags & HPy_METH_KEYWORDS) != 0;
     }
 
     public boolean isMethNoArgs(int flags) {
+        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
         return (flags & HPy_METH_NOARGS) != 0;
     }
 
     public boolean isMethO(int flags) {
+        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
         return (flags & HPy_METH_O) != 0;
     }
+
+    void setNullHandle(GraalHPyHandle hpyNullHandle) {
+        this.hpyNullHandle = hpyNullHandle;
+    }
+
+    public GraalHPyHandle getNullHandle() {
+        return hpyNullHandle;
+    }
+
 }

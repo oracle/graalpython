@@ -61,9 +61,16 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
 
+    public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
     public static final String I = "_i";
+
     private final Object delegate;
     private int id = -1;
+
+    private GraalHPyHandle() {
+        this.delegate = null;
+        this.id = 0;
+    }
 
     public GraalHPyHandle(Object delegate) {
         this.delegate = delegate;

@@ -47,7 +47,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
-abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
+public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithContext {
 
     public abstract void execute();
 

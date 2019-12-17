@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,22 +40,32 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import java.math.BigInteger;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethodDescriptorRoot;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -67,6 +77,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -77,7 +88,10 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class GraalHPyNodes {
 
@@ -237,7 +251,7 @@ public class GraalHPyNodes {
 
                 resultLib.execute(mlMethObj, new PtrArray(callable), new PtrArray(trampoline));
 
-                PBuiltinFunction builtinFunction = createFunction(context.getContext().getLanguage(), methodName, callable[0]);
+                PBuiltinFunction builtinFunction = createFunction(context.getContext().getLanguage(), methodName, callable[0], !context.isMethVarargs(flags));
                 return createWrapperFunction(builtinFunction, createWrapperRootNode(context, flags, builtinFunction));
             } catch (UnsupportedTypeException | ArityException e) {
                 profile.enter();
@@ -252,18 +266,18 @@ public class GraalHPyNodes {
         }
 
         @TruffleBoundary
-        private static PBuiltinFunction createFunction(PythonLanguage lang, String name, Object callable) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(HPyExternalFunctionNode.create(lang, name, callable, SIGNATURE));
+        private static PBuiltinFunction createFunction(PythonLanguage lang, String name, Object callable, boolean doConversion) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(HPyExternalFunctionNode.create(lang, name, callable, SIGNATURE, doConversion));
             return PythonObjectFactory.getUncached().createBuiltinFunction(name, null, 0, callTarget);
         }
 
         @TruffleBoundary
-        private static PBuiltinFunction createWrapperFunction(PBuiltinFunction function, MethodDescriptorRoot rootNode) {
+        private static PBuiltinFunction createWrapperFunction(PBuiltinFunction function, PRootNode rootNode) {
             return PythonObjectFactory.getUncached().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0, Truffle.getRuntime().createCallTarget(rootNode));
         }
 
         @TruffleBoundary
-        private static MethodDescriptorRoot createWrapperRootNode(GraalHPyContext hpyContext, int flags, PBuiltinFunction externalFunction) {
+        private static PRootNode createWrapperRootNode(GraalHPyContext hpyContext, int flags, PBuiltinFunction externalFunction) {
             if (hpyContext.isMethNoArgs(flags)) {
                 return new MethNoargsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
             } else if (hpyContext.isMethO(flags)) {
@@ -271,9 +285,80 @@ public class GraalHPyNodes {
             } else if (hpyContext.isMethKeywords(flags)) {
                 return new MethKeywordsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
             } else if (hpyContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
+                return new HPyMethVarargsRoot(hpyContext.getContext().getLanguage(), externalFunction.getName(), externalFunction);
             }
             throw new IllegalStateException("illegal method flags");
+        }
+    }
+
+    public static class HPyMethVarargsRoot extends PRootNode {
+        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private HPyAsHandleNode selfAsHandleNode;
+
+        @Child private CalleeContext calleeContext;
+        @Child private CallVarargsMethodNode invokeNode;
+        @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
+
+        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
+
+        private final String name;
+        private final Object callable;
+
+        @TruffleBoundary
+        public HPyMethVarargsRoot(PythonLanguage language, String name, Object callable) {
+            super(language);
+            this.name = name;
+            this.callable = callable;
+            this.calleeContext = CalleeContext.create();
+            this.invokeNode = CallVarargsMethodNode.create();
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.selfAsHandleNode = HPyAsHandleNodeGen.create();
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, customLocalsProfile);
+            try {
+                Object self = readSelfNode.execute(frame);
+                Object[] args = readVarargsNode.executeObjectArray(frame);
+                Object[] arguments = PArguments.create();
+                PArguments.setVariableArguments(arguments, selfAsHandleNode.execute(self), new HPyArrayWrapper(args), (long) args.length);
+                return invokeNode.execute(frame, callable, arguments, PKeyword.EMPTY_KEYWORDS);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            // this is just a thin argument shuffling wrapper
+            return NodeCost.NONE;
+        }
+
+        @Override
+        public String toString() {
+            return "<METH root " + name + ">";
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
         }
     }
 
@@ -376,15 +461,17 @@ public class GraalHPyNodes {
         @Specialization
         static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object,
                         @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
-            return ensureHandleNode.execute(hpyContext, object);
+            return ensureHandleNode.execute(hpyContext, object).getDelegate();
         }
     }
 
     @GenerateUncached
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 
+        // TODO(fa) implement handles for primitives that avoid boxing
+
         @Specialization
-        static GraalHPyHandle doObject(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object object) {
+        static GraalHPyHandle doObject(@SuppressWarnings("unused") CExtContext hpyContext, Object object) {
             return new GraalHPyHandle(object);
         }
 
@@ -425,4 +512,60 @@ public class GraalHPyNodes {
             }
         }
     }
+
+    @GenerateUncached
+    abstract static class HPyLongFromLong extends Node {
+        public abstract Object execute(int value, boolean signed);
+
+        public abstract Object execute(long value, boolean signed);
+
+        public abstract Object execute(Object value, boolean signed);
+
+        @Specialization(guards = "signed")
+        Object doSignedInt(int n, @SuppressWarnings("unused") boolean signed,
+                        @Cached HPyAsHandleNode toSulongNode) {
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = "!signed")
+        Object doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed,
+                        @Cached HPyAsHandleNode toSulongNode) {
+            if (n < 0) {
+                return toSulongNode.execute(n & 0xFFFFFFFFL);
+            }
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = "signed")
+        Object doSignedLong(long n, @SuppressWarnings("unused") boolean signed,
+                        @Cached HPyAsHandleNode toSulongNode) {
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = {"!signed", "n >= 0"})
+        Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed,
+                        @Cached HPyAsHandleNode toSulongNode) {
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = {"!signed", "n < 0"})
+        Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") boolean signed,
+                        @Cached HPyAsHandleNode toSulongNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return toSulongNode.execute(factory.createInt(convertToBigInteger(n)));
+        }
+
+        @TruffleBoundary
+        private static BigInteger convertToBigInteger(long n) {
+            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
+        }
+
+        @Specialization
+        Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
+                        @Cached HPyAsHandleNode toSulongNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return toSulongNode.execute(factory.createNativeVoidPtr(n.getPtr()));
+        }
+    }
+
 }

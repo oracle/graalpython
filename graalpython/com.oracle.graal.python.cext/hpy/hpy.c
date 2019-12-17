@@ -40,6 +40,7 @@
  */
 #include "hpy.h"
 #include <polyglot.h>
+#include <truffle.h>
 
 #define SRC_CS "utf-8"
 
@@ -48,11 +49,20 @@ POLYGLOT_DECLARE_TYPE(HPyMethodDef);
 POLYGLOT_DECLARE_TYPE(HPyModuleDef);
 
 int graal_hpy_init(void *initObject) {
-	// register
+	// register the native type of HPy
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
+	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
+
+	// register null handle
+	polyglot_invoke(initObject, "setHPyNullHandle", HPy_NULL);
+
 	return 0;
 }
 
+
+void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
+	return polyglot_from_HPy_array(arr, len);
+}
 
 void* graal_hpy_from_HPyMethodDef(void *ptr) {
 	return polyglot_from_HPyMethodDef(ptr);
@@ -84,4 +94,44 @@ void* graal_hpy_get_m_methods(HPyModuleDef *moduleDef) {
 		len++;
 	}
 	return polyglot_from_HPyMethodDef_array(moduleDef->m_methods, len);
+}
+
+void* graal_hpy_from_string(const char *ptr) {
+	return polyglot_from_string(ptr, SRC_CS);
+}
+
+typedef union {
+	void *ptr;
+	float f;
+	double d;
+	int64_t i64;
+	int32_t i32;
+	int16_t i16;
+	int8_t i8;
+	uint64_t u64;
+	uint32_t u32;
+	uint16_t u16;
+	uint8_t u8;
+	/* TODO(fa) this should be a Py_complex; is there any equivalent ? */
+	uint64_t c;
+} OutVar;
+
+POLYGLOT_DECLARE_TYPE(OutVar);
+typedef struct { OutVar *content; } OutVarPtr;
+POLYGLOT_DECLARE_TYPE(OutVarPtr);
+OutVarPtr* graal_hpy_allocate_outvar() {
+	return polyglot_from_OutVarPtr(truffle_managed_malloc(sizeof(OutVarPtr)));
+}
+
+HPy* graal_hpy_array_to_native(HPy *source, uint64_t len) {
+	uint64_t i;
+	HPy *dest = (HPy *)malloc(len*sizeof(HPy));
+	for (i=0; i < len; i++) {
+		dest[i] = source[i];
+	}
+	return dest;
+}
+
+void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
+	p_outvar->content = (OutVar *)va_arg(*p_va, void *);
 }

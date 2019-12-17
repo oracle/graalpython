@@ -337,7 +337,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public abstract static class MethodDescriptorRoot extends PRootNode {
+    abstract static class MethodDescriptorRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
@@ -348,12 +348,12 @@ public abstract class ExternalFunctionNodes {
         private final String name;
         private final Object callable;
 
-        public MethodDescriptorRoot(PythonLanguage language, String name, Object callable) {
+        MethodDescriptorRoot(PythonLanguage language, String name, Object callable) {
             this(language, name, callable, null);
         }
 
         @TruffleBoundary
-        public MethodDescriptorRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
+        MethodDescriptorRoot(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language);
             this.name = name;
             this.callable = callable;

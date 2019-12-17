@@ -41,6 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -54,6 +57,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 public class GraalHPyInitObject implements TruffleObject {
 
     public static final String SET_HPY_NATIVE_TYPE = "setHPyNativeType";
+    public static final String SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
+    public static final String SET_HPY_NULL_HANDLE = "setHPyNullHandle";
     private final GraalHPyContext hpyContext;
 
     public GraalHPyInitObject(GraalHPyContext hpyContext) {
@@ -67,19 +72,38 @@ public class GraalHPyInitObject implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[] { SET_HPY_NATIVE_TYPE });
+        return new PythonAbstractObject.Keys(new String[]{SET_HPY_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_HPY_NULL_HANDLE});
     }
 
     @ExportMessage
     boolean isMemberInvocable(String key) {
-        return SET_HPY_NATIVE_TYPE.equals(key);
+        switch (key) {
+            case SET_HPY_NATIVE_TYPE:
+            case SET_HPY_ARRAY_NATIVE_TYPE:
+            case SET_HPY_NULL_HANDLE:
+                return true;
+        }
+        return false;
     }
 
     @ExportMessage
-    Object invokeMember(String key, Object[] arguments) throws UnsupportedMessageException {
-        if (SET_HPY_NATIVE_TYPE.equals(key)) {
-            hpyContext.setHPyNativeType(arguments[0]);
-            return 0;
+    Object invokeMember(String key, Object[] arguments,
+                    @Cached HPyEnsureHandleNode ensureHandleNode) throws UnsupportedMessageException, ArityException {
+
+        if (arguments.length != 1) {
+            throw ArityException.create(1, arguments.length);
+        }
+
+        switch (key) {
+            case SET_HPY_NATIVE_TYPE:
+                hpyContext.setHPyNativeType(arguments[0]);
+                return 0;
+            case SET_HPY_ARRAY_NATIVE_TYPE:
+                hpyContext.setHPyArrayNativeType(arguments[0]);
+                return 0;
+            case SET_HPY_NULL_HANDLE:
+                hpyContext.setNullHandle(ensureHandleNode.execute(hpyContext, arguments[0]));
+                return 0;
         }
         throw UnsupportedMessageException.create();
     }

@@ -992,7 +992,6 @@ public final class PythonContext {
 
     public void createHPyContext(Object hpyLibrary) {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
-        CompilerDirectives.transferToInterpreterAndInvalidate();
         hPyContext = new GraalHPyContext(this, hpyLibrary);
     }
 
