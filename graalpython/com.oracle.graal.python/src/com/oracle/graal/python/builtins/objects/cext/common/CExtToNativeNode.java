@@ -41,11 +41,12 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
 
 public abstract class CExtToNativeNode extends PNodeWithContext {
 
     public final Object execute(Object object) {
-        return execute(null, object);
+        return execute(CExtContext.LAZY_CONTEXT, object);
     }
 
     public abstract Object execute(CExtContext nativeContext, Object object);

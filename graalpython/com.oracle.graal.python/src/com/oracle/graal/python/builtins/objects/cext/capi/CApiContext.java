@@ -38,30 +38,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.runtime.PythonContext;
 
-public abstract class CExtContext {
-
-    public static CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
-    };
-
-    private final PythonContext context;
-
-    /** The LLVM bitcode library object representing 'libpython.*.so' or similar. */
-    private final Object llvmLibrary;
-
-    public CExtContext(PythonContext context, Object llvmLibrary) {
-        this.context = context;
-        this.llvmLibrary = llvmLibrary;
-    }
-
-    public final PythonContext getContext() {
-        return context;
-    }
-
-    public final Object getLLVMLibrary() {
-        return llvmLibrary;
+public final class CApiContext extends CExtContext {
+    public CApiContext(PythonContext context, Object hpyLibrary) {
+        super(context, hpyLibrary);
     }
 }

@@ -197,13 +197,12 @@ public abstract class CExtNodes {
                         @CachedLibrary(limit = "1") @SuppressWarnings("unused") InteropLibrary interopLib,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
                         @Cached PRaiseNode raiseNode) {
-            return importCAPISymbol(raiseNode, interopLib, context.getCapiLibrary(), name);
+            return importCAPISymbol(raiseNode, interopLib, context.getCApiContext(), name);
         }
 
         protected static Object importCAPISymbolUncached(PythonContext context, String name) {
-            Object capiLibrary = context.getCapiLibrary();
-            InteropLibrary uncached = InteropLibrary.getFactory().getUncached(capiLibrary);
-            return importCAPISymbol(PRaiseNode.getUncached(), uncached, capiLibrary, name);
+            Object capiLibrary = context.getCApiContext().getLLVMLibrary();
+            return importCAPISymbol(PRaiseNode.getUncached(), InteropLibrary.getFactory().getUncached(capiLibrary), capiLibrary, name);
         }
 
         private static Object importCAPISymbol(PRaiseNode raiseNode, InteropLibrary library, Object capiLibrary, String name) {
