@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_ALLOCATE_OUTVAR;
@@ -71,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -468,6 +470,29 @@ public abstract class GraalHPyContextFunctions {
             Object object = asPythonObjectNode.execute(context, arguments[1]);
             PythonAbstractClass klass = getClassNode.execute(object);
             return isSubtypeNode.execute(klass, PythonBuiltinClassType.PBytes) ? 1 : 0;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrSetString extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNode) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object errTypeObj = asPythonObjectNode.execute(context, arguments[1]);
+            if (!(PGuards.isClass(errTypeObj) && isSubtypeNode.execute((PythonAbstractClass) errTypeObj, PBaseException))) {
+                return raiseNode.raiseIntWithoutFrame(-1, SystemError, "exception %s not a BaseException subclass", errTypeObj);
+            }
+            // the cast is now guaranteed because it is a subtype of PBaseException and there it is
+            // a type
+            return raiseNode.raiseIntWithoutFrame(0, (LazyPythonClass) errTypeObj, "exception %s not a BaseException subclass", errTypeObj);
         }
     }
 
