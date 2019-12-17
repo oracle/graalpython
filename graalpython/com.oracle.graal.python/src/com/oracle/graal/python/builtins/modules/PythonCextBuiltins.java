@@ -49,7 +49,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -110,8 +109,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
@@ -137,7 +138,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringLenNodeGen;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -190,7 +190,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -200,7 +199,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -228,8 +226,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -961,43 +957,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     abstract static class NativeUnicodeBuiltin extends NativeBuiltin {
-        private static final int NATIVE_ORDER = 0;
-        private static Charset UTF32;
-        private static Charset UTF32LE;
-        private static Charset UTF32BE;
-
-        @TruffleBoundary
-        protected static Charset getUTF32Charset(int byteorder) {
-            String utf32Name = getUTF32Name(byteorder);
-            if (byteorder == NativeUnicodeBuiltin.NATIVE_ORDER) {
-                if (UTF32 == null) {
-                    UTF32 = Charset.forName(utf32Name);
-                }
-                return UTF32;
-            } else if (byteorder < NativeUnicodeBuiltin.NATIVE_ORDER) {
-                if (UTF32LE == null) {
-                    UTF32LE = Charset.forName(utf32Name);
-                }
-                return UTF32LE;
-            }
-            if (UTF32BE == null) {
-                UTF32BE = Charset.forName(utf32Name);
-            }
-            return UTF32BE;
-        }
-
-        protected static String getUTF32Name(int byteorder) {
-            String csName;
-            if (byteorder == 0) {
-                csName = "UTF-32";
-            } else if (byteorder < 0) {
-                csName = "UTF-32LE";
-            } else {
-                csName = "UTF-32BE";
-            }
-            return csName;
-        }
-
         @TruffleBoundary
         protected static CharBuffer allocateCharBuffer(int cap) {
             return CharBuffer.allocate(cap);
@@ -1012,7 +971,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         protected static int remaining(ByteBuffer cb) {
             return cb.remaining();
         }
-
     }
 
     @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
@@ -1130,109 +1088,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @ImportStatic(PythonOptions.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
-        @Specialization(guards = "elementSize == cachedElementSize", limit = "getVariableArgumentInlineCacheLimit()")
-        Object doBytes(VirtualFrame frame, Object arr, long n, long elementSize, Object errorMarker,
+        @Specialization
+        static Object doBytes(VirtualFrame frame, Object arr, long n, long elementSize, Object errorMarker,
+                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached("elementSize") long cachedElementSize,
-                        @CachedLibrary("arr") InteropLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary elemLib) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                ByteBuffer bytes;
-                if (cachedElementSize == 1L || cachedElementSize == 2L || cachedElementSize == 4L) {
-                    if (!lib.hasArrayElements(arr)) {
-                        return raiseNative(frame, errorMarker, PythonErrorType.SystemError, "provided object is not an array", elementSize);
-                    }
-                    bytes = readWithSize(lib, elemLib, arr, PInt.intValueExact(n), (int) cachedElementSize);
-                    bytes.flip();
-                } else {
-                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
-                }
-                return toSulongNode.execute(decode(bytes));
-            } catch (ArithmeticException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "array size too large");
-            } catch (CharacterCodingException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
-            } catch (IllegalArgumentException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
-            } catch (InteropException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
-            } catch (IllegalElementTypeException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeDecodeError, "Invalid input element type '%p'", e.elem);
-            }
-        }
-
-        @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
-        Object doBytes(VirtualFrame frame, Object arr, PInt n, PInt elementSize, Object errorMarker,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @CachedLibrary("arr") InteropLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary elemLib) {
-            try {
-                long es = elementSize.longValueExact();
-                return doBytes(frame, arr, n.longValueExact(), es, errorMarker, toSulongNode, es, lib, elemLib);
-            } catch (ArithmeticException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
-            }
-        }
-
-        @TruffleBoundary
-        private static String decode(ByteBuffer bytes) throws CharacterCodingException {
-            return getUTF32Charset(0).newDecoder().decode(bytes).toString();
-        }
-
-        private static ByteBuffer readWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object o, int size, int elementSize)
-                        throws UnsupportedMessageException, InvalidArrayIndexException, IllegalElementTypeException {
-            ByteBuffer buf = allocate(size * Integer.BYTES);
-            for (int i = 0; i < size; i += elementSize) {
-                putInt(buf, readElement(arrLib, elemLib, o, i, elementSize));
-            }
-            return buf;
-        }
-
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-        private static int readElement(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int i, int elementSize)
-                        throws InvalidArrayIndexException, UnsupportedMessageException, IllegalElementTypeException {
-            byte[] barr = new byte[4];
-            CompilerAsserts.partialEvaluationConstant(elementSize);
-            for (int j = 0; j < elementSize; j++) {
-                Object elem = arrLib.readArrayElement(arr, i + j);
-                // The array object could be one of our wrappers (e.g. 'PySequenceArrayWrapper').
-                // Since the Interop library does not allow to specify how many bytes we want to
-                // read when we do readArrayElement, our wrappers always return long. So, we check
-                // for 'long' here and cast down to 'byte'.
-                if (elemLib.fitsInLong(elem)) {
-                    barr[j] = (byte) elemLib.asLong(elem);
-                } else {
-                    CompilerDirectives.transferToInterpreter();
-                    throw new IllegalElementTypeException(elem);
-                }
-            }
-            return toInt(barr);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int toInt(byte[] barr) {
-            return ByteBuffer.wrap(barr).order(ByteOrder.LITTLE_ENDIAN).getInt();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static ByteBuffer allocate(int cap) {
-            return ByteBuffer.allocate(cap);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static void putInt(ByteBuffer buf, int element) {
-            buf.putInt(element);
-        }
-
-        private static final class IllegalElementTypeException extends Exception {
-            private static final long serialVersionUID = 0L;
-            private final Object elem;
-
-            IllegalElementTypeException(Object elem) {
-                this.elem = elem;
+                return toSulongNode.execute(unicodeFromWcharNode.execute(arr, n, elementSize));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return errorMarker;
             }
         }
     }
@@ -1287,20 +1153,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Fallback
         Object doUnicode(VirtualFrame frame, @SuppressWarnings("unused") Object s, @SuppressWarnings("unused") Object errors, Object errorMarker) {
             return raiseBadArgument(frame, errorMarker);
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private byte[] doEncode(PString s, String errors) throws CharacterCodingException {
-            CharsetEncoder encoder = charset.newEncoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-            encoder.onMalformedInput(action).onUnmappableCharacter(action);
-            CharBuffer buf = CharBuffer.allocate(StringLenNodeGen.getUncached().execute(s));
-            buf.put(s.getValue());
-            buf.flip();
-            ByteBuffer encoded = encoder.encode(buf);
-            byte[] barr = new byte[encoded.remaining()];
-            encoded.get(barr);
-            return barr;
         }
     }
 
@@ -1365,7 +1217,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (CharacterCodingException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
             } catch (IllegalArgumentException e) {
-                String csName = getUTF32Name(byteorder);
+                String csName = Charsets.getUTF32Name(byteorder);
                 return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
             } catch (InteropException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
@@ -1374,7 +1226,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private String decodeUTF32(byte[] data, int size, String errors, int byteorder) throws CharacterCodingException {
-            CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
+            CharsetDecoder decoder = Charsets.getUTF32Charset(byteorder).newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
             CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(data, 0, size));
             return decode.toString();
