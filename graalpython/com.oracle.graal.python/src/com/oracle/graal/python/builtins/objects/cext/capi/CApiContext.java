@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.runtime.PythonContext;
 
 public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object hpyLibrary) {
-        super(context, hpyLibrary);
+        super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
     }
 }

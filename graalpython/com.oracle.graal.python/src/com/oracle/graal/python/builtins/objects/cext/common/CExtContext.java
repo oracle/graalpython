@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 
 public abstract class CExtContext {
 
-    public static CExtContext LAZY_CONTEXT = new CExtContext(null, null) {
+    public static CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
     };
 
     private final PythonContext context;
@@ -52,9 +52,13 @@ public abstract class CExtContext {
     /** The LLVM bitcode library object representing 'libpython.*.so' or similar. */
     private final Object llvmLibrary;
 
-    public CExtContext(PythonContext context, Object llvmLibrary) {
+    /** A factory for creating context-specific conversion nodes. */
+    private final ConversionNodeSupplier supplier;
+
+    public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;
         this.llvmLibrary = llvmLibrary;
+        this.supplier = supplier;
     }
 
     public final PythonContext getContext() {
@@ -63,5 +67,9 @@ public abstract class CExtContext {
 
     public final Object getLLVMLibrary() {
         return llvmLibrary;
+    }
+
+    public final ConversionNodeSupplier getSupplier() {
+        return supplier;
     }
 }
