@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.ParseTupleAndKeywordsNode;
@@ -428,6 +429,23 @@ public abstract class GraalHPyContextFunctions {
                 transformExceptionToNativeNode.execute(null, e);
                 return -1;
             }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyFloatFromDouble extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 2) {
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            double value = castToJavaDoubleNode.execute(arguments[1]);
+            return asHandleNode.execute(context, value);
         }
     }
 
