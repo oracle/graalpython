@@ -50,10 +50,12 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromUnsignedLongLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyParseArgs;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -216,7 +218,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         static Object doMember(GraalHPyContext hpyContext, @SuppressWarnings("unused") String key,
                         @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
                         @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
-            return hpyContext.hpyContextMembers[cachedIdx];
+            // TODO(fa) once everything is implemented, remove this check
+            if(cachedIdx != -1) {
+                return hpyContext.hpyContextMembers[cachedIdx];
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("member not yet implemented");
         }
 
         static int getIndex(String key) {
@@ -237,6 +244,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
         members[HPyContextMembers.CTX_ARG_PARSE.ordinal()] = new GraalHPyParseArgs();
         members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = new GraalHPyLongFromLong();
+        members[HPyContextMembers.CTX_LONG_FROMLONGLONG.ordinal()] = new GraalHPyLongFromLong();
+        members[HPyContextMembers.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = new GraalHPyLongFromUnsignedLongLong();
         members[HPyContextMembers.CTX_NUMBER_ADD.ordinal()] = new GraalHPyNumberAdd();
         return members;
     }
