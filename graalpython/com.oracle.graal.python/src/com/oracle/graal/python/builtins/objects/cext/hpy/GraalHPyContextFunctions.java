@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_ALLOCATE_OUTVAR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_ARRAY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_STRING;
@@ -49,6 +50,8 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_NAME;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.ParseTupleAndKeywordsNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMembers;
@@ -65,8 +68,11 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -281,9 +287,13 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode leftAsPythonObjectNode,
-                        @Cached HPyAsPythonObjectNode rightAsPythonObjectNode) throws ArityException {
+                       @Cached HPyAsContextNode asContextNode,
+                       @Cached HPyAsPythonObjectNode leftAsPythonObjectNode,
+                       @Cached HPyAsPythonObjectNode rightAsPythonObjectNode,
+                       @Cached HPyAsHandleNode resultAsHandleNode,
+                       @Cached LookupInheritedAttributeNode.Dynamic lookupAddNode,
+                       @Cached CallBinaryMethodNode callBinaryMethodNode,
+                       @Cached PRaiseNode raiseNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
@@ -291,8 +301,11 @@ public abstract class GraalHPyContextFunctions {
             Object left = leftAsPythonObjectNode.execute(context, arguments[1]);
             Object right = rightAsPythonObjectNode.execute(context, arguments[2]);
 
-            // TODO implement
-            return null;
+            Object addAttr = lookupAddNode.execute(left, SpecialMethodNames.__ADD__);
+            if(addAttr != PNone.NO_VALUE) {
+                return resultAsHandleNode.execute(context, callBinaryMethodNode.executeObject(null, addAttr, left, right));
+            }
+            throw raiseNode.raise(TypeError, "object of class %p has no __add__", left);
         }
     }
 }

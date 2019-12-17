@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyParseArgs;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -236,6 +237,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
         members[HPyContextMembers.CTX_ARG_PARSE.ordinal()] = new GraalHPyParseArgs();
         members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = new GraalHPyLongFromLong();
+        members[HPyContextMembers.CTX_NUMBER_ADD.ordinal()] = new GraalHPyNumberAdd();
         return members;
     }
 
