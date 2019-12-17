@@ -44,6 +44,9 @@ def a_function():
 
 def wrapper():
     values = []
+    global a_global
+
+    a_global = set([11, 12])
 
     def my_func(arg_l, kwarg_case="empty set", kwarg_other=19):
         loc_1 = set(values)
@@ -62,6 +65,9 @@ def wrapper():
             print("expected TypeError")
 
     return my_func
+
+
+a_global = 10
 
 
 def test_name():
@@ -94,7 +100,7 @@ def test_code_attributes():
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
     assert code.co_filename.endswith("test_code.py")
     assert code.co_name == "my_func"
-    assert code.co_firstlineno == 48
+    assert code.co_firstlineno == 51
     # assert code.co_lnotab == b'\x00\x01\x0c\x01\x0c\x01\x06\x02\x15\x03\x03\x01\x0e\x01\r\x01\x05\x02'
     assert set(code.co_freevars) == {'values'}
     assert set(code.co_cellvars) == {'kwarg_other', 'loc_2'}
@@ -161,3 +167,11 @@ def test_module_code():
         # assert code.co_lnotab  == b''
         assert code.co_freevars == tuple()
         assert code.co_cellvars == tuple()
+
+
+def test_get_globals():
+    import sys
+    code = wrapper.__code__
+    if sys.implementation.name == 'graalpython':
+        # print(">>> ", code.truffle_co_globals)
+        assert set(code.truffle_co_globals) == {'a_global'}

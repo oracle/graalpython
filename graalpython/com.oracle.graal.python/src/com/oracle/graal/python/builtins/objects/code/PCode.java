@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.code;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -53,7 +54,11 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.nodes.frame.GlobalNode;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -104,6 +109,8 @@ public final class PCode extends PythonBuiltinObject {
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
+    // is a tuple containing the names of the global variables accessed from this code object
+    private Object[] globalAndBuiltinVarNames;
 
     public PCode(LazyPythonClass cls, RootCallTarget callTarget) {
         super(cls);
@@ -243,6 +250,25 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    private static Object[] extractGlobalVarnames(RootNode rootNode) {
+        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
+        Set<Object> varNameList = new HashSet<>();
+
+        List<GlobalNode> globalNodes = NodeUtil.findAllNodeInstances(funcRootNode, GlobalNode.class);
+        for (GlobalNode node : globalNodes) {
+            if (node instanceof ReadGlobalOrBuiltinNode) {
+                varNameList.add(((ReadGlobalOrBuiltinNode) node).getAttributeId());
+            } else if (node instanceof WriteGlobalNode) {
+                varNameList.add(((WriteGlobalNode) node).getAttributeId());
+            } else if (node instanceof DeleteGlobalNode) {
+                varNameList.add(((DeleteGlobalNode) node).getAttributeId());
+            }
+        }
+
+        return varNameList.toArray();
+    }
+
+    @TruffleBoundary
     private static int extractFlags(RootNode rootNode) {
         int flags = 0;
         RootNode funcRootNode = rootNode;
@@ -369,6 +395,13 @@ public final class PCode extends PythonBuiltinObject {
             this.codestring = extractCodeString(getRootNode());
         }
         return codestring;
+    }
+
+    public Object[] getGlobalAndBuiltinVarNames() {
+        if (globalAndBuiltinVarNames == null) {
+            this.globalAndBuiltinVarNames = extractGlobalVarnames(getRootNode());
+        }
+        return globalAndBuiltinVarNames;
     }
 
     public Object[] getConstants() {

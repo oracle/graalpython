@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -1905,7 +1906,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = "globals", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class GlobalsNode extends PythonBuiltinNode {
+    public abstract static class GlobalsNode extends PythonBuiltinNode {
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
 
         private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
@@ -1931,6 +1932,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 return globals;
             }
+        }
+
+        public static GlobalsNode create() {
+            return GlobalsNodeFactory.create(null);
         }
     }
 
