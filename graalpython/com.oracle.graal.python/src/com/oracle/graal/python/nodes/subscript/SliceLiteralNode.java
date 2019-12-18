@@ -29,7 +29,9 @@ import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDE
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -48,6 +50,7 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild(value = "first", type = ExpressionNode.class)
@@ -169,12 +172,12 @@ public abstract class SliceLiteralNode extends ExpressionNode {
             }
         }
 
-        @Specialization
+        @Specialization(replaces = {"doBoolean", "doInt", "doLong", "doPInt"}, limit = "getCallSiteInlineCacheMaxDepth()")
         int doGeneric(VirtualFrame frame, Object i,
-                        @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
+                        @CachedLibrary("i") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile) {
             try {
-                return castToIndexNode.execute(frame, i);
+                return lib.asIndexWithState(i, PArguments.getThreadState(frame));
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
                 return overflowValue;
