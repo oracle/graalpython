@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -45,6 +46,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -119,14 +121,10 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         return SliceLiteralNodeGen.create(null, null, null);
     }
 
-    @ImportStatic(PythonOptions.class)
-    abstract static class CastToSliceComponentNode extends PNodeWithContext {
-
-        @Child private PRaiseNode raiseNode;
-
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    public abstract static class CastToSliceComponentNode extends PNodeWithContext {
         private final int defaultValue;
         private final int overflowValue;
-        private final BranchProfile indexErrorProfile = BranchProfile.create();
 
         public CastToSliceComponentNode(int defaultValue, int overflowValue) {
             this.defaultValue = defaultValue;
@@ -155,7 +153,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doLong(long i) {
+        int doLong(long i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return PInt.intValueExact(i);
             } catch (ArithmeticException e) {
@@ -165,7 +163,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doPInt(PInt i) {
+        int doPInt(PInt i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return i.intValueExact();
             } catch (ArithmeticException e) {
@@ -174,7 +172,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
             }
         }
 
-        @Specialization(replaces = {"doBoolean", "doInt", "doLong", "doPInt"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"}, limit = "getCallSiteInlineCacheMaxDepth()")
         int doGeneric(VirtualFrame frame, Object i,
                         @Cached PRaiseNode raise,
                         @CachedLibrary("i") PythonObjectLibrary lib,

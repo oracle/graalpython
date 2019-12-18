@@ -99,8 +99,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -444,8 +444,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     abstract static class PrefixSuffixBaseNode extends PythonQuaternaryBuiltinNode {
 
-        @Child private CastToIndexNode startNode;
-        @Child private CastToIndexNode endNode;
+        @Child private CastToSliceComponentNode castSliceComponentNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private CastToJavaStringNode castToJavaStringNode;
 
@@ -493,8 +492,8 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castPrefixNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "startswith", self);
             int len = selfStr.length();
-            int istart = PGuards.isPNone(start) ? 0 : adjustStart(castStart(frame, start), len);
-            int iend = PGuards.isPNone(end) ? len : adjustEnd(castEnd(frame, end), len);
+            int istart = adjustStart(castSlicePart(frame, start), len);
+            int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
             String prefixStr = castPrefixNode.cast(substr, INVALID_FIRST_ARG, "startswith", substr);
             return doIt(selfStr, prefixStr, istart, iend);
         }
@@ -504,8 +503,8 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "startswith", self);
             int len = selfStr.length();
-            int istart = PGuards.isPNone(start) ? 0 : adjustStart(castStart(frame, start), len);
-            int iend = PGuards.isPNone(end) ? len : adjustEnd(castEnd(frame, end), len);
+            int istart = adjustStart(castSlicePart(frame, start), len);
+            int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
             return doIt(selfStr, substrs, istart, iend);
         }
 
@@ -553,24 +552,13 @@ public final class StringBuiltins extends PythonBuiltins {
             return adjustStart(end, length);
         }
 
-        private int castStart(VirtualFrame frame, Object start) {
-            if (startNode == null) {
+        private int castSlicePart(VirtualFrame frame, Object idx) {
+            if (castSliceComponentNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                startNode = insert(CastToIndexNode.create(TypeError, val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-                }));
+                // None should map to 0, overflow to the maximum integer
+                castSliceComponentNode = insert(CastToSliceComponentNode.create(0, Integer.MAX_VALUE));
             }
-            return startNode.execute(frame, start);
-        }
-
-        private int castEnd(VirtualFrame frame, Object end) {
-            if (endNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                endNode = insert(CastToIndexNode.create(TypeError, val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-                }));
-            }
-            return endNode.execute(frame, end);
+            return castSliceComponentNode.execute(frame, idx);
         }
 
         private GetObjectArrayNode ensureGetObjectArrayNode() {
