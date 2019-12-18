@@ -94,7 +94,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    static final class MethDirectRoot extends PRootNode {
+    public static final class MethDirectRoot extends PRootNode {
         private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
         @Child private ExternalFunctionInvokeNode invokeNode;

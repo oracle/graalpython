@@ -322,36 +322,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     // nb. keep in sync with 'meth.h'
     private static final int HPy_METH = 0x100000;
-    private static final int HPy_METH_VARARGS = 0x0001;
-    private static final int HPy_METH_KEYWORDS = 0x0002;
-    private static final int HPy_METH_NOARGS = 0x0004;
-    private static final int HPy_METH_O = 0x0008;
 
     // These methods could be static but they are deliberately implemented as member methods because
     // we may fetch the constants from the native library at initialization time.
 
     public boolean isHPyMeth(int flags) {
         return (flags & HPy_METH) != 0;
-    }
-
-    public boolean isMethVarargs(int flags) {
-        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
-        return (flags & HPy_METH_VARARGS) != 0;
-    }
-
-    public boolean isMethKeywords(int flags) {
-        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
-        return (flags & HPy_METH_KEYWORDS) != 0;
-    }
-
-    public boolean isMethNoArgs(int flags) {
-        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
-        return (flags & HPy_METH_NOARGS) != 0;
-    }
-
-    public boolean isMethO(int flags) {
-        assert isHPyMeth(flags) : "flags do not specify a valid HPy method signature";
-        return (flags & HPy_METH_O) != 0;
     }
 
     void setNullHandle(GraalHPyHandle hpyNullHandle) {

@@ -1732,7 +1732,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         protected abstract RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, ConvertArgsToSulongNode convertArgsToSulongNode);
 
         @TruffleBoundary
-        protected static RootCallTarget createCallTarget(RootNode n) {
+        public static RootCallTarget createCallTarget(RootNode n) {
             return Truffle.getRuntime().createCallTarget(n);
         }
 
