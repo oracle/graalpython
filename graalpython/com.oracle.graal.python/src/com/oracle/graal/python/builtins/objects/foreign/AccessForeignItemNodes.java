@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.GetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -60,7 +62,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -79,6 +81,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 abstract class AccessForeignItemNodes {
 
+    @ImportStatic(PythonOptions.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class AccessForeignItemBaseNode extends PNodeWithContext {
         @Child PRaiseNode raiseNode;
@@ -99,16 +102,16 @@ abstract class AccessForeignItemNodes {
             return o instanceof String || o instanceof PString;
         }
 
-        protected int getForeignSize(Object object, InteropLibrary lib) throws UnsupportedMessageException {
-            long foreignSizeObj = lib.getArraySize(object);
+        protected int getForeignSize(Object object, InteropLibrary libForObject) throws UnsupportedMessageException {
+            long foreignSizeObj = libForObject.getArraySize(object);
             if (foreignSizeObj <= Integer.MAX_VALUE) {
                 return (int) foreignSizeObj;
             }
             throw raise(TypeError, "number %s cannot fit into index-sized integer", foreignSizeObj);
         }
 
-        protected SliceInfo materializeSlice(PSlice idxSlice, Object object, InteropLibrary lib) throws UnsupportedMessageException {
-            int foreignSize = getForeignSize(object, lib);
+        protected SliceInfo materializeSlice(PSlice idxSlice, Object object, InteropLibrary libForObject) throws UnsupportedMessageException {
+            int foreignSize = getForeignSize(object, libForObject);
             return idxSlice.computeIndices(foreignSize);
         }
     }
@@ -153,11 +156,11 @@ abstract class AccessForeignItemNodes {
             throw raiseAttributeErrorDisambiguated(object, key, lib);
         }
 
-        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
+        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
-                        @Cached CastToIndexNode castIndex,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return readForeignValue(object, castIndex.execute(frame, idx), lib);
+                        @CachedLibrary("idx") PythonObjectLibrary pythonLib,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return readForeignValue(object, pythonLib.asIndexWithState(idx, PArguments.getThreadState(frame)), lib);
         }
 
         private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {
@@ -168,11 +171,11 @@ abstract class AccessForeignItemNodes {
             }
         }
 
-        private Object readForeignValue(Object object, long index, InteropLibrary lib) {
-            if (lib.hasArrayElements(object)) {
-                if (lib.isArrayElementReadable(object, index)) {
+        private Object readForeignValue(Object object, long index, InteropLibrary libForObject) {
+            if (libForObject.hasArrayElements(object)) {
+                if (libForObject.isArrayElementReadable(object, index)) {
                     try {
-                        return getToPythonNode().executeConvert(lib.readArrayElement(object, index));
+                        return getToPythonNode().executeConvert(libForObject.readArrayElement(object, index));
                     } catch (UnsupportedMessageException ex) {
                         throw raiseAttributeError(object);
                     } catch (InvalidArrayIndexException ex) {
@@ -265,29 +268,32 @@ abstract class AccessForeignItemNodes {
             return raise(AttributeError, "foreign object has no attribute '%s'", key);
         }
 
-        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"})
+        @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx, Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToIndexNode castIndex,
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @CachedLibrary("idx") PythonObjectLibrary pythonLib,
                         @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
-                int convertedIdx = castIndex.execute(frame, idx);
+                int convertedIdx = pythonLib.asIndexWithState(idx, PArguments.getThreadState(frame));
                 Object convertedValue = valueToForeignNode.executeConvert(value);
                 writeForeignValue(object, convertedIdx, convertedValue, lib);
                 return PNone.NONE;
-            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+            } catch (UnsupportedTypeException e) {
                 throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
             }
         }
 
-        private void writeForeignValue(Object object, int idx, Object value, InteropLibrary lib) throws UnsupportedMessageException, UnsupportedTypeException {
-            if (lib.hasArrayElements(object)) {
-                if (lib.isArrayElementWritable(object, idx)) {
+        private void writeForeignValue(Object object, int idx, Object value, InteropLibrary libForObject) throws UnsupportedTypeException {
+            if (libForObject.hasArrayElements(object)) {
+                if (libForObject.isArrayElementWritable(object, idx)) {
                     try {
-                        lib.writeArrayElement(object, idx, value);
+                        libForObject.writeArrayElement(object, idx, value);
                         return;
                     } catch (InvalidArrayIndexException ex) {
                         // fall through
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException("Array element should be writable, as per test");
                     }
                 }
                 throw raise(IndexError, "invalid index %s", idx);
@@ -304,9 +310,9 @@ abstract class AccessForeignItemNodes {
 
         public abstract Object execute(VirtualFrame frame, Object object, Object idx);
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("object") InteropLibrary lib) {
 
             try {
                 SliceInfo mslice = materializeSlice(idxSlice, object, lib);
@@ -350,13 +356,13 @@ abstract class AccessForeignItemNodes {
             }
         }
 
-        @Specialization(guards = "!isSlice(idx)")
+        @Specialization(guards = "!isSlice(idx)", limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
-                        @Cached CastToIndexNode castIndex,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("idx") PythonObjectLibrary pythonLib,
+                        @CachedLibrary("object") InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
                 try {
-                    int convertedIdx = castIndex.execute(frame, idx);
+                    int convertedIdx = pythonLib.asIndexWithState(idx, PArguments.getThreadState(frame));
                     return removeForeignValue(object, convertedIdx, lib);
                 } catch (UnsupportedMessageException e) {
                     // fall through
@@ -369,10 +375,10 @@ abstract class AccessForeignItemNodes {
             return raise(AttributeError, "%s instance has no attribute '__delitem__'", object);
         }
 
-        private Object removeForeignValue(Object object, int idx, InteropLibrary lib) throws UnsupportedMessageException {
-            if (lib.isArrayElementRemovable(object, idx)) {
+        private Object removeForeignValue(Object object, int idx, InteropLibrary libForObject) throws UnsupportedMessageException {
+            if (libForObject.isArrayElementRemovable(object, idx)) {
                 try {
-                    lib.removeArrayElement(object, idx);
+                    libForObject.removeArrayElement(object, idx);
                 } catch (InvalidArrayIndexException ex) {
                     throw raise(IndexError, "invalid index %s", idx);
                 }
