@@ -45,12 +45,14 @@
 #define SRC_CS "utf-8"
 
 POLYGLOT_DECLARE_TYPE(HPy);
+POLYGLOT_DECLARE_STRUCT(_HPyContext_s);
 POLYGLOT_DECLARE_TYPE(HPyMethodDef);
 POLYGLOT_DECLARE_TYPE(HPyModuleDef);
 POLYGLOT_DECLARE_TYPE(wchar_t);
 
 int graal_hpy_init(void *initObject) {
 	// register the native type of HPy
+	polyglot_invoke(initObject, "setHPyContextNativeType", polyglot__HPyContext_s_typeid());
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
 	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
 

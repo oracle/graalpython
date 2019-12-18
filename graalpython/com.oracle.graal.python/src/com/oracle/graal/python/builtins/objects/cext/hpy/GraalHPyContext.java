@@ -85,8 +85,11 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import org.graalvm.polyglot.HostAccess.Export;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(NativeTypeLibrary.class)
 public final class GraalHPyContext extends CExtContext implements TruffleObject {
 
     /**
@@ -176,6 +179,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
     @CompilationFinal private GraalHPyHandle hpyNullHandle;
 
+    /** the native type ID of C struct 'HPyContext' */
+    @CompilationFinal private Object hpyContextNativeTypeID;
+
     /** the native type ID of C struct 'HPy' */
     @CompilationFinal private Object hpyNativeTypeID;
     @CompilationFinal private Object hpyArrayNativeTypeID;
@@ -184,6 +190,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.INSTANCE);
         this.hpyContextMembers = createMembers(context);
+    }
+
+    void setHPyContextNativeType(Object nativeType) {
+        this.hpyContextNativeTypeID = nativeType;
     }
 
     void setHPyNativeType(Object hpyNativeTypeID) {
@@ -223,7 +233,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @ExportMessage(limit = "1")
     long asPointer(
-            @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+                    @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
         if (isPointer()) {
             return interopLibrary.asPointer(nativePointer);
         }
@@ -257,6 +267,16 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     Object readMember(String key,
                     @Cached GraalHPyReadMemberNode readMemberNode) {
         return readMemberNode.execute(this, key);
+    }
+
+    @ExportMessage
+    boolean hasNativeType() {
+        return true;
+    }
+
+    @ExportMessage
+    Object getNativeType() {
+        return hpyContextNativeTypeID;
     }
 
     @GenerateUncached

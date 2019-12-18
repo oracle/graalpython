@@ -56,6 +56,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public class GraalHPyInitObject implements TruffleObject {
 
+    public static final String SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
     public static final String SET_HPY_NATIVE_TYPE = "setHPyNativeType";
     public static final String SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
     public static final String SET_HPY_NULL_HANDLE = "setHPyNullHandle";
@@ -73,12 +74,13 @@ public class GraalHPyInitObject implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{SET_HPY_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_HPY_NULL_HANDLE});
+        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_HPY_NULL_HANDLE, SET_WCHAR_SIZE});
     }
 
     @ExportMessage
     boolean isMemberInvocable(String key) {
         switch (key) {
+            case SET_HPY_CONTEXT_NATIVE_TYPE:
             case SET_HPY_NATIVE_TYPE:
             case SET_HPY_ARRAY_NATIVE_TYPE:
             case SET_HPY_NULL_HANDLE:
@@ -97,6 +99,9 @@ public class GraalHPyInitObject implements TruffleObject {
         }
 
         switch (key) {
+            case SET_HPY_CONTEXT_NATIVE_TYPE:
+                hpyContext.setHPyContextNativeType(arguments[0]);
+                return 0;
             case SET_HPY_NATIVE_TYPE:
                 hpyContext.setHPyNativeType(arguments[0]);
                 return 0;
