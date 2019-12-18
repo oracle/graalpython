@@ -52,6 +52,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesAsString;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCheckBuiltinType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
@@ -86,7 +88,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-import org.graalvm.polyglot.HostAccess.Export;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
@@ -325,6 +326,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
         members[HPyContextMembers.CTX_FLOAT_FROMDOUBLE.ordinal()] = new GraalHPyFloatFromDouble();
         members[HPyContextMembers.CTX_BYTES_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PBytes);
+        members[HPyContextMembers.CTX_BYTES_GET_SIZE.ordinal()] = new GraalHPyBytesGetSize();
+        members[HPyContextMembers.CTX_BYTES_SIZE.ordinal()] = new GraalHPyBytesGetSize();
+        members[HPyContextMembers.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
+        members[HPyContextMembers.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
         members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString();
         members[HPyContextMembers.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
         members[HPyContextMembers.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
