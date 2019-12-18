@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
@@ -371,7 +372,8 @@ public final class Python3Core implements PythonCore {
                         new LZMAModuleBuiltins(),
                         new LZMACompressorBuiltins(),
                         new LZMADecompressorBuiltins(),
-                        new MultiprocessingModuleBuiltins()));
+                        new MultiprocessingModuleBuiltins(),
+                        new GraalPythonModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {

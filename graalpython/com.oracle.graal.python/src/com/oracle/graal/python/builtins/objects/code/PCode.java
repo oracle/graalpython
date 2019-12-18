@@ -250,7 +250,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Object[] extractGlobalVarnames(RootNode rootNode) {
+    private static Object[] extractGlobalAndBuiltinVarnames(RootNode rootNode) {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
         Set<Object> varNameList = new HashSet<>();
 
@@ -399,7 +399,7 @@ public final class PCode extends PythonBuiltinObject {
 
     public Object[] getGlobalAndBuiltinVarNames() {
         if (globalAndBuiltinVarNames == null) {
-            this.globalAndBuiltinVarNames = extractGlobalVarnames(getRootNode());
+            this.globalAndBuiltinVarNames = extractGlobalAndBuiltinVarnames(getRootNode());
         }
         return globalAndBuiltinVarNames;
     }

@@ -26,25 +26,19 @@
 
 package com.oracle.graal.python.builtins.objects.code;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GlobalsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
 public class CodeBuiltins extends PythonBuiltins {
@@ -219,28 +213,6 @@ public class CodeBuiltins extends PythonBuiltins {
             Object[] varNames = self.getVarnames();
             if (varNames != null) {
                 return factory().createTuple(varNames);
-            }
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "truffle_co_globals", minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class GetGlobalVarNamesNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object get(VirtualFrame frame, PCode self,
-                        @Cached GlobalsNode globalsNode,
-                        @Cached ContainsKeyNode containsKeyNode) {
-            Object[] varNames = self.getGlobalAndBuiltinVarNames();
-            if (varNames != null) {
-                PDict globals = (PDict) globalsNode.execute(frame);
-                ArrayList<Object> vars = new ArrayList<>();
-                for (Object name : varNames) {
-                    if (containsKeyNode.execute(frame, globals.getDictStorage(), name)) {
-                        vars.add(name);
-                    }
-                }
-                return factory().createTuple(vars.toArray());
             }
             return PNone.NONE;
         }

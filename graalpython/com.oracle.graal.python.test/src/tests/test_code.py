@@ -173,5 +173,5 @@ def test_get_globals():
     import sys
     code = wrapper.__code__
     if sys.implementation.name == 'graalpython':
-        # print(">>> ", code.truffle_co_globals)
-        assert set(code.truffle_co_globals) == {'a_global'}
+        from __graalpython__ import current_global_code_variables
+        assert set(current_global_code_variables(code)) == {'a_global'}
