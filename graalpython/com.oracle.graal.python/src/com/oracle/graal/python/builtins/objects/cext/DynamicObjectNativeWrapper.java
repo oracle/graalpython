@@ -131,9 +131,9 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -258,7 +258,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
+    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class, PythonOptions.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends Node {
 
@@ -403,9 +403,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "eq(TP_AS_MAPPING, key)")
+        @Specialization(guards = "eq(TP_AS_MAPPING, key)", limit = "1")
         Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary,
+                        @CachedLibrary("object") PythonObjectLibrary pythonTypeLibrary,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (pythonTypeLibrary.isSequenceType(object)) {
                 return new PyMappingMethodsWrapper(object);
@@ -429,15 +429,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         long doTpBasicsize(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __BASICSIZE__);
-            return val != PNone.NO_VALUE ? castToIntNode.execute(null, val) : 0L;
+            return val != PNone.NO_VALUE ? lib.asIndex(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
         long doTpItemsize(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __ITEMSIZE__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
@@ -445,19 +445,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (val == PNone.NO_VALUE) {
                 return 0L;
             }
-            return val != PNone.NO_VALUE ? castToIntNode.execute(null, val) : 0L;
+            return val != PNone.NO_VALUE ? lib.asIndex(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         long doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
             Object dictoffset = getAttrNode.execute(object, __DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? castToIntNode.execute(null, dictoffset) : 0L;
+            return dictoffset != PNone.NO_VALUE ? lib.asIndex(dictoffset) : 0L;
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
