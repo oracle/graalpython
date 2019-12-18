@@ -57,15 +57,16 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
@@ -292,11 +294,11 @@ public class BytesBuiltins extends PythonBuiltins {
             return factory().createBytes(res);
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object mul(VirtualFrame frame, PBytes self, Object times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached("create()") CastToIndexNode castToInt) {
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), castToInt.execute(frame, times));
+                        @CachedLibrary("times") PythonObjectLibrary lib) {
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), lib.asIndexWithState(times, PArguments.getThreadState(frame)));
             return factory().createBytes(res);
         }
 
