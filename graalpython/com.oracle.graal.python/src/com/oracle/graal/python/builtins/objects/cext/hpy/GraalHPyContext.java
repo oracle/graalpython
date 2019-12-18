@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_CONTEXT_TO_NATIVE;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyParseArgs;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8String;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -76,6 +78,8 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -167,6 +171,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
+    Object nativePointer;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
     @CompilationFinal private GraalHPyHandle hpyNullHandle;
@@ -209,6 +214,28 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long getWcharSize() {
         assert this.wcharSize >= 0 : "wchar size is not available";
         return wcharSize;
+    }
+
+    @ExportMessage
+    boolean isPointer() {
+        return nativePointer != null;
+    }
+
+    @ExportMessage(limit = "1")
+    long asPointer(
+            @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+        if (isPointer()) {
+            return interopLibrary.asPointer(nativePointer);
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    void toNative(
+                    @Cached PCallHPyFunction callContextToNativeNode) {
+        if (!isPointer()) {
+            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
+        }
     }
 
     @ExportMessage

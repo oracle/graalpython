@@ -242,7 +242,6 @@ public class GraalHPyNodes {
                 }
                 int flags = resultLib.asInt(methodFlagsObj);
 
-
                 Object mlMethObj = interopLibrary.readMember(methodDef, "ml_meth");
                 if (!resultLib.isExecutable(mlMethObj)) {
                     CompilerDirectives.transferToInterpreter();
@@ -261,7 +260,8 @@ public class GraalHPyNodes {
                 } else {
                     // CPy-style methods
                     // TODO(fa) support static and class methods
-                    // n.b. the TruffleObject type cast is safe since we received the object via interop and it must therefore be a TruffleObject
+                    // n.b. the TruffleObject type cast is safe since we received the object via
+                    // interop and it must therefore be a TruffleObject
                     callTarget = PExternalFunctionWrapper.createCallTarget(MethDirectRoot.create(language, methodName, mlMethObj));
                 }
 
@@ -392,6 +392,9 @@ public class GraalHPyNodes {
             return hpyContext;
         }
 
+        // n.b. we could actually accept anything else but we have specializations to be more strict
+        // about what we expect
+
         @Specialization
         static GraalHPyContext doInt(@SuppressWarnings("unused") int handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
@@ -400,6 +403,13 @@ public class GraalHPyNodes {
 
         @Specialization
         static GraalHPyContext doLong(@SuppressWarnings("unused") long handle,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.getHPyContext();
+        }
+
+        @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2")
+        static GraalHPyContext doLong(@SuppressWarnings("unused") Object handle,
+                        @CachedLibrary("handle") @SuppressWarnings("unused") InteropLibrary interopLibrary,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext();
         }

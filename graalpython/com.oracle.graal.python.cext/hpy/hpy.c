@@ -147,3 +147,7 @@ HPy* graal_hpy_array_to_native(HPy *source, uint64_t len) {
 void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
 	p_outvar->content = (OutVar *)va_arg(*p_va, void *);
 }
+
+void* graal_hpy_context_to_native(void* cobj) {
+    return truffle_deref_handle_for_managed(cobj);
+}
