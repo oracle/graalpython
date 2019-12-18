@@ -178,3 +178,19 @@ def test_range_step2():
     assert t[100:-100:-1] == range(13, 3, -2)
     assert t[-100:100:-1] == range(3, 13, -2)
     assert t[-100:100:2] == range(5, 15, 4)
+
+
+def test_correct_error():
+    class X():
+        def __index__(self):
+            return "42"
+
+    try:
+        [1][:X()]
+    except TypeError as e:
+        assert "__index__ returned non-int" in str(e)
+
+    try:
+        [1][:"42"]
+    except TypeError as e:
+        assert "slice indices must be integers" in str(e)

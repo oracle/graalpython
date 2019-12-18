@@ -40,12 +40,13 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CastToSliceComponentNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -118,6 +119,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         return SliceLiteralNodeGen.create(null, null, null);
     }
 
+    @ImportStatic(PythonOptions.class)
     abstract static class CastToSliceComponentNode extends PNodeWithContext {
 
         @Child private PRaiseNode raiseNode;
@@ -174,28 +176,19 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
         @Specialization(replaces = {"doBoolean", "doInt", "doLong", "doPInt"}, limit = "getCallSiteInlineCacheMaxDepth()")
         int doGeneric(VirtualFrame frame, Object i,
+                        @Cached PRaiseNode raise,
                         @CachedLibrary("i") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            try {
-                return lib.asIndexWithState(i, PArguments.getThreadState(frame));
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
-                return overflowValue;
+            if (lib.canBeIndex(i)) {
+                try {
+                    return lib.asIndexWithState(i, PArguments.getThreadState(frame));
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
+                    return overflowValue;
+                }
+            } else {
+                throw raise.raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
             }
-        }
-
-        protected CastToIndexNode createCastToIndex() {
-            return CastToIndexNode.create(PythonBuiltinClassType.OverflowError, val -> {
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-            });
-        }
-
-        private PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         public static CastToSliceComponentNode create(int defaultValue, int overflowValue) {
