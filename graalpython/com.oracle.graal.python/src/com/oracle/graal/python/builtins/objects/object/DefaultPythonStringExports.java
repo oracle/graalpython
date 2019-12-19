@@ -42,7 +42,9 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -83,5 +85,11 @@ final class DefaultPythonStringExports {
     @TruffleBoundary
     static long hash(String self) {
         return self.hashCode();
+    }
+
+    @ExportMessage
+    static int asIndex(String self,
+                    @Cached PRaiseNode raise) {
+        throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", self);
     }
 }
