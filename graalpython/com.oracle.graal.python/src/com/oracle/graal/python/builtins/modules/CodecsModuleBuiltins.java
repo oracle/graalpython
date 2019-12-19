@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -67,10 +68,13 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -496,90 +500,92 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
     }
 
-    // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    // _codecs.decode(obj, encoding='utf-8', errors='strict', final=False)
+    @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors", "final"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends EncodeBaseNode {
         @Child private GetInternalByteArrayNode toByteArrayNode;
+        @Child private CastToJavaStringNode castEncodingToStringNode;
+        @Child private CastToBooleanNode castToBooleanNode;
 
         @Specialization
-        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            byte[] decoded = getBytes(bytes);
-            String string = decodeBytes(decoded, "utf-8", "strict");
-            return factory().createTuple(new Object[]{string, decoded.length});
+        Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
+            ByteBuffer decoded = getBytes(bytes);
+            String string = decodeBytes(decoded, "utf-8", "strict", castToBoolean(frame, finalData));
+            return factory().createTuple(new Object[]{string, decoded.position()});
         }
 
         @Specialization(guards = {"isString(encoding)"})
-        Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
-            Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            byte[] decoded = getBytes(bytes);
-            String string = decodeBytesStrict(decoded, profiledEncoding);
-            return factory().createTuple(new Object[]{string, decoded.length});
+        Object decode(VirtualFrame frame, PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
+            ByteBuffer decoded = getBytes(bytes);
+            String string = decodeBytes(decoded, castToString(encoding), "strict", castToBoolean(frame, finalData));
+            return factory().createTuple(new Object[]{string, decoded.position()});
         }
 
         @Specialization(guards = {"isString(errors)"})
-        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            byte[] decoded = getBytes(bytes);
-            String string = decodeBytesUTF8(decoded, profiledErrors);
-            return factory().createTuple(new Object[]{string, decoded.length});
+        Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors, Object finalData) {
+            ByteBuffer decoded = getBytes(bytes);
+            String string = decodeBytes(decoded, "utf-8", castToString(errors), castToBoolean(frame, finalData));
+            return factory().createTuple(new Object[]{string, decoded.position()});
         }
 
         @Specialization(guards = {"isString(encoding)", "isString(errors)"})
-        Object decode(PIBytesLike bytes, Object encoding, Object errors,
-                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            byte[] decoded = getBytes(bytes);
-            String string = decodeBytes(decoded, profiledEncoding, profiledErrors);
-            return factory().createTuple(new Object[]{string, decoded.length});
+        Object decode(VirtualFrame frame, PIBytesLike bytes, Object encoding, Object errors, Object finalData) {
+            ByteBuffer decoded = getBytes(bytes);
+            String string = decodeBytes(decoded, castToString(encoding), castToString(errors), castToBoolean(frame, finalData));
+            return factory().createTuple(new Object[]{string, decoded.position()});
         }
 
         @Fallback
-        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
         }
 
-        private byte[] getBytes(PIBytesLike bytesLike) {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
-            }
-            return toByteArrayNode.execute(bytesLike.getSequenceStorage());
+        @TruffleBoundary
+        private static ByteBuffer wrap(byte[] bytes) {
+            return ByteBuffer.wrap(bytes);
         }
 
         @TruffleBoundary
-        String decodeBytes(byte[] bytes, Object profiledEncoding, Object profiledErrors) {
-            return decodeBytes(bytes, profiledEncoding.toString(), profiledErrors.toString());
-        }
-
-        @TruffleBoundary
-        String decodeBytesStrict(byte[] bytes, Object profiledEncoding) {
-            return decodeBytes(bytes, profiledEncoding.toString(), "strict");
-        }
-
-        @TruffleBoundary
-        String decodeBytesUTF8(byte[] bytes, Object profiledErrors) {
-            return decodeBytes(bytes, "utf-8", profiledErrors.toString());
-        }
-
-        @TruffleBoundary
-        String decodeBytes(byte[] bytes, String encoding, String errors) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        String decodeBytes(ByteBuffer byteBuffer, String encoding, String errors, boolean finalData) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = getCharset(encoding);
             if (charset == null) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             }
-            try {
-                CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(byteBuffer);
-                return String.valueOf(decoded);
-            } catch (CharacterCodingException e) {
-                throw raise(UnicodeDecodeError, e);
+            CharBuffer decoded = CharBuffer.allocate(byteBuffer.capacity());
+            CoderResult result = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(byteBuffer, decoded, finalData);
+            if (result.isError()) {
+                throw raise(UnicodeDecodeError, result.toString());
             }
+            return String.valueOf(decoded.flip());
+        }
+
+        private ByteBuffer getBytes(PIBytesLike bytesLike) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
+            }
+            return wrap(toByteArrayNode.execute(bytesLike.getSequenceStorage()));
+        }
+
+        private String castToString(Object encodingObj) {
+            if (castEncodingToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castEncodingToStringNode = insert(CastToJavaStringNodeGen.create());
+            }
+            return castEncodingToStringNode.execute(encodingObj);
+        }
+
+        private boolean castToBoolean(VirtualFrame frame, Object object) {
+            if(object == PNone.NO_VALUE) {
+                return false;
+            }
+            if (castToBooleanNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+            }
+            return castToBooleanNode.executeBoolean(frame, object);
         }
     }
 

@@ -42,6 +42,12 @@ def test_decode():
     # assert codecs.decode(b'[\xff]', 'ascii', errors='ignore') == '[]'
     assert codecs.decode(b'[]', 'ascii') == '[]'
 
+    data0 = b'\xc5'
+    data1 = b'\x91'
+    assert codecs.utf_8_decode(data0, "strict") == ('', 0)
+    assert codecs.utf_8_decode(data0 + data1, "strict") == ('ő', 2)
+    assert_raises(UnicodeDecodeError, codecs.utf_8_decode, data0, "strict", True)
+
 
 def test_encode():
     import codecs
