@@ -352,6 +352,7 @@ public final class PArguments {
     }
 
     public static ThreadState getThreadState(VirtualFrame frame) {
+        assert frame != null;
         return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
     }
 

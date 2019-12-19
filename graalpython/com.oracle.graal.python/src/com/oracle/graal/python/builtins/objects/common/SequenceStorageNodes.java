@@ -491,8 +491,8 @@ public abstract class SequenceStorageNodes {
             return idx;
         }
 
-        protected final int normalizeIndex(VirtualFrame frame, long idx, SequenceStorage store) {
-            int intIdx = getLibrary().asIndexWithState(idx, PArguments.getThreadState(frame));
+        protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, long idx, SequenceStorage store) {
+            int intIdx = getLibrary().asIndex(idx);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }

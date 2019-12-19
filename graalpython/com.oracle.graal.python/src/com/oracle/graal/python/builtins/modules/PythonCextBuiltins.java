@@ -355,8 +355,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         PTuple doGeneric(VirtualFrame frame, Object size,
+                        @Cached("createBinaryProfile()") ConditionProfile gotFrame,
                         @CachedLibrary("size") PythonObjectLibrary lib) {
-            return factory().createTuple(new Object[lib.asIndexWithState(size, PArguments.getThreadState(frame))]);
+            int index;
+            if (gotFrame.profile(frame != null)) {
+                index = lib.asIndexWithState(size, PArguments.getThreadState(frame));
+            } else {
+                index = lib.asIndex(size);
+            }
+            return factory().createTuple(new Object[index]);
         }
     }
 
