@@ -422,8 +422,8 @@ public abstract class GraalHPyContextFunctions {
                         @Cached CallBinaryMethodNode callAppendNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached PRaiseNativeNode raiseNode) throws ArityException {
-            if (arguments.length != 4) {
-                throw ArityException.create(4, arguments.length);
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object left = listAsPythonObjectNode.execute(context, arguments[1]);
