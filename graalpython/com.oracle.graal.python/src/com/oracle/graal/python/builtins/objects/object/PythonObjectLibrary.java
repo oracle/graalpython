@@ -233,7 +233,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces the receiver into an index-sized integer, using the same
      * mechanism as {@code PyNumber_AsSsize_t}:
      * <ol>
-     * <li> Call <code>__index__</code> (resp. <code>PyNumber_Index</code>) </li>
+     * <li> Call <code>__index__</code> if the object is not already a Python int (resp. <code>PyNumber_Index</code>) </li>
      * <li> Do a hard cast to long as per <code>PyLong_AsSsize_t</code> </li>
      * </ol>
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range

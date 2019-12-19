@@ -710,6 +710,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public int asIndexWithState(ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile wasPInt,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
@@ -717,15 +718,20 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallNode callNode,
                     @Exclusive @Cached CastToJavaLongNode castToLong) {
-        Object indexAttr = lookupIndex.execute(this, __INDEX__);
-        if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", this);
-        }
         Object result;
-        if (gotState.profile(state == null)) {
-            result = callNode.execute(indexAttr, this);
+        if (wasPInt.profile(this instanceof PInt)) {
+            // c.f. PyNumber_Index
+            result = this;
         } else {
-            result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+            Object indexAttr = lookupIndex.execute(this, __INDEX__);
+            if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
+                throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", this);
+            }
+            if (gotState.profile(state == null)) {
+                result = callNode.execute(indexAttr, this);
+            } else {
+                result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+            }
         }
         try {
             return PInt.intValueExact(castToLong.execute(result));
