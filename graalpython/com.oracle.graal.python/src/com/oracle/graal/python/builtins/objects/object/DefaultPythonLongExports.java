@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.object;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -67,11 +69,12 @@ final class DefaultPythonLongExports {
         }
 
         @Specialization(replaces = "noOverflow")
-        static int withOverflow(Long self) {
+        static int withOverflow(Long self,
+                        @Cached PRaiseNode raise) {
             try {
                 return PInt.intValueExact(self);
             } catch (ArithmeticException e) {
-                return -1;
+                throw raise.raise(PythonBuiltinClassType.OverflowError, "cannot fit '%p' into an index-sized integer", self);
             }
         }
     }
