@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyF
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -175,6 +177,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
+    private int freeHandleIdx = -1;
     Object nativePointer;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
@@ -337,11 +340,15 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return members;
     }
 
-    private int allocateHandle(GraalHPyHandle object) {
+    @TruffleBoundary(allowInlining = true)
+    private int allocateHandle() {
+        if(freeHandleIdx != -1) {
+            int idx = freeHandleIdx;
+            freeHandleIdx = -1;
+            return idx;
+        }
         for (int i = 1; i < hpyHandleTable.length; i++) {
             if (hpyHandleTable[i] == null) {
-                hpyHandleTable[i] = object;
-                // TODO(fa) log new handle allocation
                 return i;
             }
         }
@@ -350,14 +357,18 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public int getHPyHandleForObject(GraalHPyHandle object) {
         // find free association
-        int handle = allocateHandle(object);
+        int handle = allocateHandle();
         if (handle == -1) {
             // resize
-            hpyHandleTable = Arrays.copyOf(hpyHandleTable, Math.max(16, hpyHandleTable.length * 2));
-            // TODO(fa) log array resize
-            handle = allocateHandle(object);
+            int newSize = Math.max(16, hpyHandleTable.length * 2);
+            PythonLanguage.getLogger().info(() -> "resizing HPy handle table to " + newSize);
+            hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
+            handle = allocateHandle();
         }
         assert handle > 0;
+        hpyHandleTable[handle] = object;
+        final int handleID = handle;
+//        PythonLanguage.getLogger().fine(() -> String.format("allocating HPy handle %d (object: %s)", handleID, object));
         return handle;
     }
 
@@ -368,8 +379,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public void releaseHPyHandleForObject(int handle) {
         assert hpyHandleTable[handle] != null : "releasing handle that has already been released: " + handle;
-        // TODO(fa) log handle dealloc
+//        PythonLanguage.getLogger().fine(() -> "releasing HPy handle " + handle);
         hpyHandleTable[handle] = null;
+        freeHandleIdx = handle;
     }
 
     // nb. keep in sync with 'meth.h'
