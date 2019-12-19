@@ -45,8 +45,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_ALLOCATE_OUTVAR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_ARRAY;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_I8_ARRAY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_STRING;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_WCHAR_ARRAY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_DOC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_NAME;
@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Enco
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.ParseTupleAndKeywordsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMembers;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddFunctionNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -553,7 +552,7 @@ public abstract class GraalHPyContextFunctions {
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             long length = castToJavaLongNode.execute(arguments[2]);
-            Object wcharArray = callFromWcharNode.call(context, GRAAL_HPY_FROM_WCHAR_ARRAY, arguments[1], length);
+            Object wcharArray = callFromWcharNode.call(context, GRAAL_HPY_FROM_I8_ARRAY, arguments[1], length*context.getWcharSize());
             try {
                 Object result = unicodeFromWcharNode.execute(wcharArray, length, context.getWcharSize());
                 return resultAsHandleNode.execute(context, result);

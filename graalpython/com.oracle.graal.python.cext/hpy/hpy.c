@@ -70,6 +70,10 @@ void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
 	return polyglot_from_HPy_array(arr, len);
 }
 
+void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
+	return polyglot_from_i8_array(arr, len);
+}
+
 void* graal_hpy_from_wchar_array(void *arr, uint64_t len) {
 	return polyglot_from_wchar_t_array(arr, len);
 }
