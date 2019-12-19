@@ -429,6 +429,17 @@ public class GraalHPyNodes {
             return handle;
         }
 
+        @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"}, limit = "2")
+        static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
+                                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
+            try {
+                return doLongWithContext(hpyContext, interopLibrary.asPointer(handle));
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException("");
+            }
+        }
+
         @Specialization(guards = "hpyContext == null")
         static GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
