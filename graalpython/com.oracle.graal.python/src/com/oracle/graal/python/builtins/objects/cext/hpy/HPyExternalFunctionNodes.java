@@ -47,12 +47,15 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPyth
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,11 +65,12 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HPyExternalFunctionNodes {
 
-    abstract static class HPyExternalFunctionNode extends PRootNode {
+    abstract static class HPyExternalFunctionNode extends PRootNode implements IndirectCallNode {
 
         private final Signature signature;
         private final Object callable;
@@ -75,6 +79,9 @@ public abstract class HPyExternalFunctionNodes {
         // TODO(fa): this flag is just a temporary solution; remove it and do proper argument
         // conversion in the calling root node
         private final boolean doConversion;
+
+        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
 
         HPyExternalFunctionNode(PythonLanguage lang, String name, Object callable, Signature signature, boolean doConversion) {
             super(lang);
@@ -113,7 +120,7 @@ public abstract class HPyExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            PException savedExceptionState = ForeignCallContext.enter(frame, ctx, this);
+            Object state = ForeignCallContext.enter(frame, ctx, this);
 
             try {
                 return asPythonObjectNode.execute(hPyContext, lib.execute(callable, arguments));
@@ -125,9 +132,27 @@ public abstract class HPyExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, savedExceptionState);
+                ForeignCallContext.exit(frame, ctx, state);
                 calleeContext.exit(frame, this);
             }
+        }
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return nativeCodeDoesntNeedMyFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return nativeCodeDoesntNeedExceptionState;
+        }
+
+        @Override
+        public Node copy() {
+            HPyExternalFunctionNode node = (HPyExternalFunctionNode) super.copy();
+            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+            return node;
         }
 
         @Override
