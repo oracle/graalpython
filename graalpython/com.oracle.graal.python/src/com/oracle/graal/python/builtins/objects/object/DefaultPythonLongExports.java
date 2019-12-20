@@ -74,7 +74,7 @@ final class DefaultPythonLongExports {
             try {
                 return PInt.intValueExact(self);
             } catch (ArithmeticException e) {
-                throw raise.raiseIndexError(type, self);
+                throw raise.raiseNumberTooLarge(type, self);
             }
         }
     }

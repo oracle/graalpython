@@ -1957,7 +1957,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doInt(PInt.intValueExact(size));
             } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError(IndexError, size);
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }
 
@@ -1972,7 +1972,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 return doInt(size.intValueExact());
             } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError(IndexError, size);
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }
     }

@@ -745,7 +745,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } catch (ArithmeticException e) {
             overflow.enter();
             if (ignoreOverflow.profile(type != null)) {
-                throw raise.raiseIndexError(type, result);
+                throw raise.raiseNumberTooLarge(type, result);
             } else {
                 // If no error-handling desired then the default clipping is done as in CPython.
                 if (longResult < 0) {
