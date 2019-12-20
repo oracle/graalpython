@@ -463,6 +463,7 @@ public abstract class SequenceStorageNodes {
         @Child private NormalizeIndexNode normalizeIndexNode;
         @Child private PythonObjectLibrary lib;
         @CompilationFinal private ValueProfile storeProfile;
+        @CompilationFinal private ConditionProfile gotFrameProfile;
 
         protected NormalizingNode(NormalizeIndexNode normalizeIndexNode) {
             this.normalizeIndexNode = normalizeIndexNode;
@@ -477,7 +478,16 @@ public abstract class SequenceStorageNodes {
         }
 
         protected final int normalizeIndex(VirtualFrame frame, Object idx, SequenceStorage store) {
-            int intIdx = getLibrary().asSizeWithState(idx, PythonBuiltinClassType.IndexError, PArguments.getThreadState(frame));
+            if (gotFrameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                gotFrameProfile = ConditionProfile.createBinaryProfile();
+            }
+            int intIdx;
+            if (gotFrameProfile.profile(frame != null)) {
+                intIdx = getLibrary().asSizeWithState(idx, PythonBuiltinClassType.IndexError, PArguments.getThreadState(frame));
+            } else {
+                intIdx = getLibrary().asSize(idx, PythonBuiltinClassType.IndexError);
+            }
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }

@@ -352,7 +352,7 @@ public final class PArguments {
     }
 
     public static ThreadState getThreadState(VirtualFrame frame) {
-        assert frame != null;
+        assert frame != null : "cannot get thread state without a frame";
         return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
     }
 
