@@ -127,7 +127,7 @@ public class ImportStarNode extends AbstractImportNode {
         } else {
             try {
                 Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
-                int n = ensureCastToIndexNode().asIndexWithState(ensureCallLenNode().executeObject(frame, attrAll), PArguments.getThreadState(frame));
+                int n = ensureCastToIndexNode().asSizeWithState(ensureCallLenNode().executeObject(frame, attrAll), PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
                     Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
                     String attrName = ensureCastToStringNode().execute(attrNameObj);

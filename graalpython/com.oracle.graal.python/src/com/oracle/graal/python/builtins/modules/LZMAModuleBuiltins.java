@@ -282,7 +282,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castToLongNode = insert(PythonObjectLibrary.getFactory().createDispatched(2));
             }
-            return castToLongNode.asIndexWithState(obj, PArguments.getThreadState(frame));
+            return castToLongNode.asSizeWithState(obj, PArguments.getThreadState(frame));
         }
 
         private int len(VirtualFrame frame, Object obj) {
@@ -316,11 +316,11 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             int preset = LZMA2Options.PRESET_DEFAULT;
 
             if (!isNoneOrNoValue(formatObj)) {
-                format = lib.asIndexWithState(formatObj, PArguments.getThreadState(frame));
+                format = lib.asSizeWithState(formatObj, PArguments.getThreadState(frame));
             }
 
             if (!isNoneOrNoValue(checkObj)) {
-                check = lib.asIndexWithState(checkObj, PArguments.getThreadState(frame));
+                check = lib.asSizeWithState(checkObj, PArguments.getThreadState(frame));
             }
 
             if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
@@ -331,7 +331,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             }
 
             if (!isNoneOrNoValue(presetObj)) {
-                preset = lib.asIndexWithState(presetObj, PArguments.getThreadState(frame));
+                preset = lib.asSizeWithState(presetObj, PArguments.getThreadState(frame));
             }
 
             try {
@@ -431,14 +431,14 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             int memlimit = Integer.MAX_VALUE;
 
             if (!isNoneOrNoValue(formatObj)) {
-                format = lib.asIndexWithState(formatObj, PArguments.getThreadState(frame));
+                format = lib.asSizeWithState(formatObj, PArguments.getThreadState(frame));
             }
 
             if (!isNoneOrNoValue(memlimitObj)) {
                 if (format == FORMAT_RAW) {
                     throw raise(ValueError, "Cannot specify memory limit with FORMAT_RAW");
                 }
-                memlimit = lib.asIndexWithState(memlimitObj, PArguments.getThreadState(frame));
+                memlimit = lib.asSizeWithState(memlimitObj, PArguments.getThreadState(frame));
             }
 
             if (format == FORMAT_RAW && isNoneOrNoValue(filters)) {

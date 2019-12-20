@@ -497,7 +497,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("create()") ReadFromChannelNode readChannelNode,
                         @CachedLibrary("n") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
-            int nread = lib.asIndexWithState(n, PArguments.getThreadState(frame));
+            int nread = lib.asSizeWithState(n, PArguments.getThreadState(frame));
             if (negativeProfile.profile(nread < 0)) {
                 return readUnlimited(self, PNone.NO_VALUE, readChannelNode);
             }
@@ -592,7 +592,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     size = self.getLength();
                 }
                 long where;
-                int ihow = lib.asIndexWithState(how, PArguments.getThreadState(frame));
+                int ihow = lib.asSizeWithState(how, PArguments.getThreadState(frame));
                 switch (ihow) {
                     case 0: /* relative to start */
                         where = dist;

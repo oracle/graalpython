@@ -359,9 +359,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary("size") PythonObjectLibrary lib) {
             int index;
             if (gotFrame.profile(frame != null)) {
-                index = lib.asIndexWithState(size, PArguments.getThreadState(frame));
+                index = lib.asSizeWithState(size, PArguments.getThreadState(frame));
             } else {
-                index = lib.asIndex(size);
+                index = lib.asSize(size);
             }
             return factory().createTuple(new Object[index]);
         }
@@ -2580,7 +2580,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
-            int newSize = lib.asIndex(newSizeL);
+            int newSize = lib.asSize(newSizeL);
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {

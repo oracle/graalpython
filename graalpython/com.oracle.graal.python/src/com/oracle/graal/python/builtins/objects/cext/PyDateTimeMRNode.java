@@ -94,13 +94,13 @@ public abstract class PyDateTimeMRNode extends Node {
                     @Cached PInteropGetAttributeNode getUSecNode,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
         // passing null here should be ok, since we should be in an interop situation
-        int year = lib.asIndex(getYearNode.execute(object, YEAR));
-        int month = lib.asIndex(getMonthNode.execute(object, MONTH));
-        int day = lib.asIndex(getDayNode.execute(object, DAY));
-        int hour = lib.asIndex(getHourNode.execute(object, HOUR));
-        int min = lib.asIndex(getMinNode.execute(object, MIN));
-        int sec = lib.asIndex(getSecNode.execute(object, SEC));
-        int usec = lib.asIndex(getUSecNode.execute(object, USEC));
+        int year = lib.asSize(getYearNode.execute(object, YEAR));
+        int month = lib.asSize(getMonthNode.execute(object, MONTH));
+        int day = lib.asSize(getDayNode.execute(object, DAY));
+        int hour = lib.asSize(getHourNode.execute(object, HOUR));
+        int min = lib.asSize(getMinNode.execute(object, MIN));
+        int sec = lib.asSize(getSecNode.execute(object, SEC));
+        int usec = lib.asSize(getUSecNode.execute(object, USEC));
         assert year >= 0 && year < 0x10000;
         assert month >= 0 && month < 0x100;
         assert day >= 0 && day < 0x100;

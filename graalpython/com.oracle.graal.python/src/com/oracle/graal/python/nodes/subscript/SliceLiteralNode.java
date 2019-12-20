@@ -179,7 +179,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                         @Cached IsBuiltinClassProfile errorProfile) {
             if (lib.canBeIndex(i)) {
                 try {
-                    return lib.asIndexWithState(i, PArguments.getThreadState(frame));
+                    return lib.asSizeWithState(i, PArguments.getThreadState(frame));
                 } catch (PException e) {
                     e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
                     return overflowValue;

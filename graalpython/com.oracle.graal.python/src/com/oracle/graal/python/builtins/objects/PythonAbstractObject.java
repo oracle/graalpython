@@ -709,7 +709,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public int asIndexWithState(LazyPythonClass type, ThreadState state,
+    public int asSizeWithState(LazyPythonClass type, ThreadState state,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile wasPInt,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,

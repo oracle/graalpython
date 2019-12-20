@@ -661,7 +661,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             int[] integers = new int[9];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                integers[i] = lib.asIndexWithState(items[i], PArguments.getThreadState(frame));
+                integers[i] = lib.asSizeWithState(items[i], PArguments.getThreadState(frame));
             }
             return op(integers);
         }

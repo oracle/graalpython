@@ -380,7 +380,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
-            int bufferLen = lib.asIndexWithState(callLen.executeObject(frame, buffer), PArguments.getThreadState(frame));
+            int bufferLen = lib.asSizeWithState(callLen.executeObject(frame, buffer), PArguments.getThreadState(frame));
             byte[] targetBuffer = new byte[bufferLen];
             ByteBuffer byteBuffer = ByteBuffer.wrap(targetBuffer);
             int length;

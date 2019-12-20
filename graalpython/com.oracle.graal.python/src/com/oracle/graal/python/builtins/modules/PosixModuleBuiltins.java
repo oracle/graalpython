@@ -497,7 +497,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object fstatPInt(VirtualFrame frame, Object fd,
                         @CachedLibrary("fd") PythonObjectLibrary lib,
                         @Cached("create()") FstatNode recursive) {
-            return recursive.executeWith(frame, lib.asIndexWithState(fd, PArguments.getThreadState(frame)));
+            return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)));
         }
 
         protected static FstatNode create() {
@@ -1073,7 +1073,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object close(VirtualFrame frame, Object fdObject,
                         @CachedLibrary("fdObject") PythonObjectLibrary lib,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            int fd = lib.asIndexWithState(fdObject, PArguments.getThreadState(frame));
+            int fd = lib.asSizeWithState(fdObject, PArguments.getThreadState(frame));
             PosixResources resources = getResources();
             Channel channel = resources.getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null)) {
@@ -1208,7 +1208,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object writePInt(VirtualFrame frame, Object fd, Object data,
                         @CachedLibrary("fd") PythonObjectLibrary lib,
                         @Cached("create()") WriteNode recursive) {
-            return recursive.executeWith(frame, lib.asIndexWithState(fd, PArguments.getThreadState(frame)), data);
+            return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)), data);
         }
 
         private byte[] getByteArray(PIBytesLike pByteArray) {
@@ -1513,7 +1513,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PTuple waitpidFallback(VirtualFrame frame, Object pid, Object options,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             ThreadState threadState = PArguments.getThreadState(frame);
-            return waitpid(frame, lib.asIndexWithState(pid, threadState), lib.asIndexWithState(options, threadState));
+            return waitpid(frame, lib.asSizeWithState(pid, threadState), lib.asSizeWithState(options, threadState));
         }
     }
 
@@ -1733,7 +1733,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         boolean doGeneric(VirtualFrame frame, Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids,
                         @SuppressWarnings("unused") PNone follow_symlinks,
                         @CachedLibrary("mode") PythonObjectLibrary lib) {
-            return access(castToPath(frame, path), lib.asIndexWithState(mode, PArguments.getThreadState(frame)), PNone.NONE, false, true);
+            return access(castToPath(frame, path), lib.asSizeWithState(mode, PArguments.getThreadState(frame)), PNone.NONE, false, true);
         }
 
         private String castToPath(VirtualFrame frame, Object path) {
@@ -2012,7 +2012,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromObjectNode readSignalNode,
                         @Cached IsNode isNode) {
             ThreadState state = PArguments.getThreadState(frame);
-            return kill(frame, lib.asIndexWithState(pid, state), lib.asIndexWithState(signal, state), readSignalNode, isNode);
+            return kill(frame, lib.asSizeWithState(pid, state), lib.asSizeWithState(signal, state), readSignalNode, isNode);
         }
     }
 

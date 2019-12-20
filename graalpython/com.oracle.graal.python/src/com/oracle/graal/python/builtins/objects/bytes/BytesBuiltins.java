@@ -298,7 +298,7 @@ public class BytesBuiltins extends PythonBuiltins {
         public Object mul(VirtualFrame frame, PBytes self, Object times,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
                         @CachedLibrary("times") PythonObjectLibrary lib) {
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), lib.asIndexWithState(times, PArguments.getThreadState(frame)));
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), lib.asSizeWithState(times, PArguments.getThreadState(frame)));
             return factory().createBytes(res);
         }
 

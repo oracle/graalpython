@@ -277,7 +277,7 @@ public class RangeBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @CachedLibrary("elem") PythonObjectLibrary lib) {
             try {
-                return doInt(self, lib.asIndexWithState(elem, PArguments.getThreadState(frame)));
+                return doInt(self, lib.asSizeWithState(elem, PArguments.getThreadState(frame)));
             } catch (PException e) {
                 throw raise(ValueError, "%s is not in range", elem);
             }

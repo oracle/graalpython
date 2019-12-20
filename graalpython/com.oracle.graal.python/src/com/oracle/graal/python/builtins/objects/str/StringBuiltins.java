@@ -644,13 +644,13 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
-            PSlice tmpSlice = factory().createSlice(getLibrary().asIndex(start), getLibrary().asIndex(end), 1);
+            PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start), getLibrary().asSize(end), 1);
             return tmpSlice.computeIndices(length);
         }
 
         private SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
-            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asIndexWithState(startO, PArguments.getThreadState(frame));
-            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asIndexWithState(endO, PArguments.getThreadState(frame));
+            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, PArguments.getThreadState(frame));
+            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, PArguments.getThreadState(frame));
             return PSlice.computeIndices(start, end, 1, length);
         }
 
@@ -1008,7 +1008,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSepNode,
                         @Cached AppendNode appendNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "split", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asIndexWithState(maxsplit, PArguments.getThreadState(frame));
+            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
             if (PGuards.isPNone(sep)) {
                 return splitfields(selfStr, imaxsplit, appendNode);
             } else {
@@ -1142,7 +1142,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached AppendNode appendNode,
                         @Cached ListReverseNode reverseNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "rsplit", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asIndexWithState(maxsplit, PArguments.getThreadState(frame));
+            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
             if (PGuards.isPNone(sep)) {
                 return rsplitfields(frame, selfStr, imaxsplit, appendNode, reverseNode);
             } else {
@@ -1297,7 +1297,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (PGuards.isPNone(maxCount)) {
                 return doReplace(selfStr, oldStr, withStr, PNone.NO_VALUE);
             }
-            int iMaxCount = lib.asIndexWithState(maxCount, PArguments.getThreadState(frame));
+            int iMaxCount = lib.asSizeWithState(maxCount, PArguments.getThreadState(frame));
             return doReplace(selfStr, oldStr, withStr, iMaxCount);
         }
     }
@@ -1420,8 +1420,8 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
             String subStr = castSubNode.cast(sub, MUST_BE_STR, sub);
-            int istart = PGuards.isPNone(start) ? 0 : lib.asIndexWithState(start, PArguments.getThreadState(frame));
-            int iend = PGuards.isPNone(end) ? selfStr.length() : lib.asIndexWithState(end, PArguments.getThreadState(frame));
+            int istart = PGuards.isPNone(start) ? 0 : lib.asSizeWithState(start, PArguments.getThreadState(frame));
+            int iend = PGuards.isPNone(end) ? selfStr.length() : lib.asSizeWithState(end, PArguments.getThreadState(frame));
             return indexOf(selfStr, subStr, istart, iend, errorProfile);
         }
 
@@ -1521,7 +1521,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         String doStringLong(String left, long right,
                         @Exclusive @CachedLibrary("right") PythonObjectLibrary lib) {
-            return doStringInt(left, lib.asIndex(right));
+            return doStringInt(left, lib.asSize(right));
         }
 
         @Specialization
@@ -1529,7 +1529,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             try {
-                return doStringInt(left, lib.asIndexWithState(right, PArguments.getThreadState(frame)));
+                return doStringInt(left, lib.asSizeWithState(right, PArguments.getThreadState(frame)));
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
                 throw raise(MemoryError);
@@ -1876,7 +1876,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(VirtualFrame frame, Object self, Object width,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @CachedLibrary("width") PythonObjectLibrary lib) {
-            return zfill(castSelfNode.cast(self, INVALID_RECEIVER, "zfill", self), lib.asIndexWithState(width, PArguments.getThreadState(frame)));
+            return zfill(castSelfNode.cast(self, INVALID_RECEIVER, "zfill", self), lib.asSizeWithState(width, PArguments.getThreadState(frame)));
 
         }
 
@@ -2002,7 +2002,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (errorProfile.profile(fillStr.codePointCount(0, fillStr.length()) != 1)) {
                 throw raise(TypeError, "The fill character must be exactly one character long");
             }
-            return make(self, lib.asIndexWithState(width, PArguments.getThreadState(frame)), fillStr);
+            return make(self, lib.asSizeWithState(width, PArguments.getThreadState(frame)), fillStr);
         }
 
         @Specialization
@@ -2113,7 +2113,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public String doString(VirtualFrame frame, String primary, Object idx,
                         @CachedLibrary("idx") PythonObjectLibrary lib) {
-            int index = lib.asIndexWithState(idx, PArguments.getThreadState(frame));
+            int index = lib.asSizeWithState(idx, PArguments.getThreadState(frame));
             try {
                 if (index < 0) {
                     index += primary.length();

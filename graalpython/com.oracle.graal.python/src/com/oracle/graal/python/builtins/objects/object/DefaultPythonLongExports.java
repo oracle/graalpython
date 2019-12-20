@@ -62,7 +62,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static class AsIndex {
+    static class AsSize {
         @Specialization(rewriteOn = ArithmeticException.class)
         static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) {
             return PInt.intValueExact(self);

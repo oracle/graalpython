@@ -238,32 +238,32 @@ public abstract class PythonObjectLibrary extends Library {
      * </ol>
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
-    public int asIndexWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
+    public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
         if (threadState == null) {
             throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
         }
-        return asIndex(receiver, errorType);
+        return asSize(receiver, errorType);
     }
 
     /**
-     * @see #asIndexWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
      */
-    public final int asIndexWithState(Object receiver, ThreadState threadState) {
-        return asIndexWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
+    public final int asSizeWithState(Object receiver, ThreadState threadState) {
+        return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
     }
 
     /**
-     * @see #asIndexWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
      */
-    public int asIndex(Object receiver, LazyPythonClass errorClass) {
-        return asIndexWithState(receiver, errorClass, null);
+    public int asSize(Object receiver, LazyPythonClass errorClass) {
+        return asSizeWithState(receiver, errorClass, null);
     }
 
     /**
-     * @see #asIndexWithState(Object, LazyPythonClass, ThreadState)
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
      */
-    public final int asIndex(Object receiver) {
-        return asIndex(receiver, PythonBuiltinClassType.OverflowError);
+    public final int asSize(Object receiver) {
+        return asSize(receiver, PythonBuiltinClassType.OverflowError);
     }
 
     /**

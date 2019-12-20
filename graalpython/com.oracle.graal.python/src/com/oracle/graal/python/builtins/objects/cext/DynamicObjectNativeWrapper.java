@@ -432,7 +432,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __BASICSIZE__);
-            return val != PNone.NO_VALUE ? lib.asIndex(val) : 0L;
+            return val != PNone.NO_VALUE ? lib.asSize(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
@@ -445,7 +445,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (val == PNone.NO_VALUE) {
                 return 0L;
             }
-            return val != PNone.NO_VALUE ? lib.asIndex(val) : 0L;
+            return val != PNone.NO_VALUE ? lib.asSize(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
@@ -457,7 +457,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return 0L;
             }
             Object dictoffset = getAttrNode.execute(object, __DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? lib.asIndex(dictoffset) : 0L;
+            return dictoffset != PNone.NO_VALUE ? lib.asSize(dictoffset) : 0L;
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")

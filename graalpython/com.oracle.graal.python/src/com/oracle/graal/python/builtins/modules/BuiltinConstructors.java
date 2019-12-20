@@ -238,7 +238,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            int cap = lib.asIndexWithState(capObj, PArguments.getThreadState(frame));
+            int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
@@ -1199,7 +1199,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object createIntError(VirtualFrame frame, LazyPythonClass cls, String number, Object base,
                         @CachedLibrary("base") PythonObjectLibrary lib) {
-            int intBase = lib.asIndexWithState(base, PArguments.getThreadState(frame));
+            int intBase = lib.asSizeWithState(base, PArguments.getThreadState(frame));
             checkBase(intBase);
             return stringToInt(cls, number, intBase);
         }

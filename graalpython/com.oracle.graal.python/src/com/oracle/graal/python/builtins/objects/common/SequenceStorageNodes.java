@@ -477,7 +477,7 @@ public abstract class SequenceStorageNodes {
         }
 
         protected final int normalizeIndex(VirtualFrame frame, Object idx, SequenceStorage store) {
-            int intIdx = getLibrary().asIndexWithState(idx, PArguments.getThreadState(frame));
+            int intIdx = getLibrary().asSizeWithState(idx, PArguments.getThreadState(frame));
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
@@ -492,7 +492,7 @@ public abstract class SequenceStorageNodes {
         }
 
         protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, long idx, SequenceStorage store) {
-            int intIdx = getLibrary().asIndex(idx);
+            int intIdx = getLibrary().asSize(idx);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
@@ -2597,7 +2597,7 @@ public abstract class SequenceStorageNodes {
 
         private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonObjectLibrary lib) {
             if (lib.canBeIndex(times)) {
-                return lib.asIndexWithState(times, PArguments.getThreadState(frame));
+                return lib.asSizeWithState(times, PArguments.getThreadState(frame));
             }
             throw raiseNode.raise(TypeError, ERROR_MSG, times);
         }

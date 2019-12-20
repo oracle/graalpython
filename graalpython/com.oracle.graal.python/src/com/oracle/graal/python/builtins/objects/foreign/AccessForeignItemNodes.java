@@ -160,7 +160,7 @@ abstract class AccessForeignItemNodes {
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
                         @CachedLibrary("idx") PythonObjectLibrary pythonLib,
                         @CachedLibrary("object") InteropLibrary lib) {
-            return readForeignValue(object, pythonLib.asIndexWithState(idx, PArguments.getThreadState(frame)), lib);
+            return readForeignValue(object, pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame)), lib);
         }
 
         private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {
@@ -274,7 +274,7 @@ abstract class AccessForeignItemNodes {
                         @CachedLibrary("idx") PythonObjectLibrary pythonLib,
                         @Cached("create()") PTypeToForeignNode valueToForeignNode) {
             try {
-                int convertedIdx = pythonLib.asIndexWithState(idx, PArguments.getThreadState(frame));
+                int convertedIdx = pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame));
                 Object convertedValue = valueToForeignNode.executeConvert(value);
                 writeForeignValue(object, convertedIdx, convertedValue, lib);
                 return PNone.NONE;
@@ -362,7 +362,7 @@ abstract class AccessForeignItemNodes {
                         @CachedLibrary("object") InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
                 try {
-                    int convertedIdx = pythonLib.asIndexWithState(idx, PArguments.getThreadState(frame));
+                    int convertedIdx = pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame));
                     return removeForeignValue(object, convertedIdx, lib);
                 } catch (UnsupportedMessageException e) {
                     // fall through

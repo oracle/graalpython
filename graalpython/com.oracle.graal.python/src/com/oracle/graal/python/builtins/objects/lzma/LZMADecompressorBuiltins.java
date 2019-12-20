@@ -128,7 +128,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached CastToByteNode castToByteNode) {
-            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, lib.asIndexWithState(maxLength, PArguments.getThreadState(frame)), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
+            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, lib.asSizeWithState(maxLength, PArguments.getThreadState(frame)), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
         }
 
         @Fallback

@@ -1840,7 +1840,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed,
                         @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asIndexWithState(byteCount, PArguments.getThreadState(frame));
+            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
             return fromLong(self, count, byteorder, signed);
         }
 
@@ -1853,7 +1853,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed,
                         @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asIndexWithState(byteCount, PArguments.getThreadState(frame));
+            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
             return fromLong(self, count, byteorder, signed);
         }
 
@@ -1951,7 +1951,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed,
                         @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asIndexWithState(byteCount, PArguments.getThreadState(frame));
+            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
             return fromPIntInt(self, count, byteorder, signed);
         }
 
@@ -1964,7 +1964,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed,
                         @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asIndexWithState(byteCount, PArguments.getThreadState(frame));
+            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
             return fromPIntInt(self, count, byteorder, signed);
         }
 
@@ -1974,7 +1974,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         PBytes general(VirtualFrame frame, Object self, Object byteCount, Object byteorder, Object oSigned) {
-            int count = PythonObjectLibrary.getUncached().asIndexWithState(byteCount, PArguments.getThreadState(frame));
+            int count = PythonObjectLibrary.getUncached().asSizeWithState(byteCount, PArguments.getThreadState(frame));
             if (!PGuards.isString(byteorder)) {
                 throw raise(PythonErrorType.TypeError, "to_bytes() argument 2 must be str, not %p", byteorder);
             }

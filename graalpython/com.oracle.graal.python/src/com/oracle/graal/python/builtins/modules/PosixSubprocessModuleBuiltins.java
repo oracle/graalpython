@@ -259,14 +259,14 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
                             castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
-                            lib.asIndexWithState(p2cread, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(p2cwrite, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(c2pread, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(c2pwrite, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(errread, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(errwrite, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(errpipe_read, PArguments.getThreadState(frame)),
-                            lib.asIndexWithState(errpipe_write, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(p2cread, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(p2cwrite, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(c2pread, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(c2pwrite, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errread, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errwrite, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errpipe_read, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errpipe_write, PArguments.getThreadState(frame)),
                             castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
         }
     }
