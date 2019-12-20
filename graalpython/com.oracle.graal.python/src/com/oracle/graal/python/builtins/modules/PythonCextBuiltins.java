@@ -1952,11 +1952,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doLong")
-        PBytes doLongOvf(long size) {
+        PBytes doLongOvf(long size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(PInt.intValueExact(size));
             } catch (ArithmeticException e) {
-                throw raiseIndexError();
+                throw raiseNode.raiseIndexError(IndexError, size);
             }
         }
 
@@ -1966,11 +1967,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doPInt")
-        PBytes doPIntOvf(PInt size) {
+        PBytes doPIntOvf(PInt size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(size.intValueExact());
             } catch (ArithmeticException e) {
-                throw raiseIndexError();
+                throw raiseNode.raiseIndexError(IndexError, size);
             }
         }
     }
