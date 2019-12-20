@@ -213,7 +213,7 @@ public abstract class IndexNodes {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
             } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+                throw raiseNode.raiseIndexError(PythonBuiltinClassType.IndexError, index);
             }
         }
 
@@ -233,7 +233,7 @@ public abstract class IndexNodes {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
             } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+                throw raiseNode.raiseIndexError(PythonBuiltinClassType.IndexError, index);
             }
         }
 
@@ -272,7 +272,7 @@ public abstract class IndexNodes {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile);
             } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+                throw raiseNode.raiseIndexError(PythonBuiltinClassType.IndexError, index);
             }
         }
 
@@ -290,7 +290,7 @@ public abstract class IndexNodes {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile);
             } catch (ArithmeticException e) {
-                throw raiseNode.raiseIndexError();
+                throw raiseNode.raiseIndexError(PythonBuiltinClassType.IndexError, index);
             }
         }
     }

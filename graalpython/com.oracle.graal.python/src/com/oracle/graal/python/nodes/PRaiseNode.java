@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -77,8 +76,12 @@ public abstract class PRaiseNode extends Node {
         throw execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
     }
 
-    public final PException raiseIndexError() {
-        return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
+    public final PException raiseIndexError(LazyPythonClass type, Object result) {
+        return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[] { result });
+    }
+
+    public final PException raiseIntegerInterpretationError(Object result) {
+        return raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", result);
     }
 
     public final PException raise(LazyPythonClass exceptionType) {

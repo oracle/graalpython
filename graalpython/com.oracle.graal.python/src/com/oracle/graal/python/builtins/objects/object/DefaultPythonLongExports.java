@@ -64,17 +64,17 @@ final class DefaultPythonLongExports {
     @ExportMessage
     static class AsIndex {
         @Specialization(rewriteOn = ArithmeticException.class)
-        static int noOverflow(Long self) {
+        static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) {
             return PInt.intValueExact(self);
         }
 
         @Specialization(replaces = "noOverflow")
-        static int withOverflow(Long self,
+        static int withOverflow(Long self, LazyPythonClass type,
                         @Cached PRaiseNode raise) {
             try {
                 return PInt.intValueExact(self);
             } catch (ArithmeticException e) {
-                throw raise.raise(PythonBuiltinClassType.OverflowError, "cannot fit '%p' into an index-sized integer", self);
+                throw raise.raiseIndexError(type, self);
             }
         }
     }

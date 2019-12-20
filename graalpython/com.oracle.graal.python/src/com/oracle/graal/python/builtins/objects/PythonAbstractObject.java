@@ -709,12 +709,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public int asIndexWithState(ThreadState state,
+    public int asIndexWithState(LazyPythonClass type, ThreadState state,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile wasPInt,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached BranchProfile overflow,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallNode callNode,
                     @Exclusive @Cached CastToJavaLongNode castToLong) {
@@ -725,7 +726,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             Object indexAttr = lookupIndex.execute(this, __INDEX__);
             if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", this);
+                throw raise.raiseIntegerInterpretationError(this);
             }
             if (gotState.profile(state == null)) {
                 result = callNode.execute(indexAttr, this);
@@ -733,13 +734,26 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
             }
         }
+        long longResult;
         try {
-            return PInt.intValueExact(castToLong.execute(result));
+            longResult = castToLong.execute(result); // this is a lossy cast
         } catch (CastToJavaLongNode.CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+        }
+        try {
+            return PInt.intValueExact(longResult);
         } catch (ArithmeticException e) {
             overflow.enter();
-            throw raise.raise(PythonBuiltinClassType.OverflowError, "cannot fit '%p' into an index-sized integer", result);
+            if (ignoreOverflow.profile(type != null)) {
+                throw raise.raiseIndexError(type, result);
+            } else {
+                // If no error-handling desired then the default clipping is done as in CPython.
+                if (longResult < 0) {
+                    return Integer.MIN_VALUE;
+                } else {
+                    return Integer.MAX_VALUE;
+                }
+            }
         }
     }
 

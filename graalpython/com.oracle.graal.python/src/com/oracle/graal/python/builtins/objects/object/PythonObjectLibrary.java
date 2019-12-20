@@ -238,23 +238,32 @@ public abstract class PythonObjectLibrary extends Library {
      * </ol>
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
-    public int asIndexWithState(Object receiver, ThreadState threadState) {
+    public int asIndexWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
         if (threadState == null) {
-            throw new AbstractMethodError();
+            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
         }
-        return asIndex(receiver);
+        return asIndex(receiver, errorType);
     }
 
     /**
-     * Coerces the receiver into an index-sized integer, using the same
-     * mechanism as {@code PyNumber_AsSsize_t}:
-     * <ol>
-     * <li> Call <code>__index__</code> (resp. <code>PyNumber_Index</code>)
-     * <li> Do a hard cast to long as per <code>PyLong_AsSsize_t</code>
-     * </ol>
+     * @see #asIndexWithState(Object, LazyPythonClass, ThreadState)
      */
-    public int asIndex(Object receiver) {
-        return asIndexWithState(receiver, null);
+    public final int asIndexWithState(Object receiver, ThreadState threadState) {
+        return asIndexWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
+    }
+
+    /**
+     * @see #asIndexWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public int asIndex(Object receiver, LazyPythonClass errorClass) {
+        return asIndexWithState(receiver, errorClass, null);
+    }
+
+    /**
+     * @see #asIndexWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public final int asIndex(Object receiver) {
+        return asIndex(receiver, PythonBuiltinClassType.OverflowError);
     }
 
     /**
