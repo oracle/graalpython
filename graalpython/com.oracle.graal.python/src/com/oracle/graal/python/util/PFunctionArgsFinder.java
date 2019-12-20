@@ -20,16 +20,8 @@ public class PFunctionArgsFinder {
     private final RootNode rootNode;
 
     public PFunctionArgsFinder(Node node) {
-        this.rootNode = findRootNode(node);
+        this.rootNode = node.getRootNode();
         assert rootNode instanceof PRootNode;
-    }
-
-    private static RootNode findRootNode(Node node) {
-        Node n = node;
-        while (!(n instanceof RootNode) && (n != null)) {
-            n = n.getParent();
-        }
-        return (RootNode) n;
     }
 
     public ArgumentListObject collectArgs() {
