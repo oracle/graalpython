@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -546,16 +547,17 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached UnicodeFromWcharNode unicodeFromWcharNode,
                         @Cached CastToJavaLongNode castToJavaLongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             long length = castToJavaLongNode.execute(arguments[2]);
-            Object wcharArray = callFromWcharNode.call(context, GRAAL_HPY_FROM_I8_ARRAY, arguments[1], length*context.getWcharSize());
             try {
-                Object result = unicodeFromWcharNode.execute(wcharArray, length, context.getWcharSize());
-                return resultAsHandleNode.execute(context, result);
+                // TODO(fa) provide element size, length, and encoding
+                return resultAsHandleNode.execute(context, factory.createString(new NativeCharSequence(arguments[1])));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
                 return context.getNullHandle();
