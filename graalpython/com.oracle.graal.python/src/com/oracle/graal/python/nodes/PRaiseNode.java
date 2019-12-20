@@ -77,11 +77,11 @@ public abstract class PRaiseNode extends Node {
     }
 
     /**
-     * Raise an error saying that the {@code result} cannot fit into an
-     * index-sized integer. Use the specified {@code type} as exception class.
+     * Raise an error saying that the {@code result} cannot fit into an index-sized integer. Use the
+     * specified {@code type} as exception class.
      */
     public final PException raiseNumberTooLarge(LazyPythonClass type, Object result) {
-        return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[] { result });
+        return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[]{result});
     }
 
     public final PException raiseIntegerInterpretationError(Object result) {
