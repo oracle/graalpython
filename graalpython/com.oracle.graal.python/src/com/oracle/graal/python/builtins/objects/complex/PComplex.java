@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -99,7 +99,7 @@ public final class PComplex extends PythonBuiltinObject {
                 // special case where real is actually -0.0
                 realString = "-0";
             }
-            if (imag >= 0) {
+            if (Double.compare(imag, 0.0) >= 0) {
                 return String.format("(%s+%sj)", realString, toString(imag));
             } else {
                 return String.format("(%s-%sj)", realString, toString(-imag));
