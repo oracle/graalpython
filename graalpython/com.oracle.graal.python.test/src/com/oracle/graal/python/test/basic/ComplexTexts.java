@@ -1,8 +1,3 @@
-package com.oracle.graal.python.test.basic;
-
-import static com.oracle.graal.python.test.PythonTests.assertPrints;
-import org.junit.Test;
-
 /*
  * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -43,6 +38,11 @@ import org.junit.Test;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+package com.oracle.graal.python.test.basic;
+
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
+import org.junit.Test;
 
 public class ComplexTexts {
     @Test
