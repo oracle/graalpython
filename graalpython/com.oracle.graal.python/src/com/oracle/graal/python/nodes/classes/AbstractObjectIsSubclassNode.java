@@ -45,12 +45,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @GenerateUncached
@@ -76,22 +78,55 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return true;
     }
 
+    protected static int[] observedSize() {
+        int[] ary = new int[1];
+        ary[0] = 0;
+        return ary;
+    }
+
     @Specialization(guards = {"derived != cls", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
     boolean isSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
+                    @Cached(value = "observedSize()", dimensions = 1) int[] observedSizeArray,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
                     @Cached GetObjectArrayNode getObjectArrayNode) {
-        // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
         PTuple bases = getBasesNode.execute(frame, cachedDerived);
         if (bases == null || isEmpty(bases, lenNode)) {
             return false;
         }
+        Object[] basesAry = getObjectArrayNode.execute(bases);
+        if (observedSizeArray[0] == 0) {
+            // first time, the array isn't length 0! (guard above)
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            observedSizeArray[0] = basesAry.length;
+        }
+        if (observedSizeArray[0] > 0 && observedSizeArray[0] < 32 && observedSizeArray[0] == basesAry.length) {
+            // we observe a short constant size
+            return loopBases(frame, cachedCls, basesAry, isSubclassNode);
+        } else if (observedSizeArray[0] > 0) {
+            // the observed size is too large or not constant, disable explosion
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            observedSizeArray[0] = -1;
+        }
+        return loopUnexploded(frame, cachedCls, isSubclassNode, basesAry);
+    }
 
-        for (Object baseCls : getObjectArrayNode.execute(bases)) {
+    private static final boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry) {
+        for (Object baseCls : basesAry) {
             if (isSubclassNode.execute(frame, baseCls, cachedCls)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @ExplodeLoop
+    private static final boolean loopBases(VirtualFrame frame, Object cachedCls, Object[] bases, AbstractObjectIsSubclassNode isSubclassNode) {
+        for (int i = 0; i < bases.length; i++) {
+            if (isSubclassNode.execute(frame, bases[i], cachedCls)) {
                 return true;
             }
         }
