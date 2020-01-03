@@ -58,16 +58,26 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class IsSubtypeNode extends PNodeWithContext {
-    public abstract boolean execute(VirtualFrame frame, Object derived, Object cls);
+    protected abstract boolean executeInternal(Frame frame, Object derived, Object cls);
+
+    public final boolean execute(VirtualFrame frame, Object derived, Object cls) {
+        return executeInternal(frame, derived, cls);
+    }
+
+    public final boolean execute(Object derived, Object cls) {
+        return executeInternal(null, derived, cls);
+    }
 
     protected static boolean isSameType(IsSameTypeNode isSameTypeNode, LazyPythonClass cls, LazyPythonClass cachedCls) {
         return isSameTypeNode.execute(cls, cachedCls);
