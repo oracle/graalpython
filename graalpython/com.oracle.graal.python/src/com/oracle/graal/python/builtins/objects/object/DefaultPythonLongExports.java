@@ -62,6 +62,11 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
+    static Object asIndex(Long value) {
+        return value;
+    }
+
+    @ExportMessage
     static class AsSize {
         @Specialization(rewriteOn = ArithmeticException.class)
         static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) {

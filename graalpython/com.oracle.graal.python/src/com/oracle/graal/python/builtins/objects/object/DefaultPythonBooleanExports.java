@@ -53,8 +53,13 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static int asSize(Boolean value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+    static int asIndex(Boolean value) {
         return value ? 1 : 0;
+    }
+
+    @ExportMessage
+    static int asSize(Boolean value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+        return asIndex(value);
     }
 
     @ExportMessage

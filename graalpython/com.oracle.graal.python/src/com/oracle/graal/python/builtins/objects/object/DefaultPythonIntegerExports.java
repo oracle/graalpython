@@ -58,6 +58,11 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
+    static int asIndex(Integer value) {
+        return value;
+    }
+
+    @ExportMessage
     static int asSize(Integer value, @SuppressWarnings("unused") LazyPythonClass errorType) {
         return value;
     }
