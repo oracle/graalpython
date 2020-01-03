@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -156,11 +156,11 @@ public abstract class StringNodes {
         @Specialization
         static int doNativeObject(PythonNativeObject x,
                         @Cached GetLazyClassNode getClassNode,
-                        @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.executeWithGlobalState(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+            if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
                 // read the native data
                 Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;

@@ -274,22 +274,4 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     public static IsSubtypeNode create() {
         return IsSubtypeNodeGen.create();
     }
-
-    @GenerateUncached
-    public abstract static class IsSubtypeWithoutFrameNode extends PNodeWithContext {
-
-        public abstract boolean executeWithGlobalState(Object derived, Object cls);
-
-        @Specialization
-        public boolean execute(Object derived, Object cls,
-                        @Cached GetMroStorageNode getMroStorageNode,
-                        @Cached IsSameTypeNode isSameTypeNode) {
-            for (PythonAbstractClass n : getMroStorageNode.execute(derived).getInternalClassArray()) {
-                if (isSameTypeNode.execute(n, cls)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
 }

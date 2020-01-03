@@ -125,7 +125,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -356,7 +356,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached IsSubtypeWithoutFrameNode isSubtype,
+                        @Cached IsSubtypeNode isSubtype,
                         @Cached BranchProfile notBytes,
                         @Cached BranchProfile notBytearray,
                         @Cached BranchProfile notMemoryview,
@@ -364,27 +364,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile notMmap,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
-            if (isSubtype.executeWithGlobalState(object, pBytes)) {
+            if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
             }
             notBytes.enter();
             PythonBuiltinClass pBytearray = context.getCore().lookupType(PythonBuiltinClassType.PByteArray);
-            if (isSubtype.executeWithGlobalState(object, pBytearray)) {
+            if (isSubtype.execute(object, pBytearray)) {
                 return new PyBufferProcsWrapper(pBytearray);
             }
             notBytearray.enter();
             PythonBuiltinClass pMemoryview = context.getCore().lookupType(PythonBuiltinClassType.PMemoryView);
-            if (isSubtype.executeWithGlobalState(object, pMemoryview)) {
+            if (isSubtype.execute(object, pMemoryview)) {
                 return new PyBufferProcsWrapper(pMemoryview);
             }
             notMemoryview.enter();
             PythonBuiltinClass pBuffer = context.getCore().lookupType(PythonBuiltinClassType.PBuffer);
-            if (isSubtype.executeWithGlobalState(object, pBuffer)) {
+            if (isSubtype.execute(object, pBuffer)) {
                 return new PyBufferProcsWrapper(pBuffer);
             }
             notBuffer.enter();
             PythonBuiltinClass pMmap = context.getCore().lookupType(PythonBuiltinClassType.PMMap);
-            if (isSubtype.executeWithGlobalState(object, pMmap)) {
+            if (isSubtype.execute(object, pMmap)) {
                 return new PyBufferProcsWrapper(pMmap);
             }
             notMmap.enter();

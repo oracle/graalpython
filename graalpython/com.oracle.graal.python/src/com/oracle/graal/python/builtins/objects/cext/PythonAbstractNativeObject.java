@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -160,13 +160,13 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
-    public boolean canBeIndex(@Exclusive @Cached IsSubtypeWithoutFrameNode isSubtypeNode) {
-        return isSubtypeNode.executeWithGlobalState(this, PythonBuiltinClassType.PInt);
+    public boolean canBeIndex(@Exclusive @Cached IsSubtypeNode isSubtypeNode) {
+        return isSubtypeNode.execute(this, PythonBuiltinClassType.PInt);
     }
 
     @ExportMessage
     public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Exclusive @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raise) {
         if (canBeIndex(isSubtypeNode)) {
             return this;
