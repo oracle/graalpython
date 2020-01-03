@@ -311,15 +311,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached BranchProfile isPInt) {
             Object index = lib.asIndexWithState(x, PArguments.getThreadState(frame));
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
-                if (index instanceof Integer) {
+                if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
-                    return doL((int) index);
+                    return doL(lib.asSize(index));
                 } else if (index instanceof Long) {
                     isLong.enter();
                     return doL((long) index);
                 } else if (index instanceof PInt) {
                     isPInt.enter();
                     return doPI((PInt) index);
+                } else {
+                    CompilerDirectives.transferToInterpreter();
+                    throw raise(PythonBuiltinClassType.NotImplementedError, "bin/oct/hex with native integer subclasses");
                 }
             }
             CompilerDirectives.transferToInterpreter();
