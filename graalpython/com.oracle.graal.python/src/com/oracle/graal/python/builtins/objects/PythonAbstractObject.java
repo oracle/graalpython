@@ -118,6 +118,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -710,11 +711,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public Object asIndexWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CallNode callNode,
-                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
         // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
@@ -723,15 +726,27 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
             throw raise.raiseIntegerInterpretationError(this);
         }
+
+        VirtualFrame frameForCall = null;
+
         Object result;
         if (gotState.profile(state == null)) {
             result = callNode.execute(indexAttr, this);
         } else {
-            result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+            frameForCall = PArguments.frameForCall(state);
+            result = callNode.execute(frameForCall, indexAttr, this);
         }
-        try {
-            castToLong.execute(result); // this is a lossy cast that ensures the result is an int
-        } catch (CastToJavaLongNode.CannotCastException e) {
+
+        boolean isInteger;
+        LazyPythonClass resultClass = lib.getLazyPythonClass(result);
+        if (gotState.profile(state == null)) {
+            isInteger = isSubtype.execute(resultClass, PythonBuiltinClassType.PInt);
+        } else {
+            assert frameForCall != null;
+            isInteger = isSubtype.execute(frameForCall, resultClass, PythonBuiltinClassType.PInt);
+        }
+
+        if (resultProfile.profile(!isInteger)) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
         }
         return result;
@@ -739,35 +754,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public int asSizeWithState(LazyPythonClass type, ThreadState state,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile wasPInt,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached BranchProfile overflow,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CallNode callNode,
                     @Exclusive @Cached CastToJavaLongNode castToLong) {
-        Object result;
-        if (wasPInt.profile(this instanceof PInt)) {
-            // c.f. PyNumber_Index
-            result = this;
-        } else {
-            Object indexAttr = lookupIndex.execute(this, __INDEX__);
-            if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
-                throw raise.raiseIntegerInterpretationError(this);
-            }
-            if (gotState.profile(state == null)) {
-                result = callNode.execute(indexAttr, this);
-            } else {
-                result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
-            }
-        }
+        Object result = lib.asIndexWithState(this, state);
         long longResult;
         try {
             longResult = castToLong.execute(result); // this is a lossy cast
         } catch (CastToJavaLongNode.CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
         try {
             return PInt.intValueExact(longResult);
