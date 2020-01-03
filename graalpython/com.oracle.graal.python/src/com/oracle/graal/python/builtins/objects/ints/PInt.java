@@ -29,6 +29,7 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -190,6 +191,11 @@ public final class PInt extends PythonBuiltinObject {
     @SuppressWarnings("static-method")
     public boolean canBeIndex() {
         return true;
+    }
+
+    @ExportMessage
+    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return this;
     }
 
     @Override

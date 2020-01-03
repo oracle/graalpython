@@ -54,9 +54,11 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -155,6 +157,22 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @SuppressWarnings({"static-method", "unused"})
     public void setDict(PHashingCollection value) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public boolean canBeIndex(@Exclusive @Cached IsSubtypeWithoutFrameNode isSubtypeNode) {
+        return isSubtypeNode.executeWithGlobalState(this, PythonBuiltinClassType.PInt);
+    }
+
+    @ExportMessage
+    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Exclusive @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                    @Exclusive @Cached PRaiseNode raise) {
+        if (canBeIndex(isSubtypeNode)) {
+            return this;
+        } else {
+            throw raise.raiseIntegerInterpretationError(this);
+        }
     }
 
     @ExportMessage

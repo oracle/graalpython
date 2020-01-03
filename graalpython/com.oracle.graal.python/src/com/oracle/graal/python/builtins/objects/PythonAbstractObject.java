@@ -704,8 +704,37 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
-        return hasIndexAttribute.execute(this, __INDEX__);
+    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex) {
+        return hasIndex.execute(this, __INDEX__);
+    }
+
+    @ExportMessage
+    public Object asIndexWithState(ThreadState state,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
+        // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
+        // and PythonAbstractNativeObject and dispatched polymorphically
+        Object indexAttr = lookupIndex.execute(this, __INDEX__);
+        if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
+            throw raise.raiseIntegerInterpretationError(this);
+        }
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.execute(indexAttr, this);
+        } else {
+            result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+        }
+        try {
+            castToLong.execute(result); // this is a lossy cast that ensures the result is an int
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+        }
+        return result;
     }
 
     @ExportMessage
