@@ -55,8 +55,10 @@ import com.oracle.graal.python.builtins.objects.bytes.AbstractBytesBuiltinsFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -66,7 +68,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -78,6 +79,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -338,7 +340,6 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
         @Child private BytesNodes.ToBytesNode selfToBytesNode;
         @Child private BytesNodes.ToBytesNode sepToBytesNode;
         @Child private AppendNode appendNode;
-        @Child private CastToIntegerFromIndexNode castIntNode;
         @Child private AbstractSplitNode recursiveNode;
 
         // taken from JPython
@@ -400,14 +401,6 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
                 appendNode = insert(AppendNode.create());
             }
             return appendNode;
-        }
-
-        private CastToIntegerFromIndexNode getCastIntNode() {
-            if (castIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CastToIntegerFromIndexNode.create());
-            }
-            return castIntNode;
         }
 
         private AbstractSplitNode getRecursiveNode() {
@@ -506,9 +499,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
-        @Specialization(guards = "!isPNone(sep)")
-        PList split(VirtualFrame frame, PBytes bytes, Object sep, Object maxsplit) {
-            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
+        @Specialization(guards = "!isPNone(sep)", limit = "getCallSiteInlineCacheMaxDepth()")
+        PList split(VirtualFrame frame, PBytes bytes, Object sep, Object maxsplit,
+                        @CachedLibrary("maxsplit") PythonObjectLibrary lib) {
+            return getRecursiveNode().execute(frame, bytes, sep, asIndex(frame, maxsplit, lib));
         }
 
         @Specialization(guards = "!isPNone(sep)")
@@ -531,9 +525,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
-        @Specialization(guards = "!isPNone(sep)")
-        PList split(VirtualFrame frame, PByteArray bytes, Object sep, Object maxsplit) {
-            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
+        @Specialization(guards = "!isPNone(sep)", limit = "getCallSiteInlineCacheMaxDepth()")
+        PList split(VirtualFrame frame, PByteArray bytes, Object sep, Object maxsplit,
+                        @CachedLibrary("maxsplit") PythonObjectLibrary lib) {
+            return getRecursiveNode().execute(frame, bytes, sep, asIndex(frame, maxsplit, lib));
         }
 
         // split(maxsplit=...)
@@ -554,9 +549,10 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
-        @Specialization
-        PList split(VirtualFrame frame, PBytes bytes, PNone sep, Object maxsplit) {
-            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        PList split(VirtualFrame frame, PBytes bytes, PNone sep, Object maxsplit,
+                        @CachedLibrary("maxsplit") PythonObjectLibrary lib) {
+            return getRecursiveNode().execute(frame, bytes, sep, asIndex(frame, maxsplit, lib));
         }
 
         @Specialization
@@ -575,9 +571,14 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
             return split(frame, bytes, sep, getIntValue(maxsplit));
         }
 
-        @Specialization
-        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, Object maxsplit) {
-            return getRecursiveNode().execute(frame, bytes, sep, getCastIntNode().execute(frame, maxsplit));
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        PList split(VirtualFrame frame, PByteArray bytes, PNone sep, Object maxsplit,
+                        @CachedLibrary("maxsplit") PythonObjectLibrary lib) {
+            return getRecursiveNode().execute(frame, bytes, sep, asIndex(frame, maxsplit, lib));
+        }
+
+        private static Object asIndex(VirtualFrame frame, Object maxsplit, PythonObjectLibrary lib) {
+            return lib.asIndexWithState(maxsplit, PArguments.getThreadState(frame));
         }
 
     }
