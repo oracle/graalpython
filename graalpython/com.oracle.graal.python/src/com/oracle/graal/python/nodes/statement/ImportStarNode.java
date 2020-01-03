@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -41,9 +42,9 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -62,7 +63,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private SetAttributeNode.Dynamic setAttributeNode;
     @Child private LookupAndCallUnaryNode callLenNode;
     @Child private GetItemNode getItemNode;
-    @Child private CastToIndexNode castToIndexNode;
+    @Child private PythonObjectLibrary castToIndexNode;
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetAnyAttributeNode readNode;
     @Child private PRaiseNode raiseNode;
@@ -126,7 +127,7 @@ public class ImportStarNode extends AbstractImportNode {
         } else {
             try {
                 Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
-                int n = ensureCastToIndexNode().execute(frame, ensureCallLenNode().executeObject(frame, attrAll));
+                int n = ensureCastToIndexNode().asSizeWithState(ensureCallLenNode().executeObject(frame, attrAll), PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
                     Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
                     String attrName = ensureCastToStringNode().execute(attrNameObj);
@@ -162,10 +163,10 @@ public class ImportStarNode extends AbstractImportNode {
         return callLenNode;
     }
 
-    private CastToIndexNode ensureCastToIndexNode() {
+    private PythonObjectLibrary ensureCastToIndexNode() {
         if (castToIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castToIndexNode = insert(CastToIndexNode.create());
+            castToIndexNode = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
         }
         return castToIndexNode;
     }

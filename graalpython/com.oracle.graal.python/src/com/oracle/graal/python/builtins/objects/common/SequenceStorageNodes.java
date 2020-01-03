@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetStorageSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -119,9 +120,9 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -460,23 +461,33 @@ public abstract class SequenceStorageNodes {
 
         protected static final String KEY_TYPE_ERROR_MESSAGE = "indices must be integers or slices, not %p";
         @Child private NormalizeIndexNode normalizeIndexNode;
-        @Child private CastToIndexNode castToIndexNode;
+        @Child private PythonObjectLibrary lib;
         @CompilationFinal private ValueProfile storeProfile;
+        @CompilationFinal private ConditionProfile gotFrameProfile;
 
         protected NormalizingNode(NormalizeIndexNode normalizeIndexNode) {
             this.normalizeIndexNode = normalizeIndexNode;
         }
 
-        private CastToIndexNode getCastToIndexNode() {
-            if (castToIndexNode == null) {
+        private PythonObjectLibrary getLibrary() {
+            if (lib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIndexNode = insert(CastToIndexNode.create());
+                lib = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
             }
-            return castToIndexNode;
+            return lib;
         }
 
         protected final int normalizeIndex(VirtualFrame frame, Object idx, SequenceStorage store) {
-            int intIdx = getCastToIndexNode().execute(frame, idx);
+            if (gotFrameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                gotFrameProfile = ConditionProfile.createBinaryProfile();
+            }
+            int intIdx;
+            if (gotFrameProfile.profile(frame != null)) {
+                intIdx = getLibrary().asSizeWithState(idx, PythonBuiltinClassType.IndexError, PArguments.getThreadState(frame));
+            } else {
+                intIdx = getLibrary().asSize(idx, PythonBuiltinClassType.IndexError);
+            }
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
@@ -491,7 +502,7 @@ public abstract class SequenceStorageNodes {
         }
 
         protected final int normalizeIndex(@SuppressWarnings("unused") VirtualFrame frame, long idx, SequenceStorage store) {
-            int intIdx = getCastToIndexNode().execute(idx);
+            int intIdx = getLibrary().asSize(idx, PythonBuiltinClassType.IndexError);
             if (normalizeIndexNode != null) {
                 return normalizeIndexNode.execute(intIdx, getStoreProfile().profile(store).length());
             }
@@ -2391,7 +2402,6 @@ public abstract class SequenceStorageNodes {
         private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
         @Child private GetItemScalarNode getItemNode;
-        @Child private CastToIndexNode castToindexNode;
         @Child private RepeatNode recursive;
 
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, Object times);
@@ -2597,11 +2607,7 @@ public abstract class SequenceStorageNodes {
 
         private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonObjectLibrary lib) {
             if (lib.canBeIndex(times)) {
-                if (castToindexNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    castToindexNode = insert(CastToIndexNode.createOverflow());
-                }
-                return castToindexNode.execute(frame, times);
+                return lib.asSizeWithState(times, PArguments.getThreadState(frame));
             }
             throw raiseNode.raise(TypeError, ERROR_MSG, times);
         }

@@ -70,10 +70,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
@@ -98,13 +99,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -118,6 +120,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
@@ -441,8 +444,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     abstract static class PrefixSuffixBaseNode extends PythonQuaternaryBuiltinNode {
 
-        @Child private CastToIndexNode startNode;
-        @Child private CastToIndexNode endNode;
+        @Child private CastToSliceComponentNode castSliceComponentNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private CastToJavaStringNode castToJavaStringNode;
 
@@ -490,8 +492,8 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castPrefixNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "startswith", self);
             int len = selfStr.length();
-            int istart = PGuards.isPNone(start) ? 0 : adjustStart(castStart(frame, start), len);
-            int iend = PGuards.isPNone(end) ? len : adjustEnd(castEnd(frame, end), len);
+            int istart = adjustStart(castSlicePart(frame, start), len);
+            int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
             String prefixStr = castPrefixNode.cast(substr, INVALID_FIRST_ARG, "startswith", substr);
             return doIt(selfStr, prefixStr, istart, iend);
         }
@@ -501,8 +503,8 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "startswith", self);
             int len = selfStr.length();
-            int istart = PGuards.isPNone(start) ? 0 : adjustStart(castStart(frame, start), len);
-            int iend = PGuards.isPNone(end) ? len : adjustEnd(castEnd(frame, end), len);
+            int istart = adjustStart(castSlicePart(frame, start), len);
+            int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
             return doIt(selfStr, substrs, istart, iend);
         }
 
@@ -550,24 +552,13 @@ public final class StringBuiltins extends PythonBuiltins {
             return adjustStart(end, length);
         }
 
-        private int castStart(VirtualFrame frame, Object start) {
-            if (startNode == null) {
+        private int castSlicePart(VirtualFrame frame, Object idx) {
+            if (castSliceComponentNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                startNode = insert(CastToIndexNode.create(TypeError, val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-                }));
+                // None should map to 0, overflow to the maximum integer
+                castSliceComponentNode = insert(CastToSliceComponentNode.create(0, Integer.MAX_VALUE));
             }
-            return startNode.execute(frame, start);
-        }
-
-        private int castEnd(VirtualFrame frame, Object end) {
-            if (endNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                endNode = insert(CastToIndexNode.create(TypeError, val -> {
-                    throw raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-                }));
-            }
-            return endNode.execute(frame, end);
+            return castSliceComponentNode.execute(frame, idx);
         }
 
         private GetObjectArrayNode ensureGetObjectArrayNode() {
@@ -642,33 +633,24 @@ public final class StringBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FindBaseNode extends PythonBuiltinNode {
 
-        @Child private CastToIndexNode startNode;
-        @Child private CastToIndexNode endNode;
+        @Child private PythonObjectLibrary lib;
 
-        private CastToIndexNode getStartNode() {
-            if (startNode == null) {
+        private PythonObjectLibrary getLibrary() {
+            if (lib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                startNode = insert(CastToIndexNode.createOverflow());
+                lib = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
             }
-            return startNode;
-        }
-
-        private CastToIndexNode getEndNode() {
-            if (endNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                endNode = insert(CastToIndexNode.createOverflow());
-            }
-            return endNode;
+            return lib;
         }
 
         private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
-            PSlice tmpSlice = factory().createSlice(getStartNode().execute(start), getEndNode().execute(end), 1);
+            PSlice tmpSlice = factory().createSlice(getLibrary().asSize(start), getLibrary().asSize(end), 1);
             return tmpSlice.computeIndices(length);
         }
 
         private SliceInfo computeSlice(VirtualFrame frame, int length, Object startO, Object endO) {
-            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getStartNode().execute(frame, startO);
-            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getEndNode().execute(frame, endO);
+            int start = PGuards.isPNone(startO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(startO, PArguments.getThreadState(frame));
+            int end = PGuards.isPNone(endO) ? PSlice.MISSING_INDEX : getLibrary().asSizeWithState(endO, PArguments.getThreadState(frame));
             return PSlice.computeIndices(start, end, 1, length);
         }
 
@@ -1019,14 +1001,14 @@ public final class StringBuiltins extends PythonBuiltins {
             return splitfields(self, maxsplit, appendNode);
         }
 
-        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"})
+        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"}, limit = "getCallSiteInlineCacheMaxDepth()")
         Object doGeneric(VirtualFrame frame, Object self, Object sep, Object maxsplit,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToIndexNode castMaxsplitNode,
+                        @CachedLibrary("maxsplit") PythonObjectLibrary lib,
                         @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
+                        @Cached AppendNode appendNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "split", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : castMaxsplitNode.execute(frame, maxsplit);
+            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
             if (PGuards.isPNone(sep)) {
                 return splitfields(selfStr, imaxsplit, appendNode);
             } else {
@@ -1152,15 +1134,15 @@ public final class StringBuiltins extends PythonBuiltins {
             return rsplitfields(frame, self, maxsplit, appendNode, reverseNode);
         }
 
-        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"})
+        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"}, limit = "getCallSiteInlineCacheMaxDepth()")
         Object doGeneric(VirtualFrame frame, Object self, Object sep, Object maxsplit,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToIndexNode castMaxsplitNode,
+                        @CachedLibrary("maxsplit") PythonObjectLibrary lib,
                         @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
-                        @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
+                        @Cached AppendNode appendNode,
+                        @Cached ListReverseNode reverseNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "rsplit", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : castMaxsplitNode.execute(frame, maxsplit);
+            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
             if (PGuards.isPNone(sep)) {
                 return rsplitfields(frame, selfStr, imaxsplit, appendNode, reverseNode);
             } else {
@@ -1304,10 +1286,10 @@ public final class StringBuiltins extends PythonBuiltins {
             return sb.toString();
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static String doGeneric(VirtualFrame frame, Object self, Object old, Object with, Object maxCount,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToIndexNode castToIndexNode) {
+                        @CachedLibrary("maxCount") PythonObjectLibrary lib) {
 
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "replace", self);
             String oldStr = castSelfNode.cast(old, "replace() argument 1 must be str, not %p", "replace", old);
@@ -1315,7 +1297,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (PGuards.isPNone(maxCount)) {
                 return doReplace(selfStr, oldStr, withStr, PNone.NO_VALUE);
             }
-            int iMaxCount = castToIndexNode.execute(frame, maxCount);
+            int iMaxCount = lib.asSizeWithState(maxCount, PArguments.getThreadState(frame));
             return doReplace(selfStr, oldStr, withStr, iMaxCount);
         }
     }
@@ -1434,13 +1416,12 @@ public final class StringBuiltins extends PythonBuiltins {
         int doGeneric(VirtualFrame frame, Object self, Object sub, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castSubNode,
-                        @Cached CastToIndexNode castStartNode,
-                        @Cached CastToIndexNode castEndNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
             String subStr = castSubNode.cast(sub, MUST_BE_STR, sub);
-            int istart = PGuards.isPNone(start) ? 0 : castStartNode.execute(frame, start);
-            int iend = PGuards.isPNone(end) ? selfStr.length() : castEndNode.execute(frame, end);
+            int istart = PGuards.isPNone(start) ? 0 : lib.asSizeWithState(start, PArguments.getThreadState(frame));
+            int iend = PGuards.isPNone(end) ? selfStr.length() : lib.asSizeWithState(end, PArguments.getThreadState(frame));
             return indexOf(selfStr, subStr, istart, iend, errorProfile);
         }
 
@@ -1537,18 +1518,18 @@ public final class StringBuiltins extends PythonBuiltins {
             return repeatString(left, right);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         String doStringLong(String left, long right,
-                        @Exclusive @Cached("createOverflow()") CastToIndexNode castToIndexNode) {
-            return doStringInt(left, castToIndexNode.execute(right));
+                        @Exclusive @CachedLibrary("right") PythonObjectLibrary lib) {
+            return doStringInt(left, lib.asSize(right));
         }
 
         @Specialization
         String doStringObject(VirtualFrame frame, String left, Object right,
-                        @Shared("castToIndexNode") @Cached("createOverflow()") CastToIndexNode castToIndexNode,
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             try {
-                return doStringInt(left, castToIndexNode.execute(frame, right));
+                return doStringInt(left, lib.asSizeWithState(right, PArguments.getThreadState(frame)));
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
                 throw raise(MemoryError);
@@ -1558,10 +1539,10 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object times,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("castToIndexNode") @Cached("createOverflow()") CastToIndexNode castToIndexNode,
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            return doStringObject(frame, selfStr, times, castToIndexNode, typeErrorProfile);
+            return doStringObject(frame, selfStr, times, lib, typeErrorProfile);
         }
 
         @TruffleBoundary
@@ -1891,22 +1872,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
         public abstract String executeObject(VirtualFrame frame, String self, Object x);
 
-        @Specialization
-        static String doStringInt(String self, int width) {
-            return zfill(self, width);
-        }
-
-        @Specialization
-        static String doStringObject(VirtualFrame frame, String self, Object width,
-                        @Shared("toIndexNode") @Cached CastToIndexNode toIndexNode) {
-            return zfill(self, toIndexNode.execute(frame, width));
-        }
-
-        @Specialization(replaces = {"doStringInt", "doStringObject"})
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static String doGeneric(VirtualFrame frame, Object self, Object width,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("toIndexNode") @Cached CastToIndexNode toIndexNode) {
-            return zfill(castSelfNode.cast(self, INVALID_RECEIVER, "zfill", self), toIndexNode.execute(frame, width));
+                        @CachedLibrary("width") PythonObjectLibrary lib) {
+            return zfill(castSelfNode.cast(self, INVALID_RECEIVER, "zfill", self), lib.asSizeWithState(width, PArguments.getThreadState(frame)));
 
         }
 
@@ -2025,24 +1995,24 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         String doStringObjectObject(VirtualFrame frame, String self, Object width, Object fill,
-                        @Shared("castToIndexNode") @Cached CastToIndexNode castToIndexNode,
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String fillStr = PGuards.isNoValue(fill) ? " " : castFillNode.cast(fill, "", fill);
             if (errorProfile.profile(fillStr.codePointCount(0, fillStr.length()) != 1)) {
                 throw raise(TypeError, "The fill character must be exactly one character long");
             }
-            return make(self, castToIndexNode.execute(frame, width), fillStr);
+            return make(self, lib.asSizeWithState(width, PArguments.getThreadState(frame)), fillStr);
         }
 
         @Specialization
         String doGeneric(VirtualFrame frame, Object self, Object width, Object fill,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("castToIndexNode") @Cached CastToIndexNode castToIndexNode,
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __ITER__, self);
-            return doStringObjectObject(frame, selfStr, width, fill, castToIndexNode, castFillNode, errorProfile);
+            return doStringObjectObject(frame, selfStr, width, fill, lib, castFillNode, errorProfile);
         }
 
         @TruffleBoundary
@@ -2140,31 +2110,18 @@ public final class StringBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        public String doString(String primary, int idx) {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public String doString(VirtualFrame frame, String primary, Object idx,
+                        @CachedLibrary("idx") PythonObjectLibrary lib) {
+            int index = lib.asSizeWithState(idx, PArguments.getThreadState(frame));
             try {
-                int index = idx;
-
-                if (idx < 0) {
+                if (index < 0) {
                     index += primary.length();
                 }
-
                 return charAtToString(primary, index);
             } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
                 throw raise(IndexError, "IndexError: string index out of range");
             }
-        }
-
-        @Specialization
-        public String doString(@SuppressWarnings("unused") VirtualFrame frame, String primary, long idx,
-                        @Cached("create()") CastToIndexNode castToIndex) {
-            return doString(primary, castToIndex.execute(idx));
-        }
-
-        @Specialization
-        public String doString(VirtualFrame frame, String primary, PInt idx,
-                        @Cached("create()") CastToIndexNode castToIndex) {
-            return doString(primary, castToIndex.execute(frame, idx));
         }
 
         @SuppressWarnings("unused")

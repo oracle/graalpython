@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
@@ -66,7 +67,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -75,7 +75,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -173,7 +172,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMANode extends PythonBuiltinNode {
 
         @Child private GetItemNode getItemNode;
-        @Child private CastToIndexNode castToLongNode;
+        @Child private PythonObjectLibrary castToLongNode;
         @Child private BuiltinFunctions.LenNode lenNode;
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 
@@ -281,9 +280,9 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         private int asInt(VirtualFrame frame, Object obj) {
             if (castToLongNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToLongNode = insert(CastToIndexNode.create());
+                castToLongNode = insert(PythonObjectLibrary.getFactory().createDispatched(2));
             }
-            return castToLongNode.execute(frame, obj);
+            return castToLongNode.asSizeWithState(obj, PArguments.getThreadState(frame));
         }
 
         private int len(VirtualFrame frame, Object obj) {
@@ -310,21 +309,18 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PLZMACompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object checkObj, Object presetObj, Object filters,
-                        @Cached CastToIndexNode castFormatToIntNode,
-                        @Cached CastToIndexNode castCheckToIntNode,
-                        @Cached CastToIndexNode castToIntNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
 
             int format = FORMAT_XZ;
             int check = -1;
             int preset = LZMA2Options.PRESET_DEFAULT;
 
             if (!isNoneOrNoValue(formatObj)) {
-                format = castFormatToIntNode.execute(frame, formatObj);
+                format = lib.asSizeWithState(formatObj, PArguments.getThreadState(frame));
             }
 
             if (!isNoneOrNoValue(checkObj)) {
-                check = castCheckToIntNode.execute(frame, checkObj);
+                check = lib.asSizeWithState(checkObj, PArguments.getThreadState(frame));
             }
 
             if (format != FORMAT_XZ && check != -1 && check != XZ.CHECK_NONE) {
@@ -335,7 +331,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
             }
 
             if (!isNoneOrNoValue(presetObj)) {
-                preset = castToIntNode.execute(frame, presetObj);
+                preset = lib.asSizeWithState(presetObj, PArguments.getThreadState(frame));
             }
 
             try {
@@ -351,7 +347,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             xzOutputStream = createXZOutputStream(check, bos, lzmaOptions);
                         } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, dataModelLibrary);
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
                             xzOutputStream = createXZOutputStream(check, bos, optionsChain);
                         }
                         return factory().createLZMACompressor(cls, xzOutputStream, bos);
@@ -362,7 +358,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
                         } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, dataModelLibrary);
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
                                 throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
                             }
@@ -375,7 +371,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                             LZMA2Options lzmaOptions = parseLZMAOptions(preset);
                             lzmaOutputStream = createLZMAOutputStream(bos, lzmaOptions);
                         } else {
-                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, dataModelLibrary);
+                            FilterOptions[] optionsChain = parseFilterChainSpec(frame, filters, lib);
                             if (optionsChain.length != 1 && !(optionsChain[0] instanceof LZMA2Options)) {
                                 throw raise(ValueError, "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter");
                             }
@@ -423,28 +419,26 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMADecompressorNode extends LZMANode {
 
         @Child private GetItemNode getItemNode;
-        @Child private CastToIndexNode castToLongNode;
         @Child private BuiltinFunctions.LenNode lenNode;
 
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 
         @Specialization
         PLZMADecompressor doCreate(VirtualFrame frame, LazyPythonClass cls, Object formatObj, Object memlimitObj, Object filters,
-                        @Cached CastToIndexNode castFormatToIntNode,
-                        @Cached CastToIndexNode castCheckToIntNode) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
 
             int format = FORMAT_AUTO;
             int memlimit = Integer.MAX_VALUE;
 
             if (!isNoneOrNoValue(formatObj)) {
-                format = castFormatToIntNode.execute(frame, formatObj);
+                format = lib.asSizeWithState(formatObj, PArguments.getThreadState(frame));
             }
 
             if (!isNoneOrNoValue(memlimitObj)) {
                 if (format == FORMAT_RAW) {
                     throw raise(ValueError, "Cannot specify memory limit with FORMAT_RAW");
                 }
-                memlimit = castCheckToIntNode.execute(frame, memlimitObj);
+                memlimit = lib.asSizeWithState(memlimitObj, PArguments.getThreadState(frame));
             }
 
             if (format == FORMAT_RAW && isNoneOrNoValue(filters)) {

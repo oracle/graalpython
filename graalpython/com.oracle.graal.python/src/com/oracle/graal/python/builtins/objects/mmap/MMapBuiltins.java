@@ -75,9 +75,11 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsFactory.InternalLenNodeGen;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -91,7 +93,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -103,12 +104,14 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -489,12 +492,12 @@ public class MMapBuiltins extends PythonBuiltins {
             return factory().createBytes(res);
         }
 
-        @Specialization(guards = "!isNoValue(n)")
+        @Specialization(guards = "!isNoValue(n)", limit = "getCallSiteInlineCacheMaxDepth()")
         PBytes read(VirtualFrame frame, PMMap self, Object n,
                         @Cached("create()") ReadFromChannelNode readChannelNode,
-                        @Cached("create()") CastToIndexNode castToIndexNode,
+                        @CachedLibrary("n") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
-            int nread = castToIndexNode.execute(frame, n);
+            int nread = lib.asSizeWithState(n, PArguments.getThreadState(frame));
             if (negativeProfile.profile(nread < 0)) {
                 return readUnlimited(self, PNone.NO_VALUE, readChannelNode);
             }
@@ -569,17 +572,17 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SeekNode extends PythonBuiltinNode implements MMapBaseNode {
-        @Child private CastToIndexNode castToLongNode;
-
-        private final BranchProfile errorProfile = BranchProfile.create();
-
         @Specialization(guards = "isNoValue(how)")
-        Object seek(VirtualFrame frame, PMMap self, long dist, @SuppressWarnings("unused") PNone how) {
-            return seek(frame, self, dist, 0);
+        Object seek(VirtualFrame frame, PMMap self, long dist, @SuppressWarnings("unused") PNone how,
+                        @Shared("errorProfile") @Cached BranchProfile errorProfile,
+                        @Shared("library") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            return seek(frame, self, dist, 0, errorProfile, lib);
         }
 
-        @Specialization
-        Object seek(VirtualFrame frame, PMMap self, long dist, Object how) {
+        @Specialization(guards = "!isNoValue(how)")
+        Object seek(VirtualFrame frame, PMMap self, long dist, Object how,
+                        @Shared("errorProfile") @Cached BranchProfile errorProfile,
+                        @Shared("library") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             try {
                 SeekableByteChannel channel = self.getChannel();
                 long size;
@@ -589,7 +592,7 @@ public class MMapBuiltins extends PythonBuiltins {
                     size = self.getLength();
                 }
                 long where;
-                int ihow = castToInt(frame, how);
+                int ihow = lib.asSizeWithState(how, PArguments.getThreadState(frame));
                 switch (ihow) {
                     case 0: /* relative to start */
                         where = dist;
@@ -614,14 +617,6 @@ public class MMapBuiltins extends PythonBuiltins {
                 errorProfile.enter();
                 throw raiseOSError(frame, OSErrorEnum.EIO, e);
             }
-        }
-
-        private int castToInt(VirtualFrame frame, Object val) {
-            if (castToLongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToLongNode = insert(CastToIndexNode.create(PythonBuiltinClassType.TypeError, (obj) -> 0));
-            }
-            return castToLongNode.execute(frame, val);
         }
     }
 

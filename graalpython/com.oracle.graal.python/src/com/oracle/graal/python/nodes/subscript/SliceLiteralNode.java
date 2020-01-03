@@ -29,8 +29,11 @@ import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDE
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -38,16 +41,19 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNodeGen.CastToSliceComponentNodeGen;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild(value = "first", type = ExpressionNode.class)
@@ -115,13 +121,10 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         return SliceLiteralNodeGen.create(null, null, null);
     }
 
-    abstract static class CastToSliceComponentNode extends PNodeWithContext {
-
-        @Child private PRaiseNode raiseNode;
-
+    @ImportStatic({PythonOptions.class, PGuards.class})
+    public abstract static class CastToSliceComponentNode extends PNodeWithContext {
         private final int defaultValue;
         private final int overflowValue;
-        private final BranchProfile indexErrorProfile = BranchProfile.create();
 
         public CastToSliceComponentNode(int defaultValue, int overflowValue) {
             this.defaultValue = defaultValue;
@@ -150,7 +153,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doLong(long i) {
+        int doLong(long i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return PInt.intValueExact(i);
             } catch (ArithmeticException e) {
@@ -160,7 +163,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
         }
 
         @Specialization
-        int doPInt(PInt i) {
+        int doPInt(PInt i, @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return i.intValueExact();
             } catch (ArithmeticException e) {
@@ -169,30 +172,21 @@ public abstract class SliceLiteralNode extends ExpressionNode {
             }
         }
 
-        @Specialization
+        @Specialization(guards = "!isPNone(i)", replaces = {"doBoolean", "doInt", "doLong", "doPInt"}, limit = "getCallSiteInlineCacheMaxDepth()")
         int doGeneric(VirtualFrame frame, Object i,
-                        @Cached("createCastToIndex()") CastToIndexNode castToIndexNode,
+                        @Cached PRaiseNode raise,
+                        @CachedLibrary("i") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            try {
-                return castToIndexNode.execute(frame, i);
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
-                return overflowValue;
+            if (lib.canBeIndex(i)) {
+                try {
+                    return lib.asSizeWithState(i, PArguments.getThreadState(frame));
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.OverflowError, errorProfile);
+                    return overflowValue;
+                }
+            } else {
+                throw raise.raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
             }
-        }
-
-        protected CastToIndexNode createCastToIndex() {
-            return CastToIndexNode.create(PythonBuiltinClassType.OverflowError, val -> {
-                throw getRaiseNode().raise(PythonBuiltinClassType.TypeError, "slice indices must be integers or None or have an __index__ method");
-            });
-        }
-
-        private PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            return raiseNode;
         }
 
         public static CastToSliceComponentNode create(int defaultValue, int overflowValue) {

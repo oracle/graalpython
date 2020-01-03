@@ -53,6 +53,11 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
+    static int asSize(Boolean value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+        return value ? 1 : 0;
+    }
+
+    @ExportMessage
     static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
         return true;
     }

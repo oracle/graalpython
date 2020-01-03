@@ -130,6 +130,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -676,7 +677,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
                     @Exclusive @Cached CallNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Cached CastToJavaLongNode castToLong,
+                    @Exclusive @Cached CastToJavaLongNode castToLong,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
         Object result;
@@ -705,6 +706,55 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
         return hasIndexAttribute.execute(this, __INDEX__);
+    }
+
+    @ExportMessage
+    public int asSizeWithState(LazyPythonClass type, ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile wasPInt,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Exclusive @Cached BranchProfile overflow,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CastToJavaLongNode castToLong) {
+        Object result;
+        if (wasPInt.profile(this instanceof PInt)) {
+            // c.f. PyNumber_Index
+            result = this;
+        } else {
+            Object indexAttr = lookupIndex.execute(this, __INDEX__);
+            if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
+                throw raise.raiseIntegerInterpretationError(this);
+            }
+            if (gotState.profile(state == null)) {
+                result = callNode.execute(indexAttr, this);
+            } else {
+                result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+            }
+        }
+        long longResult;
+        try {
+            longResult = castToLong.execute(result); // this is a lossy cast
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+        }
+        try {
+            return PInt.intValueExact(longResult);
+        } catch (ArithmeticException e) {
+            overflow.enter();
+            if (ignoreOverflow.profile(type != null)) {
+                throw raise.raiseNumberTooLarge(type, result);
+            } else {
+                // If no error-handling desired then the default clipping is done as in CPython.
+                if (longResult < 0) {
+                    return Integer.MIN_VALUE;
+                } else {
+                    return Integer.MAX_VALUE;
+                }
+            }
+        }
     }
 
     @ExportMessage

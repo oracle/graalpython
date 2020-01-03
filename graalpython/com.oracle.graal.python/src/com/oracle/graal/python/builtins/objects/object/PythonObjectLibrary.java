@@ -230,6 +230,45 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Coerces the receiver into an index-sized integer, using the same mechanism as
+     * {@code PyNumber_AsSsize_t}:
+     * <ol>
+     * <li>Call <code>__index__</code> if the object is not already a Python int (resp.
+     * <code>PyNumber_Index</code>)</li>
+     * <li>Do a hard cast to long as per <code>PyLong_AsSsize_t</code></li>
+     * </ol>
+     * 
+     * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
+     */
+    public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
+        if (threadState == null) {
+            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
+        }
+        return asSize(receiver, errorType);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public final int asSizeWithState(Object receiver, ThreadState threadState) {
+        return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public int asSize(Object receiver, LazyPythonClass errorClass) {
+        return asSizeWithState(receiver, errorClass, null);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public final int asSize(Object receiver) {
+        return asSize(receiver, PythonBuiltinClassType.OverflowError);
+    }
+
+    /**
      * Checks whether the receiver is a Python sequence. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for

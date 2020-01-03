@@ -737,6 +737,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         protected Object doIt(Object object,
+                        @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib) {
             if (lib.isBoolean(object)) {
                 try {
@@ -752,7 +753,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
                 }
             }
-            throw raiseIndexError();
+            throw raiseNode.raiseIntegerInterpretationError(object);
         }
     }
 

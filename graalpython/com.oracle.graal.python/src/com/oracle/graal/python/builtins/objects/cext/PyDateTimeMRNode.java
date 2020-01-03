@@ -43,16 +43,18 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@ImportStatic(NativeMemberNames.class)
+@ImportStatic({NativeMemberNames.class, PythonOptions.class})
 public abstract class PyDateTimeMRNode extends Node {
 
     public abstract Object execute(PythonObject object, String key);
@@ -90,15 +92,15 @@ public abstract class PyDateTimeMRNode extends Node {
                     @Cached PInteropGetAttributeNode getMinNode,
                     @Cached PInteropGetAttributeNode getSecNode,
                     @Cached PInteropGetAttributeNode getUSecNode,
-                    @Cached CastToIndexNode castToIntNode) {
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
         // passing null here should be ok, since we should be in an interop situation
-        int year = castToIntNode.execute(null, getYearNode.execute(object, YEAR));
-        int month = castToIntNode.execute(null, getMonthNode.execute(object, MONTH));
-        int day = castToIntNode.execute(null, getDayNode.execute(object, DAY));
-        int hour = castToIntNode.execute(null, getHourNode.execute(object, HOUR));
-        int min = castToIntNode.execute(null, getMinNode.execute(object, MIN));
-        int sec = castToIntNode.execute(null, getSecNode.execute(object, SEC));
-        int usec = castToIntNode.execute(null, getUSecNode.execute(object, USEC));
+        int year = lib.asSize(getYearNode.execute(object, YEAR));
+        int month = lib.asSize(getMonthNode.execute(object, MONTH));
+        int day = lib.asSize(getDayNode.execute(object, DAY));
+        int hour = lib.asSize(getHourNode.execute(object, HOUR));
+        int min = lib.asSize(getMinNode.execute(object, MIN));
+        int sec = lib.asSize(getSecNode.execute(object, SEC));
+        int usec = lib.asSize(getUSecNode.execute(object, USEC));
         assert year >= 0 && year < 0x10000;
         assert month >= 0 && month < 0x100;
         assert day >= 0 && day < 0x100;
