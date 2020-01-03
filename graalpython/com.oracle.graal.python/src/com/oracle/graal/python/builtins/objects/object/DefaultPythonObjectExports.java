@@ -42,8 +42,13 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -60,6 +65,45 @@ final class DefaultPythonObjectExports {
     static boolean isMapping(Object receiver,
                     @CachedLibrary("receiver") InteropLibrary interopLib) {
         return interopLib.hasMembers(receiver);
+    }
+
+    @ExportMessage
+    static boolean canBeIndex(Object receiver,
+                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+        return interopLib.fitsInLong(receiver);
+    }
+
+    @ExportMessage
+    static Object asIndex(Object receiver,
+                    @Shared("raiseNode") @Cached PRaiseNode raise,
+                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+        if (interopLib.fitsInLong(receiver)) {
+            try {
+                return interopLib.asLong(receiver);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        } else {
+            throw raise.raiseIntegerInterpretationError(interopLib);
+        }
+    }
+
+    @ExportMessage
+    static int asSize(Object receiver, LazyPythonClass type,
+                    @Shared("raiseNode") @Cached PRaiseNode raise,
+                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+        Object index = asIndex(receiver, raise, interopLib);
+        if (interopLib.fitsInInt(index)) {
+            try {
+                return interopLib.asInt(index);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        } else {
+            throw raise.raiseNumberTooLarge(type, index);
+        }
     }
 
     @ExportMessage
