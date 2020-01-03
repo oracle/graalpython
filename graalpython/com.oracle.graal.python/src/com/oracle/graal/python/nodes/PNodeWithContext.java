@@ -51,4 +51,11 @@ public abstract class PNodeWithContext extends Node {
         PythonLanguage language = PythonLanguage.getCurrent();
         return language.singleContextAssumption;
     }
+
+    /**
+     * @return {@code true} if this node can be shared statically.
+     */
+    protected boolean isUncached() {
+        return !isAdoptable();
+    }
 }
