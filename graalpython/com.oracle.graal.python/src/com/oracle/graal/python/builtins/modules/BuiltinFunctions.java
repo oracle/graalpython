@@ -164,7 +164,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CoerceToStringNode;
 import com.oracle.graal.python.nodes.util.CoerceToStringNodeGen;
@@ -260,52 +259,74 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonUnaryBuiltinNode {
-
-        public abstract String executeObject(VirtualFrame frame, Object x);
-
         @TruffleBoundary
-        private static String buildString(boolean isNegative, String number) {
+        protected String buildString(boolean isNegative, String number) {
             StringBuilder sb = new StringBuilder();
             if (isNegative) {
                 sb.append('-');
             }
-            sb.append("0b");
+            sb.append(prefix());
             sb.append(number);
             return sb.toString();
         }
 
-        @Specialization
-        String doL(long x) {
-            return buildString(x < 0, longToBinaryString(x));
+        protected String prefix() {
+            return "0b";
         }
 
         @TruffleBoundary
-        private static String longToBinaryString(long x) {
+        protected String longToString(long x) {
             return Long.toBinaryString(Math.abs(x));
         }
 
+        @TruffleBoundary
+        protected String bigToString(BigInteger x) {
+            return x.toString(2);
+        }
+
         @Specialization
-        String doD(double x) {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        String doL(long x) {
+            return buildString(x < 0, longToString(x));
+        }
+
+        @Specialization
+        String doD(double x,
+                   @Cached PRaiseNode raise) {
+            throw raise.raiseIntegerInterpretationError(x);
         }
 
         @Specialization
         @TruffleBoundary
         String doPI(PInt x) {
             BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(2));
+            return buildString(value.compareTo(BigInteger.ZERO) < 0, bigToString(value.abs()));
         }
 
-        @Specialization
+        @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
-                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
-                        @Cached("create()") BinNode recursiveNode) {
-            Object value = toIntNode.execute(frame, x);
-            return recursiveNode.executeObject(frame, value);
-        }
-
-        protected static BinNode create() {
-            return BuiltinFunctionsFactory.BinNodeFactory.create();
+                        @Cached IsSubtypeNode isSubtype,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached BranchProfile isInt,
+                        @Cached BranchProfile isLong,
+                        @Cached BranchProfile isPInt) {
+            Object index = lib.asIndexWithState(x, PArguments.getThreadState(frame));
+            if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
+                if (index instanceof Integer) {
+                    isInt.enter();
+                    return doL((int) index);
+                } else if (index instanceof Long) {
+                    isLong.enter();
+                    return doL((long) index);
+                } else if (index instanceof PInt) {
+                    isPInt.enter();
+                    return doPI((PInt) index);
+                }
+            }
+            CompilerDirectives.transferToInterpreter();
+            /* It should not be possible to get here, as
+               PyNumber_Index already has a check for the same
+               condition */
+            throw raise(PythonBuiltinClassType.ValueError, "PyNumber_ToBase: index not int");
         }
     }
 
@@ -313,53 +334,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = OCT, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class OctNode extends PythonUnaryBuiltinNode {
-
-        public abstract String executeObject(VirtualFrame frame, Object x);
-
+    public abstract static class OctNode extends BinNode {
+        @Override
         @TruffleBoundary
-        private static String buildString(boolean isNegative, String number) {
-            StringBuilder sb = new StringBuilder();
-            if (isNegative) {
-                sb.append('-');
-            }
-            sb.append("0o");
-            sb.append(number);
-            return sb.toString();
+        protected String bigToString(BigInteger x) {
+            return x.toString(8);
         }
 
-        @Specialization
-        public String doL(long x) {
-            return buildString(x < 0, longToOctString(x));
-        }
-
+        @Override
         @TruffleBoundary
-        private static String longToOctString(long x) {
-            return Long.toOctalString(Math.abs(x));
+        protected String longToString(long x) {
+            return Long.toOctalString(x);
         }
 
-        @Specialization
-        public String doD(double x) {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public String doPI(PInt x) {
-            BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(8));
-        }
-
-        @Specialization
-        String doO(VirtualFrame frame, Object x,
-                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
-                        @Cached("create()") OctNode recursiveNode) {
-            Object value = toIntNode.execute(frame, x);
-            return recursiveNode.executeObject(frame, value);
-        }
-
-        protected static OctNode create() {
-            return BuiltinFunctionsFactory.OctNodeFactory.create();
+        @Override
+        protected String prefix() {
+            return "0o";
         }
     }
 
@@ -367,53 +357,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = HEX, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class HexNode extends PythonUnaryBuiltinNode {
-
-        public abstract String executeObject(VirtualFrame frame, Object x);
-
+    public abstract static class HexNode extends BinNode {
+        @Override
         @TruffleBoundary
-        private static String buildString(boolean isNegative, String number) {
-            StringBuilder sb = new StringBuilder();
-            if (isNegative) {
-                sb.append('-');
-            }
-            sb.append("0x");
-            sb.append(number);
-            return sb.toString();
+        protected String bigToString(BigInteger x) {
+            return x.toString(16);
         }
 
-        @Specialization
-        String doL(long x) {
-            return buildString(x < 0, longToHexString(x));
-        }
-
+        @Override
         @TruffleBoundary
-        private static String longToHexString(long x) {
-            return Long.toHexString(Math.abs(x));
+        protected String longToString(long x) {
+            return Long.toHexString(x);
         }
 
-        @Specialization
-        String doD(double x) {
-            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        String doPI(PInt x) {
-            BigInteger value = x.getValue();
-            return buildString(value.compareTo(BigInteger.ZERO) < 0, value.abs().toString(8));
-        }
-
-        @Specialization
-        String doO(VirtualFrame frame, Object x,
-                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
-                        @Cached("create()") HexNode recursiveNode) {
-            Object value = toIntNode.execute(frame, x);
-            return recursiveNode.executeObject(frame, value);
-        }
-
-        protected static HexNode create() {
-            return BuiltinFunctionsFactory.HexNodeFactory.create();
+        @Override
+        protected String prefix() {
+            return "0x";
         }
     }
 
