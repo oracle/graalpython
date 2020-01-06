@@ -232,8 +232,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Coerces the receiver into an index just like {@code PyNumber_AsIndex}.
      *
-     * Return a Python int from the receiver. Raise TypeError if the result is
-     * not an int or if the object cannot be interpreted as an index.
+     * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
+     * object cannot be interpreted as an index.
      */
     public Object asIndexWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {

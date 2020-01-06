@@ -291,7 +291,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         String doD(double x,
-                   @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             throw raise.raiseIntegerInterpretationError(x);
         }
 
@@ -326,9 +326,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             CompilerDirectives.transferToInterpreter();
-            /* It should not be possible to get here, as
-               PyNumber_Index already has a check for the same
-               condition */
+            /*
+             * It should not be possible to get here, as PyNumber_Index already has a check for the
+             * same condition
+             */
             throw raise(PythonBuiltinClassType.ValueError, "PyNumber_ToBase: index not int");
         }
     }
