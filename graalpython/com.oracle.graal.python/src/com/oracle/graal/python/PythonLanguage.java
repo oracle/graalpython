@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -363,18 +363,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (frame == null) {
                 PFunctionArgsFinder argsFinder = new PFunctionArgsFinder(node);
 
-                Scope.Builder scopeBuilder = Scope.newBuilder(s.getName(), s.getVariables())
-                        .node(s.getNode())
-                        .receiver(s.getReceiverName(), s.getReceiver())
-                        .rootInstance(s.getRootInstance())
-                        .arguments(argsFinder.collectArgs());
+                Scope.Builder scopeBuilder = Scope.newBuilder(s.getName(), s.getVariables()).node(s.getNode()).receiver(s.getReceiverName(), s.getReceiver()).rootInstance(
+                                s.getRootInstance()).arguments(argsFinder.collectArgs());
 
                 scopes.add(scopeBuilder.build());
             } else {
                 scopes.add(s);
             }
         }
-        
+
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
             if (globals != null) {
