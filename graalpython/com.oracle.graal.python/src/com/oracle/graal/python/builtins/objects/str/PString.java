@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -109,8 +109,8 @@ public final class PString extends PImmutableSequence {
         }
 
         @Specialization(guards = {
-                            "isString(self.getCharSequence())",
-                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+                        "isString(self.getCharSequence())",
+                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, limit = "1")
         static int string(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
@@ -120,8 +120,8 @@ public final class PString extends PImmutableSequence {
         }
 
         @Specialization(guards = {
-                            "isLazyString(self.getCharSequence())",
-                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+                        "isLazyString(self.getCharSequence())",
+                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, limit = "1")
         static int lazyString(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
@@ -131,8 +131,8 @@ public final class PString extends PImmutableSequence {
         }
 
         @Specialization(guards = {
-                            "isNativeString(self.getCharSequence())", "isMaterialized(self.getCharSequence())",
-                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+                        "isNativeString(self.getCharSequence())", "isMaterialized(self.getCharSequence())",
+                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, limit = "1")
         static int nativeString(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
@@ -142,8 +142,8 @@ public final class PString extends PImmutableSequence {
         }
 
         @Specialization(guards = {
-                            "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
-                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+                        "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
+                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, replaces = "nativeString", limit = "1")
         static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
@@ -157,13 +157,13 @@ public final class PString extends PImmutableSequence {
 
         @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
         static int subclassedString(PString self, ThreadState state,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
-                    @Exclusive @Cached CallNode callNode,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
+                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
+                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // call the generic implementation in the superclass
             return self.lengthWithState(state, gotState, hasLen, ltZero, getLenNode, callNode, raiseNode, lib);
         }
