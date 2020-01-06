@@ -85,7 +85,7 @@ final class DefaultPythonObjectExports {
                 throw new IllegalStateException(e);
             }
         } else {
-            throw raise.raiseIntegerInterpretationError(interopLib);
+            throw raise.raiseIntegerInterpretationError(receiver);
         }
     }
 
