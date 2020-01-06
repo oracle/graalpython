@@ -25,14 +25,31 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PString extends PImmutableSequence {
@@ -65,8 +82,91 @@ public final class PString extends PImmutableSequence {
         this.value = materialized;
     }
 
-    public int len() {
-        return value.length();
+    @ExportMessage
+    static class LengthWithState {
+        static boolean isString(CharSequence seq) {
+            return seq instanceof String;
+        }
+
+        static boolean isLazyString(CharSequence seq) {
+            return seq instanceof LazyString;
+        }
+
+        static boolean isNativeString(CharSequence seq) {
+            return seq instanceof NativeCharSequence;
+        }
+
+        static boolean isMaterialized(CharSequence seq) {
+            return ((NativeCharSequence) seq).isMaterialized();
+        }
+
+        static boolean hasBuiltinLen(PString self, LookupInheritedAttributeNode.Dynamic lookupSelf, LookupAttributeInMRONode.Dynamic lookupString) {
+            return lookupSelf.execute(self, __LEN__) == lookupString.execute(PythonBuiltinClassType.PString, __LEN__);
+        }
+
+        static boolean isBuiltin(PString self, IsBuiltinClassProfile p) {
+            return p.profileIsAnyBuiltinObject(self);
+        }
+
+        @Specialization(guards = {
+                            "isString(self.getCharSequence())",
+                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+        }, limit = "1")
+        static int string(PString self, @SuppressWarnings("unused") ThreadState state,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
+            return ((String) self.value).length();
+        }
+
+        @Specialization(guards = {
+                            "isLazyString(self.getCharSequence())",
+                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+        }, limit = "1")
+        static int lazyString(PString self, @SuppressWarnings("unused") ThreadState state,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
+            return ((LazyString) self.value).length();
+        }
+
+        @Specialization(guards = {
+                            "isNativeString(self.getCharSequence())", "isMaterialized(self.getCharSequence())",
+                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+        }, limit = "1")
+        static int nativeString(PString self, @SuppressWarnings("unused") ThreadState state,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
+            return ((NativeCharSequence) self.value).length();
+        }
+
+        @Specialization(guards = {
+                            "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
+                            "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
+        }, replaces = "nativeString", limit = "1")
+        static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
+                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
+                        @Cached PCallCapiFunction callCapi) {
+            NativeCharSequence ncs = (NativeCharSequence) self.value;
+            ncs.materialize(callCapi);
+            return ncs.length();
+        }
+
+        @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
+        static int subclassedString(PString self, ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            // call the generic implementation in the superclass
+            return self.lengthWithState(state, gotState, hasLen, ltZero, getLenNode, callNode, raiseNode, lib);
+        }
     }
 
     @Override
@@ -113,6 +213,7 @@ public final class PString extends PImmutableSequence {
         return true;
     }
 
+    @ExportMessage.Ignore
     @TruffleBoundary(allowInlining = true)
     public static int length(String s) {
         return s.length();

@@ -83,6 +83,13 @@ public final class NativeCharSequence implements PCharSequence {
         return materialized;
     }
 
+    public String materialize(PCallCapiFunction node) {
+        if (!isMaterialized()) {
+            materialized = (String) node.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
+        }
+        return materialized;
+    }
+
     Object getPtr() {
         return ptr;
     }
