@@ -57,13 +57,14 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -138,9 +139,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final long getArraySize(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
-        return castToLongNode.execute(callLenNode.executeObject(lib.getDelegate(this), SpecialMethodNames.__LEN__));
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        return objectLib.length(lib.getDelegate(this));
     }
 
     @ExportMessage
@@ -156,13 +156,16 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         return readArrayItemNode.execute(lib.getDelegate(this), index);
     }
 
+    static int getCallSiteInlineCacheMaxDepth() {
+        return PythonOptions.getCallSiteInlineCacheMaxDepth();
+    }
+
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
         // also include the implicit null-terminator
-        return 0 <= identifier && identifier <= getArraySize(lib, callLenNode, castToLongNode);
+        return 0 <= identifier && identifier <= getArraySize(lib, objectLib);
     }
 
     @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
@@ -302,25 +305,22 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
-        return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        return 0 <= index && index <= getArraySize(lib, objectLib);
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
-        return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        return 0 <= index && index <= getArraySize(lib, objectLib);
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
-        return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+        return 0 <= index && index <= getArraySize(lib, objectLib);
     }
 
     @GenerateUncached
