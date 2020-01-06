@@ -84,4 +84,9 @@ final class DefaultPythonStringExports {
     static long hash(String self) {
         return self.hashCode();
     }
+
+    @ExportMessage
+    static int length(String self) {
+        return self.length();
+    }
 }

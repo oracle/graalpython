@@ -315,6 +315,31 @@ public abstract class PythonObjectLibrary extends Library {
         return false;
     }
 
+
+    /**
+     * Implements the logic from {@code PyObject_Size} (to which {@code
+     * PySequence_Length} is an alias). The logic which is to try a) {@code
+     * sq_length} and b) {@code mp_length}. Each of these can also be reached
+     * via {@code PySequence_Length} or {@code PyMapping_Length}, respectively.
+     *
+     * The implementation for {@code slot_sq_length} is to call {@code __len__}
+     * and then to convert it to an index and a size, making sure it's
+     * >=0. {@code slot_mp_length} is just an alias for that slot.
+     */
+    public int lengthWithState(Object receiver, ThreadState state) {
+        if (state == null) {
+            throw PRaiseNode.getUncached().raiseHasNoLength(receiver);
+        }
+        return length(receiver);
+    }
+
+    /**
+     * @see #lengthWithState
+     */
+    public int length(Object receiver) {
+        return lengthWithState(receiver, null);
+    }
+
     /**
      * Checks whether the receiver is a Python mapping. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and

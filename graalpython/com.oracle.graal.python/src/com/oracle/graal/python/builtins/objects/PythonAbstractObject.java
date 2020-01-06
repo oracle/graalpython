@@ -591,6 +591,36 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    public int lengthWithState(ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        Object lenFunc = getLenNode.execute(this, SpecialMethodNames.__LEN__);
+        if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
+            Object lenResult;
+            int len;
+            if (gotState.profile(state == null)) {
+                lenResult = callNode.execute(lenFunc, this);
+                len = lib.asSize(lenResult);
+            } else {
+                lenResult = callNode.execute(PArguments.frameForCall(state), lenFunc, this);
+                len = lib.asSizeWithState(lenResult, state);
+            }
+            if (ltZero.profile(len < 0)) {
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "__len__() should return >= 0");
+            } else {
+                return len;
+            }
+        } else {
+            throw raiseNode.raiseHasNoLength(this);
+        }
+    }
+
+    @ExportMessage
     public boolean isMapping(@Shared("thisObject") @Cached GetLazyClassNode getClassNode,
                     @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary) {
         return pythonTypeLibrary.isMappingType(getClassNode.execute(this));

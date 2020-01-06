@@ -84,6 +84,10 @@ public abstract class PRaiseNode extends Node {
         return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[]{result});
     }
 
+    public final PException raiseHasNoLength(Object result) {
+        return raise(PythonBuiltinClassType.TypeError, "object of type '%p' has no len()", result);
+    }
+
     public final PException raiseIntegerInterpretationError(Object result) {
         return raise(PythonBuiltinClassType.TypeError, "'%p' object cannot be interpreted as an integer", result);
     }
