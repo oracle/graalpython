@@ -93,4 +93,9 @@ final class DefaultPythonLongExports {
     static long hash(Long value) {
         return value;
     }
+
+    @ExportMessage
+    static boolean isTrue(Long value) {
+        return value != 0;
+    }
 }

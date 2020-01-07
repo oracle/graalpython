@@ -74,4 +74,9 @@ final class DefaultPythonDoubleExports {
             return self.hashCode();
         }
     }
+
+    @ExportMessage
+    static boolean isTrue(Double value) {
+        return value != 0.0;
+    }
 }

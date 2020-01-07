@@ -76,4 +76,9 @@ final class DefaultPythonIntegerExports {
     static long hash(Integer value) {
         return value;
     }
+
+    @ExportMessage
+    static boolean isTrue(Integer value) {
+        return value != 0;
+    }
 }

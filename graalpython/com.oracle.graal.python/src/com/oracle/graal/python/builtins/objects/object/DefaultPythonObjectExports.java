@@ -47,6 +47,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -136,6 +137,63 @@ final class DefaultPythonObjectExports {
             }
         } else {
             throw raise.raiseHasNoLength(receiver);
+        }
+    }
+
+
+    @ExportMessage
+    static class IsTrue {
+        @Specialization(guards = "lib.isBoolean(receiver)")
+        static boolean bool(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.asBoolean(receiver);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Specialization(guards = "lib.fitsInLong(receiver)")
+        static boolean integer(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.asLong(receiver) != 0;
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Specialization(guards = "lib.fitsInDouble(receiver)")
+        static boolean floatingPoint(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.asDouble(receiver) != 0.0;
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Specialization(guards = "lib.hasArrayElements(receiver)")
+        static boolean array(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.getArraySize(receiver) > 0;
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Specialization(guards = {
+                            "!lib.isBoolean(receiver)", "!lib.fitsInLong(receiver)",
+                            "!lib.fitsInDouble(receiver)", "!lib.hasArrayElements(receiver)"
+        })
+        static boolean generic(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            return !lib.isNull(receiver);
         }
     }
 }
