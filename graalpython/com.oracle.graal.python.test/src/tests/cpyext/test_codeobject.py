@@ -69,7 +69,7 @@ class TestCodeobject(CPyExtTestCase):
                 1, 2,
                 3, 4, 0,
                 b"", tuple(), tuple(),
-                tuple(), tuple(), tuple(),
+                ("a", "b", "c"), tuple(), tuple(),
                 "filename", "name", 1,
                 b"",
             ),
