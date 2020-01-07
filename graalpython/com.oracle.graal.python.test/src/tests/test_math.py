@@ -1332,7 +1332,7 @@ class MathTests(unittest.TestCase):
             else :
                 if result != expected:
                     if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
-                        self.assertTrue(math.isclose(result, expected, rel_tol=1e-14), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
+                        self.assertTrue(math.isclose(result, expected, rel_tol=1e-13), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
 
     def test_erf(self):
         erfValues = [(0.0,  0.0), (-0.0, -0.0), (INF,  1.0), (NINF,  -1.0), (NAN, NAN),
