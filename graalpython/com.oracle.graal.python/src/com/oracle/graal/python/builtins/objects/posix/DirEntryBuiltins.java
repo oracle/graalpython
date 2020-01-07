@@ -49,10 +49,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -62,6 +63,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDirEntry)
 public class DirEntryBuiltins extends PythonBuiltins {
@@ -128,11 +130,11 @@ public class DirEntryBuiltins extends PythonBuiltins {
             return testBool(self, true);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         boolean testAny(VirtualFrame frame, Object self, Object followSymlinks,
-                        @Cached("createIfTrueNode()") CastToBooleanNode isTrue) {
+                        @CachedLibrary("followSymlinks") PythonObjectLibrary lib) {
             if (self instanceof PDirEntry) {
-                return testBool((PDirEntry) self, isTrue.executeBoolean(frame, followSymlinks));
+                return testBool((PDirEntry) self, lib.isTrueWithState(followSymlinks, PArguments.getThreadState(frame)));
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, "descriptor 'is_dir' requires a 'posix.DirEntry' object but received a '%p'", self);
             }
