@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -262,8 +263,16 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
         if (threadState == null) {
-            asIndexWithState(receiver, threadState);
-            assert false : "should not reach here";
+            // this will very likely always raise an integer interpretation error in asIndexWithState
+            long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
+            int intResult = (int) result;
+            if (intResult == result) {
+                return intResult;
+            } else if (errorType == null) {
+                return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            } else {
+                throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
+            }
         }
         return asSize(receiver, errorType);
     }
