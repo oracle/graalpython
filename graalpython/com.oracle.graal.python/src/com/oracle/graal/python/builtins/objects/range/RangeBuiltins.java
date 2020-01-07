@@ -43,13 +43,13 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -302,14 +302,15 @@ public class RangeBuiltins extends PythonBuiltins {
         @Specialization
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @Cached("createEq()") BinaryComparisonNode cmpNode,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
 
             int len = self.len();
             int cnt = 0;
+            ThreadState state = PArguments.getThreadState(frame);
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, self.getSequenceStorage(), i);
-                if (castToBooleanNode.executeBoolean(frame, cmpNode.executeWith(frame, elem, item))) {
+                if (lib.isTrueWithState(cmpNode.executeWith(frame, elem, item), state)) {
                     cnt++;
                 }
             }
