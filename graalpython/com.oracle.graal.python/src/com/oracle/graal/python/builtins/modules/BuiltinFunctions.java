@@ -185,6 +185,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -1203,6 +1204,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // len(s)
     @Builtin(name = LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public int len(VirtualFrame frame, Object obj,
