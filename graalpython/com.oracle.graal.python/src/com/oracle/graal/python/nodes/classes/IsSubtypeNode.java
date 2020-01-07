@@ -75,7 +75,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return executeInternal(frame, derived, cls);
     }
 
-    public final boolean execute(Object derived, Object cls) {
+    public final boolean execute(LazyPythonClass derived, LazyPythonClass cls) {
         return executeInternal(null, derived, cls);
     }
 

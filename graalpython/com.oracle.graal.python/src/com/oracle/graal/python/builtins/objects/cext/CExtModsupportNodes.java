@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -857,7 +858,7 @@ public abstract class CExtModsupportNodes {
                     Object typeObject = typeToJavaNode.execute(getVaArgNode.execute(varargs, state.outIndex));
                     state = state.incrementOutIndex();
                     assert PGuards.isClass(typeObject);
-                    if (!isSubtypeNode.execute(getClassNode.execute(arg), typeObject)) {
+                    if (!isSubtypeNode.execute(getClassNode.execute(arg), (LazyPythonClass) typeObject)) {
                         raiseNode.raiseIntWithoutFrame(0, TypeError, "expected object of type %s, got %p", typeObject, arg);
                         throw ParseArgumentsException.raise();
                     }
