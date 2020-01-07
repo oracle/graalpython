@@ -149,10 +149,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[0];
-    private final PythonContext context;
-
-    /** The LLVM bitcode library object representing 'libhpy'. */
-    private final Object hpyLibrary;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
 
@@ -160,18 +156,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private Object hpyNativeTypeID;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
-        this.context = context;
+        super(context, hpyLibrary);
         this.hpyContextMembers = createMembers(context);
-        this.hpyLibrary = hpyLibrary;
-    }
-
-    public PythonContext getContext() {
-        return context;
-    }
-
-    @Override
-    public Object getLLVMLibrary() {
-        return hpyLibrary;
     }
 
     void setHPyNativeType(Object hpyNativeTypeID) {
