@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -123,7 +123,7 @@ public abstract class CExtCommonNodes {
         @Specialization(replaces = {"doReceiverCachedIdentity", "doReceiverCached"}, //
                         limit = "1")
         static Object doWithContext(CExtContext nativeContext, String name,
-                        @CachedLibrary("nativeContext.getLLVMLibrary()") @SuppressWarnings("unused") InteropLibrary interopLib,
+                        @CachedLibrary("nativeContext.getLLVMLibrary()") InteropLibrary interopLib,
                         @Cached PRaiseNode raiseNode) {
             return importCAPISymbol(raiseNode, interopLib, nativeContext.getLLVMLibrary(), name);
         }

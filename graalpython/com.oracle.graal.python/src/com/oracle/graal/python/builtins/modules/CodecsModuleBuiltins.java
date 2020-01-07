@@ -578,7 +578,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         private boolean castToBoolean(VirtualFrame frame, Object object) {
-            if(object == PNone.NO_VALUE) {
+            if (object == PNone.NO_VALUE) {
                 return false;
             }
             if (castToBooleanNode == null) {
