@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -235,13 +234,10 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         Object restore_signals, Object call_setsid, PNone preexec_fn,
                         @Cached CastToListNode castArgs,
                         @Cached CastToListNode castExecList,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castCloseFds,
                         @Cached CastToListNode castFdsToKeep,
                         @Cached CastToJavaStringNode castCwd,
                         @Cached CastToListNode castEnv,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castRestoreSignals,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castSetsid) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
 
             String actualCwd;
             if (cwd instanceof PNone) {
@@ -257,7 +253,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 actualEnv = castEnv.execute(frame, env);
             }
 
-            return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
+            return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list),
+                            lib.isTrueWithState(close_fds, PArguments.getThreadState(frame)),
                             castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
                             lib.asSizeWithState(p2cread, PArguments.getThreadState(frame)),
                             lib.asSizeWithState(p2cwrite, PArguments.getThreadState(frame)),
@@ -267,7 +264,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                             lib.asSizeWithState(errwrite, PArguments.getThreadState(frame)),
                             lib.asSizeWithState(errpipe_read, PArguments.getThreadState(frame)),
                             lib.asSizeWithState(errpipe_write, PArguments.getThreadState(frame)),
-                            castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
+                            lib.isTrueWithState(restore_signals, PArguments.getThreadState(frame)),
+                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), preexec_fn);
         }
     }
 }
