@@ -492,7 +492,17 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        int find (VirtualFrame frame, PBytes self, Object sub, Number start, @SuppressWarnings("unused") PNone end) {
+            return find(frame, self, sub, start, getLength(self.getSequenceStorage()));
+        }
+
+        @Specialization
         int find(VirtualFrame frame, PBytes self, Object sub, int start, int ending) {
+            return getFindNode().execute(frame, self, sub, start, ending);
+        }
+
+        @Specialization
+        int find(VirtualFrame frame, PBytes self, Object sub, Number start, Number ending) {
             return getFindNode().execute(frame, self, sub, start, ending);
         }
 
