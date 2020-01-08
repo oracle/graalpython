@@ -67,7 +67,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -77,7 +79,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -93,6 +94,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView})
@@ -150,7 +152,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization
         boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getDictItemNode,
-                        @Cached("createCmpNode()") BinaryComparisonNode callEqNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("createIfTrueNode()") CastToBooleanNode castToBoolean,
                         @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
@@ -161,11 +163,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = getDictItemNode.execute(frame, dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0));
-            return value != null && castToBoolean.executeBoolean(frame, callEqNode.executeWith(frame, value, getTupleItemNode.execute(frame, tupleStorage, 1)));
-        }
-
-        protected static BinaryComparisonNode createCmpNode() {
-            return BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
+            return value != null && lib.equalsWithState(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, PArguments.getThreadState(frame));
         }
     }
 
