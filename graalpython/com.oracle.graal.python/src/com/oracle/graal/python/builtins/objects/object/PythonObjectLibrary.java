@@ -45,11 +45,17 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -59,6 +65,8 @@ import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
@@ -240,13 +248,104 @@ public abstract class PythonObjectLibrary extends Library {
         return DefaultPythonDoubleExports.hash(receiver);
     }
 
-    private final BranchProfile reverseEquals = BranchProfile.create();
+    private static class DefaultNodes extends Node {
+        @Child private IsSubtypeNode isSubtype;
+        @Child private IsSameTypeNode isSameType;
+        @CompilationFinal private BranchProfile reverseEquals;
+        @CompilationFinal private BranchProfile subtypeEquals;
+
+        protected IsSubtypeNode getIsSubtypeNode() {
+            if (isSubtype == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSubtype = insert(IsSubtypeNode.create());
+            }
+            return isSubtype;
+        }
+
+        protected IsSameTypeNode getIsSameTypeNode() {
+            if (isSameType == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameType = insert(IsSameTypeNodeGen.create());
+            }
+            return isSameType;
+        }
+
+        protected BranchProfile getReverseProfile() {
+            if (reverseEquals == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reverseEquals = BranchProfile.create();
+            }
+            return reverseEquals;
+        }
+
+        protected BranchProfile getSubtypeProfile() {
+            if (subtypeEquals == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                subtypeEquals = BranchProfile.create();
+            }
+            return subtypeEquals;
+        }
+
+        private static final class Disabled extends DefaultNodes {
+            private static final Disabled INSTANCE = new Disabled();
+
+            @Override
+            protected IsSubtypeNode getIsSubtypeNode() {
+                return IsSubtypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected IsSameTypeNode getIsSameTypeNode() {
+                return IsSameTypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected BranchProfile getReverseProfile() {
+                return BranchProfile.getUncached();
+            }
+
+            @Override
+            protected BranchProfile getSubtypeProfile() {
+                return BranchProfile.getUncached();
+            }
+        }
+
+        private static DefaultNodes create() {
+            return new DefaultNodes();
+        }
+
+        private static DefaultNodes getUncached() {
+            return Disabled.INSTANCE;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+    }
+
+    // to conserve memory, any default nodes are children of this field, so we
+    // only have one additional word per PythonObjectLibrary if these are not
+    // used.
+    @Child private DefaultNodes defaultNodes;
+
+    private final DefaultNodes getDefaultNodes() {
+        if (isAdoptable()) {
+            if (defaultNodes == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                defaultNodes = insert(DefaultNodes.create());
+            }
+            return defaultNodes;
+        } else {
+            return DefaultNodes.getUncached();
+        }
+    }
 
     /**
      * Compare {@code receiver} to {@code other}. If the receiver does not know
      * how to compare itself to the argument, the comparison is tried in
-     * reverse. This implements {@code PyObject_RichCompareBool} for the {@code
-     * __eq__} operator.
+     * reverse. This implements {@code PyObject_RichCompareBool} (which calls
+     * {@code do_richcompare}) for the {@code __eq__} operator.
      *
      * Exporters of this library can override this message for performance.
      *
@@ -258,11 +357,27 @@ public abstract class PythonObjectLibrary extends Library {
         if (receiver == other) {
             return true; // guarantee
         }
-        int result = equalsInternal(receiver, other, threadState);
-        if (result == -1) {
-            reverseEquals.enter();
+        boolean checkedReverseOp = false;
+
+        LazyPythonClass leftClass = getLazyPythonClass(receiver);
+        LazyPythonClass rightClass = otherLibrary.getLazyPythonClass(other);
+        int result;
+        boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
+        if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
+            getDefaultNodes().getSubtypeProfile().enter();
+            checkedReverseOp = true;
             result = otherLibrary.equalsInternal(other, receiver, threadState);
         }
+
+        result = equalsInternal(receiver, other, threadState);
+        if (result != -1) {
+            return result == 1;
+        }
+        if (!isSameType && !checkedReverseOp) {
+            getDefaultNodes().getReverseProfile().enter();
+            result = otherLibrary.equalsInternal(other, receiver, threadState);
+        }
+
         // we already checked for identity equality above, so if neither side
         // knows what to do, they are not equal
         return result == 1;
