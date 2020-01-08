@@ -236,12 +236,10 @@ class TupleTest(seq_tests.CommonTest):
         t = (2,)
         tt = tuple((2,))
         self.assertEqual(t,tt)
-        self.assertFalse(t is tt)
 
         ttt = tuple(t)
         self.assertEqual(t,ttt)
         self.assertEqual(tt,ttt)
-        self.assertFalse(ttt is tt)
         self.assertTrue(ttt is t)
 
         m = MyTuple((2,))
