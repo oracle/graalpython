@@ -163,12 +163,6 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        public boolean doPInt(PInt value1, PInt value2) {
-            return value1.getValue().equals(value2.getValue());
-        }
-
-        @Specialization
         public boolean doDouble(double value1, double value2) {
             return value1 == value2;
         }
