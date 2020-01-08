@@ -233,27 +233,36 @@ class TestCase(object):
     def fail(self, msg):
         assert False, msg
 
-    class assertRaises():
-        def __init__(self, exc_type, function=None, *args, **kwargs):
-            self.function = function
-            if self.function is None:
+    def assertRaises(self, exc_type, function=None, *args, **kwargs):
+        return self.assertRaisesRegex(exc_type, None, function, *args, **kwargs)
+
+    class assertRaisesRegex():
+        def __init__(self, exc_type, exc_regex, function=None, *args, **kwargs):
+            import re
+            function = function
+            if function is None:
                 self.exc_type = exc_type
+                self.exc_regex = exc_regex
             else:
                 try:
-                    self.function(*args, **kwargs)
-                except exc_type:
-                    pass
+                    function(*args, **kwargs)
+                except exc_type as exc:
+                    if exc_regex:
+                        assert re.search(exc_regex, str(exc)), "%s does not match %s" % (exc_regex, exc)
                 else:
-                    assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)
+                    assert False, "expected '%r' to raise '%r'" % (function, exc_type)
 
         def __enter__(self):
             return self
 
         def __exit__(self, exc_type, exc, traceback):
+            import re
             if not exc_type:
-                assert False, "expected '%r' to raise '%r'" % (self.function, self.exc_type)
+                assert False, "expected '%r' to be raised" % self.exc_type
             elif self.exc_type in exc_type.mro():
                 self.exception = exc
+                if self.exc_regex:
+                    assert re.search(self.exc_regex, str(exc)), "%s does not match %s" % (self.exc_regex, exc)
                 return True
 
     def assertIn(self, expected, in_str, msg=""):
