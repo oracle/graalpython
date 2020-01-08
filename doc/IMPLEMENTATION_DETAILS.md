@@ -29,11 +29,15 @@ into the interpreter has a `PFrame.Reference` with no caller.
 
 ###### ExecutionContext.CallContext and ExecutionContext.CalleeContext
 
-If we're only calling between Python, we always pass our `PFrame.Reference` as
-implicit argument to any callees. On entry, they will create their own
-`PFrame.Reference` as the next link in this backwards-connected
-linked-list. Usually the `PFrame.Reference` doesn't hold anything else, so this
-is pretty cheap even in the not inlined case.
+If we're only calling between Python, we pass our `PFrame.Reference` as implicit
+argument to any callees. On entry, they will create their own `PFrame.Reference`
+as the next link in this backwards-connected linked-list. As an optimization, we
+use assumptions both on the calling node as well as on the callee root node to
+avoid passing the reference (in the caller) and linking it (on the callee
+side). This assumption is invalidated the first time the reference is actually
+needed. But even then, often the `PFrame.Reference` doesn't hold on to anything
+else, because it was only used for traversal, so this is pretty cheap even in
+the not inlined case.
 
 When an event forces the frame to materialize on the heap, the reference is
 filled. This is usually only the case when someone uses `sys._getframe` or
@@ -44,10 +48,10 @@ frames that are no longer live, e.g. when an exception was a few frames up. To
 ensure this, we set a boolean flag on `PFrame.Reference` to mark it as "escaped"
 when it is attached to an exception (or anything else), but not accessed,
 yet. Whenever a Python call returns and its `PFrame.Reference` was marked such,
-the "PyFrame" is also filled in. This way, the stack is lazily forced to the
-heap as we return from functions. If we're lucky and it is never actually
-accessed *and* the calls are all inlined, those fill-in operations can be
-escape-analyzed away.
+the "PyFrame" is also filled in by copying from the VirtualFrame. This way, the
+stack is lazily forced to the heap as we return from functions. If we're lucky
+and it is never actually accessed *and* the calls are all inlined, those fill-in
+operations can be escape-analyzed away.
 
 To implement all this, we use the ExecutionContext.CallContext and
 ExecutionContext.CalleeContext classes. These also use profiling information to
