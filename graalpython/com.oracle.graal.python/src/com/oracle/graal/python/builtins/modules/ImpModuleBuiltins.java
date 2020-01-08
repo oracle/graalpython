@@ -257,7 +257,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
             PythonContext context = getContext();
-            if (!context.capiWasLoaded()) {
+            if (!context.hasCApiContext()) {
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 

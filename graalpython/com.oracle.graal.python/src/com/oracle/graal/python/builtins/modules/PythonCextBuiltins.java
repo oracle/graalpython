@@ -49,12 +49,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -81,7 +79,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
@@ -111,7 +108,14 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.VaListWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
+import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -134,7 +138,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringLenNodeGen;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -187,7 +190,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -197,7 +199,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -225,8 +226,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -958,43 +957,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     abstract static class NativeUnicodeBuiltin extends NativeBuiltin {
-        private static final int NATIVE_ORDER = 0;
-        private static Charset UTF32;
-        private static Charset UTF32LE;
-        private static Charset UTF32BE;
-
-        @TruffleBoundary
-        protected static Charset getUTF32Charset(int byteorder) {
-            String utf32Name = getUTF32Name(byteorder);
-            if (byteorder == NativeUnicodeBuiltin.NATIVE_ORDER) {
-                if (UTF32 == null) {
-                    UTF32 = Charset.forName(utf32Name);
-                }
-                return UTF32;
-            } else if (byteorder < NativeUnicodeBuiltin.NATIVE_ORDER) {
-                if (UTF32LE == null) {
-                    UTF32LE = Charset.forName(utf32Name);
-                }
-                return UTF32LE;
-            }
-            if (UTF32BE == null) {
-                UTF32BE = Charset.forName(utf32Name);
-            }
-            return UTF32BE;
-        }
-
-        protected static String getUTF32Name(int byteorder) {
-            String csName;
-            if (byteorder == 0) {
-                csName = "UTF-32";
-            } else if (byteorder < 0) {
-                csName = "UTF-32LE";
-            } else {
-                csName = "UTF-32BE";
-            }
-            return csName;
-        }
-
         @TruffleBoundary
         protected static CharBuffer allocateCharBuffer(int cap) {
             return CharBuffer.allocate(cap);
@@ -1009,7 +971,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         protected static int remaining(ByteBuffer cb) {
             return cb.remaining();
         }
-
     }
 
     @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
@@ -1127,109 +1088,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @ImportStatic(PythonOptions.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
-        @Specialization(guards = "elementSize == cachedElementSize", limit = "getVariableArgumentInlineCacheLimit()")
-        Object doBytes(VirtualFrame frame, Object arr, long n, long elementSize, Object errorMarker,
+        @Specialization
+        static Object doBytes(VirtualFrame frame, Object arr, long n, long elementSize, Object errorMarker,
+                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached("elementSize") long cachedElementSize,
-                        @CachedLibrary("arr") InteropLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary elemLib) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                ByteBuffer bytes;
-                if (cachedElementSize == 1L || cachedElementSize == 2L || cachedElementSize == 4L) {
-                    if (!lib.hasArrayElements(arr)) {
-                        return raiseNative(frame, errorMarker, PythonErrorType.SystemError, "provided object is not an array", elementSize);
-                    }
-                    bytes = readWithSize(lib, elemLib, arr, PInt.intValueExact(n), (int) cachedElementSize);
-                    bytes.flip();
-                } else {
-                    return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
-                }
-                return toSulongNode.execute(decode(bytes));
-            } catch (ArithmeticException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "array size too large");
-            } catch (CharacterCodingException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeError, "%m", e);
-            } catch (IllegalArgumentException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "%m", e);
-            } catch (InteropException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
-            } catch (IllegalElementTypeException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.UnicodeDecodeError, "Invalid input element type '%p'", e.elem);
-            }
-        }
-
-        @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
-        Object doBytes(VirtualFrame frame, Object arr, PInt n, PInt elementSize, Object errorMarker,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @CachedLibrary("arr") InteropLibrary lib,
-                        @CachedLibrary(limit = "1") InteropLibrary elemLib) {
-            try {
-                long es = elementSize.longValueExact();
-                return doBytes(frame, arr, n.longValueExact(), es, errorMarker, toSulongNode, es, lib, elemLib);
-            } catch (ArithmeticException e) {
-                return raiseNative(frame, errorMarker, PythonErrorType.ValueError, "invalid parameters");
-            }
-        }
-
-        @TruffleBoundary
-        private static String decode(ByteBuffer bytes) throws CharacterCodingException {
-            return getUTF32Charset(0).newDecoder().decode(bytes).toString();
-        }
-
-        private static ByteBuffer readWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object o, int size, int elementSize)
-                        throws UnsupportedMessageException, InvalidArrayIndexException, IllegalElementTypeException {
-            ByteBuffer buf = allocate(size * Integer.BYTES);
-            for (int i = 0; i < size; i += elementSize) {
-                putInt(buf, readElement(arrLib, elemLib, o, i, elementSize));
-            }
-            return buf;
-        }
-
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-        private static int readElement(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int i, int elementSize)
-                        throws InvalidArrayIndexException, UnsupportedMessageException, IllegalElementTypeException {
-            byte[] barr = new byte[4];
-            CompilerAsserts.partialEvaluationConstant(elementSize);
-            for (int j = 0; j < elementSize; j++) {
-                Object elem = arrLib.readArrayElement(arr, i + j);
-                // The array object could be one of our wrappers (e.g. 'PySequenceArrayWrapper').
-                // Since the Interop library does not allow to specify how many bytes we want to
-                // read when we do readArrayElement, our wrappers always return long. So, we check
-                // for 'long' here and cast down to 'byte'.
-                if (elemLib.fitsInLong(elem)) {
-                    barr[j] = (byte) elemLib.asLong(elem);
-                } else {
-                    CompilerDirectives.transferToInterpreter();
-                    throw new IllegalElementTypeException(elem);
-                }
-            }
-            return toInt(barr);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static int toInt(byte[] barr) {
-            return ByteBuffer.wrap(barr).order(ByteOrder.LITTLE_ENDIAN).getInt();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static ByteBuffer allocate(int cap) {
-            return ByteBuffer.allocate(cap);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static void putInt(ByteBuffer buf, int element) {
-            buf.putInt(element);
-        }
-
-        private static final class IllegalElementTypeException extends Exception {
-            private static final long serialVersionUID = 0L;
-            private final Object elem;
-
-            IllegalElementTypeException(Object elem) {
-                this.elem = elem;
+                return toSulongNode.execute(unicodeFromWcharNode.execute(arr, n, elementSize));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return errorMarker;
             }
         }
     }
@@ -1265,39 +1134,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(errors)")
-        Object doUnicode(VirtualFrame frame, PString s, @SuppressWarnings("unused") PNone errors, Object error_marker) {
-            return doUnicode(frame, s, "strict", error_marker);
+        Object doUnicode(VirtualFrame frame, PString s, @SuppressWarnings("unused") PNone errors, Object error_marker,
+                        @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
+            return doUnicode(frame, s, "strict", error_marker, encodeNativeStringNode);
         }
 
         @Specialization
-        Object doUnicode(VirtualFrame frame, PString s, String errors, Object error_marker) {
+        Object doUnicode(VirtualFrame frame, PString s, String errors, Object error_marker,
+                        @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
             try {
-                return factory().createBytes(doEncode(s, errors));
+                return encodeNativeStringNode.execute(charset, s, errors);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return error_marker;
-            } catch (CharacterCodingException e) {
-                return raiseNative(frame, error_marker, PythonErrorType.UnicodeEncodeError, "%m", e);
             }
         }
 
         @Fallback
         Object doUnicode(VirtualFrame frame, @SuppressWarnings("unused") Object s, @SuppressWarnings("unused") Object errors, Object errorMarker) {
             return raiseBadArgument(frame, errorMarker);
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private byte[] doEncode(PString s, String errors) throws CharacterCodingException {
-            CharsetEncoder encoder = charset.newEncoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-            encoder.onMalformedInput(action).onUnmappableCharacter(action);
-            CharBuffer buf = CharBuffer.allocate(StringLenNodeGen.getUncached().execute(s));
-            buf.put(s.getValue());
-            buf.flip();
-            ByteBuffer encoded = encoder.encode(buf);
-            byte[] barr = new byte[encoded.remaining()];
-            encoded.get(barr);
-            return barr;
         }
     }
 
@@ -1362,7 +1217,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (CharacterCodingException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.UnicodeEncodeError, "%m", e);
             } catch (IllegalArgumentException e) {
-                String csName = getUTF32Name(byteorder);
+                String csName = Charsets.getUTF32Name(byteorder);
                 return raiseNative(frame, errorMarker, PythonErrorType.LookupError, "unknown encoding: " + csName);
             } catch (InteropException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
@@ -1371,7 +1226,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private String decodeUTF32(byte[] data, int size, String errors, int byteorder) throws CharacterCodingException {
-            CharsetDecoder decoder = getUTF32Charset(byteorder).newDecoder();
+            CharsetDecoder decoder = Charsets.getUTF32Charset(byteorder).newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
             CharBuffer decode = decoder.onMalformedInput(action).onUnmappableCharacter(action).decode(wrap(data, 0, size));
             return decode.toString();
@@ -2970,25 +2825,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ParseTupleAndKeywordsBaseNode extends PythonVarargsBuiltinNode {
+    public abstract static class ParseTupleAndKeywordsBaseNode extends PythonVarargsBuiltinNode {
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return execute(frame, self, arguments, PKeyword.EMPTY_KEYWORDS);
         }
 
-        static int doConvert(Object cextModule, Object argv, Object nativeKwds, Object nativeFormat, Object nativeKwdnames, Object nativeVarargs,
+        public static int doConvert(CExtContext nativeContext, Object nativeNull, Object argv, Object nativeKwds, Object nativeFormat, Object nativeKwdnames, Object nativeVarargs,
                         ReferenceLibrary kwdsRefLib,
                         ReferenceLibrary kwdnamesRefLib,
                         ValueProfile kwdsProfile,
                         ConditionProfile kwdnamesProfile,
                         ConditionProfile functionNameProfile,
-                        CExtNodes.AsPythonObjectNode kwdsToJavaNode,
+                        CExtAsPythonObjectNode kwdsToJavaNode,
                         CastToJavaStringNode castToStringNode,
-                        CExtNodes.ToSulongNode nativeNullToSulongNode,
-                        GetNativeNullNode getNativeNullNode,
-                        CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
-            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
+                        CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
 
             // force 'format' to be a String
             String format = castToStringNode.execute(nativeFormat);
@@ -3009,13 +2861,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (kwdsRefLib.isSame(nativeKwds, nativeNull)) {
                 kwds = null;
             } else {
-                kwds = kwdsToJavaNode.execute(nativeKwds);
+                kwds = kwdsToJavaNode.execute(nativeContext, nativeKwds);
             }
 
             // sort out if kwdnames is native NULL
             Object kwdnames = kwdnamesProfile.profile(kwdnamesRefLib.isSame(nativeKwdnames, nativeNull)) ? null : nativeKwdnames;
 
-            return parseTupleAndKeywordsNode.execute(functionName, argv, kwdsProfile.profile(kwds), format, kwdnames, nativeVarargs);
+            return parseTupleAndKeywordsNode.execute(functionName, argv, kwdsProfile.profile(kwds), format, kwdnames, nativeVarargs, nativeContext);
         }
 
         static Object getKwds(Object[] arguments) {
@@ -3033,6 +2885,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
         static int doConvert(Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
                         @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
                         @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
@@ -3043,10 +2896,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+            CExtContext nativeContext = context.getCApiContext();
             Object argv = argvToJavaNode.execute(arguments[0]);
-            return ParseTupleAndKeywordsBaseNode.doConvert(cextModule, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
-                            functionNameProfile, kwdsToJavaNode, castToStringNode, nativeNullToSulongNode, getNativeNullNode, parseTupleAndKeywordsNode);
+            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
+            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsRefLib, kwdnamesRefLib, kwdsProfile,
+                            kwdnamesProfile, functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
 
     }
@@ -3057,6 +2912,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
         int doConvert(VirtualFrame frame, Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary("getArgsArray(arguments)") InteropLibrary argsArrayLib,
                         @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
                         @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
@@ -3068,18 +2924,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode,
+                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
+                CExtContext nativeContext = context.getCApiContext();
                 Object argsArray = arguments[0];
                 int n = PInt.intValueExact(argsArrayLib.getArraySize(argsArray));
                 Object[] args = new Object[n];
                 for (int i = 0; i < args.length; i++) {
                     args[i] = argvToJavaNode.execute(argsArrayLib.readArrayElement(argsArray, i));
                 }
+                Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
                 PTuple argv = factory().createTuple(args);
-                return ParseTupleAndKeywordsBaseNode.doConvert(cextModule, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
-                                functionNameProfile, kwdsToJavaNode, castToStringNode, nativeNullToSulongNode, getNativeNullNode, parseTupleAndKeywordsNode);
+                return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsRefLib, kwdnamesRefLib, kwdsProfile,
+                                kwdnamesProfile, functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
                 return raiseNode.raiseInt(frame, 0, SystemError, "error when reading native argument stack: %s", e);
@@ -3097,22 +2955,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "arguments.length == 5", limit = "2")
         static int doConvert(Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
                         @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
                         @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
                         @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
-                        @Cached PCallCapiFunction callMallocOutVarPtr,
+                        @Cached PCallCExtFunction callMallocOutVarPtr,
                         @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
                         @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtModsupportNodes.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
+            CExtContext nativeContext = context.getCApiContext();
+            Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
             Object argv = argvToJavaNode.execute(arguments[0]);
-            VaListWrapper varargs = new VaListWrapper(arguments[4], callMallocOutVarPtr.call(NativeCAPISymbols.FUN_ALLOCATE_OUTVAR));
-            return ParseTupleAndKeywordsBaseNode.doConvert(cextModule, argv, arguments[1], arguments[2], arguments[3], varargs, kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
-                            functionNameProfile, kwdsToJavaNode, castToStringNode, nativeNullToSulongNode, getNativeNullNode, parseTupleAndKeywordsNode);
+            VaListWrapper varargs = new VaListWrapper(nativeContext, arguments[4], callMallocOutVarPtr.call(nativeContext, NativeCAPISymbols.FUN_ALLOCATE_OUTVAR));
+            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], varargs, kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
+                            functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
     }
 

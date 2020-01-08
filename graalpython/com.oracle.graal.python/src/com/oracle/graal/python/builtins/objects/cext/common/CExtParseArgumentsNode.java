@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
@@ -50,18 +50,17 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodesFactory.ConvertArgNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtModsupportNodesFactory.ParseTupleAndKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ParseTupleAndKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -106,7 +105,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 
-public abstract class CExtModsupportNodes {
+public abstract class CExtParseArgumentsNode {
     static final char FORMAT_LOWER_S = 's';
     static final char FORMAT_UPPER_S = 'S';
     static final char FORMAT_LOWER_Z = 'z';
@@ -142,16 +141,16 @@ public abstract class CExtModsupportNodes {
     @ImportStatic(PGuards.class)
     public abstract static class ParseTupleAndKeywordsNode extends Node {
 
-        public abstract int execute(String funName, Object argv, Object kwds, Object format, Object kwdnames, Object varargs);
+        public abstract int execute(String funName, Object argv, Object kwds, Object format, Object kwdnames, Object varargs, CExtContext nativeContext);
 
         @Specialization(guards = {"isDictOrNull(kwds)", "cachedFormat.equals(format)", "cachedFormat.length() <= 8"}, limit = "5")
-        int doSpecial(String funName, PTuple argv, Object kwds, @SuppressWarnings("unused") String format, Object kwdnames, Object varargs,
+        int doSpecial(String funName, PTuple argv, Object kwds, @SuppressWarnings("unused") String format, Object kwdnames, Object varargs, CExtContext nativeConext,
                         @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") String cachedFormat,
                         @Cached(value = "getChars(format)", allowUncached = true, dimensions = 1) char[] chars,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(funName, argv, kwds, chars, kwdnames, varargs, convertArgNodes, raiseNode);
+                doParsingExploded(funName, argv, kwds, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -159,12 +158,12 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial")
-        int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs,
+        int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 char[] chars = getChars(format);
-                ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
+                ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);
                 for (int i = 0; i < format.length(); i++) {
                     state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
@@ -175,10 +174,11 @@ public abstract class CExtModsupportNodes {
         }
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        private static void doParsingExploded(String funName, PTuple argv, Object kwds, char[] chars, Object kwdnames, Object varargs, ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
+        private static void doParsingExploded(String funName, PTuple argv, Object kwds, char[] chars, Object kwdnames, Object varargs, CExtContext nativeContext,
+                        ConvertArgNode[] convertArgNodes, PRaiseNativeNode raiseNode)
                         throws InteropException, ParseArgumentsException {
             CompilerAsserts.partialEvaluationConstant(chars.length);
-            ParserState state = new ParserState(funName, new PositionalArgStack(argv, null));
+            ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);
             for (int i = 0; i < chars.length; i++) {
                 state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNodes[i], raiseNode);
             }
@@ -290,37 +290,39 @@ public abstract class CExtModsupportNodes {
         private final boolean restOptional;
         private final boolean restKeywordsOnly;
         private final PositionalArgStack v;
+        private final CExtContext nativeContext;
 
-        ParserState(String funName, PositionalArgStack v) {
-            this(funName, 0, false, false, v);
+        ParserState(String funName, PositionalArgStack v, CExtContext nativeContext) {
+            this(funName, 0, false, false, v, nativeContext);
         }
 
-        private ParserState(String funName, int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v) {
+        private ParserState(String funName, int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v, CExtContext nativeContext) {
             this.funName = funName;
             this.outIndex = outIndex;
             this.restOptional = restOptional;
             this.restKeywordsOnly = restKeywordsOnly;
             this.v = v;
+            this.nativeContext = nativeContext;
         }
 
         ParserState incrementOutIndex() {
-            return new ParserState(funName, outIndex + 1, restOptional, restKeywordsOnly, v);
+            return new ParserState(funName, outIndex + 1, restOptional, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState restOptional() {
-            return new ParserState(funName, outIndex, true, restKeywordsOnly, v);
+            return new ParserState(funName, outIndex, true, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState restKeywordsOnly() {
-            return new ParserState(funName, outIndex, restOptional, true, v);
+            return new ParserState(funName, outIndex, restOptional, true, v, nativeContext);
         }
 
         ParserState open(PositionalArgStack nestedArgs) {
-            return new ParserState(funName, outIndex, restOptional, true, nestedArgs);
+            return new ParserState(funName, outIndex, restOptional, true, nestedArgs, nativeContext);
         }
 
         ParserState close() {
-            return new ParserState(funName, outIndex, restOptional, true, v.prev);
+            return new ParserState(funName, outIndex, restOptional, true, v.prev, nativeContext);
         }
 
     }
@@ -343,7 +345,7 @@ public abstract class CExtModsupportNodes {
      * since the different specifiers need a very different set of helper nodes.
      */
     @GenerateUncached
-    @ImportStatic(CExtModsupportNodes.class)
+    @ImportStatic(CExtParseArgumentsNode.class)
     abstract static class ConvertArgNode extends Node {
         public abstract ParserState execute(ParserState state, Object kwds, char c, char[] format, int format_idx, Object kwdnames, Object varargs) throws InteropException, ParseArgumentsException;
 
@@ -356,18 +358,17 @@ public abstract class CExtModsupportNodes {
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
-                        @Cached PCallCapiFunction callGetBufferRwNode,
-                        @Cached ToSulongNode argToSulongNode,
-                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Cached PCallCExtFunction callGetBufferRwNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
                 // 'y*'; output to 'Py_buffer*'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     Object pybufferPtr = getVaArgNode.execute(varargs, state.outIndex);
-                    getbuffer(callGetBufferRwNode, argToSulongNode, raiseNode, arg, pybufferPtr, true);
+                    getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), pybufferPtr, true);
                 }
             } else {
                 // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
@@ -393,9 +394,10 @@ public abstract class CExtModsupportNodes {
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached StringLenNode stringLenNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             boolean z = c == FORMAT_LOWER_Z;
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
@@ -409,7 +411,7 @@ public abstract class CExtModsupportNodes {
                 // 's#' or 'z#'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     if (z && PGuards.isPNone(arg)) {
-                        writeOutVarNode.writeObject(varargs, state.outIndex, getNativeNullNode.execute());
+                        writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
                         state = state.incrementOutIndex();
                         writeOutVarNode.writeInt32(varargs, state.outIndex, 0);
                     } else if (PGuards.isString(arg)) {
@@ -425,7 +427,7 @@ public abstract class CExtModsupportNodes {
                 // 's' or 'z'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     if (z && PGuards.isPNone(arg)) {
-                        writeOutVarNode.writeObject(varargs, state.outIndex, getNativeNullNode.execute());
+                        writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
                     } else if (PGuards.isString(arg)) {
                         // TODO(fa) we could use CStringWrapper to do the copying lazily
                         writeOutVarNode.writePointer(varargs, state.outIndex, asCharPointerNode.execute(arg));
@@ -444,12 +446,13 @@ public abstract class CExtModsupportNodes {
                         @Exclusive @Cached GetLazyClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PBytes)) {
-                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, "expected bytes, not %p", arg);
                 }
@@ -464,12 +467,13 @@ public abstract class CExtModsupportNodes {
                         @Exclusive @Cached GetLazyClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PByteArray)) {
-                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, "expected bytearray, not %p", arg);
                 }
@@ -484,12 +488,13 @@ public abstract class CExtModsupportNodes {
                         @Exclusive @Cached GetLazyClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PString)) {
-                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, "expected str, not %p", arg);
                 }
@@ -503,7 +508,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 throw raise(raiseNode, TypeError, "'e*' format specifiers are not supported", arg);
             }
@@ -520,7 +525,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             // C type: unsigned char
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     long ival = asNativePrimitiveNode.toInt64(arg, true);
@@ -550,7 +555,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: unsigned char
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     writeOutVarNode.writeUInt8(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, false));
@@ -573,7 +578,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             // C type: signed short int
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     long ival = asNativePrimitiveNode.toInt64(arg, true);
@@ -602,7 +607,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: short int sized bitfield
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     writeOutVarNode.writeInt16(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, false));
@@ -625,7 +630,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             // C type: signed int
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     long ival = asNativePrimitiveNode.toInt64(arg, true);
@@ -654,7 +659,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: int sized bitfield
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     writeOutVarNode.writeUInt32(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, false));
@@ -680,7 +685,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: signed long and signed long long
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     writeOutVarNode.writeInt64(varargs, state.outIndex, asNativePrimitiveNode.toInt64(arg, true));
@@ -706,7 +711,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: unsigned long and unsigned long long
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     writeOutVarNode.writeUInt64(varargs, state.outIndex, asNativePrimitiveNode.toUInt64(arg, false));
@@ -728,7 +733,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws InteropException, ParseArgumentsException {
 
             // C type: signed short int
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 try {
                     // TODO(fa): AsNativePrimitiveNode coerces using '__int__', but here we must use
@@ -751,7 +756,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 SequenceStorage s = null;
                 if (arg instanceof PBytes) {
@@ -777,7 +782,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 // TODO(fa): There could be native subclasses (i.e. the Java type would not be
                 // 'String' or 'PString') but we do currently not support this.
@@ -805,7 +810,7 @@ public abstract class CExtModsupportNodes {
                         @Cached AsNativeDoubleNode asDoubleNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 writeOutVarNode.writeFloat(varargs, state.outIndex, (float) asDoubleNode.execute(arg));
             }
@@ -819,7 +824,7 @@ public abstract class CExtModsupportNodes {
                         @Cached AsNativeDoubleNode asDoubleNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 writeOutVarNode.writeDouble(varargs, state.outIndex, asDoubleNode.execute(arg));
             }
@@ -833,7 +838,7 @@ public abstract class CExtModsupportNodes {
                         @Cached AsNativeComplexNode asComplexNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 writeOutVarNode.writeComplex(varargs, state.outIndex, asComplexNode.execute(arg));
             }
@@ -848,10 +853,11 @@ public abstract class CExtModsupportNodes {
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached ToJavaNode typeToJavaNode,
+                        @Cached(value = "createTJ(state)", uncached = "getUncachedTJ(state)") CExtToJavaNode typeToJavaNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (isLookahead(format, format_idx, '!')) {
                 /* format_idx++; */
                 if (!skipOptionalArg(arg, state.restOptional)) {
@@ -862,7 +868,7 @@ public abstract class CExtModsupportNodes {
                         raiseNode.raiseIntWithoutFrame(0, TypeError, "expected object of type %s, got %p", typeObject, arg);
                         throw ParseArgumentsException.raise();
                     }
-                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
                 }
             } else if (isLookahead(format, format_idx, '&')) {
                 /* format_idx++; */
@@ -870,11 +876,11 @@ public abstract class CExtModsupportNodes {
                 state = state.incrementOutIndex();
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     Object output = getVaArgNode.execute(varargs, state.outIndex);
-                    executeConverterNode.execute(state.outIndex, converter, arg, output);
+                    executeConverterNode.execute(state.nativeContext.getSupplier(), state.outIndex, converter, arg, output);
                 }
             } else {
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    writeOutVarNode.writeObject(varargs, state.outIndex, arg);
+                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
                 }
             }
             return state.incrementOutIndex();
@@ -885,25 +891,25 @@ public abstract class CExtModsupportNodes {
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
-                        @Cached PCallCapiFunction callGetBufferRwNode,
-                        @Cached ToSulongNode argToSulongNode,
+                        @Cached PCallCExtFunction callGetBufferRwNode,
+                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!isLookahead(format, format_idx, '*')) {
                 throw raise(raiseNode, TypeError, "invalid use of 'w' format character");
 
             }
             if (!skipOptionalArg(arg, state.restOptional)) {
                 Object pybufferPtr = getVaArgNode.execute(varargs, state.outIndex);
-                getbuffer(callGetBufferRwNode, argToSulongNode, raiseNode, arg, pybufferPtr, false);
+                getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, toNativeNode.execute(arg), pybufferPtr, false);
             }
             return state.incrementOutIndex();
         }
 
-        private static void getbuffer(PCallCapiFunction callGetBufferRwNode, ToSulongNode argToSulongNode, PRaiseNativeNode raiseNode, Object arg, Object pybufferPtr, boolean readOnly)
+        private static void getbuffer(CExtContext nativeContext, PCallCExtFunction callGetBufferRwNode, PRaiseNativeNode raiseNode, Object sulongArg, Object pybufferPtr, boolean readOnly)
                         throws ParseArgumentsException {
             String funName = readOnly ? FUN_GET_BUFFER_R : FUN_GET_BUFFER_RW;
-            Object rc = callGetBufferRwNode.call(funName, argToSulongNode.execute(arg), pybufferPtr);
+            Object rc = callGetBufferRwNode.call(nativeContext, funName, sulongArg, pybufferPtr);
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, "%s returned an unexpected return code; expected 'int' but was %s", funName, rc.getClass());
             }
@@ -921,7 +927,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 // TODO(fa) refactor 'CastToBooleanNode' to provide uncached version and use it
                 writeOutVarNode.writeInt32(varargs, state.outIndex, LookupAndCallUnaryDynamicNode.getUncached().executeObject(arg, SpecialMethodNames.__BOOL__));
@@ -935,7 +941,7 @@ public abstract class CExtModsupportNodes {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
-            Object arg = getArgNode.execute(state.v, kwds, kwdnames, state.restKeywordsOnly);
+            Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (skipOptionalArg(arg, state.restOptional)) {
                 return state.incrementOutIndex();
             } else {
@@ -962,6 +968,22 @@ public abstract class CExtModsupportNodes {
         private static boolean isLookahead(char[] format, int format_idx, char expected) {
             return format_idx + 1 < format.length && format[format_idx + 1] == expected;
         }
+
+        public static CExtToNativeNode createTN(ParserState state) {
+            return state.nativeContext.getSupplier().createToNativeNode();
+        }
+
+        public static CExtToNativeNode getUncachedTN(ParserState state) {
+            return state.nativeContext.getSupplier().getUncachedToNativeNode();
+        }
+
+        public static CExtToJavaNode createTJ(ParserState state) {
+            return state.nativeContext.getSupplier().createToJavaNode();
+        }
+
+        public static CExtToJavaNode getUncachedTJ(ParserState state) {
+            return state.nativeContext.getSupplier().getUncachedToJavaNode();
+        }
     }
 
     /**
@@ -970,54 +992,55 @@ public abstract class CExtModsupportNodes {
     @GenerateUncached
     abstract static class GetArgNode extends Node {
 
-        public abstract Object execute(PositionalArgStack p, Object kwds, Object kwdnames, boolean keywords_only) throws InteropException;
+        public abstract Object execute(ParserState state, Object kwds, Object kwdnames, boolean keywords_only) throws InteropException;
 
         @Specialization(guards = {"kwds == null", "!keywordsOnly"})
-        Object doNoKeywords(PositionalArgStack p, @SuppressWarnings("unused") Object kwds, @SuppressWarnings("unused") Object kwdnames, boolean keywordsOnly,
+        @SuppressWarnings("unused")
+        static Object doNoKeywords(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
 
             Object out = null;
             assert !keywordsOnly;
-            int l = lenNode.execute(p.argv);
-            if (p.argnum < l) {
-                out = getItemNode.execute(getSequenceStorageNode.execute(p.argv), p.argnum);
+            int l = lenNode.execute(state.v.argv);
+            if (state.v.argnum < l) {
+                out = getItemNode.execute(getSequenceStorageNode.execute(state.v.argv), state.v.argnum);
             }
-            p.argnum++;
+            state.v.argnum++;
             return out;
         }
 
         @Specialization(replaces = "doNoKeywords", limit = "1")
-        Object doGeneric(PositionalArgStack p, Object kwds, Object kwdnames, boolean keywordsOnly,
+        static Object doGeneric(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                         @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         @CachedLibrary("kwdnames") InteropLibrary kwdnamesLib,
-                        @Cached PCallCapiFunction callCStringToString) throws InteropException {
+                        @Cached PCallCExtFunction callCStringToString) throws InteropException {
 
             Object out = null;
             if (!keywordsOnly) {
-                int l = lenNode.execute(p.argv);
-                if (p.argnum < l) {
-                    out = getItemNode.execute(getSequenceStorageNode.execute(p.argv), p.argnum);
+                int l = lenNode.execute(state.v.argv);
+                if (state.v.argnum < l) {
+                    out = getItemNode.execute(getSequenceStorageNode.execute(state.v.argv), state.v.argnum);
                 }
             }
             // only the bottom argstack can have keyword names
-            if (kwds != null && out == null && p.prev == null && kwdnames != null) {
-                Object kwdnamePtr = kwdnamesLib.readArrayElement(kwdnames, p.argnum);
+            if (kwds != null && out == null && state.v.prev == null && kwdnames != null) {
+                Object kwdnamePtr = kwdnamesLib.readArrayElement(kwdnames, state.v.argnum);
                 // TODO(fa) check if this is the NULL pointer since the kwdnames are always
                 // NULL-terminated
-                Object kwdname = callCStringToString.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
+                Object kwdname = callCStringToString.call(state.nativeContext, NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, kwdnamePtr);
                 if (kwdname instanceof String) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
                     out = getDictItemNode.executeWithGlobalState(getDictStorageNode.execute((PDict) kwds), kwdname);
                 }
             }
-            p.argnum++;
+            state.v.argnum++;
             return out;
         }
     }
@@ -1029,28 +1052,31 @@ public abstract class CExtModsupportNodes {
     @GenerateUncached
     abstract static class ExecuteConverterNode extends Node {
 
-        public abstract void execute(int index, Object converter, Object inputArgument, Object outputArgument) throws ParseArgumentsException;
+        public abstract void execute(ConversionNodeSupplier supplier, int index, Object converter, Object inputArgument, Object outputArgument) throws ParseArgumentsException;
 
         @Specialization(guards = "cachedIndex == index", limit = "5")
-        static void doExecuteConverterCached(@SuppressWarnings("unused") int index, Object converter, Object inputArgument, Object outputArgument,
+        @SuppressWarnings("unused")
+        static void doExecuteConverterCached(ConversionNodeSupplier supplier, int index, Object converter, Object inputArgument,
+                        Object outputArgument,
                         @Cached(value = "index", allowUncached = true) @SuppressWarnings("unused") int cachedIndex,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Cached(value = "createTN(supplier)", uncached = "getUncachedTN(supplier)") CExtToNativeNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) throws ParseArgumentsException {
-            doExecuteConverterGeneric(index, converter, inputArgument, outputArgument, converterLib, resultLib, toSulongNode, raiseNode, checkResultNode);
+            doExecuteConverterGeneric(supplier, index, converter, inputArgument, outputArgument, converterLib, resultLib, toNativeNode, raiseNode, checkResultNode);
         }
 
         @Specialization(replaces = "doExecuteConverterCached", limit = "1")
-        static void doExecuteConverterGeneric(@SuppressWarnings("unused") int index, Object converter, Object inputArgument, Object outputArgument,
+        @SuppressWarnings("unused")
+        static void doExecuteConverterGeneric(ConversionNodeSupplier supplier, int index, Object converter, Object inputArgument, Object outputArgument,
                         @CachedLibrary("converter") InteropLibrary converterLib,
                         @CachedLibrary(limit = "1") InteropLibrary resultLib,
-                        @Exclusive @Cached ToSulongNode toSulongNode,
+                        @Cached(value = "createTN(supplier)", uncached = "getUncachedTN(supplier)") CExtToNativeNode toNativeNode,
                         @Exclusive @Cached PRaiseNativeNode raiseNode,
                         @Exclusive @Cached ConverterCheckResultNode checkResultNode) throws ParseArgumentsException {
             try {
-                Object result = converterLib.execute(converter, toSulongNode.execute(inputArgument), outputArgument);
+                Object result = converterLib.execute(converter, toNativeNode.execute(inputArgument), outputArgument);
                 if (resultLib.fitsInInt(result)) {
                     checkResultNode.execute(resultLib.asInt(result));
                     return;
@@ -1070,6 +1096,14 @@ public abstract class CExtModsupportNodes {
             }
             throw ParseArgumentsException.raise();
         }
+
+        static CExtToNativeNode createTN(ConversionNodeSupplier supplier) {
+            return supplier.createToNativeNode();
+        }
+
+        static CExtToNativeNode getUncachedTN(ConversionNodeSupplier supplier) {
+            return supplier.getUncachedToNativeNode();
+        }
     }
 
     /**
@@ -1087,7 +1121,7 @@ public abstract class CExtModsupportNodes {
         }
 
         @Specialization(guards = "statusCode == 0")
-        static void doError(int statusCode,
+        static void doError(@SuppressWarnings("unused") int statusCode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
             PException currentException = context.getCurrentException();
@@ -1124,8 +1158,7 @@ public abstract class CExtModsupportNodes {
         static final int TYPE_DOUBLE = 8;
         static final int TYPE_FLOAT = 9;
         static final int TYPE_VOIDPTR = 10;
-        static final int TYPE_OBJECT = 11;
-        static final int TYPE_COMPLEX = 12;
+        static final int TYPE_COMPLEX = 11;
 
         @CompilationFinal(dimensions = 1) private static final String[] MAP = new String[]{"i8", "i16", "i32", "i64", "u8", "i16", "u32", "u64", "d", "f", "ptr", "ptr", "c"};
 
@@ -1170,14 +1203,6 @@ public abstract class CExtModsupportNodes {
         }
 
         /**
-         * Use this method to write an object (e.g. some Python object) which needs to be wrapped
-         * into a native wrapper.
-         */
-        public final void writeObject(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_OBJECT, value);
-        }
-
-        /**
          * Use this method if the object (pointer) to write is already a Sulong object (e.g. an LLVM
          * pointer or a native wrapper) and does not need to be wrapped.
          */
@@ -1207,15 +1232,6 @@ public abstract class CExtModsupportNodes {
                         @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
                         @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib) throws InteropException {
             doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, MAP[accessType], value);
-        }
-
-        @Specialization(guards = "accessType == TYPE_OBJECT", limit = "1")
-        static void doObject(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, Object value,
-                        @CachedLibrary("varargs") InteropLibrary varargsLib,
-                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
-                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib,
-                        @Cached ToSulongNode toSulongNode) throws InteropException {
-            doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, MAP[accessType], toSulongNode.execute(value));
         }
 
         @Specialization(guards = "accessType == TYPE_COMPLEX", limit = "1")

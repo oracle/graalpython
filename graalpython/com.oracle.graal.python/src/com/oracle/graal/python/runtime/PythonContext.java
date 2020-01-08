@@ -51,6 +51,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionValues;
 
@@ -198,7 +199,7 @@ public final class PythonContext {
     private OutputStream out;
     private OutputStream err;
     private InputStream in;
-    @CompilationFinal private Object capiLibrary = null;
+    @CompilationFinal private CApiContext cApiContext;
     private final Assumption singleThreaded = Truffle.getRuntime().createAssumption("single Threaded");
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
@@ -598,18 +599,6 @@ public final class PythonContext {
         PythonLanguage.getLogger().warning(warning);
     }
 
-    public boolean capiWasLoaded() {
-        return this.capiLibrary != null;
-    }
-
-    public Object getCapiLibrary() {
-        return this.capiLibrary;
-    }
-
-    public void setCapiWasLoaded(Object capiLibrary) {
-        this.capiLibrary = capiLibrary;
-    }
-
     public HashingStorage.Equivalence getSlowPathEquivalence() {
         if (slowPathEquivalence == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -961,5 +950,18 @@ public final class PythonContext {
                 sentinelLock.release();
             }
         }
+    }
+
+    public boolean hasCApiContext() {
+        return cApiContext != null;
+    }
+
+    public CApiContext getCApiContext() {
+        return cApiContext;
+    }
+
+    public void setCapiWasLoaded(Object capiLibrary) {
+        assert cApiContext == null : "tried to create new C API context but it was already created";
+        cApiContext = new CApiContext(this, capiLibrary);
     }
 }

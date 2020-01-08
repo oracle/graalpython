@@ -38,53 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-
-@ExportLibrary(InteropLibrary.class)
-public final class VaListWrapper implements TruffleObject {
-
-    private final Object vaListPtr;
-    public final Object outVarPtrPtr;
-
-    private long pos;
-
-    public VaListWrapper(Object vaListPtr, Object outVarPtrPtr) {
-        this.vaListPtr = vaListPtr;
-        this.outVarPtrPtr = outVarPtrPtr;
-    }
-
-    @ExportMessage
-    final long getArraySize() {
-        return Long.MAX_VALUE;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    final boolean hasArrayElements() {
-        return true;
-    }
-
-    @ExportMessage
-    final Object readArrayElement(long index,
-                    @Cached PCallCapiFunction callGetVaargNode) throws InvalidArrayIndexException {
-        if (index != pos) {
-            throw InvalidArrayIndexException.create(index);
-        }
-        Object res = callGetVaargNode.execute("get_next_vaarg", new Object[]{vaListPtr, outVarPtrPtr});
-        pos++;
-        return outVarPtrPtr;
-    }
-
-    @ExportMessage
-    final boolean isArrayElementReadable(long identifier) {
-        return 0 <= identifier && identifier < getArraySize();
-    }
+public abstract class CExtToJavaNode extends CExtAsPythonObjectNode {
 }
