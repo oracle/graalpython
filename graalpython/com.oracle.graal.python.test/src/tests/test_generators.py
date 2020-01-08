@@ -207,18 +207,19 @@ class ExceptionTest(unittest.TestCase):
         next(g)
         next(g)
         self.assertEqual(next(g), "done")
-        
 
-    def test_stopiteration_warning(self):
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
+    def test_stopiteration_error(self):
         # See also PEP 479.
 
         def gen():
             raise StopIteration
             yield
 
-        with self.assertRaises(StopIteration):
+        with self.assertRaisesRegex(RuntimeError, 'raised StopIteration'):
             next(gen())
 
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
     def test_tutorial_stopiteration(self):
         # Raise StopIteration" stops the generator too:
 
@@ -230,13 +231,9 @@ class ExceptionTest(unittest.TestCase):
         g = f()
         self.assertEqual(next(g), 1)
 
-        with self.assertRaises(StopIteration):
+        with self.assertRaisesRegex(RuntimeError, 'raised StopIteration'):
             next(g)
 
-        with self.assertRaises(StopIteration):
-            # This time StopIteration isn't raised from the generator's body,
-            # hence no warning.
-            next(g)
 
     # def test_return_tuple(self):
     #     def g():
