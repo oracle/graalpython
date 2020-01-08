@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -66,6 +67,11 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     @SuppressWarnings("static-method")
     public LazyPythonClass getLazyPythonClass() {
         return PythonBuiltinClassType.PInt;
+    }
+
+    @ExportMessage
+    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return this;
     }
 
     @Override

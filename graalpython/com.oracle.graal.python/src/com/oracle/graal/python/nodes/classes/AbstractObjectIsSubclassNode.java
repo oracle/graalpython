@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,43 +47,86 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
+@GenerateUncached
 @ImportStatic(PythonOptions.class)
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_issubclass")
 public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
-    @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
-    @Child private SequenceStorageNodes.LenNode lenNode;
-
     public static AbstractObjectIsSubclassNode create() {
         return AbstractObjectIsSubclassNodeGen.create();
     }
 
-    public abstract boolean execute(VirtualFrame frame, Object derived, Object cls);
+    protected abstract boolean executeInternal(Frame frame, Object derived, Object cls);
+
+    public final boolean execute(VirtualFrame frame, Object derived, Object cls) {
+        return executeInternal(frame, derived, cls);
+    }
+
+    public final boolean execute(Object derived, Object cls) {
+        return execute(null, derived, cls);
+    }
 
     @Specialization(guards = "derived == cls")
     boolean isSameClass(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls) {
         return true;
     }
 
+    protected static int[] observedSize() {
+        int[] ary = new int[1];
+        ary[0] = 0;
+        return ary;
+    }
+
     @Specialization(guards = {"derived != cls", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
     boolean isSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
+                    @Cached(value = "observedSize()", dimensions = 1) int[] observedSizeArray,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
-                    @Exclusive @Cached GetObjectArrayNode getObjectArrayNode) {
-        // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
+                    @Cached GetObjectArrayNode getObjectArrayNode) {
         PTuple bases = getBasesNode.execute(frame, cachedDerived);
-        if (bases == null || isEmpty(bases)) {
+        if (bases == null || isEmpty(bases, lenNode)) {
             return false;
         }
+        Object[] basesAry = getObjectArrayNode.execute(bases);
+        if (observedSizeArray[0] == 0) {
+            // first time, the array isn't length 0! (guard above)
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            observedSizeArray[0] = basesAry.length;
+        }
+        if (observedSizeArray[0] > 0 && observedSizeArray[0] < 32 && observedSizeArray[0] == basesAry.length) {
+            // we observe a short constant size
+            return loopBases(frame, cachedCls, basesAry, isSubclassNode);
+        } else if (observedSizeArray[0] > 0) {
+            // the observed size is too large or not constant, disable explosion
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            observedSizeArray[0] = -1;
+        }
+        return loopUnexploded(frame, cachedCls, isSubclassNode, basesAry);
+    }
 
-        for (Object baseCls : getObjectArrayNode.execute(bases)) {
+    private static final boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry) {
+        for (Object baseCls : basesAry) {
             if (isSubclassNode.execute(frame, baseCls, cachedCls)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @ExplodeLoop
+    private static final boolean loopBases(VirtualFrame frame, Object cachedCls, Object[] bases, AbstractObjectIsSubclassNode isSubclassNode) {
+        for (int i = 0; i < bases.length; i++) {
+            if (isSubclassNode.execute(frame, bases[i], cachedCls)) {
                 return true;
             }
         }
@@ -92,14 +135,16 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     @Specialization(replaces = {"isSubclass", "isSameClass"})
     boolean isSubclassGeneric(VirtualFrame frame, Object derived, Object cls,
-                    @Exclusive @Cached AbstractObjectIsSubclassNode isSubclassNode,
-                    @Exclusive @Cached GetObjectArrayNode getObjectArrayNode) {
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached AbstractObjectGetBasesNode getBasesNode,
+                    @Cached AbstractObjectIsSubclassNode isSubclassNode,
+                    @Cached GetObjectArrayNode getObjectArrayNode) {
         if (derived == cls) {
             return true;
         }
 
         PTuple bases = getBasesNode.execute(frame, derived);
-        if (bases == null || isEmpty(bases)) {
+        if (bases == null || isEmpty(bases, lenNode)) {
             return false;
         }
 
@@ -111,11 +156,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return false;
     }
 
-    private boolean isEmpty(PTuple bases) {
-        if (lenNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            lenNode = insert(SequenceStorageNodes.LenNode.create());
-        }
+    private static boolean isEmpty(PTuple bases, SequenceStorageNodes.LenNode lenNode) {
         return lenNode.execute(bases.getSequenceStorage()) == 0;
     }
 }

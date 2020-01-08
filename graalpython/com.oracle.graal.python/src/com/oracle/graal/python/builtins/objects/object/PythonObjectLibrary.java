@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -216,17 +217,37 @@ public abstract class PythonObjectLibrary extends Library {
      * Checks whether the receiver is a Python an indexable object. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
+     * Containers</a>.
      *
      * <br>
      * Specifically the default implementation checks for the implementation of the <b>__index__</b>
-     * special method.
+     * special method. This is analogous to {@code PyIndex_Check} in {@code abstract.h}
      *
      * @param receiver the receiver Object
      * @return True if object is indexable
      */
     public boolean canBeIndex(Object receiver) {
         return false;
+    }
+
+    /**
+     * Coerces the receiver into an index just like {@code PyNumber_AsIndex}.
+     *
+     * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
+     * object cannot be interpreted as an index.
+     */
+    public Object asIndexWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
+        }
+        return asIndex(receiver);
+    }
+
+    /**
+     * @see #asIndexWithState
+     */
+    public Object asIndex(Object receiver) {
+        return asIndexWithState(receiver, null);
     }
 
     /**
@@ -237,12 +258,22 @@ public abstract class PythonObjectLibrary extends Library {
      * <code>PyNumber_Index</code>)</li>
      * <li>Do a hard cast to long as per <code>PyLong_AsSsize_t</code></li>
      * </ol>
-     * 
+     *
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
     public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
         if (threadState == null) {
-            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
+            // this will very likely always raise an integer interpretation error in
+            // asIndexWithState
+            long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
+            int intResult = (int) result;
+            if (intResult == result) {
+                return intResult;
+            } else if (errorType == null) {
+                return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            } else {
+                throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
+            }
         }
         return asSize(receiver, errorType);
     }

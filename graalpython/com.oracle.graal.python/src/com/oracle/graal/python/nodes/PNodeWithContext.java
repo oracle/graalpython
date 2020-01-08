@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,5 +50,12 @@ public abstract class PNodeWithContext extends Node {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
         PythonLanguage language = PythonLanguage.getCurrent();
         return language.singleContextAssumption;
+    }
+
+    /**
+     * @return {@code true} if this node can be shared statically.
+     */
+    protected boolean isUncached() {
+        return !isAdoptable();
     }
 }

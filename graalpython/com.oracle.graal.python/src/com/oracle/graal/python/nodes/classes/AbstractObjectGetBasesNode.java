@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,29 +45,62 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_get_bases")
+@GenerateUncached
+@ImportStatic({SpecialMethodNames.class})
 public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
-    @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-
-    private final IsBuiltinClassProfile exceptionMaskProfile = IsBuiltinClassProfile.create();
-
     public static AbstractObjectGetBasesNode create() {
         return AbstractObjectGetBasesNodeGen.create();
     }
 
-    public abstract PTuple execute(VirtualFrame frame, Object cls);
+    protected abstract PTuple executeInternal(Frame frame, Object cls);
 
-    @Specialization
-    PTuple getBases(VirtualFrame frame, Object cls) {
+    public final PTuple execute(VirtualFrame frame, Object cls) {
+        return executeInternal(frame, cls);
+    }
+
+    public final PTuple execute(Object cls) {
+        return executeInternal(null, cls);
+    }
+
+    @Specialization(guards = "!isUncached()")
+    PTuple getBasesCached(VirtualFrame frame, Object cls,
+                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode,
+                    @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
         try {
             Object bases = getAttributeNode.executeObject(frame, cls, __BASES__);
+            if (bases instanceof PTuple) {
+                return (PTuple) bases;
+            }
+        } catch (PException pe) {
+            pe.expectAttributeError(exceptionMaskProfile);
+        }
+        return null;
+    }
+
+    @Specialization(replaces = "getBasesCached")
+    PTuple getBasesUncached(VirtualFrame frame, Object cls,
+                    @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
+                    @Cached CallNode callGetattributeNode,
+                    @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
+        Object getattr = lookupGetattributeNode.execute(cls, __GETATTRIBUTE__);
+        try {
+            Object bases = callGetattributeNode.execute(frame, getattr, cls, __BASES__);
             if (bases instanceof PTuple) {
                 return (PTuple) bases;
             }

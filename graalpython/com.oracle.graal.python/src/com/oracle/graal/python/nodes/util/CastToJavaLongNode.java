@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -93,8 +93,8 @@ public abstract class CastToJavaLongNode extends PNodeWithContext {
     @Specialization
     static long doNativeObject(PythonNativeObject x,
                     @Cached GetLazyClassNode getClassNode,
-                    @Cached IsSubtypeWithoutFrameNode isSubtypeNode) {
-        if (isSubtypeNode.executeWithGlobalState(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
         }

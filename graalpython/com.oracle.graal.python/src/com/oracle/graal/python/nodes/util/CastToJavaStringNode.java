@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -87,10 +87,10 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     @Specialization
     static String doNativeObject(PythonNativeObject x,
                     @Cached GetLazyClassNode getClassNode,
-                    @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                     @Cached ToSulongNode toSulongNode) {
-        if (isSubtypeNode.executeWithGlobalState(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
             // read the native data
             Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
             assert result instanceof String;

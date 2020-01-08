@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,9 +54,14 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -75,6 +80,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
@@ -155,6 +161,26 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @SuppressWarnings({"static-method", "unused"})
     public void setDict(PHashingCollection value) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public Object asIndexWithState(ThreadState threadState,
+                    @Exclusive @Cached GetLazyClassNode getClass,
+                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    // arguments for super-implementation call
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        if (isSubtypeNode.execute(getClass.execute(this), PythonBuiltinClassType.PInt)) {
+            return this; // subclasses of 'int' should do early return
+        } else {
+            return asIndexWithState(threadState, lib, raise, callNode, isSubtype, lookupIndex, noIndex, resultProfile, gotState);
+        }
     }
 
     @ExportMessage

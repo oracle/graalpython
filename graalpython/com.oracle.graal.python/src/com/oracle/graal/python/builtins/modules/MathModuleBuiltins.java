@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -43,7 +43,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -55,7 +58,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -70,6 +72,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "math")
@@ -1230,11 +1233,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
         Object gcd(VirtualFrame frame, Object x, Object y,
-                        @Cached("create()") CastToIntegerFromIndexNode xCast,
-                        @Cached("create()") CastToIntegerFromIndexNode yCast,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") GcdNode recursiveNode) {
-            Object xValue = xCast.execute(frame, x);
-            Object yValue = yCast.execute(frame, y);
+            ThreadState threadState = PArguments.getThreadState(frame);
+            Object xValue = lib.asIndexWithState(x, threadState);
+            Object yValue = lib.asIndexWithState(y, threadState);
             return recursiveNode.execute(frame, xValue, yValue);
         }
 
