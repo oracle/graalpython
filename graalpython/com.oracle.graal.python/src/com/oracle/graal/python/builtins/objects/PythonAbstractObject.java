@@ -784,15 +784,14 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     private static final String DATETIME_TYPE = "datetime";
     private static final String TIME_TYPE = "time";
     private static final String STRUCT_TIME_TYPE = "struct_time";
-    private static final PythonBuiltinClass fallbackClass = new PythonBuiltinClass(null, null);
 
     private static LazyPythonClass readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename) {
         Object type = readTypeNode.execute(module, typename);
         if (type instanceof LazyPythonClass) {
             return (LazyPythonClass) type;
         } else {
-            // this means someone messed with the builtin modules, we don't know anything and nothing will match this type
-            return fallbackClass;
+            CompilerDirectives.transferToInterpreter();
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "patched datetime class: %r", type);
         }
     }
 
