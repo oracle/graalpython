@@ -263,7 +263,8 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
         if (threadState == null) {
-            // this will very likely always raise an integer interpretation error in asIndexWithState
+            // this will very likely always raise an integer interpretation error in
+            // asIndexWithState
             long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
             int intResult = (int) result;
             if (intResult == result) {
