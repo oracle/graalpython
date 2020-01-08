@@ -311,6 +311,7 @@ def test_delitem():
     assert b == bytearray()
 
 
+@unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
 def test_subclass():
 
     class MyByteArray(bytearray):
@@ -321,7 +322,7 @@ def test_subclass():
     b1 = bytearray(range(10))
     b2 = MyByteArray(range(10))
     assert b1 == b2
-    assert "<<%s>>" % str(b1) == str(b2)
+    assert "<<%s>>" % str(b1).replace('bytearray', 'MyByteArray') == str(b2)
 
     class MyBytes(bytes):
 

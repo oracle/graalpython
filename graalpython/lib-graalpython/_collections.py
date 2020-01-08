@@ -341,7 +341,7 @@ class deque(object):
             maxlen_repr = ''
         else:
             maxlen_repr = ', maxlen=%d' % (self.maxlen,)
-        return 'deque(%s%s)' % (list_repr, maxlen_repr)
+        return '%s(%s%s)' % (type(self).__name__, list_repr, maxlen_repr)
 
     def __compare__(self, other, op):
         if not isinstance(other, deque):

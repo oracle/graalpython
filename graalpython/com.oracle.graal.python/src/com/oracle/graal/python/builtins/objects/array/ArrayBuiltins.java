@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -203,7 +204,12 @@ public class ArrayBuiltins extends PythonBuiltins {
                 typeCode = "d";
                 array = Arrays.toString(((DoubleSequenceStorage) sequenceStorage).getInternalDoubleArray());
             }
-            return String.format("array('%s', %s)", typeCode, array);
+            String typeName = TypeNodes.GetNameNode.doSlowPath(self.getLazyPythonClass());
+            if (sequenceStorage.length() == 0) {
+                return String.format("%s('%s')", typeName, typeCode);
+            } else {
+                return String.format("%s('%s', %s)", typeName, typeCode, array);
+            }
         }
     }
 

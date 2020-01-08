@@ -69,11 +69,16 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     @Override
     @TruffleBoundary
     public String toString() {
-        if (store instanceof ByteSequenceStorage) {
-            byte[] barr = ((ByteSequenceStorage) store).getInternalByteArray();
-            return String.format("bytearray(%s)", BytesUtils.bytesRepr(barr, barr.length));
+        return formatByteArray("bytearray");
+    }
+
+    @TruffleBoundary
+    public String formatByteArray(String typeName) {
+        if (getSequenceStorage() instanceof ByteSequenceStorage) {
+            byte[] barr = ((ByteSequenceStorage) getSequenceStorage()).getInternalByteArray();
+            return String.format("%s(%s)", typeName, BytesUtils.bytesRepr(barr, barr.length));
         } else {
-            return String.format("bytearray(%s)", store);
+            return String.format("%s(%s)", typeName, getSequenceStorage());
         }
     }
 

@@ -38,6 +38,11 @@ class repeat():
                 self.step += 1
         return self.obj
 
+    def __repr__(self):
+        if self.times is not None:
+            return "{}({}, {})".format(type(self).__name__, self.obj, self.times)
+        return "{}({})".format(type(self).__name__, self.obj)
+
 
 class chain():
     """
@@ -120,7 +125,7 @@ class count(object):
         return _cnt
 
     def __repr__(self):
-        _repr = 'count({}'.format(self._cnt)
+        _repr = '{}({}'.format(type(self).__name__, self._cnt)
         if not isinstance(self._step, int) or self._step != 1:
             _repr += ', {}'.format(self._step)
         return _repr + ')'
