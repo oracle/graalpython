@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNodeGen.WriteSequenceStorageStarredNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -46,14 +47,15 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class DestructuringAssignmentNode extends StatementNode implements WriteNode {
     /* Lazily initialized helpers, also acting as branch profiles */
     @Child private PRaiseNode raiseNode;
-    @Child private PythonObjectFactory factory;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     /* Syntactic children */
@@ -102,7 +104,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     }
 
     @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex < 0"})
-    public void writeList(VirtualFrame frame, PList rhsVal,
+    void writeList(VirtualFrame frame, PList rhsVal,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
@@ -112,7 +114,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     }
 
     @Specialization(guards = {"isBuiltinTuple(rhsVal, isBuiltinClass)", "starredIndex < 0"})
-    public void writeTuple(VirtualFrame frame, PTuple rhsVal,
+    void writeTuple(VirtualFrame frame, PTuple rhsVal,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
@@ -137,49 +139,22 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         }
     }
 
-    @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex >= 0"})
-    public void writeListStarred(VirtualFrame frame, PList rhsVal,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+    @Specialization(guards = {"isBuiltinList(rhsVal, isBuiltinClass)", "starredIndex >= 0"}, limit = "1")
+    void writeListStarred(VirtualFrame frame, PList rhsVal,
+                    @Shared("writeStarred") @Cached WriteSequenceStorageStarredNode writeSequenceStorageStarredNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
         SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
-        writeSequenceStorageStarred(frame, sequenceStorage, lenNode, getItemNode);
+        writeSequenceStorageStarredNode.execute(frame, sequenceStorage, slots, starredIndex);
         performAssignments(frame);
     }
 
-    @Specialization(guards = {"isBuiltinTuple(rhsVal, isBuiltinClass)", "starredIndex >= 0"})
-    public void writeTupleStarred(VirtualFrame frame, PTuple rhsVal,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+    @Specialization(guards = {"isBuiltinTuple(rhsVal, isBuiltinClass)", "starredIndex >= 0"}, limit = "1")
+    void writeTupleStarred(VirtualFrame frame, PTuple rhsVal,
+                    @Shared("writeStarred") @Cached WriteSequenceStorageStarredNode writeSequenceStorageStarredNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
         SequenceStorage sequenceStorage = rhsVal.getSequenceStorage();
-        writeSequenceStorageStarred(frame, sequenceStorage, lenNode, getItemNode);
+        writeSequenceStorageStarredNode.execute(frame, sequenceStorage, slots, starredIndex);
         performAssignments(frame);
-    }
-
-    @ExplodeLoop
-    private void writeSequenceStorageStarred(VirtualFrame frame, SequenceStorage sequenceStorage, SequenceStorageNodes.LenNode lenNode, SequenceStorageNodes.GetItemNode getItemNode) {
-        int len = lenNode.execute(sequenceStorage);
-        if (len < slots.length - 1) {
-            throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
-        } else {
-            for (int i = 0; i < starredIndex; i++) {
-                Object value = getItemNode.execute(frame, sequenceStorage, i);
-                slots[i].doWrite(frame, value);
-            }
-            final int starredLength = len - (slots.length - 1);
-            Object[] array = new Object[starredLength];
-            CompilerAsserts.partialEvaluationConstant(starredLength);
-            int pos = starredIndex;
-            for (int i = 0; i < starredLength; i++) {
-                array[i] = getItemNode.execute(frame, sequenceStorage, pos++);
-            }
-            slots[starredIndex].doWrite(frame, factory().createList(array));
-            for (int i = starredIndex + 1; i < slots.length; i++) {
-                Object value = getItemNode.execute(frame, sequenceStorage, pos++);
-                slots[i].doWrite(frame, value);
-            }
-        }
     }
 
     @ExplodeLoop
@@ -190,28 +165,25 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
     }
 
     @Specialization(guards = {"!isBuiltinTuple(iterable, tupleProfile)", "!isBuiltinList(iterable, listProfile)", "starredIndex < 0"})
-    public void writeIterable(VirtualFrame frame, Object iterable,
+    void writeIterable(VirtualFrame frame, Object iterable,
                     @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile tupleProfile,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile listProfile) {
         PTuple rhsValue = constructTupleNode.execute(frame, iterable);
-        SequenceStorage sequenceStorage = rhsValue.getSequenceStorage();
-        writeSequenceStorage(frame, sequenceStorage, lenNode, getItemNode);
+        writeSequenceStorage(frame, rhsValue.getSequenceStorage(), lenNode, getItemNode);
         performAssignments(frame);
     }
 
-    @Specialization(guards = {"!isBuiltinTuple(iterable, tupleProfile)", "!isBuiltinList(iterable, listProfile)", "starredIndex >= 0"})
-    public void writeIterableStarred(VirtualFrame frame, Object iterable,
+    @Specialization(guards = {"!isBuiltinTuple(iterable, tupleProfile)", "!isBuiltinList(iterable, listProfile)", "starredIndex >= 0"}, limit = "1")
+    void writeIterableStarred(VirtualFrame frame, Object iterable,
                     @Cached TupleNodes.ConstructTupleNode constructTupleNode,
-                    @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                    @Shared("writeStarred") @Cached WriteSequenceStorageStarredNode writeSequenceStorageStarredNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile tupleProfile,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile listProfile) {
         PTuple rhsValue = constructTupleNode.execute(frame, iterable);
-        SequenceStorage sequenceStorage = rhsValue.getSequenceStorage();
-        writeSequenceStorageStarred(frame, sequenceStorage, lenNode, getItemNode);
+        writeSequenceStorageStarredNode.execute(frame, rhsValue.getSequenceStorage(), slots, starredIndex);
         performAssignments(frame);
     }
 
@@ -231,11 +203,109 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         return raiseNode;
     }
 
-    private PythonObjectFactory factory() {
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
+    /**
+     * This node performs assignments in form of
+     * {@code pre_0, pre_1, ..., pre_i, *starred, post_0, post_1, ..., post_k = sequenceObject}.
+     * Note that the parameters {@code slots} and {@code starredIndex} must be PE constant!
+     */
+    abstract static class WriteSequenceStorageStarredNode extends Node {
+
+        @Child private PythonObjectFactory factory;
+        @Child private PRaiseNode raiseNode;
+
+        abstract void execute(VirtualFrame frame, SequenceStorage storage, WriteNode[] slots, int starredIndex);
+
+        @Specialization(guards = {"getLength(lenNode, storage) == cachedLength"}, limit = "1")
+        void doExploded(VirtualFrame frame, SequenceStorage storage, WriteNode[] slots, int starredIndex,
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("lenNode") @Cached @SuppressWarnings("unused") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("getLength(lenNode, storage)") int cachedLength) {
+
+            CompilerAsserts.partialEvaluationConstant(slots);
+            CompilerAsserts.partialEvaluationConstant(starredIndex);
+            if (cachedLength < slots.length - 1) {
+                throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, cachedLength);
+            } else {
+                writeSlots(frame, storage, getItemNode, slots, starredIndex);
+                final int starredLength = cachedLength - (slots.length - 1);
+                CompilerAsserts.partialEvaluationConstant(starredLength);
+                Object[] array = consumeStarredItems(frame, storage, starredLength, getItemNode, starredIndex);
+                assert starredLength == array.length;
+                slots[starredIndex].doWrite(frame, factory().createList(array));
+                performAssignmentsAfterStar(frame, storage, starredIndex + starredLength, getItemNode, slots, starredIndex);
+            }
         }
-        return factory;
+
+        @Specialization(replaces = "doExploded")
+        void doGeneric(VirtualFrame frame, SequenceStorage storage, WriteNode[] slots, int starredIndex,
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode) {
+            CompilerAsserts.partialEvaluationConstant(slots);
+            CompilerAsserts.partialEvaluationConstant(starredIndex);
+            int len = lenNode.execute(storage);
+            if (len < slots.length - 1) {
+                throw ensureRaiseNode().raise(ValueError, "not enough values to unpack (expected %d, got %d)", slots.length, len);
+            } else {
+                writeSlots(frame, storage, getItemNode, slots, starredIndex);
+                final int starredLength = len - (slots.length - 1);
+                Object[] array = new Object[starredLength];
+                int pos = starredIndex;
+                for (int i = 0; i < starredLength; i++) {
+                    array[i] = getItemNode.execute(frame, storage, pos++);
+                }
+                slots[starredIndex].doWrite(frame, factory().createList(array));
+                for (int i = starredIndex + 1; i < slots.length; i++) {
+                    Object value = getItemNode.execute(frame, storage, pos++);
+                    slots[i].doWrite(frame, value);
+                }
+            }
+        }
+
+        @ExplodeLoop
+        private void writeSlots(VirtualFrame frame, SequenceStorage storage, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
+            for (int i = 0; i < starredIndex; i++) {
+                Object value = getItemNode.execute(frame, storage, i);
+                slots[i].doWrite(frame, value);
+            }
+        }
+
+        @ExplodeLoop
+        private Object[] consumeStarredItems(VirtualFrame frame, SequenceStorage sequenceStorage, int starredLength, SequenceStorageNodes.GetItemNode getItemNode, int starredIndex) {
+            Object[] array = new Object[starredLength];
+            CompilerAsserts.partialEvaluationConstant(starredLength);
+            for (int i = 0; i < starredLength; i++) {
+                array[i] = getItemNode.execute(frame, sequenceStorage, starredIndex + i);
+            }
+            return array;
+        }
+
+        @ExplodeLoop
+        private void performAssignmentsAfterStar(VirtualFrame frame, SequenceStorage sequenceStorage, int startPos, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
+            for (int i = starredIndex + 1, pos = startPos; i < slots.length; i++, pos++) {
+                Object value = getItemNode.execute(frame, sequenceStorage, pos);
+                slots[i].doWrite(frame, value);
+            }
+        }
+
+        static int getLength(SequenceStorageNodes.LenNode lenNode, SequenceStorage storage) {
+            return lenNode.execute(storage);
+        }
+
+        private PythonObjectFactory factory() {
+            if (factory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                factory = insert(PythonObjectFactory.create());
+            }
+            return factory;
+        }
+
+        private PRaiseNode ensureRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
     }
 }
