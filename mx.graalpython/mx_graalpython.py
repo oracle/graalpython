@@ -122,6 +122,7 @@ def python(args, **kwargs):
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, **kwargs):
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
+        args.insert(0, "--experimental-options")
         args.insert(0, "--python.CAPI=%s" % capi_home)
 
     if not env:
