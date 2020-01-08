@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,20 +52,24 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulo
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
+import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,11 +78,12 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    abstract static class ExternalFunctionNode extends PRootNode {
+    abstract static class ExternalFunctionNode extends PRootNode implements IndirectCallNode {
         private final Signature signature;
         private final Object callable;
         private final String name;
@@ -88,6 +93,26 @@ public abstract class ExternalFunctionNodes {
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private InteropLibrary lib;
         @Child private CalleeContext calleeContext = CalleeContext.create();
+        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return nativeCodeDoesntNeedMyFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return nativeCodeDoesntNeedExceptionState;
+        }
+
+        @Override
+        public Node copy() {
+            ExternalFunctionNode node = (ExternalFunctionNode) super.copy();
+            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+            return node;
+        }
 
         ExternalFunctionNode(PythonLanguage lang, String name, Object callable, Signature signature, CExtNodes.ConvertArgsToSulongNode convertArgsNode) {
             super(lang);
@@ -111,19 +136,21 @@ public abstract class ExternalFunctionNodes {
             toSulongNode.executeInto(frameArgs, 0, arguments, 0);
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            PException savedExceptionState = ForeignCallContext.enter(frame, ctx, this);
+            Object state = ForeignCallContext.enter(frame, ctx, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(callable, arguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
+                CompilerDirectives.transferToInterpreter();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, savedExceptionState);
+                ForeignCallContext.exit(frame, ctx, state);
                 calleeContext.exit(frame, this);
             }
         }
@@ -173,7 +200,7 @@ public abstract class ExternalFunctionNodes {
 
     abstract static class MethodDescriptorRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
-        @Child CallTargetInvokeNode invokeNode;
+        @Child FunctionInvokeNode invokeNode;
         @Child ReadIndexedArgumentNode readSelfNode;
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
@@ -183,7 +210,7 @@ public abstract class ExternalFunctionNodes {
             super(language);
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
             assert callTarget.getRootNode() instanceof ExternalFunctionNode;
-            this.invokeNode = CallTargetInvokeNode.create(callTarget, true, false);
+            this.invokeNode = FunctionInvokeNode.createBuiltinFunction(callTarget);
         }
 
         @Override
@@ -216,7 +243,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     static class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -250,7 +277,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     static class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -281,7 +308,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     static class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
 
         MethNoargsRoot(PythonLanguage language, RootCallTarget callTarget) {
             super(language, callTarget);
@@ -307,7 +334,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     static class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "arg"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         MethORoot(PythonLanguage language, RootCallTarget callTarget) {
@@ -336,7 +363,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     static class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -370,7 +397,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     static class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 

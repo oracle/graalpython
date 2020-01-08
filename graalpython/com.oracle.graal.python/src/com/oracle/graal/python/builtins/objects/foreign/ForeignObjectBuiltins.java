@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -90,7 +91,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -603,7 +603,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 Object res = null;
-                PException savedExceptionState = ForeignCallContext.enter(frame, context, this);
+                Object state = ForeignCallContext.enter(frame, context, this);
                 try {
                     if (lib.isExecutable(callee)) {
                         res = lib.execute(callee, convertedArgs);
@@ -613,7 +613,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {
-                    ForeignCallContext.exit(frame, context, savedExceptionState);
+                    ForeignCallContext.exit(frame, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable");
@@ -735,9 +735,17 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "3")
         protected Object doIt(Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            if (lib.isBoolean(object)) {
+                try {
+                    return PInt.intValue(lib.asBoolean(object));
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("foreign value claims to be a boolean but isn't");
+                }
+            }
             if (lib.fitsInInt(object)) {
                 try {
                     return lib.asInt(object);
@@ -745,7 +753,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
                 }
             }
-            throw raiseIndexError();
+            throw raiseNode.raiseIntegerInterpretationError(object);
         }
     }
 

@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -169,8 +170,10 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.nodes.util.CoerceToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -220,8 +223,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @TypeSystemReference(PythonArithmeticTypes.class)
     protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
-        @Child private CastToIndexNode castToIndexNode;
-
         private final IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
 
         @SuppressWarnings("unused")
@@ -237,7 +238,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, LazyPythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            int cap = getCastToIndexNode().execute(frame, capObj);
+            int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
@@ -298,14 +299,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary(transferToInterpreterOnException = false)
         private static byte[] resize(byte[] arr, int len) {
             return Arrays.copyOf(arr, len);
-        }
-
-        protected CastToIndexNode getCastToIndexNode() {
-            if (castToIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIndexNode = insert(CastToIndexNode.createOverflow());
-            }
-            return castToIndexNode;
         }
     }
 
@@ -1203,10 +1196,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return stringToInt(cls, number, base);
         }
 
-        @Specialization(guards = "!isNoValue(base)")
+        @Specialization(guards = "!isNoValue(base)", limit = "getCallSiteInlineCacheMaxDepth()")
         Object createIntError(VirtualFrame frame, LazyPythonClass cls, String number, Object base,
-                        @Cached CastToIndexNode castToIndexNode) {
-            int intBase = castToIndexNode.execute(frame, base);
+                        @CachedLibrary("base") PythonObjectLibrary lib) {
+            int intBase = lib.asSizeWithState(base, PArguments.getThreadState(frame));
             checkBase(intBase);
             return stringToInt(cls, number, intBase);
         }
@@ -1793,38 +1786,42 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
 
+        @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object strNoArgs(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
+        Object strNoArgs(LazyPythonClass strClass, PNone arg, PNone encoding, PNone errors) {
             return asPString(strClass, "");
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        public Object str(LazyPythonClass strClass, double arg, PNone encoding, PNone errors) {
-            return asPString(strClass, PFloat.doubleToString(arg));
-        }
+        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached CoerceToStringNode coerceToStringNode) {
+            Object result = coerceToStringNode.execute(frame, obj);
 
-        @Specialization(guards = {"!isNoValue(obj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object strOneArg(VirtualFrame frame, LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
-            Object result = callNode.executeObject(frame, obj);
+            // try to return a primitive if possible
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
-            } else if (getIsPStringProfile().profile(result instanceof PString)) {
-                return result;
             }
-            throw raise(PythonErrorType.TypeError, "__str__ returned non-string (type %p)", result);
+
+            // CoerceToStringNode guarantees that the returned object is an instanceof of 'str'
+            return result;
         }
 
-        @Specialization(guards = {"!isBytes(obj)", "!isMemoryView(obj)", "!isNoValue(encoding)"})
-        public Object strNonBytesArgAndEncodingArg(@SuppressWarnings("unused") LazyPythonClass strClass, Object obj, @SuppressWarnings("unused") Object encoding,
-                        @SuppressWarnings("unused") Object errors) {
-            throw raise(PythonErrorType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
+        @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding)"}, limit = "3")
+        Object doBuffer(VirtualFrame frame, LazyPythonClass strClass, Object obj, Object encoding, Object errors,
+                        @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
+            if (bufferLib.isBuffer(obj)) {
+                try {
+                    // TODO(fa): we should directly call '_codecs.decode'
+                    PBytes bytesObj = factory().createBytes(bufferLib.getBufferBytes(obj));
+                    return decodeBytes(frame, strClass, bytesObj, encoding, errors);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw raise(PythonBuiltinClassType.TypeError, "decoding to str: need a bytes-like object, %p found", obj);
         }
 
-        @Specialization(guards = "!isNoValue(encoding)")
-        public Object doBytesLike(VirtualFrame frame, LazyPythonClass strClass, PIBytesLike obj, Object encoding, Object errors) {
+        private Object decodeBytes(VirtualFrame frame, LazyPythonClass strClass, PBytes obj, Object encoding, Object errors) {
             Object result = getCallDecodeNode().execute(frame, obj, encoding, errors);
             if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
@@ -1834,15 +1831,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, "%p.decode returned non-string (type %p)", obj, result);
         }
 
-        @Specialization(guards = "!isNoValue(encoding)")
-        public Object doMemoryView(VirtualFrame frame, LazyPythonClass strClass, PMemoryView obj, Object encoding, Object errors,
-                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
-                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytes) {
-            Object result = callToBytes.executeObject(frame, obj);
-            if (isBytesProfile.profile(result instanceof PBytes)) {
-                return doBytesLike(frame, strClass, (PBytes) result, encoding, errors);
-            }
-            throw raise(PythonErrorType.TypeError, "%p.tobytes returned non-bytes object (type %p)", obj, result);
+        /**
+         * logic similar to
+         * {@code unicode_subtype_new(PyTypeObject *type, PyObject *args, PyObject *kwds)} from
+         * CPython {@code unicodeobject.c} we have to first create a temporary string, then fill it
+         * into a natively allocated subtype structure
+         */
+        @Specialization(guards = {"isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        Object doNativeSubclass(VirtualFrame frame, PythonNativeClass cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Cached CoerceToStringNode castToStringNode,
+                        @Cached CExtNodes.StringSubtypeNew subtypeNew) {
+            return subtypeNew.call(cls, castToStringNode.execute(frame, obj));
+        }
+
+        protected static boolean isSubtypeOfString(VirtualFrame frame, IsSubtypeNode isSubtypeNode, PythonNativeClass cls) {
+            return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PString);
         }
 
         private Object asPString(LazyPythonClass cls, String str) {
@@ -1932,27 +1936,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, null);
+            return factory().createFunction(name, getTypeName(cls), code, globals, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, (PCell[]) getObjectArrayNode.execute(closure));
+            return factory().createFunction(name, getTypeName(cls), code, globals, (PCell[]) getObjectArrayNode.execute(closure));
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, getObjectArrayNode.execute(defaultArgs), null, null);
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, null);
         }
 
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code.getRootCallTarget(), globals, getObjectArrayNode.execute(defaultArgs), null, (PCell[]) getObjectArrayNode.execute(closure));
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, (PCell[]) getObjectArrayNode.execute(closure));
         }
 
         @Fallback
@@ -1993,9 +1997,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode readAttrNode;
         @Child private SetAttributeNode.Dynamic writeAttrNode;
         @Child private GetAnyAttributeNode getAttrNode;
-        @Child private CastToIndexNode castToInt;
+        @Child private CastToJavaIntNode castToInt;
         @Child private CastToListNode castToList;
-        @Child private CastToStringNode castToStringNode;
+        @Child private CastToJavaStringNode castToStringNode;
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
@@ -2075,7 +2079,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("invalid globals object");
             }
-            return ensureCastToStringNode().execute(frame, nameAttr);
+            return ensureCastToStringNode().execute(nameAttr);
         }
 
         @SuppressWarnings("try")
@@ -2179,7 +2183,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Make slots into a tuple
                 }
                 PythonContext context = getContextRef().get();
-                PException caughtException = ForeignCallContext.enter(frame, context, this);
+                Object state = ForeignCallContext.enter(frame, context, this);
                 try {
                     PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
@@ -2193,7 +2197,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    ForeignCallContext.exit(frame, context, caughtException);
+                    ForeignCallContext.exit(frame, context, state);
                 }
             }
 
@@ -2332,9 +2336,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 for (Object cls : getMro(pythonClass)) {
                     if (PGuards.isNativeClass(cls)) {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
-                        long dictoffset = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
-                        long basicsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
-                        long itemsize = ensureCastToIntNode().execute(frame, ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
+                        long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
+                        long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2441,18 +2445,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return writeAttrNode;
         }
 
-        private CastToIndexNode ensureCastToIntNode() {
+        private CastToJavaIntNode ensureCastToIntNode() {
             if (castToInt == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToInt = insert(CastToIndexNode.create());
+                castToInt = insert(CastToJavaIntNode.create());
             }
             return castToInt;
         }
 
-        private CastToStringNode ensureCastToStringNode() {
+        private CastToJavaStringNode ensureCastToStringNode() {
             if (castToStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToStringNode.create());
+                castToStringNode = insert(CastToJavaStringNodeGen.create());
             }
             return castToStringNode;
         }
@@ -2657,7 +2661,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") LazyPythonClass cls, Object func, Object self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
             PythonContext context = getContextRef().get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 if (dataModelLibrary.isCallable(func)) {
                     return factory().createMethod(self, func);
@@ -2665,7 +2669,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, "first argument must be callable");
                 }
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
     }
@@ -2809,11 +2813,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         protected boolean isSequence(VirtualFrame frame, Object o, PythonObjectLibrary library) {
             PythonContext context = getContextRef().get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return library.isSequence(o);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
     }

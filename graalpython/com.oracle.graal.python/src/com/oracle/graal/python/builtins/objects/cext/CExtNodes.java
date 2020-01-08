@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,12 +101,13 @@ import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -137,6 +138,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -289,6 +291,27 @@ public abstract class CExtNodes {
 
         public static TupleSubtypeNew create() {
             return CExtNodesFactory.TupleSubtypeNewNodeGen.create();
+        }
+    }
+
+    public abstract static class StringSubtypeNew extends SubtypeNew {
+        @Child private ToSulongNode toSulongNode;
+
+        @Override
+        protected final String getTypenamePrefix() {
+            return "unicode";
+        }
+
+        public final Object call(PythonNativeClass object, Object arg) {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return execute(object, toSulongNode.execute(arg));
+        }
+
+        public static StringSubtypeNew create() {
+            return CExtNodesFactory.StringSubtypeNewNodeGen.create();
         }
     }
 
@@ -1962,7 +1985,7 @@ public abstract class CExtNodes {
     @Builtin(minNumOfPositionalArgs = 1)
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
@@ -1972,7 +1995,7 @@ public abstract class CExtNodes {
         public MayRaiseUnaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = func;
-            this.invokeNode = InvokeNode.create(func);
+            this.invokeNode = FunctionInvokeNode.create(func);
             this.errorResult = errorResult;
         }
 
@@ -2001,7 +2024,7 @@ public abstract class CExtNodes {
     @Builtin(minNumOfPositionalArgs = 2)
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
@@ -2011,7 +2034,7 @@ public abstract class CExtNodes {
         public MayRaiseBinaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = func;
-            this.invokeNode = InvokeNode.create(func);
+            this.invokeNode = FunctionInvokeNode.create(func);
             this.errorResult = errorResult;
         }
 
@@ -2040,7 +2063,7 @@ public abstract class CExtNodes {
     @Builtin(minNumOfPositionalArgs = 3)
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @CompilationFinal private ConditionProfile frameProfile;
 
@@ -2050,7 +2073,7 @@ public abstract class CExtNodes {
         public MayRaiseTernaryNode(PFunction func, Object errorResult) {
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = func;
-            this.invokeNode = InvokeNode.create(func);
+            this.invokeNode = FunctionInvokeNode.create(func);
             this.errorResult = errorResult;
         }
 
@@ -2078,7 +2101,7 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @Builtin(takesVarArgs = true)
     public static class MayRaiseNode extends PythonBuiltinNode {
-        @Child private InvokeNode invokeNode;
+        @Child private FunctionInvokeNode invokeNode;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgumentsNode createArgsNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
@@ -2091,7 +2114,7 @@ public abstract class CExtNodes {
             this.readVarargsNode = ReadVarArgsNode.create(0, true);
             this.createArgsNode = CreateArgumentsNode.create();
             this.func = callable;
-            this.invokeNode = InvokeNode.create(callable);
+            this.invokeNode = FunctionInvokeNode.create(callable);
             this.errorResult = errorResult;
         }
 
@@ -2388,16 +2411,43 @@ public abstract class CExtNodes {
             transformToNative(context, PArguments.getCurrentFrameInfo(frame), e);
         }
 
+        protected static ConditionProfile[] getFlag() {
+            ConditionProfile[] flag = new ConditionProfile[1];
+            return flag;
+        }
+
         @Specialization(guards = "frame == null")
         void doWithoutFrame(@SuppressWarnings("unused") Frame frame, PException e,
+                        @Cached(value = "getFlag()", dimensions = 1) ConditionProfile[] flag,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            transformToNative(context, context.peekTopFrameInfo(), e);
+            PFrame.Reference ref = context.peekTopFrameInfo();
+            if (flag[0] == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // executed the first time, don't pollute the profile, we'll mark the caller to pass
+                // the info on the next call
+                flag[0] = ConditionProfile.createBinaryProfile();
+                if (ref == null) {
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                }
+            }
+            if (flag[0].profile(ref == null)) {
+                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+            }
+            transformToNative(context, ref, e);
         }
 
         @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
         void doGeneric(Frame frame, PException e,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PFrame.Reference ref = frame == null ? context.peekTopFrameInfo() : PArguments.getCurrentFrameInfo(frame);
+            PFrame.Reference ref;
+            if (frame == null) {
+                ref = context.peekTopFrameInfo();
+                if (ref == null) {
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(ref, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                }
+            } else {
+                ref = PArguments.getCurrentFrameInfo(frame);
+            }
             transformToNative(context, ref, e);
         }
 

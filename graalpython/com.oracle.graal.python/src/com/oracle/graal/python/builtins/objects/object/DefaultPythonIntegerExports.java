@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,22 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
+    static int asIndex(Integer value) {
+        return value;
+    }
+
+    @ExportMessage
+    static int asSize(Integer value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+        return value;
+    }
+
+    @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
         return PythonBuiltinClassType.PInt;
+    }
+
+    @ExportMessage
+    static long hash(Integer value) {
+        return value;
     }
 }

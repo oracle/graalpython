@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,12 +57,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -92,12 +100,15 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -107,16 +118,19 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -431,8 +445,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Exclusive @Cached CallNode callGetattributeNode,
                     @Exclusive @Cached PExecuteNode executeNode,
-                    @Cached("createBinaryProfile()") ConditionProfile profileGetattribute,
-                    @Cached("createBinaryProfile()") ConditionProfile profileMember) throws UnknownIdentifierException, UnsupportedMessageException {
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetattribute,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileMember) throws UnknownIdentifierException, UnsupportedMessageException {
         Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
         if (profileGetattribute.profile(attrGetattribute != PNone.NO_VALUE)) {
             Object memberObj = callGetattributeNode.execute(null, attrGetattribute, this, member);
@@ -658,8 +672,103 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndexAttribute) {
-        return hasIndexAttribute.execute(this, __INDEX__);
+    public long hashWithState(ThreadState state,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CastToJavaLongNode castToLong,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.execute(hashAttr, this);
+        } else {
+            result = callNode.execute(PArguments.frameForCall(state), hashAttr, this);
+        }
+        // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
+        // hash call is always a plain long, forcibly and lossy read from memory.
+        try {
+            return castToLong.execute(result);
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
+        }
+    }
+
+    private Object getHashAttr(LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode, PRaiseNode raise, PythonObjectLibrary lib) {
+        Object hashAttr = lookupHashAttributeNode.execute(this, __HASH__);
+        if (!lib.isCallable(hashAttr)) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "unhashable type: '%p'", this);
+        }
+        return hashAttr;
+    }
+
+    @ExportMessage
+    public final boolean canBeIndex(@Exclusive @Cached HasInheritedAttributeNode.Dynamic hasIndex) {
+        return hasIndex.execute(this, __INDEX__);
+    }
+
+    @ExportMessage
+    public Object asIndexWithState(ThreadState state,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
+        // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
+        // and PythonAbstractNativeObject and dispatched polymorphically
+        Object indexAttr = lookupIndex.execute(this, __INDEX__);
+        if (noIndex.profile(indexAttr == PNone.NO_VALUE)) {
+            throw raise.raiseIntegerInterpretationError(this);
+        }
+
+        Object result;
+        if (gotState.profile(state == null)) {
+            result = callNode.execute(indexAttr, this);
+        } else {
+            result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+        }
+
+        if (resultProfile.profile(!isSubtype.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "__index__ returned non-int (type %p)", result);
+        }
+        return result;
+    }
+
+    @ExportMessage
+    public int asSizeWithState(LazyPythonClass type, ThreadState state,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached BranchProfile overflow,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile ignoreOverflow,
+                    @Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached CastToJavaLongNode castToLong) {
+        Object result = lib.asIndexWithState(this, state);
+        long longResult;
+        try {
+            longResult = castToLong.execute(result); // this is a lossy cast
+        } catch (CastToJavaLongNode.CannotCastException e) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
+        }
+        try {
+            return PInt.intValueExact(longResult);
+        } catch (ArithmeticException e) {
+            overflow.enter();
+            if (ignoreOverflow.profile(type != null)) {
+                throw raise.raiseNumberTooLarge(type, result);
+            } else {
+                // If no error-handling desired then the default clipping is done as in CPython.
+                if (longResult < 0) {
+                    return Integer.MIN_VALUE;
+                } else {
+                    return Integer.MAX_VALUE;
+                }
+            }
+        }
     }
 
     @ExportMessage
@@ -667,6 +776,287 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached HasInheritedAttributeNode.Dynamic hasExitNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
         return profile.profile(hasEnterNode.execute(this, __ENTER__) && hasExitNode.execute(this, __EXIT__));
+    }
+
+    private static final String DATETIME_MODULE_NAME = "datetime";
+    private static final String TIME_MODULE_NAME = "time";
+    private static final String DATE_TYPE = "date";
+    private static final String DATETIME_TYPE = "datetime";
+    private static final String TIME_TYPE = "time";
+    private static final String STRUCT_TIME_TYPE = "struct_time";
+
+    private static LazyPythonClass readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename) {
+        Object type = readTypeNode.execute(module, typename);
+        if (type instanceof LazyPythonClass) {
+            return (LazyPythonClass) type;
+        } else {
+            CompilerDirectives.transferToInterpreter();
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, "patched datetime class: %r", type);
+        }
+    }
+
+    @ExportMessage
+    public boolean isDate(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
+        LazyPythonClass objType = getClassNode.execute(this);
+        PDict importedModules = PythonLanguage.getContext().getImportedModules();
+        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+        if (dateTimeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE))) {
+                return true;
+            }
+        }
+        module = importedModules.getItem(TIME_MODULE_NAME);
+        if (timeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @ExportMessage
+    public LocalDate asDate(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @CachedLibrary("this") InteropLibrary lib,
+                    @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
+        LazyPythonClass objType = getClassNode.execute(this);
+        PDict importedModules = PythonLanguage.getContext().getImportedModules();
+        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+        if (dateTimeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE))) {
+                try {
+                    int year = castToIntNode.execute(lib.readMember(this, "year"));
+                    int month = castToIntNode.execute(lib.readMember(this, "month"));
+                    int day = castToIntNode.execute(lib.readMember(this, "day"));
+                    return createLocalDate(year, month, day);
+                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            }
+        }
+        module = importedModules.getItem(TIME_MODULE_NAME);
+        if (timeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE))) {
+                try {
+                    int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
+                    int month = castToIntNode.execute(lib.readMember(this, "tm_mon"));
+                    int day = castToIntNode.execute(lib.readMember(this, "tm_mday"));
+                    return createLocalDate(year, month, day);
+                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            }
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public boolean isTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
+                    @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
+        LazyPythonClass objType = getClassNode.execute(this);
+        PDict importedModules = PythonLanguage.getContext().getImportedModules();
+        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+        if (dateTimeModuleLoaded.profile(module != null)) {
+            if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE))) {
+                return true;
+            }
+        }
+        module = importedModules.getItem(TIME_MODULE_NAME);
+        if (timeModuleLoaded.profile(module != null)) {
+            if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @ExportMessage
+    public LocalTime asTime(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @CachedLibrary("this") InteropLibrary lib,
+                    @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
+        LazyPythonClass objType = getClassNode.execute(this);
+        PDict importedModules = PythonLanguage.getContext().getImportedModules();
+        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+        if (dateTimeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE))) {
+                try {
+                    int hour = castToIntNode.execute(lib.readMember(this, "hour"));
+                    int min = castToIntNode.execute(lib.readMember(this, "minute"));
+                    int sec = castToIntNode.execute(lib.readMember(this, "second"));
+                    int micro = castToIntNode.execute(lib.readMember(this, "microsecond"));
+                    return createLocalTime(hour, min, sec, micro);
+                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            }
+        }
+        module = importedModules.getItem(TIME_MODULE_NAME);
+        if (timeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE))) {
+                try {
+                    int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
+                    int min = castToIntNode.execute(lib.readMember(this, "tm_min"));
+                    int sec = castToIntNode.execute(lib.readMember(this, "tm_sec"));
+                    return createLocalTime(hour, min, sec, 0);
+                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            }
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public boolean isTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
+                    @CachedLibrary(limit = "2") InteropLibrary lib,
+                    @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) {
+        LazyPythonClass objType = getClassNode.execute(this);
+        PDict importedModules = PythonLanguage.getContext().getImportedModules();
+        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+        if (dateTimeModuleLoaded.profile(module != null)) {
+            if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE))) {
+                try {
+                    Object tzinfo = lib.readMember(this, "tzinfo");
+                    if (tzinfo != PNone.NONE) {
+                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
+                        if (delta != PNone.NONE) {
+                            return true;
+                        }
+                    }
+                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                    return false;
+                }
+            } else if (isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE))) {
+                try {
+                    Object tzinfo = lib.readMember(this, "tzinfo");
+                    if (tzinfo != PNone.NONE) {
+                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
+                        if (delta != PNone.NONE) {
+                            return true;
+                        }
+                    }
+                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                    return false;
+                }
+            }
+        }
+        module = importedModules.getItem(TIME_MODULE_NAME);
+        if (timeModuleLoaded.profile(module != null)) {
+            if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE))) {
+                try {
+                    Object tm_zone = lib.readMember(this, "tm_zone");
+                    if (tm_zone != PNone.NONE) {
+                        return true;
+                    }
+                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
+
+    @ExportMessage
+    public ZoneId asTimeZone(@Shared("getClassNode") @Cached GetLazyClassNode getClassNode,
+                    @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
+                    @CachedLibrary(limit = "3") InteropLibrary lib,
+                    @Shared("dateTimeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile dateTimeModuleLoaded,
+                    @Shared("timeModuleProfile") @Cached("createBinaryProfile()") ConditionProfile timeModuleLoaded) throws UnsupportedMessageException {
+        if (!lib.isTimeZone(this)) {
+            throw UnsupportedMessageException.create();
+        }
+        LazyPythonClass objType = getClassNode.execute(this);
+        PDict importedModules = PythonLanguage.getContext().getImportedModules();
+        Object module = importedModules.getItem(DATETIME_MODULE_NAME);
+        if (dateTimeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, "datetime"))) {
+                try {
+                    Object tzinfo = lib.readMember(this, "tzinfo");
+                    if (tzinfo != PNone.NONE) {
+                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{this});
+                        if (delta != PNone.NONE) {
+                            int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
+                            return createZoneId(seconds);
+                        }
+                    }
+                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, "time"))) {
+                try {
+                    Object tzinfo = lib.readMember(this, "tzinfo");
+                    if (tzinfo != PNone.NONE) {
+                        Object delta = lib.invokeMember(tzinfo, "utcoffset", new Object[]{PNone.NONE});
+                        if (delta != PNone.NONE) {
+                            int seconds = castToIntNode.execute(lib.readMember(delta, "seconds"));
+                            return createZoneId(seconds);
+                        }
+                    }
+                } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            }
+        }
+        module = importedModules.getItem(TIME_MODULE_NAME);
+        if (timeModuleLoaded.profile(module != null)) {
+            if (isSubtypeNode.execute(objType, readType(readTypeNode, module, "struct_time"))) {
+                try {
+                    Object tm_zone = lib.readMember(this, "tm_zone");
+                    if (tm_zone != PNone.NONE) {
+                        Object tm_gmtoffset = lib.readMember(this, "tm_gmtoff");
+                        if (tm_gmtoffset != PNone.NONE) {
+                            int seconds = castToIntNode.execute(tm_gmtoffset);
+                            return createZoneId(seconds);
+                        }
+                        if (tm_zone instanceof String) {
+                            return createZoneId((String) tm_zone);
+                        }
+                    }
+                } catch (UnsupportedMessageException | UnknownIdentifierException ex) {
+                    throw UnsupportedMessageException.create();
+                }
+            }
+        }
+        throw UnsupportedMessageException.create();
+    }
+
+    @TruffleBoundary
+    private ZoneId createZoneId(int utcDeltaInSeconds) {
+        return ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(utcDeltaInSeconds));
+    }
+
+    @TruffleBoundary
+    private ZoneId createZoneId(String zone) {
+        return ZoneId.of(zone);
+    }
+
+    @TruffleBoundary
+    private LocalTime createLocalTime(int hour, int min, int sec, int micro) {
+        return LocalTime.of(hour, min, sec, micro);
+    }
+
+    @TruffleBoundary
+    private LocalDate createLocalDate(int year, int month, int day) {
+        return LocalDate.of(year, month, day);
     }
 
     @GenerateUncached

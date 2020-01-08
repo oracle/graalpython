@@ -167,7 +167,7 @@ public abstract class CastToJavaIntNode extends PNodeWithContext {
                 return x.intValueExact();
             } catch (ArithmeticException e) {
                 CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as int (type %p)", x);
+                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as int (type %p)", x, x);
             }
         }
     }

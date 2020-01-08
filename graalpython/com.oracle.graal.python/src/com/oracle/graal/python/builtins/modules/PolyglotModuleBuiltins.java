@@ -66,7 +66,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -241,7 +242,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
         @Child private GetAttributeNode getNameAttributeNode;
-        @Child private CastToStringNode castToStringNode;
+        @Child private CastToJavaStringNode castToStringNode;
 
         @Specialization(guards = "!isString(value)")
         @TruffleBoundary
@@ -317,9 +318,14 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
             if (castToStringNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToStringNode.create());
+                castToStringNode = insert(CastToJavaStringNodeGen.create());
             }
-            return castToStringNode.execute(frame, getNameAttributeNode.executeObject(frame, o));
+            Object attrNameValue = getNameAttributeNode.executeObject(frame, o);
+            String methodName = castToStringNode.execute(attrNameValue);
+            if (methodName == null) {
+                throw raise(PythonBuiltinClassType.TypeError, "method name must be string, not %p", attrNameValue);
+            }
+            return methodName;
         }
 
         protected static boolean isModule(Object o) {

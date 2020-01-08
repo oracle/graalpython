@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -91,6 +91,8 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_BUFFER_R = "get_buffer_r";
     public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
     public static final String FUN_ALLOCATE_OUTVAR = "allocate_outvar";
+    public static final String FUN_NATIVE_UNICODE_AS_STRING = "native_unicode_as_string";
+    public static final String FUN_PY_UNICODE_GET_LENGTH = "PyUnicode_GetLength";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

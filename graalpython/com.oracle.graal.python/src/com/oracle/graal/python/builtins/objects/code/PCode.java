@@ -327,6 +327,11 @@ public final class PCode extends PythonBuiltinObject {
         return signature.getMaxNumOfPositionalArgs();
     }
 
+    public int getPositionalOnlyArgCount() {
+        int positionalMarkIndex = signature.getPositionalOnlyArgIndex();
+        return positionalMarkIndex == -1 ? 0 : positionalMarkIndex;
+    }
+
     public int getKwonlyargcount() {
         return signature.getNumOfRequiredKeywords();
     }

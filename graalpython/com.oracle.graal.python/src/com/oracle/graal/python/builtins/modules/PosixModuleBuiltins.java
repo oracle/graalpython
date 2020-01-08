@@ -110,10 +110,13 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -128,12 +131,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -158,6 +160,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -490,11 +493,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object fstatPInt(VirtualFrame frame, Object fd,
-                        @Cached("createOverflow()") CastToIndexNode castToIntNode,
+                        @CachedLibrary("fd") PythonObjectLibrary lib,
                         @Cached("create()") FstatNode recursive) {
-            return recursive.executeWith(frame, castToIntNode.execute(frame, fd));
+            return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)));
         }
 
         protected static FstatNode create() {
@@ -1037,8 +1040,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object lseekGeneric(VirtualFrame frame, Object fd, Object pos, Object how,
                         @Shared("channelClassProfile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                        @Cached CastToJavaLongNode castFdNode,
-                        @Cached CastToJavaLongNode castPosNode,
+                        @Cached CoerceToJavaLongNode castFdNode,
+                        @Cached CoerceToJavaLongNode castPosNode,
                         @Cached CastToJavaIntNode castHowNode) {
 
             return lseek(frame, castFdNode.execute(fd), castPosNode.execute(pos), castHowNode.execute(how), channelClassProfile);
@@ -1066,11 +1069,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class CloseNode extends PythonFileNode {
         private final ConditionProfile noFile = ConditionProfile.createBinaryProfile();
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object close(VirtualFrame frame, Object fdObject,
-                        @Cached CastToIndexNode castToIndex,
+                        @CachedLibrary("fdObject") PythonObjectLibrary lib,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            int fd = castToIndex.execute(frame, fdObject);
+            int fd = lib.asSizeWithState(fdObject, PArguments.getThreadState(frame));
             PosixResources resources = getResources();
             Channel channel = resources.getFileChannel(fd, channelClassProfile);
             if (noFile.profile(channel == null)) {
@@ -1201,11 +1204,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return write(fd, getByteArray(data), channelClassProfile);
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object writePInt(VirtualFrame frame, Object fd, Object data,
-                        @Cached("createOverflow()") CastToIndexNode castToIntNode,
+                        @CachedLibrary("fd") PythonObjectLibrary lib,
                         @Cached("create()") WriteNode recursive) {
-            return recursive.executeWith(frame, castToIntNode.execute(frame, fd), data);
+            return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)), data);
         }
 
         private byte[] getByteArray(PIBytesLike pByteArray) {
@@ -1248,7 +1251,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object read(@SuppressWarnings("unused") VirtualFrame frame, int fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CastToJavaLongNode castToLongNode) {
+                        @Cached CoerceToJavaLongNode castToLongNode) {
             return readLong(frame, fd, castToLongNode.execute(requestedSize), channelClassProfile, readNode);
         }
 
@@ -1256,7 +1259,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object readFdGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object fd, Object requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode,
-                        @Cached CastToJavaLongNode castToLongNode,
+                        @Cached CoerceToJavaLongNode castToLongNode,
                         @Cached CastToJavaIntNode castToIntNode) {
             return readLong(frame, castToIntNode.execute(fd), castToLongNode.execute(requestedSize), channelClassProfile, readNode);
         }
@@ -1508,8 +1511,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         PTuple waitpidFallback(VirtualFrame frame, Object pid, Object options,
-                        @Cached CastToIndexNode castToInt) {
-            return waitpid(frame, castToInt.execute(frame, pid), castToInt.execute(frame, options));
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            ThreadState threadState = PArguments.getThreadState(frame);
+            return waitpid(frame, lib.asSizeWithState(pid, threadState), lib.asSizeWithState(options, threadState));
         }
     }
 
@@ -1721,15 +1725,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AccessNode extends PythonBuiltinNode {
 
-        @Child private CastToIndexNode castToIntNode;
         @Child private CastToPathNode castToPathNode;
 
         private final BranchProfile notImplementedBranch = BranchProfile.create();
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         boolean doGeneric(VirtualFrame frame, Object path, Object mode, @SuppressWarnings("unused") PNone dir_fd, @SuppressWarnings("unused") PNone effective_ids,
-                        @SuppressWarnings("unused") PNone follow_symlinks) {
-            return access(castToPath(frame, path), castToInt(frame, mode), PNone.NONE, false, true);
+                        @SuppressWarnings("unused") PNone follow_symlinks,
+                        @CachedLibrary("mode") PythonObjectLibrary lib) {
+            return access(castToPath(frame, path), lib.asSizeWithState(mode, PArguments.getThreadState(frame)), PNone.NONE, false, true);
         }
 
         private String castToPath(VirtualFrame frame, Object path) {
@@ -1738,14 +1742,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 castToPathNode = insert(CastToPathNode.create());
             }
             return castToPathNode.execute(frame, path);
-        }
-
-        private int castToInt(VirtualFrame frame, Object mode) {
-            if (castToIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CastToIndexNode.createOverflow());
-            }
-            return castToIntNode.execute(frame, mode);
         }
 
         @Specialization
@@ -1972,8 +1968,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone kill(VirtualFrame frame, int pid, int signal,
-                        @Shared("readSignalNode") @Cached ReadAttributeFromObjectNode readSignalNode,
-                        @Shared("isNode") @Cached IsNode isNode) {
+                        @Cached ReadAttributeFromObjectNode readSignalNode,
+                        @Cached IsNode isNode) {
             PythonContext context = getContext();
             PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
             for (String name : TERMINATION_SIGNALS) {
@@ -2010,12 +2006,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.NotImplementedError, "Sending arbitrary signals to child processes. Can only send some kill and term signals.");
         }
 
-        @Specialization
+        @Specialization(replaces = "kill")
         PNone killFallback(VirtualFrame frame, Object pid, Object signal,
-                        @Cached CastToIndexNode castInt,
-                        @Shared("readSignalNode") @Cached ReadAttributeFromObjectNode readSignalNode,
-                        @Shared("isNode") @Cached IsNode isNode) {
-            return kill(frame, castInt.execute(frame, pid), castInt.execute(frame, signal), readSignalNode, isNode);
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached ReadAttributeFromObjectNode readSignalNode,
+                        @Cached IsNode isNode) {
+            ThreadState state = PArguments.getThreadState(frame);
+            return kill(frame, lib.asSizeWithState(pid, state), lib.asSizeWithState(signal, state), readSignalNode, isNode);
         }
     }
 

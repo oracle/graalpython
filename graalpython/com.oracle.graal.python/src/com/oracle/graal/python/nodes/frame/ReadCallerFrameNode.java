@@ -42,7 +42,9 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -136,21 +138,60 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     /**
-     * Walk up the stack to find the start frame and from then (level + 1)-times (counting only
-     * non-internal Python frames).
+     * Walk up the stack to find the {@code startFrame} and from then ({@code
+     * level} + 1)-times (counting only non-internal Python frames if {@code
+     * skipInternal} is true). If {@code startFrame} is {@code null}, return the currently top
+     * Python frame.
+     *
+     * @param startFrame - the frame to start counting from or {@code null} to return the top frame
+     * @param frameAccess - the desired {@link FrameInstance} access kind
+     * @param skipInternal - declares if Python internal frames should be skipped or counted
+     * @param level - the stack depth to go to. Ignored if {@code startFrame} is {@code null}
      */
     public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, boolean skipInternal, int level) {
-        CompilerDirectives.transferToInterpreter();
-        return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        final Frame[] outputFrame = new Frame[1];
+        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Frame>() {
             int i = -1;
 
+            /**
+             * We may find the Python frame at the level we desire, but the {@link PRootNode}
+             * associated with it may have been called from a different language, and thus not a
+             * Python {@link IndirectCallNode}. That means that we cannot immediately return when we
+             * find the correct level frame, but instead we need to remember the frame in
+             * {@code outputFrame} and then keep going until we find the previous Python caller on
+             * the stack (or not). That last Python caller before the Python frame we need must push
+             * the info.
+             *
+             * This can easily be seen when this is used to {@link PythonContext#peekTopFrameInfo()}
+             * , because in that case, that info must be set by the caller that is somewhere up the
+             * stack.
+             *
+             * <pre>
+             *                      ================
+             *                   ,>| PythonCallNode |
+             *                   |  ================
+             *                   | |  LLVMRootNode  |
+             *                   | |  LLVMCallNode  |
+             *                   |  ================
+             *                   |       . . .
+             *                   |  ================
+             *                   | |  LLVMRootNode  |
+             *                   | |  LLVMCallNode  |
+             *                   |  ================
+             *                    \| PythonRootNode |
+             *                      ================
+             * </pre>
+             */
             public Frame visitFrame(FrameInstance frameInstance) {
                 RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
                 RootNode rootNode = target.getRootNode();
-                if (rootNode instanceof PRootNode) {
+                Node callNode = frameInstance.getCallNode();
+                boolean didMark = IndirectCallNode.setEncapsulatingNeedsToPassCallerFrame(callNode);
+                if (rootNode instanceof PRootNode && outputFrame[0] == null) {
                     PRootNode pRootNode = (PRootNode) rootNode;
                     pRootNode.setNeedsCallerFrame();
-                    if (i < 0) {
+                    if (i < 0 && startFrame != null) {
                         Frame roFrame = frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY);
                         if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
                             i = 0;
@@ -159,11 +200,10 @@ public final class ReadCallerFrameNode extends Node {
                         // Skip frames of builtin functions (if requested) because these do not have
                         // a Python frame in CPython.
                         if (!(skipInternal && pRootNode.isPythonInternal())) {
-                            if (i == level) {
+                            if (i == level || startFrame == null) {
                                 Frame frame = frameInstance.getFrame(frameAccess);
                                 assert PArguments.isPythonFrame(frame);
                                 PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                                Node callNode = frameInstance.getCallNode();
                                 // avoid overriding the location if we don't know it
                                 if (callNode != null) {
                                     info.setCallNode(callNode);
@@ -176,15 +216,20 @@ public final class ReadCallerFrameNode extends Node {
                                 // We may never return a frame without location because then we
                                 // cannot materialize it.
                                 assert info.getCallNode() != null : "tried to read frame without location (root: " + pRootNode + ")";
-                                return frame;
+                                outputFrame[0] = frame;
                             }
                             i += 1;
                         }
                     }
                 }
-                return null;
+                if (didMark) {
+                    return outputFrame[0];
+                } else {
+                    return null;
+                }
             }
         });
+        return outputFrame[0];
     }
 
     private MaterializeFrameNode ensureMaterializeNode() {

@@ -72,7 +72,7 @@ public class PMemoryView extends PythonBuiltinObject {
                     @Shared("readNativeMemoryViewNode") @Cached ReadAttributeFromDynamicObjectNode readNativeMemoryViewNode,
                     @Shared("lenNode") @Cached LookupAndCallUnaryDynamicNode lenNode,
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode) {
-        Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(this, C_MEMORYVIEW);
+        Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(getStorage(), C_MEMORYVIEW);
         return castToIntNode.execute(lenNode.executeObject(nativeMemoryViewObject, SpecialMethodNames.__LEN__));
     }
 
@@ -83,7 +83,7 @@ public class PMemoryView extends PythonBuiltinObject {
                     @Shared("castToIntNode") @Cached CastToJavaIntNode castToIntNode,
                     @Cached PInteropSubscriptNode subscriptNode,
                     @Cached CastToByteNode castToByteNode) {
-        Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(this, C_MEMORYVIEW);
+        Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(getStorage(), C_MEMORYVIEW);
         int len = castToIntNode.execute(lenNode.executeObject(nativeMemoryViewObject, SpecialMethodNames.__LEN__));
         byte[] data = new byte[len];
         for (int i = 0; i < data.length; i++) {

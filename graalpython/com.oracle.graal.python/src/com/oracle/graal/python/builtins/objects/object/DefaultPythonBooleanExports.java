@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,16 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
+    static int asIndex(Boolean value) {
+        return value ? 1 : 0;
+    }
+
+    @ExportMessage
+    static int asSize(Boolean value, @SuppressWarnings("unused") LazyPythonClass errorType) {
+        return asIndex(value);
+    }
+
+    @ExportMessage
     static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
         return true;
     }
@@ -60,5 +70,10 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Boolean value) {
         return PythonBuiltinClassType.Boolean;
+    }
+
+    @ExportMessage
+    static long hash(Boolean value) {
+        return value ? 1 : 0;
     }
 }

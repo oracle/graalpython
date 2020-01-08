@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -148,6 +148,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -161,6 +162,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringLenNodeGen;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -197,13 +199,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -370,10 +369,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTuple_New", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTuple_New extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         PTuple doGeneric(VirtualFrame frame, Object size,
-                        @Cached CastToIndexNode castToIntNode) {
-            return factory().createTuple(new Object[castToIntNode.execute(frame, size)]);
+                        @Cached("createBinaryProfile()") ConditionProfile gotFrame,
+                        @CachedLibrary("size") PythonObjectLibrary lib) {
+            int index;
+            if (gotFrame.profile(frame != null)) {
+                index = lib.asSizeWithState(size, PArguments.getThreadState(frame));
+            } else {
+                index = lib.asSize(size);
+            }
+            return factory().createTuple(new Object[index]);
         }
     }
 
@@ -1218,7 +1224,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             CharsetEncoder encoder = charset.newEncoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
             encoder.onMalformedInput(action).onUnmappableCharacter(action);
-            CharBuffer buf = CharBuffer.allocate(StringLenNode.getUncached().execute(s));
+            CharBuffer buf = CharBuffer.allocate(StringLenNodeGen.getUncached().execute(s));
             buf.put(s.getValue());
             buf.flip();
             ByteBuffer encoded = encoder.encode(buf);
@@ -1904,11 +1910,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doLong")
-        PBytes doLongOvf(long size) {
+        PBytes doLongOvf(long size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(PInt.intValueExact(size));
             } catch (ArithmeticException e) {
-                throw raiseIndexError();
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }
 
@@ -1918,11 +1925,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doPInt")
-        PBytes doPIntOvf(PInt size) {
+        PBytes doPIntOvf(PInt size,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(size.intValueExact());
             } catch (ArithmeticException e) {
-                throw raiseIndexError();
+                throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }
     }
@@ -2438,11 +2446,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Shared("asDoubleNode") @Cached CExtNodes.AsNativeDoubleNode asDoubleNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PException exceptionState = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return asDoubleNode.execute(asPythonObjectNode.execute(object));
             } finally {
-                IndirectCallContext.exit(frame, context, exceptionState);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -2531,15 +2539,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PyBytes_Resize extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         int resize(VirtualFrame frame, PBytes self, long newSizeL,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToIndexNode castToIndexNode,
+                        @CachedLibrary("newSizeL") PythonObjectLibrary lib,
                         @Cached CastToByteNode castToByteNode) {
 
             SequenceStorage storage = self.getSequenceStorage();
-            int newSize = castToIndexNode.execute(newSizeL);
+            int newSize = lib.asSize(newSizeL);
             int len = lenNode.execute(storage);
             byte[] smaller = new byte[newSize];
             for (int i = 0; i < newSize && i < len; i++) {
@@ -2676,11 +2684,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             PythonContext context = contextRef.get();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return dataModelLibrary.isSequence(object);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
     }
@@ -2734,20 +2742,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         PTuple doRepr(VirtualFrame frame, Object module, double val, int formatCode, int precision, int flags,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
-                        @Cached CastToStringNode castToStringNode,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             Object reprString = callReprNode.executeObject(frame, val);
-            return createResult(new CStringWrapper(castToStringNode.execute(frame, reprString)), val);
+            return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
         }
 
         @Specialization(guards = "!isReprFormatCode(formatCode)")
         Object doGeneric(VirtualFrame frame, Object module, double val, int formatCode, int precision, @SuppressWarnings("unused") int flags,
                         @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callReprNode,
-                        @Cached CastToStringNode castToStringNode,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object reprString = callReprNode.executeObject(frame, val, "." + precision + Character.toString((char) formatCode));
-                return createResult(new CStringWrapper(castToStringNode.execute(frame, reprString)), val);
+                return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute(module);

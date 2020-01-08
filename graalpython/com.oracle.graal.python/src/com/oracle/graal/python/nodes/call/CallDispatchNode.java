@@ -47,12 +47,12 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 public abstract class CallDispatchNode extends Node {
 
-    protected static InvokeNode createInvokeNode(PFunction callee) {
-        return InvokeNode.create(callee);
+    protected static FunctionInvokeNode createInvokeNode(PFunction callee) {
+        return FunctionInvokeNode.create(callee);
     }
 
-    protected static InvokeNode createInvokeNode(PBuiltinFunction callee) {
-        return InvokeNode.create(callee);
+    protected static FunctionInvokeNode createInvokeNode(PBuiltinFunction callee) {
+        return FunctionInvokeNode.create(callee);
     }
 
     protected static CallTargetInvokeNode createCtInvokeNode(PFunction callee) {
@@ -91,7 +91,7 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()", "cachedCallee.getCodeStableAssumption()"})
     protected Object callFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }
 
@@ -106,7 +106,7 @@ public abstract class CallDispatchNode extends Node {
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
                     @SuppressWarnings("unused") @Cached("create()") GetFunctionCodeNode getFunctionCodeNode,
                     @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }
 
@@ -121,7 +121,7 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     protected Object callBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
-                    @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
+                    @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);
     }
 

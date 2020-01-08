@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,46 +38,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.string;
+package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.objects.str.LazyString;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.nodes.NodeInterface;
 
-@GenerateUncached
-public abstract class StringLenNode extends Node {
-    public abstract int execute(Object self);
+public interface IndirectCallNode extends NodeInterface {
+    abstract Assumption needNotPassFrameAssumption();
 
-    @Specialization
-    public int len(String self) {
-        return self.length();
+    abstract Assumption needNotPassExceptionAssumption();
+
+    default boolean calleeNeedsCallerFrame() {
+        return !needNotPassFrameAssumption().isValid();
     }
 
-    @Specialization
-    public int len(PString self,
-                    @Cached("createClassProfile()") ValueProfile classProfile,
-                    @Cached("create()") BranchProfile uncommonStringTypeProfile) {
-        Object profiled = classProfile.profile(self.getCharSequence());
-        if (profiled instanceof String) {
-            return ((String) profiled).length();
-        } else if (profiled instanceof LazyString) {
-            return ((LazyString) profiled).length();
-        } else {
-            uncommonStringTypeProfile.enter();
-            return ((CharSequence) profiled).length();
+    default boolean calleeNeedsExceptionState() {
+        return !needNotPassExceptionAssumption().isValid();
+    }
+
+    default void setCalleeNeedsCallerFrame() {
+        needNotPassFrameAssumption().invalidate();
+    }
+
+    default void setCalleeNeedsExceptionState() {
+        needNotPassExceptionAssumption().invalidate();
+    }
+
+    /**
+     * Finds the parent of {@code callNode} that is an {@link IndirectCallNode} and marks it so it
+     * will pass the state via the context the next time.
+     *
+     * @return {@code true} if the marking was successful, {@code false} otherwise
+     */
+    public static boolean setEncapsulatingNeedsToPassCallerFrame(final Node callNode) {
+        Node pythonCallNode = callNode;
+        while (pythonCallNode != null) {
+            if (pythonCallNode instanceof IndirectCallNode) {
+                final IndirectCallNode indirectCallNode = (IndirectCallNode) pythonCallNode;
+                indirectCallNode.setCalleeNeedsCallerFrame();
+                return true;
+            }
+            pythonCallNode = pythonCallNode.getParent();
         }
+        return false;
     }
 
-    public static StringLenNode create() {
-        return StringLenNodeGen.create();
-    }
-
-    public static StringLenNode getUncached() {
-        return StringLenNodeGen.getUncached();
+    public static void setEncapsulatingNeedsToPassExceptionState(Node callNode) {
+        Node pythonCallNode = callNode;
+        while (pythonCallNode != null) {
+            if (pythonCallNode instanceof IndirectCallNode) {
+                ((IndirectCallNode) pythonCallNode).setCalleeNeedsExceptionState();
+                break;
+            }
+            pythonCallNode = pythonCallNode.getParent();
+        }
     }
 }

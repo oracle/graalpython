@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,12 +42,16 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
@@ -55,7 +59,6 @@ import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
-import com.oracle.truffle.api.nodes.Node;
 
 @GenerateLibrary
 @DefaultExport(DefaultPythonBooleanExports.class)
@@ -191,20 +194,109 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Returns the Python hash to use for the receiver. The {@code threadState} argument must be the
+     * result of a {@link PArguments#getThreadState} call. It ensures that we can use fastcalls and
+     * pass the thread state in the frame arguments.
+     */
+    public long hashWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw new AbstractMethodError();
+        }
+        return hash(receiver);
+    }
+
+    /**
+     * Potentially slower way to get the Python hash for the receiver. If a Python {@link Frame} is
+     * available to the caller, {@link #hashWithState} should be preferred.
+     */
+    public long hash(Object receiver) {
+        return hashWithState(receiver, null);
+    }
+
+    /**
      * Checks whether the receiver is a Python an indexable object. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
+     * Containers</a>.
      *
      * <br>
      * Specifically the default implementation checks for the implementation of the <b>__index__</b>
-     * special method.
+     * special method. This is analogous to {@code PyIndex_Check} in {@code abstract.h}
      *
      * @param receiver the receiver Object
      * @return True if object is indexable
      */
     public boolean canBeIndex(Object receiver) {
         return false;
+    }
+
+    /**
+     * Coerces the receiver into an index just like {@code PyNumber_AsIndex}.
+     *
+     * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
+     * object cannot be interpreted as an index.
+     */
+    public Object asIndexWithState(Object receiver, ThreadState threadState) {
+        if (threadState == null) {
+            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
+        }
+        return asIndex(receiver);
+    }
+
+    /**
+     * @see #asIndexWithState
+     */
+    public Object asIndex(Object receiver) {
+        return asIndexWithState(receiver, null);
+    }
+
+    /**
+     * Coerces the receiver into an index-sized integer, using the same mechanism as
+     * {@code PyNumber_AsSsize_t}:
+     * <ol>
+     * <li>Call <code>__index__</code> if the object is not already a Python int (resp.
+     * <code>PyNumber_Index</code>)</li>
+     * <li>Do a hard cast to long as per <code>PyLong_AsSsize_t</code></li>
+     * </ol>
+     *
+     * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
+     */
+    public int asSizeWithState(Object receiver, LazyPythonClass errorType, ThreadState threadState) {
+        if (threadState == null) {
+            // this will very likely always raise an integer interpretation error in
+            // asIndexWithState
+            long result = CastToJavaLongNode.getUncached().execute(asIndexWithState(receiver, null));
+            int intResult = (int) result;
+            if (intResult == result) {
+                return intResult;
+            } else if (errorType == null) {
+                return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            } else {
+                throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
+            }
+        }
+        return asSize(receiver, errorType);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public final int asSizeWithState(Object receiver, ThreadState threadState) {
+        return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public int asSize(Object receiver, LazyPythonClass errorClass) {
+        return asSizeWithState(receiver, errorClass, null);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, LazyPythonClass, ThreadState)
+     */
+    public final int asSize(Object receiver) {
+        return asSize(receiver, PythonBuiltinClassType.OverflowError);
     }
 
     /**
@@ -300,13 +392,13 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
-    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, Node callNode) {
+    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
         PythonContext context = contextRef.get();
-        PException caughtException = IndirectCallContext.enter(frame, context, callNode);
+        Object state = IndirectCallContext.enter(frame, context, callNode);
         try {
             return library.isIterable(object);
         } finally {
-            IndirectCallContext.exit(frame, context, caughtException);
+            IndirectCallContext.exit(frame, context, state);
         }
     }
 

@@ -26,34 +26,25 @@
 package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-abstract class AbstractInvokeNode extends Node {
+public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
         return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
     }
@@ -84,14 +75,41 @@ abstract class AbstractInvokeNode extends Node {
         return callee instanceof PBuiltinFunction || callee instanceof PBuiltinMethod;
     }
 
-    @Override
-    public Node copy() {
-        AbstractInvokeNode copy = (AbstractInvokeNode) super.copy();
-        return copy;
+    public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
+        return GenericInvokeNode.getUncached().execute(callee, arguments);
+    }
+
+    public static Object invokeUncached(RootCallTarget ct, Object[] arguments) {
+        return GenericInvokeNode.getUncached().execute(ct, arguments);
     }
 }
 
-abstract class DirectInvokeNode extends AbstractInvokeNode {
+abstract class DirectInvokeNode extends InvokeNode {
+    /**
+     * Flags indicating if some child node of this root node (or a callee) eventually needs the
+     * caller or exception state. Hence, the caller of this root node should provide the exception
+     * state in the arguments.
+     */
+    @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
+    @CompilationFinal private Assumption dontNeedCallerFrame = createCallerFrameAssumption();
+
+    private static Assumption createCallerFrameAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need caller frame");
+    }
+
+    private static Assumption createExceptionStateAssumption() {
+        return Truffle.getRuntime().createAssumption("does not need exception state");
+    }
+
+    @Override
+    public Assumption needNotPassFrameAssumption() {
+        return dontNeedCallerFrame;
+    }
+
+    @Override
+    public Assumption needNotPassExceptionAssumption() {
+        return dontNeedExceptionState;
+    }
 
     @CompilationFinal private int state = 0;
 
@@ -118,79 +136,13 @@ abstract class DirectInvokeNode extends AbstractInvokeNode {
             throw new IllegalStateException("Invoke node was initialized for a non-null frame. Cannot use it with null frame now.");
         }
         return false;
-
-    }
-}
-
-public abstract class InvokeNode extends DirectInvokeNode {
-
-    @Child private DirectCallNode callNode;
-    @Child private CallContext callContext;
-
-    private final PythonObject globals;
-    private final PCell[] closure;
-    protected final boolean isBuiltin;
-
-    protected InvokeNode(CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
-        this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        if (isBuiltin && PythonOptions.getEnableForcedSplits()) {
-            callNode.cloneCallTarget();
-        }
-        if (isGenerator && shouldInlineGenerators()) {
-            this.callNode.forceInlining();
-        }
-        this.globals = globals;
-        this.closure = closure;
-        this.isBuiltin = isBuiltin;
-        this.callContext = CallContext.create();
     }
 
-    public abstract Object execute(VirtualFrame frame, Object[] arguments);
-
-    @TruffleBoundary
-    public static InvokeNode create(PFunction callee) {
-        RootCallTarget callTarget = getCallTarget(callee);
-        boolean builtin = isBuiltin(callee);
-        return InvokeNodeGen.create(callTarget, callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
-    }
-
-    @TruffleBoundary
-    public static InvokeNode create(PBuiltinFunction callee) {
-        RootCallTarget callTarget = getCallTarget(callee);
-        boolean builtin = isBuiltin(callee);
-        return InvokeNodeGen.create(callTarget, null, null, builtin, false);
-    }
-
-    public static Object invokeUncached(PBuiltinFunction callee, Object[] arguments) {
-        return GenericInvokeNode.getUncached().execute(callee, arguments);
-    }
-
-    public static Object invokeUncached(RootCallTarget ct, Object[] arguments) {
-        return GenericInvokeNode.getUncached().execute(ct, arguments);
-    }
-
-    @Specialization
-    protected Object doDirect(VirtualFrame frame, Object[] arguments,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile) {
-        PArguments.setGlobals(arguments, globals);
-        PArguments.setClosure(arguments, closure);
-        RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct, isClassBodyProfile);
-        if (profileIsNullFrame(frame == null)) {
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
-            try {
-                return callNode.call(arguments);
-            } finally {
-                IndirectCalleeContext.exit(context, frameInfo);
-            }
-        } else {
-            callContext.prepareCall(frame, arguments, ct, this);
-            return callNode.call(arguments);
-        }
-    }
-
-    public final RootNode getCurrentRootNode() {
-        return callNode.getCurrentRootNode();
+    @Override
+    public Node copy() {
+        DirectInvokeNode copy = (DirectInvokeNode) super.copy();
+        copy.dontNeedCallerFrame = createCallerFrameAssumption();
+        copy.dontNeedExceptionState = createExceptionStateAssumption();
+        return copy;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,14 +70,15 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -846,7 +847,7 @@ public abstract class CExtModsupportNodes {
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetLazyClassNode getClassNode,
-                        @Cached IsSubtypeWithoutFrameNode isSubtypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
                         @Cached ToJavaNode typeToJavaNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -857,7 +858,7 @@ public abstract class CExtModsupportNodes {
                     Object typeObject = typeToJavaNode.execute(getVaArgNode.execute(varargs, state.outIndex));
                     state = state.incrementOutIndex();
                     assert PGuards.isClass(typeObject);
-                    if (!isSubtypeNode.executeWithGlobalState(getClassNode.execute(arg), typeObject)) {
+                    if (!isSubtypeNode.execute(getClassNode.execute(arg), (LazyPythonClass) typeObject)) {
                         raiseNode.raiseIntWithoutFrame(0, TypeError, "expected object of type %s, got %p", typeObject, arg);
                         throw ParseArgumentsException.raise();
                     }
@@ -1102,12 +1103,12 @@ public abstract class CExtModsupportNodes {
     /**
      * Writes to an output variable in the varargs by doing the necessary native typing and
      * dereferencing. This is mostly like
-     * 
+     *
      * <pre>
      *     SomeType *outVar = va_arg(valist, SomeType *);
      *     *outVar = value;
      * </pre>
-     * 
+     *
      * It is important to use the appropriate {@code write*} functions!
      */
     @GenerateUncached

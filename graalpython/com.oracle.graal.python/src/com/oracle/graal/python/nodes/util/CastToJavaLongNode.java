@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,99 +40,78 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongExactNodeGen;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNodeGen.CastToJavaLongLossyNodeGen;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 
-@TypeSystemReference(PythonArithmeticTypes.class)
-@ImportStatic(MathGuards.class)
+/**
+ * Casts a Python integer to a Java long, lossy and without coercion. <b>ATTENTION:</b> If the cast
+ * fails, the node will throw a {@link CannotCastException}.
+ */
+@GenerateUncached
+@ImportStatic(PGuards.class)
 public abstract class CastToJavaLongNode extends PNodeWithContext {
 
-    public abstract long execute(Object x);
-
-    protected long toLongInternal(@SuppressWarnings("unused") PInt x) {
-        throw new IllegalStateException("should not be reached");
+    public static final class CannotCastException extends ControlFlowException {
+        private static final long serialVersionUID = 1L;
+        private static final CannotCastException INSTANCE = new CannotCastException();
     }
 
-    public static CastToJavaLongNode create() {
-        return CastToJavaLongExactNodeGen.create();
-    }
+    public abstract long execute(Object x) throws CannotCastException;
 
-    public static CastToJavaLongNode createLossy() {
-        return CastToJavaLongLossyNodeGen.create();
-    }
-
-    public static CastToJavaLongNode getUncached() {
-        return CastToJavaLongExactNodeGen.getUncached();
-    }
-
-    public static CastToJavaLongNode createLossyUncached() {
-        return CastToJavaLongLossyNodeGen.getUncached();
+    @Specialization
+    static long doLong(boolean x) {
+        return x ? 1 : 0;
     }
 
     @Specialization
-    public long toLong(long x) {
+    static long doLong(int x) {
         return x;
     }
 
     @Specialization
-    public long toLong(PInt x) {
-        return toLongInternal(x);
+    static long doLong(long x) {
+        return x;
     }
 
-    @Specialization(guards = "!isNumber(x)")
-    public long toLong(Object x,
-                    @Cached PRaiseNode raise,
-                    @Cached LookupAndCallUnaryDynamicNode callIntNode) {
-        Object result = callIntNode.executeObject(x, __INT__);
-        if (result == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, "must be numeric, not %p", x);
-        }
-        if (result instanceof PInt) {
-            return toLongInternal((PInt) result);
-        }
-        if (result instanceof Integer) {
-            return ((Integer) result).longValue();
-        }
-        if (result instanceof Long) {
-            return (long) result;
-        }
-        throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
+    @Specialization
+    static long doPInt(PInt x) {
+        return x.longValue();
     }
 
-    @GenerateUncached
-    abstract static class CastToJavaLongLossyNode extends CastToJavaLongNode {
-        @Override
-        protected long toLongInternal(PInt x) {
-            return x.longValue();
+    @Specialization
+    static long doNativeObject(PythonNativeObject x,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
+            CompilerDirectives.transferToInterpreter();
+            throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
         }
+        // the object's type is not a subclass of 'int'
+        throw CannotCastException.INSTANCE;
     }
 
-    @GenerateUncached
-    abstract static class CastToJavaLongExactNode extends CastToJavaLongNode {
-        @Override
-        protected long toLongInternal(PInt x) {
-            try {
-                return x.longValueExact();
-            } catch (ArithmeticException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x);
-            }
-        }
+    @Fallback
+    static long doUnsupported(@SuppressWarnings("unused") Object x) {
+        throw CannotCastException.INSTANCE;
+    }
+
+    public static CastToJavaLongNode create() {
+        return CastToJavaLongNodeGen.create();
+    }
+
+    public static CastToJavaLongNode getUncached() {
+        return CastToJavaLongNodeGen.getUncached();
     }
 }

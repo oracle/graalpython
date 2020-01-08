@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.BigEndianNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.LittleEndianNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.NativeOrderNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -98,8 +99,6 @@ public abstract class UnicodeObjectNodes {
         }
     }
 
-    // TODO qualified name is a workaround for a DSL bug
-    @com.oracle.truffle.api.dsl.GenerateUncached
     public abstract static class UnicodeAsWideCharNode extends UnicodeBaseNode {
 
         public static UnicodeAsWideCharNode createNativeOrder() {
@@ -107,7 +106,7 @@ public abstract class UnicodeObjectNodes {
         }
 
         public static UnicodeAsWideCharNode getUncachedNativeOrder() {
-            return UnicodeAsWideCharNodeGen.getUncached();
+            return NativeOrderNodeGen.getUncached();
         }
 
         public static UnicodeAsWideCharNode createLittleEndian() {
@@ -174,6 +173,10 @@ public abstract class UnicodeObjectNodes {
 
         protected int getByteOrder() {
             return UnicodeBaseNode.NATIVE_ORDER;
+        }
+
+        @GenerateUncached
+        abstract static class NativeOrderNode extends UnicodeAsWideCharNode {
         }
 
         @GenerateUncached

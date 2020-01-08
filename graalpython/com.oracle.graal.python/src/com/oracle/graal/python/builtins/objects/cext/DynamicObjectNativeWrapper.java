@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.util.logging.Level;
 
@@ -105,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -123,16 +125,15 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode.IsSubtypeWithoutFrameNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.string.StringLenNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -257,7 +258,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
+    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class, PythonOptions.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends Node {
 
@@ -355,7 +356,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached IsSubtypeWithoutFrameNode isSubtype,
+                        @Cached IsSubtypeNode isSubtype,
                         @Cached BranchProfile notBytes,
                         @Cached BranchProfile notBytearray,
                         @Cached BranchProfile notMemoryview,
@@ -363,27 +364,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile notMmap,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
-            if (isSubtype.executeWithGlobalState(object, pBytes)) {
+            if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
             }
             notBytes.enter();
             PythonBuiltinClass pBytearray = context.getCore().lookupType(PythonBuiltinClassType.PByteArray);
-            if (isSubtype.executeWithGlobalState(object, pBytearray)) {
+            if (isSubtype.execute(object, pBytearray)) {
                 return new PyBufferProcsWrapper(pBytearray);
             }
             notBytearray.enter();
             PythonBuiltinClass pMemoryview = context.getCore().lookupType(PythonBuiltinClassType.PMemoryView);
-            if (isSubtype.executeWithGlobalState(object, pMemoryview)) {
+            if (isSubtype.execute(object, pMemoryview)) {
                 return new PyBufferProcsWrapper(pMemoryview);
             }
             notMemoryview.enter();
             PythonBuiltinClass pBuffer = context.getCore().lookupType(PythonBuiltinClassType.PBuffer);
-            if (isSubtype.executeWithGlobalState(object, pBuffer)) {
+            if (isSubtype.execute(object, pBuffer)) {
                 return new PyBufferProcsWrapper(pBuffer);
             }
             notBuffer.enter();
             PythonBuiltinClass pMmap = context.getCore().lookupType(PythonBuiltinClassType.PMMap);
-            if (isSubtype.executeWithGlobalState(object, pMmap)) {
+            if (isSubtype.execute(object, pMmap)) {
                 return new PyBufferProcsWrapper(pMmap);
             }
             notMmap.enter();
@@ -402,9 +403,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "eq(TP_AS_MAPPING, key)")
+        @Specialization(guards = "eq(TP_AS_MAPPING, key)", limit = "1")
         Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pythonTypeLibrary,
+                        @CachedLibrary("object") PythonObjectLibrary pythonTypeLibrary,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (pythonTypeLibrary.isSequenceType(object)) {
                 return new PyMappingMethodsWrapper(object);
@@ -429,32 +430,35 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         long doTpBasicsize(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __BASICSIZE__);
-            return val != PNone.NO_VALUE ? castToIntNode.execute(null, val) : 0L;
+            return val != PNone.NO_VALUE ? lib.asSize(val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
         long doTpItemsize(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __ITEMSIZE__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
-            return val != PNone.NO_VALUE ? castToIntNode.execute(null, val) : 0L;
+            if (val == PNone.NO_VALUE) {
+                return 0L;
+            }
+            return lib.asSize(val);
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         long doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached CastToIndexNode castToIntNode,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
             Object dictoffset = getAttrNode.execute(object, __DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? castToIntNode.execute(null, dictoffset) : 0L;
+            return dictoffset != PNone.NO_VALUE ? lib.asSize(dictoffset) : 0L;
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
@@ -516,6 +520,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(lookupAttrNode.execute(object, __NEXT__));
+        }
+
+        @Specialization(guards = "eq(TP_STR, key)")
+        Object doTpStr(PythonManagedClass object, @SuppressWarnings("unused") String key,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(lookupAttrNode.execute(object, __STR__));
         }
 
         @Specialization(guards = "eq(TP_REPR, key)")
@@ -697,10 +708,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             PHashingCollection dict = lib.getDict(object);
             if (!(dict instanceof PDict)) {
                 assert dict instanceof PMappingproxy || dict == null;
-                // If 'dict instanceof PMappingproxy', it seems that someone already used
-                // '__dict__'
-                // on this type and created a mappingproxy object. We need to replace it by a
-                // dict.
+                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
+                // on this type and created a mappingproxy object. We need to replace it by a dict.
                 dict = factory.createDictFixedStorage(object);
                 lib.setDict(object, dict);
             }

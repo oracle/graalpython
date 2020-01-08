@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -139,7 +139,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     final long getArraySize(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
         return castToLongNode.execute(callLenNode.executeObject(lib.getDelegate(this), SpecialMethodNames.__LEN__));
     }
 
@@ -160,7 +160,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     final boolean isArrayElementReadable(long identifier,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
         // also include the implicit null-terminator
         return 0 <= identifier && identifier <= getArraySize(lib, callLenNode, castToLongNode);
     }
@@ -196,11 +196,12 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Shared("castToLongNode") @Cached CastToJavaLongNode castToJavaLongNode) {
+                        @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToJavaLongNode) {
             PIBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
-            if (byteIdx == len) {
+            if (byteIdx >= len) {
+                assert byteIdx < len + 8;
                 return 0L;
             }
             int i = (int) byteIdx;
@@ -235,7 +236,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         long doPMmapI64(PMMap mmap, long byteIdx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
                         @Exclusive @Cached CallNode callGetItemNode,
-                        @Shared("castToLongNode") @Cached CastToJavaLongNode castToJavaLongNode) {
+                        @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToJavaLongNode) {
 
             long len = mmap.getLength();
             Object attrGetItem = lookupGetItemNode.execute(mmap, SpecialMethodNames.__GETITEM__);
@@ -302,7 +303,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     public boolean isArrayElementModifiable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
         return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
     }
 
@@ -310,7 +311,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     public boolean isArrayElementInsertable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
         return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
     }
 
@@ -318,7 +319,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     public boolean isArrayElementRemovable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode,
-                    @Shared("castToLongNode") @Cached CastToJavaLongNode castToLongNode) {
+                    @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToLongNode) {
         return 0 <= index && index <= getArraySize(lib, callLenNode, castToLongNode);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,7 +29,6 @@ import java.text.DateFormatSymbols;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -37,6 +36,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -44,13 +44,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -65,12 +66,14 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
+    private static final long PERF_COUNTER_START = TruffleOptions.AOT ? 0 : System.nanoTime();
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -80,7 +83,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        TimeZone defaultTimeZone = TimeZone.getDefault();
+        TimeZone defaultTimeZone = TimeZone.getTimeZone(core.getContext().getEnv().getTimeZone());
         String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
         String daylightSavingZone = defaultTimeZone.getDisplayName(true, TimeZone.SHORT);
 
@@ -103,7 +106,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static Object[] getTimeStruct(double seconds, boolean local) {
         Object[] timeStruct = new Object[11];
         Instant instant = Instant.ofEpochSecond((long) seconds);
-        ZoneId zone = (local) ? ZoneId.systemDefault() : ZoneId.of("GMT");
+        ZoneId zone = (local) ? PythonLanguage.getContext().getEnv().getTimeZone() : ZoneId.of("GMT");
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[0] = zonedDateTime.getYear();
         timeStruct[1] = zonedDateTime.getMonth().getValue();
@@ -182,6 +185,35 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // time.time_ns()
+    @Builtin(name = "time_ns", minNumOfPositionalArgs = 0, doc = "Similar to time() but returns time as an integer number of nanoseconds since the epoch.")
+    @GenerateNodeFactory
+    public abstract static class PythonTimeNsNode extends PythonBuiltinNode {
+
+        /**
+         * The maximum date, which are systems able to handle is 2262 04 11. This corresponds to the
+         * 64 bit long.
+         * 
+         * @return
+         */
+        @Specialization
+        public long time() {
+            return timeNanoSeconds();
+        }
+
+        @TruffleBoundary
+        private static long timeNanoSeconds() {
+            Instant now = Instant.now();
+            // From java we are not able to obtain the nano seconds resolution. It depends on the
+            // jdk
+            // JKD 1.8 the resolution is usually miliseconds (for example 1576081173486000000)
+            // From JDK 9 including JDK 11 the resolution is usually microseconds (for example
+            // 1576082578022393000)
+            // To obtain really nanosecond resulution we have to fake the nanoseconds
+            return now.getEpochSecond() * 1000000000L + now.getNano();
+        }
+    }
+
     // time.monotonic()
     @Builtin(name = "monotonic", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
@@ -190,15 +222,44 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double time() {
+            return System.nanoTime() / 1000000000D;
+        }
+    }
+
+    // time.monotonic_ns()
+    @Builtin(name = "monotonic_ns", minNumOfPositionalArgs = 0, doc = "Similar to monotonic(), but return time as nanoseconds.")
+    @GenerateNodeFactory
+    public abstract static class PythonMonotonicNsNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public long time() {
             return System.nanoTime();
         }
     }
 
     @Builtin(name = "perf_counter", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class PythonPerfCounterNode extends PythonClockNode {
+    public abstract static class PythonPerfCounterNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public double counter() {
+            return (System.nanoTime() - PERF_COUNTER_START) / 1000_000_000.0;
+        }
     }
 
+    @Builtin(name = "perf_counter_ns", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PythonPerfCounterNsNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public long counter() {
+            return System.nanoTime() - PERF_COUNTER_START;
+        }
+    }
+
+    // TODO time.clock in 3.8 is removed in 3.5 is deprecated
     // time.clock()
     @Builtin(name = "clock", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
@@ -651,7 +712,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         double mktime(VirtualFrame frame, PTuple tuple,
-                        @Cached CastToIndexNode castInt,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] items = getObjectArrayNode.execute(tuple);
             if (items.length != 9) {
@@ -659,7 +720,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             int[] integers = new int[9];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                integers[i] = castInt.execute(frame, items[i]);
+                integers[i] = lib.asSizeWithState(items[i], PArguments.getThreadState(frame));
             }
             return op(integers);
         }
@@ -667,7 +728,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static long op(int[] integers) {
             LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
-            return localtime.toEpochSecond(ZoneOffset.UTC);
+            ZoneId timeZone = PythonLanguage.getContext().getEnv().getTimeZone();
+            return localtime.toEpochSecond(timeZone.getRules().getOffset(localtime));
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,11 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -58,7 +62,35 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
+    static Object asIndex(Long value) {
+        return value;
+    }
+
+    @ExportMessage
+    static class AsSize {
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static int noOverflow(Long self, @SuppressWarnings("unused") LazyPythonClass type) {
+            return PInt.intValueExact(self);
+        }
+
+        @Specialization(replaces = "noOverflow")
+        static int withOverflow(Long self, LazyPythonClass type,
+                        @Cached PRaiseNode raise) {
+            try {
+                return PInt.intValueExact(self);
+            } catch (ArithmeticException e) {
+                throw raise.raiseNumberTooLarge(type, self);
+            }
+        }
+    }
+
+    @ExportMessage
     static LazyPythonClass getLazyPythonClass(@SuppressWarnings("unused") Long value) {
         return PythonBuiltinClassType.PInt;
+    }
+
+    @ExportMessage
+    static long hash(Long value) {
+        return value;
     }
 }

@@ -25,11 +25,14 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -39,8 +42,9 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -59,9 +63,10 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private SetAttributeNode.Dynamic setAttributeNode;
     @Child private LookupAndCallUnaryNode callLenNode;
     @Child private GetItemNode getItemNode;
-    @Child private CastToIndexNode castToIndexNode;
-    @Child private CastToStringNode castToStringNode;
+    @Child private PythonObjectLibrary castToIndexNode;
+    @Child private CastToJavaStringNode castToStringNode;
     @Child private GetAnyAttributeNode readNode;
+    @Child private PRaiseNode raiseNode;
 
     @CompilationFinal private IsBuiltinClassProfile isAttributeErrorProfile;
 
@@ -122,9 +127,15 @@ public class ImportStarNode extends AbstractImportNode {
         } else {
             try {
                 Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
-                int n = ensureCastToIndexNode().execute(frame, ensureCallLenNode().executeObject(frame, attrAll));
+                int n = ensureCastToIndexNode().asSizeWithState(ensureCallLenNode().executeObject(frame, attrAll), PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
-                    String attrName = ensureCastToStringNode().execute(frame, ensureGetItemNode().executeWith(frame, attrAll, i));
+                    Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
+                    String attrName = ensureCastToStringNode().execute(attrNameObj);
+                    if (attrName == null) {
+                        // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode;
+                        // but that needs some refactoring first.
+                        throw raise(PythonBuiltinClassType.TypeError, "attribute name must be string, not '%p'", attrNameObj);
+                    }
                     Object attr = readAttribute(frame, importedModule, attrName);
                     writeAttribute(frame, globals, attrName, attr);
                 }
@@ -152,10 +163,10 @@ public class ImportStarNode extends AbstractImportNode {
         return callLenNode;
     }
 
-    private CastToIndexNode ensureCastToIndexNode() {
+    private PythonObjectLibrary ensureCastToIndexNode() {
         if (castToIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castToIndexNode = insert(CastToIndexNode.create());
+            castToIndexNode = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
         }
         return castToIndexNode;
     }
@@ -168,10 +179,10 @@ public class ImportStarNode extends AbstractImportNode {
         return getItemNode;
     }
 
-    private CastToStringNode ensureCastToStringNode() {
+    private CastToJavaStringNode ensureCastToStringNode() {
         if (castToStringNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            castToStringNode = insert(CastToStringNode.create());
+            castToStringNode = insert(CastToJavaStringNodeGen.create());
         }
         return castToStringNode;
     }
@@ -182,6 +193,14 @@ public class ImportStarNode extends AbstractImportNode {
             isAttributeErrorProfile = IsBuiltinClassProfile.create();
         }
         return isAttributeErrorProfile;
+    }
+
+    private PException raise(PythonBuiltinClassType errType, String format, Object arg) {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        throw raiseNode.raise(errType, format, arg);
     }
 
     @TruffleBoundary

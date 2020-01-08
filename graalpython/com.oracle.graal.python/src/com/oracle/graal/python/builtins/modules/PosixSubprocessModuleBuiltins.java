@@ -59,25 +59,26 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -102,12 +103,12 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
 
             PythonContext context = getContext();
-            PException caughtException = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
                                 preexec_fn);
             } finally {
-                IndirectCallContext.exit(frame, context, caughtException);
+                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -232,20 +233,13 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
                         Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
                         Object restore_signals, Object call_setsid, PNone preexec_fn,
-                        @Cached("create()") CastToListNode castArgs,
-                        @Cached("create()") CastToListNode castExecList,
+                        @Cached CastToListNode castArgs,
+                        @Cached CastToListNode castExecList,
                         @Cached("createIfTrueNode()") CastToBooleanNode castCloseFds,
-                        @Cached("create()") CastToListNode castFdsToKeep,
-                        @Cached("create()") CastToStringNode castCwd,
-                        @Cached("create()") CastToListNode castEnv,
-                        @Cached("create()") CastToIndexNode castP2cread,
-                        @Cached("create()") CastToIndexNode castP2cwrite,
-                        @Cached("create()") CastToIndexNode castC2pread,
-                        @Cached("create()") CastToIndexNode castC2pwrite,
-                        @Cached("create()") CastToIndexNode castErrread,
-                        @Cached("create()") CastToIndexNode castErrwrite,
-                        @Cached("create()") CastToIndexNode castErrpipeRead,
-                        @Cached("create()") CastToIndexNode castErrpipeWrite,
+                        @Cached CastToListNode castFdsToKeep,
+                        @Cached CastToJavaStringNode castCwd,
+                        @Cached CastToListNode castEnv,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createIfTrueNode()") CastToBooleanNode castRestoreSignals,
                         @Cached("createIfTrueNode()") CastToBooleanNode castSetsid) {
 
@@ -253,7 +247,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (cwd instanceof PNone) {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
             } else {
-                actualCwd = castCwd.execute(frame, cwd);
+                actualCwd = castCwd.execute(cwd);
             }
 
             PList actualEnv;
@@ -265,8 +259,14 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list), castCloseFds.executeBoolean(frame, close_fds),
                             castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
-                            castP2cread.execute(frame, p2cread), castP2cwrite.execute(frame, p2cwrite), castC2pread.execute(frame, c2pread), castC2pwrite.execute(frame, c2pwrite),
-                            castErrread.execute(frame, errread), castErrwrite.execute(frame, errwrite), castErrpipeRead.execute(frame, errpipe_read), castErrpipeWrite.execute(frame, errpipe_write),
+                            lib.asSizeWithState(p2cread, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(p2cwrite, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(c2pread, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(c2pwrite, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errread, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errwrite, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errpipe_read, PArguments.getThreadState(frame)),
+                            lib.asSizeWithState(errpipe_write, PArguments.getThreadState(frame)),
                             castRestoreSignals.executeBoolean(frame, restore_signals), castSetsid.executeBoolean(frame, call_setsid), preexec_fn);
         }
     }

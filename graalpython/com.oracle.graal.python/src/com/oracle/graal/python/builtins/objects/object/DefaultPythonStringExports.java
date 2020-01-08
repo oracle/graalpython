@@ -78,4 +78,10 @@ final class DefaultPythonStringExports {
     static byte[] getBufferBytes(String str) {
         return str.getBytes();
     }
+
+    @ExportMessage
+    @TruffleBoundary
+    static long hash(String self) {
+        return self.hashCode();
+    }
 }

@@ -382,7 +382,79 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "hasLocalsStorage(pyFrame, frameToSync)", replaces = "doLocalsStorageCached")
+        @Specialization(guards = {"hasLocalsStorage(pyFrame, frameToSync)", "frameToSync.getFrameDescriptor() == cachedFd"}, //
+                        assumptions = "cachedFd.getVersion()", //
+                        limit = "1")
+        static void doLocalsStorageLoop(PFrame pyFrame, Frame frameToSync,
+                        @Cached("frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd,
+                        @Cached(value = "getSlots(cachedFd)", dimensions = 1) FrameSlot[] cachedSlots) {
+            boolean invalidState = false;
+            LocalsStorage localsStorage = getLocalsStorage(pyFrame);
+            MaterializedFrame target = localsStorage.getFrame();
+            assert cachedFd == target.getFrameDescriptor();
+
+            for (int i = 0; i < cachedSlots.length; i++) {
+                FrameSlot slot = cachedSlots[i];
+                if (FrameSlotIDs.isUserFrameSlot(slot.getIdentifier())) {
+                    if (frameToSync.isBoolean(slot)) {
+                        try {
+                            target.setBoolean(slot, frameToSync.getBoolean(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isByte(slot)) {
+                        try {
+                            target.setByte(slot, frameToSync.getByte(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isDouble(slot)) {
+                        try {
+                            target.setDouble(slot, frameToSync.getDouble(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isFloat(slot)) {
+                        try {
+                            target.setFloat(slot, frameToSync.getFloat(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isInt(slot)) {
+                        try {
+                            target.setInt(slot, frameToSync.getInt(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isLong(slot)) {
+                        try {
+                            target.setLong(slot, frameToSync.getLong(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    } else if (frameToSync.isObject(slot)) {
+                        try {
+                            target.setObject(slot, frameToSync.getObject(slot));
+                        } catch (FrameSlotTypeException e) {
+                            CompilerDirectives.transferToInterpreter();
+                            invalidState = true;
+                        }
+                    }
+                }
+            }
+            if (CompilerDirectives.inInterpreter() && invalidState) {
+                // we're always in the interpreter if invalidState was set
+                throw new IllegalStateException("the frame lied about the frame slot type");
+            }
+        }
+
+        @Specialization(guards = "hasLocalsStorage(pyFrame, frameToSync)", replaces = {"doLocalsStorageCached", "doLocalsStorageLoop"})
         static void doLocalsStorageUncached(PFrame pyFrame, Frame frameToSync) {
             FrameDescriptor fd = frameToSync.getFrameDescriptor();
             FrameSlot[] cachedSlots = getSlots(fd);

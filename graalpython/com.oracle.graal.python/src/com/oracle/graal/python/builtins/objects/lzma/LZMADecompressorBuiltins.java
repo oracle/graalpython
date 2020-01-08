@@ -57,23 +57,24 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMADecompressor)
 public class LZMADecompressorBuiltins extends PythonBuiltins {
@@ -102,10 +103,10 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, int maxLength,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached CastToByteNode castToByteNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(bytesLike);
             int len = lenNode.execute((PSequence) bytesLike);
             byte[] compressed = new byte[Math.min(len, maxLength)];
@@ -120,14 +121,14 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(replaces = "doBytesLikeWithMaxLengthI", limit = "getCallSiteInlineCacheMaxDepth()")
         PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, Object maxLength,
-                        @Cached CastToIndexNode castToIntNode,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
-            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, castToIntNode.execute(frame, maxLength), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
+                        @CachedLibrary("maxLength") PythonObjectLibrary lib,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached CastToByteNode castToByteNode) {
+            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, lib.asSizeWithState(maxLength, PArguments.getThreadState(frame)), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
         }
 
         @Fallback

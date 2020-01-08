@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,84 +40,99 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import java.util.function.Function;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongExactNodeGen;
+import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongLossyNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToIntegerFromIndexNode extends PNodeWithContext {
-    @Child private LookupAndCallUnaryNode callIndexNode;
+public abstract class CoerceToJavaLongNode extends PNodeWithContext {
 
-    private final Function<Object, Byte> typeErrorHandler;
+    public abstract long execute(Object x);
 
-    public abstract Object execute(VirtualFrame frame, Object x);
-
-    public static CastToIntegerFromIndexNode create() {
-        return CastToIntegerFromIndexNodeGen.create(null);
+    protected long toLongInternal(@SuppressWarnings("unused") PInt x) {
+        throw new IllegalStateException("should not be reached");
     }
 
-    public static CastToIntegerFromIndexNode create(Function<Object, Byte> typeErrorHandler) {
-        return CastToIntegerFromIndexNodeGen.create(typeErrorHandler);
+    public static CoerceToJavaLongNode create() {
+        return CoerceToJavaLongExactNodeGen.create();
     }
 
-    public CastToIntegerFromIndexNode(Function<Object, Byte> typeErrorHandler) {
-        super();
-        this.typeErrorHandler = typeErrorHandler;
+    public static CoerceToJavaLongNode createLossy() {
+        return CoerceToJavaLongLossyNodeGen.create();
+    }
+
+    public static CoerceToJavaLongNode getUncached() {
+        return CoerceToJavaLongExactNodeGen.getUncached();
+    }
+
+    public static CoerceToJavaLongNode createLossyUncached() {
+        return CoerceToJavaLongLossyNodeGen.getUncached();
     }
 
     @Specialization
-    long toInt(long x) {
+    public long toLong(long x) {
         return x;
     }
 
     @Specialization
-    PInt toInt(PInt x) {
-        return x;
-    }
-
-    @Specialization
-    long toInt(double x,
-                    @Cached PRaiseNode raise) {
-        if (typeErrorHandler != null) {
-            return typeErrorHandler.apply(x);
-        }
-        throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+    public long toLong(PInt x) {
+        return toLongInternal(x);
     }
 
     @Specialization(guards = "!isNumber(x)")
-    Object toInt(VirtualFrame frame, Object x,
-                    @Cached PRaiseNode raise) {
-        if (callIndexNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
+    public long toLong(Object x,
+                    @Cached PRaiseNode raise,
+                    @Cached LookupAndCallUnaryDynamicNode callIntNode) {
+        Object result = callIntNode.executeObject(x, __INT__);
+        if (result == PNone.NO_VALUE) {
+            throw raise.raise(TypeError, "must be numeric, not %p", x);
         }
-        Object result = callIndexNode.executeObject(frame, x);
-        if (result == PNone.NONE) {
-            if (typeErrorHandler != null) {
-                return typeErrorHandler.apply(x);
+        if (result instanceof PInt) {
+            return toLongInternal((PInt) result);
+        }
+        if (result instanceof Integer) {
+            return ((Integer) result).longValue();
+        }
+        if (result instanceof Long) {
+            return (long) result;
+        }
+        throw raise.raise(TypeError, "%p.__int__ returned a non long (type %p)", x, result);
+    }
+
+    @GenerateUncached
+    abstract static class CoerceToJavaLongLossyNode extends CoerceToJavaLongNode {
+        @Override
+        protected long toLongInternal(PInt x) {
+            return x.longValue();
+        }
+    }
+
+    @GenerateUncached
+    abstract static class CoerceToJavaLongExactNode extends CoerceToJavaLongNode {
+        @Override
+        protected long toLongInternal(PInt x) {
+            try {
+                return x.longValueExact();
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.getUncached().raise(TypeError, "%s cannot be interpreted as long (type %p)", x);
             }
-            throw raise.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
-        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise.raise(TypeError, " __index__ returned non-int (type %p)", result);
-        }
-        return result;
     }
 }

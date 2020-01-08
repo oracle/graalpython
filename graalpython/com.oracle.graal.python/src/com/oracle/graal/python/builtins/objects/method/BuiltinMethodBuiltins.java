@@ -46,7 +46,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.util.CastToStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -127,16 +127,16 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Specialization
         String doBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached("create()") CastToStringNode castToStringNode) {
-            String name = castToStringNode.execute(frame, getNameNode.executeObject(frame, self.getFunction()));
+                        @Cached CastToJavaStringNode castToStringNode) {
+            String name = castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction()));
             return doMethod(name, self.getSelf());
         }
 
         @Specialization
         String doBuiltinMethod(VirtualFrame frame, PMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached("create()") CastToStringNode castToStringNode) {
-            return doMethod(castToStringNode.execute(frame, getNameNode.executeObject(frame, self.getFunction())), self.getSelf());
+                        @Cached CastToJavaStringNode castToStringNode) {
+            return doMethod(castToStringNode.execute(getNameNode.executeObject(frame, self.getFunction())), self.getSelf());
         }
 
         private String doMethod(String name, Object owner) {

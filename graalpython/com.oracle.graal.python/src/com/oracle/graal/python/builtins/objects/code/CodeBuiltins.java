@@ -119,6 +119,15 @@ public class CodeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "co_posonlyargcount", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetPosOnlyArgCountNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getPositionalOnlyArgCount();
+        }
+    }
+
     @Builtin(name = "co_kwonlyargcount", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetKnownlyArgCountNode extends PythonBuiltinNode {

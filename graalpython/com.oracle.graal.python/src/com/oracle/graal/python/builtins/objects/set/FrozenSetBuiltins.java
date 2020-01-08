@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -56,12 +55,14 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -70,13 +71,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -84,6 +86,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -387,8 +390,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class BinaryUnionNode extends PNodeWithContext {
+    abstract static class BinaryUnionNode extends PNodeWithContext implements IndirectCallNode {
         @Child private Equivalence equivalenceNode;
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
 
         public abstract PBaseSet execute(VirtualFrame frame, PBaseSet container, HashingStorage left, Object right);
 
@@ -404,13 +419,13 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doHashingCollection(VirtualFrame frame, PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
-            PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 for (Object key : other.getDictStorage().keys()) {
                     selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
                 }
             } finally {
-                IndirectCallContext.exit(frame, context, savedExceptionState);
+                IndirectCallContext.exit(frame, context, state);
             }
             return container;
         }
@@ -609,9 +624,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         public long computeHash(VirtualFrame frame, PFrozenSet self,
                         @Cached HashingStorageNodes.LenNode getLen,
                         @Cached HashingStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
-                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
-                        @Cached("createLossy()") CastToJavaLongNode castToLongNode) {
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
             HashingStorage storage = self.getDictStorage();
             int len = getLen.execute(storage);
@@ -620,15 +633,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             long c1 = 0x3611c3e3;
             long c2 = 0x2338c7c1;
             long hash = 0;
-            long tmp;
 
             for (Object key : storage.keys()) {
                 Object value = getItemNode.execute(frame, storage, key);
-                Object hashValue = lookupHashAttributeNode.executeObject(frame, value);
-                if (!isInstanceNode.executeWith(frame, hashValue, getBuiltinPythonClass(PythonBuiltinClassType.PInt))) {
-                    throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
-                }
-                tmp = castToLongNode.execute(hashValue);
+                long tmp = lib.hashWithState(value, PArguments.getThreadState(frame));
                 hash ^= shuffleBits(tmp);
             }
 
