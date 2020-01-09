@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -84,7 +84,24 @@ def test_destructuring():
     assert a == 'а' and b == 'б' and c == 'в'
     # TODO not supported yet
 #     a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
-#     assert a == '𝒜' and b == '𝒞' and c == '𝒵'
+#     assert a == '𝒜' and b == '𝒞' and c == '𝒵
+
+    # starred desctructuring assignment
+    a, b, *s, c, d = tuple(range(4))
+    assert a == 0 and b == 1 and c == 2 and d == 3
+
+    a, b, *s, c, d = tuple(range(10))
+    assert a == 0 and b == 1 and s == [2, 3, 4, 5, 6, 7] and c == 8 and d == 9
+
+    c = -1
+    d = -1
+    a, b, *s = tuple(range(10))
+    assert a == 0 and b == 1 and s == [2, 3, 4, 5, 6, 7, 8, 9] and c == -1 and d == -1
+
+    a = -1
+    b = -1
+    *s, c, d = tuple(range(10))
+    assert a == -1 and b == -1 and s == [0, 1, 2, 3, 4, 5, 6, 7] and c == 8 and d == 9
 
 
 def test_assigning_hidden_keys():
