@@ -251,7 +251,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         }
 
         public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
-            // do not convert wrap 'object.object' since that is really the native pointer object
+            // do not wrap 'object.object' since that is really the native pointer object
             return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNode.getUncached());
         }
     }

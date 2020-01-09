@@ -57,32 +57,34 @@ public final class ExceptionUtils {
     @TruffleBoundary
     public static void printPythonLikeStackTrace(Throwable e) {
         List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);
-        ArrayList<String> stack = new ArrayList<>();
-        for (TruffleStackTraceElement frame : stackTrace) {
+        if (stackTrace != null) {
+            ArrayList<String> stack = new ArrayList<>();
+            for (TruffleStackTraceElement frame : stackTrace) {
 
-            StringBuilder sb = new StringBuilder();
-            Node location = frame.getLocation();
-            SourceSection sourceSection = location != null ? location.getSourceSection() : null;
-            String rootName = frame.getTarget().getRootNode().getName();
-            if (sourceSection != null) {
-                sb.append("  ");
-                String path = sourceSection.getSource().getPath();
-                if (path != null) {
-                    sb.append("File ");
+                StringBuilder sb = new StringBuilder();
+                Node location = frame.getLocation();
+                SourceSection sourceSection = location != null ? location.getSourceSection() : null;
+                String rootName = frame.getTarget().getRootNode().getName();
+                if (sourceSection != null) {
+                    sb.append("  ");
+                    String path = sourceSection.getSource().getPath();
+                    if (path != null) {
+                        sb.append("File ");
+                    }
+                    sb.append('"');
+                    sb.append(sourceSection.getSource().getName());
+                    sb.append("\", line ");
+                    sb.append(sourceSection.getStartLine());
+                    sb.append(", in ");
+                    sb.append(rootName);
+                    stack.add(sb.toString());
                 }
-                sb.append('"');
-                sb.append(sourceSection.getSource().getName());
-                sb.append("\", line ");
-                sb.append(sourceSection.getStartLine());
-                sb.append(", in ");
-                sb.append(rootName);
-                stack.add(sb.toString());
             }
-        }
-        System.err.println("Traceback (most recent call last):");
-        ListIterator<String> listIterator = stack.listIterator(stack.size());
-        while (listIterator.hasPrevious()) {
-            System.err.println(listIterator.previous());
+            System.err.println("Traceback (most recent call last):");
+            ListIterator<String> listIterator = stack.listIterator(stack.size());
+            while (listIterator.hasPrevious()) {
+                System.err.println(listIterator.previous());
+            }
         }
         System.err.println(e.getMessage());
     }

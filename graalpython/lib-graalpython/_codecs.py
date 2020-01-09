@@ -148,7 +148,7 @@ def utf_8_encode(string, errors=None):
 
 @__builtin__
 def utf_8_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-8", errors)
+    return __truffle_decode(string, "utf-8", errors, final)
 
 
 @__builtin__
@@ -158,7 +158,7 @@ def utf_7_encode(string, errors=None):
 
 @__builtin__
 def utf_7_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-7", errors)
+    return __truffle_decode(string, "utf-7", errors, final)
 
 
 @__builtin__
@@ -168,7 +168,7 @@ def utf_16_encode(string, errors=None, byteorder=0):
 
 @__builtin__
 def utf_16_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-16", errors)
+    return __truffle_decode(string, "utf-16", errors, final)
 
 
 @__builtin__
@@ -178,7 +178,7 @@ def utf_16_le_encode(string, errors=None):
 
 @__builtin__
 def utf_16_le_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-16-le", errors)
+    return __truffle_decode(string, "utf-16-le", errors, final)
 
 
 @__builtin__
@@ -188,7 +188,7 @@ def utf_16_be_encode(string, errors=None):
 
 @__builtin__
 def utf_16_be_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-16-be", errors)
+    return __truffle_decode(string, "utf-16-be", errors, final)
 
 
 @__builtin__
@@ -203,7 +203,7 @@ def utf_32_encode(string, errors=None, byteorder=0):
 
 @__builtin__
 def utf_32_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-32", errors)
+    return __truffle_decode(string, "utf-32", errors, final)
 
 
 @__builtin__
@@ -213,7 +213,7 @@ def utf_32_le_encode(string, errors=None):
 
 @__builtin__
 def utf_32_le_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-32-le", errors)
+    return __truffle_decode(string, "utf-32-le", errors, final)
 
 
 @__builtin__
@@ -223,7 +223,7 @@ def utf_32_be_encode(string, errors=None):
 
 @__builtin__
 def utf_32_be_decode(string, errors=None, final=False):
-    return __truffle_decode(string, "utf-32-be", errors)
+    return __truffle_decode(string, "utf-32-be", errors, final)
 
 
 @__builtin__
