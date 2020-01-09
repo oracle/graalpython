@@ -25,28 +25,16 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.YesNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateWrapper
 public abstract class CastToBooleanNode extends UnaryOpNode {
@@ -79,8 +67,6 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
     public abstract boolean executeBoolean(VirtualFrame frame);
 
     public abstract static class YesNode extends CastToBooleanNode {
-        @Child private HashingStorageNodes.LenNode lenNode;
-
         @Specialization
         boolean doBoolean(boolean operand) {
             return operand;
@@ -97,11 +83,6 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization
-        boolean doPInt(PInt operand) {
-            return !operand.isZero();
-        }
-
-        @Specialization
         boolean doDouble(double operand) {
             return operand != 0;
         }
@@ -111,43 +92,14 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
             return operand.length() != 0;
         }
 
-        @Specialization(guards = "isNone(operand)")
-        boolean doNone(@SuppressWarnings("unused") Object operand) {
-            return false;
-        }
-
-        @Specialization(guards = "isEmpty(set)")
-        public boolean doPBaseSetEmpty(@SuppressWarnings("unused") PBaseSet set) {
-            return false;
-        }
-
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         boolean doObject(VirtualFrame frame, Object object,
-                        @Cached PRaiseNode raise,
-                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
-            Object value = callBoolNode.executeObject(frame, object);
-            if (value instanceof Boolean) {
-                return (boolean) value;
-            } else if (value instanceof PInt && isBuiltinClassProfile.profileObject((PInt) value, PythonBuiltinClassType.Boolean)) {
-                return ((PInt) value).isOne();
-            } else {
-                throw raise.raise(TypeError, "__bool__ should return bool, returned %p", value);
-            }
-        }
-
-        protected boolean isEmpty(PBaseSet s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(HashingStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(s.getDictStorage()) == 0;
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            return lib.isTrueWithState(object, PArguments.getThreadState(frame));
         }
     }
 
     public abstract static class NotNode extends CastToBooleanNode {
-
-        @Child private SequenceStorageNodes.LenNode lenNode;
-
         @Specialization
         boolean doBool(boolean operand) {
             return !operand;
@@ -164,11 +116,6 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
 
         @Specialization
-        boolean doPInt(PInt operand) {
-            return operand.isZero();
-        }
-
-        @Specialization
         boolean doDouble(double operand) {
             return operand == 0;
         }
@@ -178,48 +125,10 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
             return operand.length() == 0;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isNone(operand)")
-        boolean doNone(Object operand) {
-            return true;
-        }
-
-        @Specialization
-        boolean doBytes(PBytes operand) {
-            return getLength(operand.getSequenceStorage()) == 0;
-        }
-
-        @Specialization
-        boolean doByteArray(PByteArray operand) {
-            return getLength(operand.getSequenceStorage()) == 0;
-        }
-
-        @Specialization(guards = "isForeignObject(operand)")
-        boolean doForeignObject(VirtualFrame frame, TruffleObject operand,
-                        @Cached("createIfTrueNode()") CastToBooleanNode yesNode) {
-            return !yesNode.executeBoolean(frame, operand);
-        }
-
-        @Specialization(guards = "!isForeignObject(object)")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         boolean doObject(VirtualFrame frame, Object object,
-                        @Cached PRaiseNode raise,
-                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callBoolNode) {
-            Object value = callBoolNode.executeObject(frame, object);
-            if (value instanceof Boolean) {
-                return !((boolean) value);
-            } else if (value instanceof PInt && isBuiltinClassProfile.profileObject((PInt) value, PythonBuiltinClassType.Boolean)) {
-                return ((PInt) value).isZero();
-            } else {
-                throw raise.raise(TypeError, "__bool__ should return bool, returned %p", value);
-            }
-        }
-
-        protected int getLength(SequenceStorage s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(s);
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            return !lib.isTrueWithState(object, PArguments.getThreadState(frame));
         }
     }
 }
