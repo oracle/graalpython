@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -41,7 +40,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
@@ -104,7 +102,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -315,46 +312,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static String strFormat(String fmt, Object... objects) {
             return String.format(fmt, objects);
-        }
-    }
-
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Child private LookupAndCallUnaryNode callLenNode;
-        @Child private LookupAndCallBinaryNode callEqNode;
-
-        @Specialization
-        public boolean doGeneric(VirtualFrame frame, Object self) {
-            assert self != PNone.NO_VALUE;
-            if (self == PNone.NONE) {
-                return false;
-            }
-            Object len = getCallLenNode().executeObject(frame, self);
-            if (len != PNone.NO_VALUE) {
-                try {
-                    return getCallEqNode().executeBool(frame, 0, len);
-                } catch (UnexpectedResultException e) {
-                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", len);
-                }
-            }
-            return true;
-        }
-
-        private LookupAndCallUnaryNode getCallLenNode() {
-            if (callLenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callLenNode = insert(LookupAndCallUnaryNode.create(__LEN__));
-            }
-            return callLenNode;
-        }
-
-        private LookupAndCallBinaryNode getCallEqNode() {
-            if (callEqNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callEqNode = insert(LookupAndCallBinaryNode.create(__NE__, __NE__));
-            }
-            return callEqNode;
         }
     }
 
