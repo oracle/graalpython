@@ -2302,11 +2302,11 @@ public abstract class CExtNodes {
                 // the info on the next call
                 flag[0] = ConditionProfile.createBinaryProfile();
                 if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, false, 0));
                 }
             }
             if (flag[0].profile(ref == null)) {
-                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, false, 0));
             }
             transformToNative(context, ref, e);
         }
