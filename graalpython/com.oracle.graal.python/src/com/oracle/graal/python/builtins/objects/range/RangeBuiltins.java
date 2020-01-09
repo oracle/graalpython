@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -301,7 +300,6 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
-                        @Cached("createEq()") BinaryComparisonNode cmpNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
 
@@ -310,15 +308,11 @@ public class RangeBuiltins extends PythonBuiltins {
             ThreadState state = PArguments.getThreadState(frame);
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, self.getSequenceStorage(), i);
-                if (lib.isTrueWithState(cmpNode.executeWith(frame, elem, item), state)) {
+                if (lib.equalsWithState(elem, item, lib, state)) {
                     cnt++;
                 }
             }
             return cnt;
-        }
-
-        protected static BinaryComparisonNode createEq() {
-            return BinaryComparisonNode.create(__EQ__, __EQ__, "==");
         }
     }
 }
