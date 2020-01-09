@@ -2302,11 +2302,11 @@ public abstract class CExtNodes {
                 // the info on the next call
                 flag[0] = ConditionProfile.createBinaryProfile();
                 if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, false, 0));
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
                 }
             }
             if (flag[0].profile(ref == null)) {
-                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, false, 0));
+                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }
             transformToNative(context, ref, e);
         }
@@ -2318,7 +2318,7 @@ public abstract class CExtNodes {
             if (frame == null) {
                 ref = context.peekTopFrameInfo();
                 if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(ref, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
                 }
             } else {
                 ref = PArguments.getCurrentFrameInfo(frame);
