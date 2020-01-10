@@ -102,7 +102,7 @@ final class DefaultPythonDoubleExports {
         @Specialization
         static int dI(Double receiver, PInt other,  @SuppressWarnings("unused") ThreadState threadState) {
             if (receiver % 1 == 0) {
-                return other.compareToInteger(receiver.longValue()) == 0 ? 1 : 0;
+                return other.compareTo(receiver.longValue()) == 0 ? 1 : 0;
             } else {
                 return 1;
             }

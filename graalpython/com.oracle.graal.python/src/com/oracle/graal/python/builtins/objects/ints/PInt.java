@@ -209,12 +209,12 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private int compareTo(PInt o) {
+    public int compareTo(PInt o) {
         return value.compareTo(o.value);
     }
 
     @TruffleBoundary
-    public int compareToInteger(long i) {
+    public int compareTo(long i) {
         return value.compareTo(BigInteger.valueOf(i));
     }
 

@@ -117,7 +117,7 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static int iI(Integer receiver, PInt other,  @SuppressWarnings("unused") ThreadState threadState) {
-            return other.compareToInteger((int) receiver) == 0 ? 1 : 0;
+            return other.compareTo((int) receiver) == 0 ? 1 : 0;
         }
 
         @Specialization
@@ -164,7 +164,7 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static boolean iI(Integer receiver, PInt other,  PythonObjectLibrary oLib, ThreadState threadState) {
-            return other.compareToInteger((int) receiver) == 0;
+            return other.compareTo((int) receiver) == 0;
         }
 
         @Specialization

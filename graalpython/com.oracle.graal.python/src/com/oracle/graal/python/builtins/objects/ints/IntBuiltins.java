@@ -1416,7 +1416,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqPiPi(PInt a, PInt b) {
-            return a.equals(b);
+            return a.compareTo(b) == 0;
         }
 
         @Specialization
@@ -1521,7 +1521,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqPiPi(PInt a, PInt b) {
-            return !a.equals(b);
+            return a.compareTo(b) != 0;
         }
 
         @SuppressWarnings("unused")

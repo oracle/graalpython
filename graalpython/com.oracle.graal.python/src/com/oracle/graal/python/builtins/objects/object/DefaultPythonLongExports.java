@@ -131,7 +131,7 @@ final class DefaultPythonLongExports {
 
         @Specialization
         static int lI(Long receiver, PInt other,  @SuppressWarnings("unused") ThreadState threadState) {
-            return other.compareToInteger((long) receiver) == 0 ? 1 : 0;
+            return other.compareTo((long) receiver) == 0 ? 1 : 0;
         }
 
         @Specialization
@@ -178,7 +178,7 @@ final class DefaultPythonLongExports {
 
         @Specialization
         static boolean lI(Long receiver, PInt other,  PythonObjectLibrary oLib, ThreadState threadState) {
-            return other.compareToInteger((long) receiver) == 0;
+            return other.compareTo((long) receiver) == 0;
         }
 
         @Specialization
