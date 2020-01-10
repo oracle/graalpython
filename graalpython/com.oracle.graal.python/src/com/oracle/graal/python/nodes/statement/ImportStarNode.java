@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,11 +34,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -61,9 +59,8 @@ public class ImportStarNode extends AbstractImportNode {
 
     @Child private SetItemNode dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
-    @Child private LookupAndCallUnaryNode callLenNode;
     @Child private GetItemNode getItemNode;
-    @Child private PythonObjectLibrary castToIndexNode;
+    @Child private PythonObjectLibrary pythonLibrary;
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetAnyAttributeNode readNode;
     @Child private PRaiseNode raiseNode;
@@ -127,7 +124,7 @@ public class ImportStarNode extends AbstractImportNode {
         } else {
             try {
                 Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
-                int n = ensureCastToIndexNode().asSizeWithState(ensureCallLenNode().executeObject(frame, attrAll), PArguments.getThreadState(frame));
+                int n = ensurePythonLibrary().lengthWithState(attrAll, PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
                     Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
                     String attrName = ensureCastToStringNode().execute(attrNameObj);
@@ -155,20 +152,12 @@ public class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private LookupAndCallUnaryNode ensureCallLenNode() {
-        if (callLenNode == null) {
+    private PythonObjectLibrary ensurePythonLibrary() {
+        if (pythonLibrary == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            callLenNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__LEN__));
+            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
         }
-        return callLenNode;
-    }
-
-    private PythonObjectLibrary ensureCastToIndexNode() {
-        if (castToIndexNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            castToIndexNode = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-        }
-        return castToIndexNode;
+        return pythonLibrary;
     }
 
     private GetItemNode ensureGetItemNode() {

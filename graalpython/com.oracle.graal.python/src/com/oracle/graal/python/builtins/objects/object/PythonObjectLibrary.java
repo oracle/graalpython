@@ -60,6 +60,12 @@ import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 
+/**
+ * The standard Python object library. This implements a general-purpose Python object interface.
+ * The equivalent in CPython would be {@code abstract.[ch]}, in PyPy it is the {@code StdObjSpace}.
+ * Most generic operations available on Python objects should eventually be available through this
+ * library.
+ */
 @GenerateLibrary
 @DefaultExport(DefaultPythonBooleanExports.class)
 @DefaultExport(DefaultPythonIntegerExports.class)
@@ -313,6 +319,30 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public boolean isSequence(Object receiver) {
         return false;
+    }
+
+    /**
+     * Implements the logic from {@code PyObject_Size} (to which {@code
+     * PySequence_Length} is an alias). The logic which is to try a) {@code
+     * sq_length} and b) {@code mp_length}. Each of these can also be reached via
+     * {@code PySequence_Length} or {@code PyMapping_Length}, respectively.
+     *
+     * The implementation for {@code slot_sq_length} is to call {@code __len__} and then to convert
+     * it to an index and a size, making sure it's >=0. {@code slot_mp_length} is just an alias for
+     * that slot.
+     */
+    public int lengthWithState(Object receiver, ThreadState state) {
+        if (state == null) {
+            throw PRaiseNode.getUncached().raiseHasNoLength(receiver);
+        }
+        return length(receiver);
+    }
+
+    /**
+     * @see #lengthWithState
+     */
+    public int length(Object receiver) {
+        return lengthWithState(receiver, null);
     }
 
     /**

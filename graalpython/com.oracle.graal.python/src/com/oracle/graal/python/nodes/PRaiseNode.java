@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,10 @@ public abstract class PRaiseNode extends Node {
      */
     public final PException raiseNumberTooLarge(LazyPythonClass type, Object result) {
         return execute(type, PNone.NO_VALUE, "cannot fit '%p' into an index-sized integer", new Object[]{result});
+    }
+
+    public final PException raiseHasNoLength(Object result) {
+        return raise(PythonBuiltinClassType.TypeError, "object of type '%p' has no len()", result);
     }
 
     public final PException raiseIntegerInterpretationError(Object result) {

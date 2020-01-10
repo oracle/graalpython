@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -173,7 +173,6 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         @Child private GetItemNode getItemNode;
         @Child private PythonObjectLibrary castToLongNode;
-        @Child private BuiltinFunctions.LenNode lenNode;
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 
         @TruffleBoundary
@@ -195,7 +194,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
         // corresponds to 'parse_filter_chain_spec' in '_lzmamodule.c'
         protected FilterOptions[] parseFilterChainSpec(VirtualFrame frame, Object filters, PythonObjectLibrary library) {
-            int n = len(frame, filters);
+            int n = library.lengthWithState(filters, PArguments.getThreadState(frame));
             FilterOptions[] optionsChain = new FilterOptions[n];
             for (int i = 0; i < n; i++) {
                 optionsChain[i] = convertLZMAFilter(frame, getItem(frame, filters, i), library);
@@ -283,14 +282,6 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                 castToLongNode = insert(PythonObjectLibrary.getFactory().createDispatched(2));
             }
             return castToLongNode.asSizeWithState(obj, PArguments.getThreadState(frame));
-        }
-
-        private int len(VirtualFrame frame, Object obj) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
-            }
-            return asInt(frame, lenNode.execute(frame, obj));
         }
 
         protected static boolean isNoneOrNoValue(Object obj) {
@@ -419,7 +410,6 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     abstract static class LZMADecompressorNode extends LZMANode {
 
         @Child private GetItemNode getItemNode;
-        @Child private BuiltinFunctions.LenNode lenNode;
 
         @CompilationFinal private IsBuiltinClassProfile keyErrorProfile;
 

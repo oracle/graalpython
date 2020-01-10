@@ -124,7 +124,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
@@ -601,24 +600,24 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(o);
         }
 
-        @Specialization(guards = "eq(OB_SIZE, key)")
+        @Specialization(guards = "eq(OB_SIZE, key)", limit = "getCallSiteInlineCacheMaxDepth()")
         long doObSize(Object object, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-            Object res = callLenNode.executeObject(object, SpecialMethodNames.__LEN__);
-            if (res instanceof Number) {
-                return ((Number) res).intValue();
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            try {
+                return lib.length(object);
+            } catch (PException e) {
+                return -1;
             }
-            return -1;
         }
 
-        @Specialization(guards = "eq(MA_USED, key)")
+        @Specialization(guards = "eq(MA_USED, key)", limit = "getCallSiteInlineCacheMaxDepth()")
         int doMaUsed(PDict object, @SuppressWarnings("unused") String key,
-                        @Exclusive @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-            Object res = callLenNode.executeObject(object, SpecialMethodNames.__LEN__);
-            if (res instanceof Number) {
-                return ((Number) res).intValue();
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            try {
+                return lib.length(object);
+            } catch (PException e) {
+                return -1;
             }
-            return -1;
         }
 
         @Specialization(guards = "eq(OB_SVAL, key)")

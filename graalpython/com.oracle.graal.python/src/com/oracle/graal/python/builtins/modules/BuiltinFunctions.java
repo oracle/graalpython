@@ -65,7 +65,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__JYTHON_CURRENT_IMPORT
 import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -143,7 +142,6 @@ import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -188,6 +186,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -1206,31 +1205,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // len(s)
     @Builtin(name = LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-
-        private static final Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
-            @Child private PRaiseNode raiseNode;
-
-            @Override
-            public Object execute(Object receiver) {
-                if (raiseNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    raiseNode = insert(PRaiseNode.create());
-                }
-                throw raiseNode.raise(TypeError, "object of type '%p' has no len()", receiver);
-            }
-        };
-
-        public abstract Object executeWith(VirtualFrame frame, Object object);
-
-        protected static LookupAndCallUnaryNode createLen() {
-            return LookupAndCallUnaryNode.create(__LEN__, NO_LEN);
-        }
-
-        @Specialization
-        public Object len(VirtualFrame frame, Object obj,
-                        @Cached("createLen()") LookupAndCallUnaryNode dispatch) {
-            return dispatch.executeObject(frame, obj);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public int len(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lengthWithState(obj, PArguments.getThreadState(frame));
         }
     }
 

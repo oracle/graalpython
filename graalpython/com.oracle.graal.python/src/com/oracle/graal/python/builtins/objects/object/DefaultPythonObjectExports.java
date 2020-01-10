@@ -92,7 +92,7 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static int asSize(Object receiver, LazyPythonClass type,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+                    @CachedLibrary(limit = "2") InteropLibrary interopLib) {
         Object index = asIndex(receiver, raise, interopLib);
         if (interopLib.fitsInInt(index)) {
             try {
@@ -115,5 +115,27 @@ final class DefaultPythonObjectExports {
     @TruffleBoundary
     static long hash(Object receiver) {
         return receiver.hashCode();
+    }
+
+    @ExportMessage
+    static int length(Object receiver,
+                    @Shared("raiseNode") @Cached PRaiseNode raise,
+                    @CachedLibrary("receiver") InteropLibrary interopLib) {
+        if (interopLib.hasArrayElements(receiver)) {
+            long sz;
+            try {
+                sz = interopLib.getArraySize(receiver);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+            if (sz == (int) sz) {
+                return (int) sz;
+            } else {
+                throw raise.raiseNumberTooLarge(PythonBuiltinClassType.OverflowError, sz);
+            }
+        } else {
+            throw raise.raiseHasNoLength(receiver);
+        }
     }
 }
