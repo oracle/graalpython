@@ -51,6 +51,15 @@ public class BlockSSTNode extends SSTNode {
 
     public BlockSSTNode(SSTNode[] statements) {
         this(statements, -1, -1);
+        int len = statements.length;
+        if (len > 0) {
+            int start = statements[0].startOffset;
+            int end = statements[len - 1].endOffset;
+            if (start > -1 && end > -1) {
+                this.startOffset = start;
+                this.endOffset = end;
+            }
+        }
     }
 
     @Override

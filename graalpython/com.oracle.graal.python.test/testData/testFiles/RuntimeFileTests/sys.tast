@@ -30,7 +30,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
               ReturnTargetNode SourceSection: [1999,2407]`def make_implementat...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [2035,2406]`from _descriptor imp...`
                     ImportFromNode SourceSection: [2035,2098]`from _descriptor imp...`
                       Importee: _descriptor
                       Level: 0
@@ -143,7 +143,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
               ReturnTargetNode SourceSection: [2537,3263]`def make_flags_class...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [2565,3260]`from _descriptor imp...`
                     ImportFromNode SourceSection: [2565,2611]`from _descriptor imp...`
                       Importee: _descriptor
                       Level: 0
@@ -247,7 +247,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                BlockNode SourceSection: None
+                                FunctionBodyNode SourceSection: [3036,3103]`def func(self):↵    ...`
                                   WriteLocalVariableNodeGen SourceSection: [3036,3092]`def func(self):↵    ...`
                                     Identifier: func
                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -281,20 +281,21 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadIndexedArgumentNodeGen SourceSection: None
                                                     Index: 0
-                                              FrameReturnNode SourceSection: [3064,3083]`return __flags__[i]`
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: <return_val>
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [2,<return_val>,Illegal]
-                                                  GetItemNodeGen SourceSection: [3071,3083]`__flags__[i]`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                      Identifier: __flags__
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    ReadLocalCellNodeGen SourceSection: [3081,3082]`i`
-                                                      ReadLocalVariableNode SourceSection: None
-                                                        Frame: [1,i,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadFromCellNodeGen SourceSection: None
+                                              FunctionBodyNode SourceSection: [3064,3083]`return __flags__[i]`
+                                                FrameReturnNode SourceSection: [3064,3083]`return __flags__[i]`
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <return_val>
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [2,<return_val>,Illegal]
+                                                    GetItemNodeGen SourceSection: [3071,3083]`__flags__[i]`
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        Identifier: __flags__
+                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: [3081,3082]`i`
+                                                        ReadLocalVariableNode SourceSection: None
+                                                          Frame: [1,i,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -430,7 +431,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
               ReturnTargetNode SourceSection: [3315,3670]`def make_float_info_...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [3348,3669]`from _descriptor imp...`
                     ImportFromNode SourceSection: [3348,3394]`from _descriptor imp...`
                       Importee: _descriptor
                       Level: 0
@@ -507,7 +508,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
               ReturnTargetNode SourceSection: [3747,4060]`def make_hash_info_c...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [3779,4059]`from _descriptor imp...`
                     ImportFromNode SourceSection: [3779,3825]`from _descriptor imp...`
                       Importee: _descriptor
                       Level: 0
@@ -644,16 +645,17 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                    RaiseNodeGen SourceSection: [4528,4549]`raise SystemExit(arg...`
-                      PythonCallNodeGen SourceSection: [4534,4549]`SystemExit(arg)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [4545,4548]`arg`
-                          Frame: [0,arg,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: SystemExit
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      EmptyNode SourceSection: None
+                    FunctionBodyNode SourceSection: [4528,4549]`raise SystemExit(arg...`
+                      RaiseNodeGen SourceSection: [4528,4549]`raise SystemExit(arg...`
+                        PythonCallNodeGen SourceSection: [4534,4549]`SystemExit(arg)`
+                          CallNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [4545,4548]`arg`
+                            Frame: [0,arg,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: SystemExit
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        EmptyNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -683,7 +685,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
               ReturnTargetNode SourceSection: [4552,5557]`def make_excepthook(...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [4579,5554]`def simple_print_tra...`
                     WriteLocalCellNodeGen SourceSection: [4579,5144]`def simple_print_tra...`
                       Identifier: simple_print_traceback
                       ReadLocalVariableNode SourceSection: None
@@ -718,7 +720,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                BlockNode SourceSection: None
+                                FunctionBodyNode SourceSection: [4618,5144]`print("Traceback (mo...`
                                   ExpressionStatementNode SourceSection: [4618,4674]`print("Traceback (mo...`
                                     PythonCallNodeGen SourceSection: [4618,4674]`print("Traceback (mo...`
                                       CallNodeGen SourceSection: None
@@ -964,95 +966,96 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 2
-                                TryFinallyNode SourceSection: [5193,5528]`try:↵            imp...`
-                                  TryExceptNode SourceSection: None
-                                    BlockNode SourceSection: None
-                                      WriteLocalVariableNodeGen SourceSection: [5217,5226]`traceback`
-                                        Identifier: traceback
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [3,traceback,Illegal]
-                                        ImportExpression SourceSection: None
-                                          ImportNode SourceSection: None
-                                            Module: traceback
-                                      ExpressionStatementNode SourceSection: [5239,5280]`traceback.print_exce...`
-                                        PythonCallNodeGen SourceSection: [5239,5280]`traceback.print_exce...`
-                                          CallNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [5265,5268]`typ`
-                                            Frame: [0,typ,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [5270,5275]`value`
-                                            Frame: [1,value,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [5277,5279]`tb`
-                                            Frame: [2,tb,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [5239,5248]`traceback`
-                                              Frame: [3,traceback,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                    ExceptNode SourceSection: None
+                                FunctionBodyNode SourceSection: [5193,5528]`try:↵            imp...`
+                                  TryFinallyNode SourceSection: [5193,5528]`try:↵            imp...`
+                                    TryExceptNode SourceSection: None
                                       BlockNode SourceSection: None
-                                        ExpressionStatementNode SourceSection: [5330,5378]`print("Error in sys....`
-                                          PythonCallNodeGen SourceSection: [5330,5378]`print("Error in sys....`
+                                        WriteLocalVariableNodeGen SourceSection: [5217,5226]`traceback`
+                                          Identifier: traceback
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [3,traceback,Illegal]
+                                          ImportExpression SourceSection: None
+                                            ImportNode SourceSection: None
+                                              Module: traceback
+                                        ExpressionStatementNode SourceSection: [5239,5280]`traceback.print_exce...`
+                                          PythonCallNodeGen SourceSection: [5239,5280]`traceback.print_exce...`
                                             CallNodeGen SourceSection: None
-                                            StringLiteralNode SourceSection: [5336,5364]`"Error in sys.except...`
-                                            KeywordArgumentsNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5371,5377]`stderr`
-                                                  Identifier: stderr
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                              Identifier: print
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        ExpressionStatementNode SourceSection: [5391,5418]`simple_print_traceba...`
-                                          PythonCallNodeGen SourceSection: [5391,5418]`simple_print_traceba...`
-                                            CallNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [5414,5417]`exc`
-                                              Frame: [4,exc,Illegal]
+                                            ReadLocalVariableNode SourceSection: [5265,5268]`typ`
+                                              Frame: [0,typ,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: None
-                                                Frame: [5,simple_print_traceback,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadFromCellNodeGen SourceSection: None
-                                        ExpressionStatementNode SourceSection: [5431,5480]`print("\nOriginal ex...`
-                                          PythonCallNodeGen SourceSection: [5431,5480]`print("\nOriginal ex...`
-                                            CallNodeGen SourceSection: None
-                                            StringLiteralNode SourceSection: [5437,5466]`"\nOriginal exceptio...`
-                                            KeywordArgumentsNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5473,5479]`stderr`
-                                                  Identifier: stderr
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                              Identifier: print
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        ExpressionStatementNode SourceSection: [5493,5522]`simple_print_traceba...`
-                                          PythonCallNodeGen SourceSection: [5493,5522]`simple_print_traceba...`
-                                            CallNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [5516,5521]`value`
+                                            ReadLocalVariableNode SourceSection: [5270,5275]`value`
                                               Frame: [1,value,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: None
-                                                Frame: [5,simple_print_traceback,Illegal]
+                                            ReadLocalVariableNode SourceSection: [5277,5279]`tb`
+                                              Frame: [2,tb,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            GetCallAttributeNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [5239,5248]`traceback`
+                                                Frame: [3,traceback,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadFromCellNodeGen SourceSection: None
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: exc
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,exc,Illegal]
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: [5296,5309]`BaseException`
-                                        Identifier: BaseException
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    BlockNode SourceSection: None
-                                    SaveExceptionStateNodeGen SourceSection: None
+                                      ExceptNode SourceSection: None
+                                        BlockNode SourceSection: None
+                                          ExpressionStatementNode SourceSection: [5330,5378]`print("Error in sys....`
+                                            PythonCallNodeGen SourceSection: [5330,5378]`print("Error in sys....`
+                                              CallNodeGen SourceSection: None
+                                              StringLiteralNode SourceSection: [5336,5364]`"Error in sys.except...`
+                                              KeywordArgumentsNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5371,5377]`stderr`
+                                                    Identifier: stderr
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                CompactKeywordsNodeGen SourceSection: None
+                                                ExecuteKeywordStarargsNodeGen SourceSection: None
+                                                  EmptyNode SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                Identifier: print
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ExpressionStatementNode SourceSection: [5391,5418]`simple_print_traceba...`
+                                            PythonCallNodeGen SourceSection: [5391,5418]`simple_print_traceba...`
+                                              CallNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [5414,5417]`exc`
+                                                Frame: [4,exc,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: None
+                                                  Frame: [5,simple_print_traceback,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                          ExpressionStatementNode SourceSection: [5431,5480]`print("\nOriginal ex...`
+                                            PythonCallNodeGen SourceSection: [5431,5480]`print("\nOriginal ex...`
+                                              CallNodeGen SourceSection: None
+                                              StringLiteralNode SourceSection: [5437,5466]`"\nOriginal exceptio...`
+                                              KeywordArgumentsNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5473,5479]`stderr`
+                                                    Identifier: stderr
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                CompactKeywordsNodeGen SourceSection: None
+                                                ExecuteKeywordStarargsNodeGen SourceSection: None
+                                                  EmptyNode SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                Identifier: print
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ExpressionStatementNode SourceSection: [5493,5522]`simple_print_traceba...`
+                                            PythonCallNodeGen SourceSection: [5493,5522]`simple_print_traceba...`
+                                              CallNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [5516,5521]`value`
+                                                Frame: [1,value,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: None
+                                                  Frame: [5,simple_print_traceback,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: exc
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [4,exc,Illegal]
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [5296,5309]`BaseException`
+                                          Identifier: BaseException
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      BlockNode SourceSection: None
+                                      SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1120,7 +1123,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [5700,6404]`importlib, os, warni...`
                       WriteLocalVariableNodeGen SourceSection: [5700,5709]`importlib`
                         Identifier: importlib
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1371,13 +1374,14 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 ReturnTargetNode SourceSection: [6458,6501]`def getrecursionlimi...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    FrameReturnNode SourceSection: [6487,6498]`return 1000`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,<return_val>,Illegal]
-                        IntegerLiteralNode SourceSection: [6494,6498]`1000`
-                          Value: 1000
+                    FunctionBodyNode SourceSection: [6487,6498]`return 1000`
+                      FrameReturnNode SourceSection: [6487,6498]`return 1000`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,<return_val>,Illegal]
+                          IntegerLiteralNode SourceSection: [6494,6498]`1000`
+                            Value: 1000
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -1416,7 +1420,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [6542,7054]`if value is None:↵  ...`
                       IfNode SourceSection: [6542,6579]`if value is None:↵  ...`
                         YesNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [6545,6558]`value is None`

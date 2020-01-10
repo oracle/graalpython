@@ -36,20 +36,21 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
               InnerRootNode SourceSection: [0,26]`def f(): f((yield fr...`
                 GeneratorReturnTargetNode SourceSection: [0,26]`def f(): f((yield fr...`
                   flagSlot: 1
-                  ExpressionStatementNode SourceSection: [9,26]`f((yield from 1))`
-                    PythonCallNodeGen SourceSection: [9,26]`f((yield from 1))`
-                      CallNodeGen SourceSection: None
-                      YieldFromNode SourceSection: [12,24]`yield from 1`
-                        GetIteratorNodeGen SourceSection: None
-                        GetNextNode SourceSection: None
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __next__
-                        GeneratorAccessNode SourceSection: None
-                        IntegerLiteralNode SourceSection: [23,24]`1`
-                          Value: 1
-                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                        Identifier: f
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                  FunctionBodyNode SourceSection: [9,26]`f((yield from 1))`
+                    ExpressionStatementNode SourceSection: [9,26]`f((yield from 1))`
+                      PythonCallNodeGen SourceSection: [9,26]`f((yield from 1))`
+                        CallNodeGen SourceSection: None
+                        YieldFromNode SourceSection: [12,24]`yield from 1`
+                          GetIteratorNodeGen SourceSection: None
+                          GetNextNode SourceSection: None
+                            LookupAndCallUnaryNodeGen SourceSection: None
+                              Op: __next__
+                          GeneratorAccessNode SourceSection: None
+                          IntegerLiteralNode SourceSection: [23,24]`1`
+                            Value: 1
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: f
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

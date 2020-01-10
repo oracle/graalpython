@@ -103,8 +103,15 @@ import org.graalvm.options.OptionValues;
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class)
-@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, StandardTags.ExpressionTag.class,
-                DebuggerTags.AlwaysHalt.class})
+@ProvidedTags({
+                StandardTags.CallTag.class,
+                StandardTags.StatementTag.class,
+                StandardTags.RootTag.class,
+                StandardTags.RootBodyTag.class,
+                StandardTags.TryBlockTag.class,
+                StandardTags.ExpressionTag.class,
+                DebuggerTags.AlwaysHalt.class
+})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
     public static final String NAME = "Python";

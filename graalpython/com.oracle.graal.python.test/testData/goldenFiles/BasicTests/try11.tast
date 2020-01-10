@@ -33,29 +33,30 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                 ReturnTargetNode SourceSection: [0,79]`def fn():↵    try:↵ ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    TryFinallyNode SourceSection: [14,79]`try:↵        pass↵  ...`
-                      TryExceptNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [27,31]`pass`
-                          EmptyNode SourceSection: [27,31]`pass`
-                        ExceptNode SourceSection: None
-                          ExpressionStatementNode SourceSection: [69,79]`print(err)`
-                            PythonCallNodeGen SourceSection: [69,79]`print(err)`
-                              CallNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [75,78]`err`
+                    FunctionBodyNode SourceSection: [14,79]`try:↵        pass↵  ...`
+                      TryFinallyNode SourceSection: [14,79]`try:↵        pass↵  ...`
+                        TryExceptNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [27,31]`pass`
+                            EmptyNode SourceSection: [27,31]`pass`
+                          ExceptNode SourceSection: None
+                            ExpressionStatementNode SourceSection: [69,79]`print(err)`
+                              PythonCallNodeGen SourceSection: [69,79]`print(err)`
+                                CallNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [75,78]`err`
+                                  Frame: [0,err,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: print
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: err
+                              WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [0,err,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: print
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: err
-                            WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [0,err,Illegal]
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
-                            Identifier: Exception
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
+                              Identifier: Exception
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

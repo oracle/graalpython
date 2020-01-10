@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                 ReturnTargetNode SourceSection: [0,74]`def outer ():↵    de...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [18,72]`def inner():↵       ...`
                       WriteLocalVariableNodeGen SourceSection: [18,54]`def inner():↵       ...`
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -63,17 +63,18 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                               ReturnTargetNode SourceSection: [18,54]`def inner():↵       ...`
                                 Body: BlockNode SourceSection: None
                                   BlockNode SourceSection: None
-                                  ExpressionStatementNode SourceSection: [39,48]`print(x )`
-                                    PythonCallNodeGen SourceSection: [39,48]`print(x )`
-                                      CallNodeGen SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [45,46]`x`
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [0,x,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: print
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  FunctionBodyNode SourceSection: [39,48]`print(x )`
+                                    ExpressionStatementNode SourceSection: [39,48]`print(x )`
+                                      PythonCallNodeGen SourceSection: [39,48]`print(x )`
+                                        CallNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [45,46]`x`
+                                          ReadLocalVariableNode SourceSection: None
+                                            Frame: [0,x,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          Identifier: print
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

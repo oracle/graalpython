@@ -37,43 +37,44 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):�
               InnerRootNode SourceSection: [0,89]`def merge(h):↵    wh...`
                 GeneratorReturnTargetNode SourceSection: [0,89]`def merge(h):↵    wh...`
                   flagSlot: 2
-                  GeneratorBlockNode SourceSection: None
-                    ElseNode SourceSection: [18,57]`while True:↵        ...`
-                      WhileNode SourceSection: None
-                        WhileRepeatingNode SourceSection: None
+                  FunctionBodyNode SourceSection: [18,89]`while True:↵        ...`
+                    GeneratorBlockNode SourceSection: None
+                      ElseNode SourceSection: [18,57]`while True:↵        ...`
+                        WhileNode SourceSection: None
+                          WhileRepeatingNode SourceSection: None
+                            YesNodeGen SourceSection: None
+                              BooleanLiteralNode SourceSection: [24,28]`True`
+                            WriteGeneratorFrameVariableNodeGen SourceSection: [38,52]`value = next()`
+                              Identifier: value
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [1,value,Illegal]
+                              PythonCallNodeGen SourceSection: [46,52]`next()`
+                                CallNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: next
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        BlockNode SourceSection: None
+                      ElseNode SourceSection: [57,89]`while h > 1:↵       ...`
+                        GeneratorWhileNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [78,89]`yield value`
+                            YieldNode SourceSection: [78,89]`yield value`
+                              flagSlot: 0
+                              ReadGeneratorFrameVariableNode SourceSection: [84,89]`value`
+                                Frame: [1,value,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None
-                            BooleanLiteralNode SourceSection: [24,28]`True`
-                          WriteGeneratorFrameVariableNodeGen SourceSection: [38,52]`value = next()`
-                            Identifier: value
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,value,Illegal]
-                            PythonCallNodeGen SourceSection: [46,52]`next()`
-                              CallNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: next
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      BlockNode SourceSection: None
-                    ElseNode SourceSection: [57,89]`while h > 1:↵       ...`
-                      GeneratorWhileNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [78,89]`yield value`
-                          YieldNode SourceSection: [78,89]`yield value`
-                            flagSlot: 0
-                            ReadGeneratorFrameVariableNode SourceSection: [84,89]`value`
-                              Frame: [1,value,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            GeneratorAccessNode SourceSection: None
-                        YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [63,68]`h > 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
-                            ReadGeneratorFrameVariableNode SourceSection: [63,64]`h`
-                              Frame: [0,h,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            IntegerLiteralNode SourceSection: [67,68]`1`
-                              Value: 1
-                        GeneratorAccessNode SourceSection: None
-                      BlockNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [63,68]`h > 1`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __gt__
+                              ReadGeneratorFrameVariableNode SourceSection: [63,64]`h`
+                                Frame: [0,h,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [67,68]`1`
+                                Value: 1
+                          GeneratorAccessNode SourceSection: None
+                        BlockNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

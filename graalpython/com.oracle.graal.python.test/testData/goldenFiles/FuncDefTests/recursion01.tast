@@ -57,29 +57,30 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 2
-                    FrameReturnNode SourceSection: [35,67]`return test(msg, sel...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [42,67]`test(msg, self.strin...`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [47,50]`msg`
-                            Frame: [1,msg,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          GetAttributeNodeGen SourceSection: [52,63]`self.string`
-                            GetFixedAttributeNodeGen SourceSection: None
-                              Key: string
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __getattribute__
-                            ReadLocalVariableNode SourceSection: [52,56]`self`
-                              Frame: [0,self,Illegal]
+                    FunctionBodyNode SourceSection: [35,67]`return test(msg, sel...`
+                      FrameReturnNode SourceSection: [35,67]`return test(msg, sel...`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [3,<return_val>,Illegal]
+                          PythonCallNodeGen SourceSection: [42,67]`test(msg, self.strin...`
+                            CallNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [47,50]`msg`
+                              Frame: [1,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          IntegerLiteralNode SourceSection: [65,66]`1`
-                            Value: 1
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: test
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            GetAttributeNodeGen SourceSection: [52,63]`self.string`
+                              GetFixedAttributeNodeGen SourceSection: None
+                                Key: string
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __getattribute__
+                              ReadLocalVariableNode SourceSection: [52,56]`self`
+                                Frame: [0,self,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            IntegerLiteralNode SourceSection: [65,66]`1`
+                              Value: 1
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: test
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

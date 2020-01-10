@@ -76,43 +76,44 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
-                    FrameReturnNode SourceSection: [32,65]`return a + b + k1 + ...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [5,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [39,65]`a + b + k1 + k2 + su...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          BinaryArithmeticExpression SourceSection: [39,54]`a + b + k1 + k2`
+                    FunctionBodyNode SourceSection: [32,65]`return a + b + k1 + ...`
+                      FrameReturnNode SourceSection: [32,65]`return a + b + k1 + ...`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [5,<return_val>,Illegal]
+                          BinaryArithmeticExpression SourceSection: [39,65]`a + b + k1 + k2 + su...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
-                            BinaryArithmeticExpression SourceSection: [39,49]`a + b + k1`
+                            BinaryArithmeticExpression SourceSection: [39,54]`a + b + k1 + k2`
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __add__
-                              BinaryArithmeticExpression SourceSection: [39,44]`a + b`
+                              BinaryArithmeticExpression SourceSection: [39,49]`a + b + k1`
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __add__
-                                ReadLocalVariableNode SourceSection: [39,40]`a`
-                                  Frame: [0,a,Illegal]
+                                BinaryArithmeticExpression SourceSection: [39,44]`a + b`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __add__
+                                  ReadLocalVariableNode SourceSection: [39,40]`a`
+                                    Frame: [0,a,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [43,44]`b`
+                                    Frame: [1,b,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalVariableNode SourceSection: [47,49]`k1`
+                                  Frame: [3,k1,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [43,44]`b`
-                                  Frame: [1,b,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [47,49]`k1`
-                                Frame: [3,k1,Illegal]
+                              ReadLocalVariableNode SourceSection: [52,54]`k2`
+                                Frame: [4,k2,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [52,54]`k2`
-                              Frame: [4,k2,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [57,65]`sum(arg)`
-                            CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [61,64]`arg`
-                              Frame: [2,arg,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sum
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonCallNodeGen SourceSection: [57,65]`sum(arg)`
+                              CallNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [61,64]`arg`
+                                Frame: [2,arg,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: sum
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

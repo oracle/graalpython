@@ -33,8 +33,9 @@ ModuleRootNode Name: <module 'funcDoc02'> SourceSection: [0,28]`def fn(): '1234'
                 ReturnTargetNode SourceSection: [0,28]`def fn(): '1234' '56...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [24,28]`pass`
-                      EmptyNode SourceSection: [24,28]`pass`
+                    FunctionBodyNode SourceSection: [24,28]`pass`
+                      ExpressionStatementNode SourceSection: [24,28]`pass`
+                        EmptyNode SourceSection: [24,28]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

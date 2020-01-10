@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                     ArgumentExpressionNode SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [28,149]`def wrap(fn):↵      ...`
                     WriteLocalVariableNodeGen SourceSection: [28,138]`def wrap(fn):↵      ...`
                       Identifier: wrap
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -73,7 +73,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
                                       Index: 0
-                                BlockNode SourceSection: None
+                                FunctionBodyNode SourceSection: [50,133]`def wrapped_f(*args)...`
                                   WriteLocalVariableNodeGen SourceSection: [50,117]`def wrapped_f(*args)...`
                                     Identifier: wrapped_f
                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -106,31 +106,32 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadVarArgsNodeGen SourceSection: None
                                                     PythonObjectFactoryNodeGen SourceSection: None
-                                              FrameReturnNode SourceSection: [84,108]`return fn(*args) + d...`
-                                                WriteLocalVariableNodeGen SourceSection: None
-                                                  Identifier: <return_val>
-                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                    Frame: [3,<return_val>,Illegal]
-                                                  BinaryArithmeticExpression SourceSection: [91,108]`fn(*args) + delta`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __add__
-                                                    PythonCallNodeGen SourceSection: [91,100]`fn(*args)`
-                                                      CallNodeGen SourceSection: None
-                                                      PositionalArgumentsNode SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [95,99]`args`
-                                                          Frame: [0,args,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ExecutePositionalStarargsNodeGen SourceSection: None
-                                                      ReadLocalCellNodeGen SourceSection: None
+                                              FunctionBodyNode SourceSection: [84,108]`return fn(*args) + d...`
+                                                FrameReturnNode SourceSection: [84,108]`return fn(*args) + d...`
+                                                  WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <return_val>
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [3,<return_val>,Illegal]
+                                                    BinaryArithmeticExpression SourceSection: [91,108]`fn(*args) + delta`
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __add__
+                                                      PythonCallNodeGen SourceSection: [91,100]`fn(*args)`
+                                                        CallNodeGen SourceSection: None
+                                                        PositionalArgumentsNode SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [95,99]`args`
+                                                            Frame: [0,args,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                          ExecutePositionalStarargsNodeGen SourceSection: None
+                                                        ReadLocalCellNodeGen SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: None
+                                                            Frame: [1,fn,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                          ReadFromCellNodeGen SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: [103,108]`delta`
                                                         ReadLocalVariableNode SourceSection: None
-                                                          Frame: [1,fn,Illegal]
+                                                          Frame: [2,delta,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadFromCellNodeGen SourceSection: None
-                                                    ReadLocalCellNodeGen SourceSection: [103,108]`delta`
-                                                      ReadLocalVariableNode SourceSection: None
-                                                        Frame: [2,delta,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -182,13 +183,14 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                 ReturnTargetNode SourceSection: [167,198]`def getNumber():↵   ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    FrameReturnNode SourceSection: [188,196]`return 1`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,<return_val>,Illegal]
-                        IntegerLiteralNode SourceSection: [195,196]`1`
-                          Value: 1
+                    FunctionBodyNode SourceSection: [188,196]`return 1`
+                      FrameReturnNode SourceSection: [188,196]`return 1`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,<return_val>,Illegal]
+                          IntegerLiteralNode SourceSection: [195,196]`1`
+                            Value: 1
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

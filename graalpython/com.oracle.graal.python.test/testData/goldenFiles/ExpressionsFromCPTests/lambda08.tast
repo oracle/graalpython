@@ -52,12 +52,13 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 1
               FrameReturnNode SourceSection: None
-                WriteLocalVariableNodeGen SourceSection: None
-                  Identifier: <return_val>
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
-                  IntegerLiteralNode SourceSection: [33,34]`0`
-                    Value: 0
+                FunctionBodyNode SourceSection: [33,34]`0`
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <return_val>
+                    WriteLocalFrameSlotNodeGen SourceSection: None
+                      Frame: [2,<return_val>,Illegal]
+                    IntegerLiteralNode SourceSection: [33,34]`0`
+                      Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [2,<return_val>,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None

@@ -67,12 +67,13 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,39]`lambda foo=bar, b
                     ReadVarKeywordsNodeGen SourceSection: None
                       PythonObjectFactoryNodeGen SourceSection: None
               FrameReturnNode SourceSection: None
-                WriteLocalVariableNodeGen SourceSection: None
-                  Identifier: <return_val>
-                  WriteLocalFrameSlotNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
-                  IntegerLiteralNode SourceSection: [38,39]`0`
-                    Value: 0
+                FunctionBodyNode SourceSection: [38,39]`0`
+                  WriteLocalVariableNodeGen SourceSection: None
+                    Identifier: <return_val>
+                    WriteLocalFrameSlotNodeGen SourceSection: None
+                      Frame: [4,<return_val>,Illegal]
+                    IntegerLiteralNode SourceSection: [38,39]`0`
+                      Value: 0
             Return Expresssion: ReadLocalVariableNode SourceSection: None
               Frame: [4,<return_val>,Illegal]
               ReadVariableFromFrameNodeGen SourceSection: None

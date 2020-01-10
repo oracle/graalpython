@@ -33,19 +33,20 @@ ModuleRootNode Name: <module 'call17'> SourceSection: [0,22]`def fn(): foo(arg =
                 ReturnTargetNode SourceSection: [0,22]`def fn(): foo(arg = ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [10,22]`foo(arg = 1)`
-                      PythonCallNodeGen SourceSection: [10,22]`foo(arg = 1)`
-                        CallNodeGen SourceSection: None
-                        KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            IntegerLiteralNode SourceSection: [20,21]`1`
-                              Value: 1
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: foo
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [10,22]`foo(arg = 1)`
+                      ExpressionStatementNode SourceSection: [10,22]`foo(arg = 1)`
+                        PythonCallNodeGen SourceSection: [10,22]`foo(arg = 1)`
+                          CallNodeGen SourceSection: None
+                          KeywordArgumentsNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              IntegerLiteralNode SourceSection: [20,21]`1`
+                                Value: 1
+                            CompactKeywordsNodeGen SourceSection: None
+                            ExecuteKeywordStarargsNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: foo
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

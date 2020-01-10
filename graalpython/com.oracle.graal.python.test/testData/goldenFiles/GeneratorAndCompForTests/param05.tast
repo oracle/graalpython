@@ -37,29 +37,30 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
               InnerRootNode SourceSection: [0,42]`def fn(**arg):↵  for...`
                 GeneratorReturnTargetNode SourceSection: [0,42]`def fn(**arg):↵  for...`
                   flagSlot: 1
-                  ElseNode SourceSection: [17,42]`for p in arg:↵    yi...`
-                    GeneratorForNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [35,42]`yield p`
-                        YieldNode SourceSection: [35,42]`yield p`
-                          flagSlot: 0
-                          ReadGeneratorFrameVariableNode SourceSection: [41,42]`p`
+                  FunctionBodyNode SourceSection: [17,42]`for p in arg:↵    yi...`
+                    ElseNode SourceSection: [17,42]`for p in arg:↵    yi...`
+                      GeneratorForNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [35,42]`yield p`
+                          YieldNode SourceSection: [35,42]`yield p`
+                            flagSlot: 0
+                            ReadGeneratorFrameVariableNode SourceSection: [41,42]`p`
+                              Frame: [1,p,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            GeneratorAccessNode SourceSection: None
+                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                          Identifier: p
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [1,p,Illegal]
+                        GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
+                          GetIteratorNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [26,29]`arg`
+                            Frame: [0,arg,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          GeneratorAccessNode SourceSection: None
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: p
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,p,Illegal]
-                      GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
-                        GetIteratorNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [26,29]`arg`
-                          Frame: [0,arg,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                      GetNextNode SourceSection: None
-                        LookupAndCallUnaryNodeGen SourceSection: None
-                          Op: __next__
-                      GeneratorAccessNode SourceSection: None
-                    BlockNode SourceSection: None
+                        GetNextNode SourceSection: None
+                          LookupAndCallUnaryNodeGen SourceSection: None
+                            Op: __next__
+                        GeneratorAccessNode SourceSection: None
+                      BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

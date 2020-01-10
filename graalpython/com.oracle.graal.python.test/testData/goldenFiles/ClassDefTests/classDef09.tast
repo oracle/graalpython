@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: None
-                      ReturnTargetNode SourceSection: None
+                    InnerRootNode SourceSection: [0,36]`class Enum(metaclass...`
+                      ReturnTargetNode SourceSection: [0,36]`class Enum(metaclass...`
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
                             QualName: Enum
@@ -49,8 +49,9 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                               Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
-                          ExpressionStatementNode SourceSection: [32,36]`pass`
-                            EmptyNode SourceSection: [32,36]`pass`
+                          FunctionBodyNode SourceSection: [32,36]`pass`
+                            ExpressionStatementNode SourceSection: [32,36]`pass`
+                              EmptyNode SourceSection: [32,36]`pass`
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
                 KeywordArgumentsNodeGen SourceSection: None

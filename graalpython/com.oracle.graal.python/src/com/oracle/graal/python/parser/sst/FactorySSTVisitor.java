@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.function.FunctionBodyNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
@@ -361,32 +362,52 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             childScope = childScope.getNextChildScope();
         }
 
+        int delta = 0;
         SSTNode[] bodyNodes = ((BlockSSTNode) node.body).statements;
-
-        int delta = 1 + (classScope.hasAnnotations() ? 1 : 0);
-        StatementNode[] bodyStatements = new StatementNode[bodyNodes.length + delta];
-        bodyStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
-        for (int i = 0; i < bodyNodes.length; i++) {
-            bodyStatements[i + delta] = (StatementNode) bodyNodes[i].accept(this);
+        ExpressionNode doc = null;
+        FunctionBodyNode classBody;
+        int classBodyStart = node.body.startOffset;
+        if (bodyNodes.length > 0) {
+            // we need to extract documentaion, if there is from the class body
+            StatementNode possibleDoc = (StatementNode) bodyNodes[0].accept(this);
+            doc = StringUtils.extractDoc(possibleDoc);
+            delta = doc != null ? 1 : 0;
+            StatementNode[] bodyStatements = new StatementNode[bodyNodes.length - delta];
+            if (doc == null) {
+                bodyStatements[0] = possibleDoc;
+            } else if (bodyNodes.length > 1) {
+                classBodyStart = bodyNodes[1].startOffset;
+            }
+            for (int i = 1; i < bodyNodes.length; i++) {
+                bodyStatements[i - delta] = (StatementNode) bodyNodes[i].accept(this);
+            }
+            classBody = FunctionBodyNode.create(bodyStatements);
+        } else {
+            classBody = FunctionBodyNode.create();
         }
-        ExpressionNode doc = StringUtils.extractDoc(bodyStatements[1]);
+        classBody.assignSourceSection(createSourceSection(classBodyStart, node.body.endOffset));
+
+        delta = delta + (classScope.hasAnnotations() ? 1 : 0);
+        StatementNode[] classStatements = new StatementNode[2 + delta];
+        // ClassStatemtns look like:
+        // [0] ClassDefinitionPrologueNode
+        classStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
+        // [?] if there is documentation -> doc statement
         if (doc != null) {
             scopeEnvironment.createLocal(__DOC__);
-            bodyStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
-            if (classScope.hasAnnotations()) {
-                // create __annotation__ dictionery for the class
-                bodyStatements[2] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
-            }
-        } else {
-            if (classScope.hasAnnotations()) {
-                // create __annotation__ dictionery for the class
-                bodyStatements[1] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
-            }
+            classStatements[1] = scopeEnvironment.findVariable(__DOC__).makeWriteNode(doc);
         }
+        // [?] if thre are annotations -> annotations
+        if (classScope.hasAnnotations()) {
+            classStatements[delta] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
+        }
+        // [last] class body statements
+        classStatements[1 + delta] = classBody;
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
-        StatementNode body = nodeFactory.createBlock(bodyStatements);
+        StatementNode body = nodeFactory.createBlock(classStatements);
         ExpressionNode bodyAsExpr = new ReturnTargetNode(body, nodeFactory.createNullLiteral());
+        bodyAsExpr.assignSourceSection(nodeSourceSection);
         ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(), null);
@@ -713,30 +734,40 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                             : this);
         }
         ExpressionNode doc = StringUtils.extractDoc(body);
+        FunctionBodyNode functionBody;
         if (doc != null) {
             if (body instanceof BaseBlockNode) {
                 StatementNode[] st = ((BaseBlockNode) body).getStatements();
                 if (st.length == 1) {
-                    body = BlockNode.create();
+                    functionBody = FunctionBodyNode.create();
+                    functionBody.assignSourceSection(source.createUnavailableSection());
                 } else {
                     if (st.length == 2) {
-                        body = st[1];
+                        functionBody = FunctionBodyNode.create(st[1]);
                         if (scopeEnvironment.isInGeneratorScope()) {
                             generatorFactory.decreaseNumOfGeneratorBlockNode();
                         }
                     } else {
                         // TODO this is not nice. We create the block twice. Should be created just
                         // one?
-                        body = body instanceof GeneratorBlockNode
-                                        ? GeneratorBlockNode.create(Arrays.copyOfRange(st, 1, st.length), ((GeneratorBlockNode) body).getIndexSlot())
-                                        : BlockNode.create(Arrays.copyOfRange(st, 1, st.length));
+                        functionBody = body instanceof GeneratorBlockNode
+                                        ? FunctionBodyNode.create(GeneratorBlockNode.create(Arrays.copyOfRange(st, 1, st.length), ((GeneratorBlockNode) body).getIndexSlot()))
+                                        : FunctionBodyNode.create(Arrays.copyOfRange(st, 1, st.length));
                     }
-
+                    BlockSSTNode blockSST = (BlockSSTNode) node.body;
+                    int start = blockSST.statements[1].startOffset;
+                    functionBody.assignSourceSection(createSourceSection(start, node.body.getEndOffset()));
                 }
             } else {
-                body = BlockNode.create();
+                functionBody = FunctionBodyNode.create();
+                functionBody.assignSourceSection(createSourceSection(node.endOffset, node.endOffset));
             }
+        } else {
+            functionBody = createFunctionBody(body);
+            functionBody.assignSourceSection(source.createUnavailableSection());
         }
+
+        body = functionBody;
         if (doc == null) {
             doc = EMPTY_DOC;
         }
@@ -886,19 +917,23 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Lambda body
          */
         ExpressionNode lambdaBody;
+        FunctionBodyNode functionBody;
         GeneratorFactorySSTVisitor generatorFactory = null;
         boolean isGenerator = scopeEnvironment.isInGeneratorScope();
         StatementNode frameReturn;
         if (isGenerator) {
             generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
             lambdaBody = (ExpressionNode) node.body.accept(generatorFactory);
-            frameReturn = nodeFactory.createFrameReturn(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), lambdaBody));
+            functionBody = FunctionBodyNode.create(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), lambdaBody));
+            frameReturn = nodeFactory.createFrameReturn(functionBody);
         } else {
             lambdaBody = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
                             ? ((GeneratorFactorySSTVisitor) this).parentVisitor
                             : this);
-            frameReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(lambdaBody, scopeEnvironment.getReturnSlot()));
+            functionBody = FunctionBodyNode.create(nodeFactory.createWriteLocal(lambdaBody, scopeEnvironment.getReturnSlot()));
+            frameReturn = nodeFactory.createFrameReturn(functionBody);
         }
+        functionBody.assignSourceSection(createSourceSection(node.body.getStartOffset(), node.body.getEndOffset()));
 
         ExpressionNode returnTargetNode;
         if (scopeEnvironment.isInGeneratorScope()) {
@@ -1284,5 +1319,31 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             }
         }
         return nodeFactory.createDestructuringAssignment(rhs, temps, starredIndex, statements);
+    }
+
+    private SourceSection createSourceSectionFromBlock(StatementNode body) {
+        int bodyStart = -1;
+        int bodyEnd = -1;
+        if (body instanceof BaseBlockNode) {
+            StatementNode[] bodyStatements = ((BaseBlockNode) body).getStatements();
+            if (bodyStatements.length > 0) {
+                bodyStart = ((BaseBlockNode) body).getStatements()[0].getSourceSection().getCharIndex();
+                bodyEnd = ((BaseBlockNode) body).getStatements()[bodyStatements.length - 1].getSourceSection().getCharEndIndex();
+            }
+        } else {
+            bodyStart = body.getSourceSection().getCharIndex();
+            bodyEnd = body.getSourceSection().getCharEndIndex();
+        }
+        return createSourceSection(bodyStart, bodyEnd);
+    }
+
+    private FunctionBodyNode createFunctionBody(StatementNode body) {
+        FunctionBodyNode functionBody;
+        if (body instanceof BlockNode) {
+            functionBody = FunctionBodyNode.create(((BlockNode) body).getStatements());
+        } else {
+            functionBody = FunctionBodyNode.create(body);
+        }
+        return functionBody;
     }
 }

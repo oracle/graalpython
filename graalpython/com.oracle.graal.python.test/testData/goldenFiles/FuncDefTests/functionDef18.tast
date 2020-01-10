@@ -69,33 +69,34 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 4
-                    FrameReturnNode SourceSection: [54,112]`return _tuple_new(_c...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [5,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [72,76]`_cls`
-                            Frame: [0,_cls,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
-                            PythonObjectFactoryNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [79,83]`hits`
-                              Frame: [1,hits,Illegal]
+                    FunctionBodyNode SourceSection: [54,112]`return _tuple_new(_c...`
+                      FrameReturnNode SourceSection: [54,112]`return _tuple_new(_c...`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [5,<return_val>,Illegal]
+                          PythonCallNodeGen SourceSection: [61,112]`_tuple_new(_cls, (hi...`
+                            CallNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [72,76]`_cls`
+                              Frame: [0,_cls,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [85,91]`misses`
-                              Frame: [2,misses,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [93,100]`maxsize`
-                              Frame: [3,maxsize,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [102,110]`currsize`
-                              Frame: [4,currsize,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: _tuple_new
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
+                              PythonObjectFactoryNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [79,83]`hits`
+                                Frame: [1,hits,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [85,91]`misses`
+                                Frame: [2,misses,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [93,100]`maxsize`
+                                Frame: [3,maxsize,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [102,110]`currsize`
+                                Frame: [4,currsize,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: _tuple_new
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

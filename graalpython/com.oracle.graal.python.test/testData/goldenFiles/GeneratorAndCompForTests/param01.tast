@@ -37,21 +37,22 @@ ModuleRootNode Name: <module 'param01'> SourceSection: [0,30]`def fn(a):↵  yie
               InnerRootNode SourceSection: [0,30]`def fn(a):↵  yield a...`
                 GeneratorReturnTargetNode SourceSection: [0,30]`def fn(a):↵  yield a...`
                   flagSlot: 2
-                  GeneratorBlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [13,20]`yield a`
-                      YieldNode SourceSection: [13,20]`yield a`
-                        flagSlot: 0
-                        ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
-                          Frame: [0,a,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        GeneratorAccessNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [23,30]`yield 2`
-                      YieldNode SourceSection: [23,30]`yield 2`
-                        flagSlot: 1
-                        IntegerLiteralNode SourceSection: [29,30]`2`
-                          Value: 2
-                        GeneratorAccessNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                  FunctionBodyNode SourceSection: [13,30]`yield a↵  yield 2`
+                    GeneratorBlockNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [13,20]`yield a`
+                        YieldNode SourceSection: [13,20]`yield a`
+                          flagSlot: 0
+                          ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
+                            Frame: [0,a,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [23,30]`yield 2`
+                        YieldNode SourceSection: [23,30]`yield 2`
+                          flagSlot: 1
+                          IntegerLiteralNode SourceSection: [29,30]`2`
+                            Value: 2
+                          GeneratorAccessNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

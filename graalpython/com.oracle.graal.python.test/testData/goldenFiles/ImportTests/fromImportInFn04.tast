@@ -33,24 +33,25 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
                 ReturnTargetNode SourceSection: [0,66]`def fn():↵  from sys...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ImportFromNode SourceSection: [12,66]`from sys.path import...`
-                      Importee: sys.path
-                      Level: 0
-                      FromList: dirname, basename
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: my_dirname
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,my_dirname,Illegal]
-                        EmptyNode SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: basename
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,basename,Illegal]
-                        EmptyNode SourceSection: None
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __getattribute__
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __getattr__
+                    FunctionBodyNode SourceSection: [12,66]`from sys.path import...`
+                      ImportFromNode SourceSection: [12,66]`from sys.path import...`
+                        Importee: sys.path
+                        Level: 0
+                        FromList: dirname, basename
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: my_dirname
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,my_dirname,Illegal]
+                          EmptyNode SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: basename
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [1,basename,Illegal]
+                          EmptyNode SourceSection: None
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __getattribute__
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __getattr__
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

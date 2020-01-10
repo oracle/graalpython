@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                 ReturnTargetNode SourceSection: [0,126]`def test():↵  def in...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [14,125]`def inner (end):↵   ...`
                       WriteLocalVariableNodeGen SourceSection: [14,110]`def inner (end):↵   ...`
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                  BlockNode SourceSection: None
+                                  FunctionBodyNode SourceSection: [35,107]`def inner_inner():↵ ...`
                                     WriteLocalVariableNodeGen SourceSection: [35,94]`def inner_inner():↵ ...`
                                       Identifier: inner_inner
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -98,23 +98,24 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                             ReturnTargetNode SourceSection: [35,94]`def inner_inner():↵ ...`
                                               Body: BlockNode SourceSection: None
                                                 BlockNode SourceSection: None
-                                                ExpressionStatementNode SourceSection: [60,89]`print("inner_inner",...`
-                                                  PythonCallNodeGen SourceSection: [60,89]`print("inner_inner",...`
-                                                    CallNodeGen SourceSection: None
-                                                    StringLiteralNode SourceSection: [66,79]`"inner_inner"`
-                                                    KeywordArgumentsNodeGen SourceSection: None
-                                                      KeywordLiteralNode SourceSection: None
-                                                        ReadLocalCellNodeGen SourceSection: [85,88]`end`
-                                                          ReadLocalVariableNode SourceSection: None
-                                                            Frame: [0,end,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadFromCellNodeGen SourceSection: None
-                                                      CompactKeywordsNodeGen SourceSection: None
-                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                      Identifier: print
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                FunctionBodyNode SourceSection: [60,89]`print("inner_inner",...`
+                                                  ExpressionStatementNode SourceSection: [60,89]`print("inner_inner",...`
+                                                    PythonCallNodeGen SourceSection: [60,89]`print("inner_inner",...`
+                                                      CallNodeGen SourceSection: None
+                                                      StringLiteralNode SourceSection: [66,79]`"inner_inner"`
+                                                      KeywordArgumentsNodeGen SourceSection: None
+                                                        KeywordLiteralNode SourceSection: None
+                                                          ReadLocalCellNodeGen SourceSection: [85,88]`end`
+                                                            ReadLocalVariableNode SourceSection: None
+                                                              Frame: [0,end,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ReadFromCellNodeGen SourceSection: None
+                                                        CompactKeywordsNodeGen SourceSection: None
+                                                        ExecuteKeywordStarargsNodeGen SourceSection: None
+                                                          EmptyNode SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        Identifier: print
+                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                 Frame: [1,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None

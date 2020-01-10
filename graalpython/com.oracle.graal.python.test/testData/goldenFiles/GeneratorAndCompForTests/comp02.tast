@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [29,203]`for base in abcs:↵  ...`
                       ElseNode SourceSection: [29,155]`for base in abcs:↵  ...`
                         ForNode SourceSection: None
                           ForRepeatingNode SourceSection: None

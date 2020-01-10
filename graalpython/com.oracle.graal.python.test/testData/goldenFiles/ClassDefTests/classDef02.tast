@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: None
-                      ReturnTargetNode SourceSection: None
+                    InnerRootNode SourceSection: [0,22]`class foo(object):pa...`
+                      ReturnTargetNode SourceSection: [0,22]`class foo(object):pa...`
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
                             QualName: foo
@@ -49,8 +49,9 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
                               Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
-                          ExpressionStatementNode SourceSection: [18,22]`pass`
-                            EmptyNode SourceSection: [18,22]`pass`
+                          FunctionBodyNode SourceSection: [18,22]`pass`
+                            ExpressionStatementNode SourceSection: [18,22]`pass`
+                              EmptyNode SourceSection: [18,22]`pass`
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [10,16]`object`

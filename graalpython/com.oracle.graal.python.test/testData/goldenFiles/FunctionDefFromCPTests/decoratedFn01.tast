@@ -35,8 +35,9 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                   ReturnTargetNode SourceSection: [14,27]`def f(): pass`
                     Body: BlockNode SourceSection: None
                       BlockNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [23,27]`pass`
-                        EmptyNode SourceSection: [23,27]`pass`
+                      FunctionBodyNode SourceSection: [23,27]`pass`
+                        ExpressionStatementNode SourceSection: [23,27]`pass`
+                          EmptyNode SourceSection: [23,27]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None

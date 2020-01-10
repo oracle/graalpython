@@ -48,32 +48,33 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                    DestructuringAssignmentNodeGen SourceSection: [36,61]`cls_or_self, *rest =...`
-                      ReadLocalVariableNode SourceSection: [57,61]`args`
-                        Frame: [0,args,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <>temp4
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [4,<>temp4,Illegal]
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <>temp5
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [5,<>temp5,Illegal]
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: cls_or_self
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,cls_or_self,Illegal]
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [4,<>temp4,Illegal]
+                    FunctionBodyNode SourceSection: [36,61]`cls_or_self, *rest =...`
+                      DestructuringAssignmentNodeGen SourceSection: [36,61]`cls_or_self, *rest =...`
+                        ReadLocalVariableNode SourceSection: [57,61]`args`
+                          Frame: [0,args,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: rest
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,rest,Illegal]
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [5,<>temp5,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <>temp4
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [4,<>temp4,Illegal]
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <>temp5
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [5,<>temp5,Illegal]
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: cls_or_self
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [2,cls_or_self,Illegal]
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [4,<>temp4,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: rest
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [3,rest,Illegal]
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [5,<>temp5,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [6,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

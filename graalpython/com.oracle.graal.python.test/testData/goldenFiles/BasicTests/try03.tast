@@ -33,22 +33,23 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,61]`def fn():↵  try:�
                 ReturnTargetNode SourceSection: [0,61]`def fn():↵  try:↵   ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    TryFinallyNode SourceSection: [12,61]`try:↵    pass↵  exce...`
-                      TryExceptNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [21,25]`pass`
-                          EmptyNode SourceSection: [21,25]`pass`
-                        ExceptNode SourceSection: None
-                          ExpressionStatementNode SourceSection: [57,61]`pass`
-                            EmptyNode SourceSection: [57,61]`pass`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: va
-                            WriteLocalFrameSlotNodeGen SourceSection: None
-                              Frame: [0,va,Illegal]
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [35,45]`ValueError`
-                            Identifier: ValueError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [12,61]`try:↵    pass↵  exce...`
+                      TryFinallyNode SourceSection: [12,61]`try:↵    pass↵  exce...`
+                        TryExceptNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [21,25]`pass`
+                            EmptyNode SourceSection: [21,25]`pass`
+                          ExceptNode SourceSection: None
+                            ExpressionStatementNode SourceSection: [57,61]`pass`
+                              EmptyNode SourceSection: [57,61]`pass`
+                            WriteLocalVariableNodeGen SourceSection: None
+                              Identifier: va
+                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                Frame: [0,va,Illegal]
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [35,45]`ValueError`
+                              Identifier: ValueError
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

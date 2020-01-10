@@ -33,36 +33,37 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                 ReturnTargetNode SourceSection: [0,59]`def fn():↵  for x in...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BreakTargetNode SourceSection: [12,59]`for x in xrange(3):↵...`
-                      ForNode SourceSection: None
-                        ForRepeatingNode SourceSection: None
-                          ForNextElementNodeGen SourceSection: None
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: x
-                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                Frame: [0,x,Illegal]
-                          IfNode SourceSection: [36,59]`if x == 1:↵      bre...`
-                            YesNodeGen SourceSection: None
-                              BinaryComparisonNodeGen SourceSection: [39,45]`x == 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __eq__
-                                ReadLocalVariableNode SourceSection: [39,40]`x`
+                    FunctionBodyNode SourceSection: [12,59]`for x in xrange(3):↵...`
+                      BreakTargetNode SourceSection: [12,59]`for x in xrange(3):↵...`
+                        ForNode SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: x
+                                WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [0,x,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                IntegerLiteralNode SourceSection: [44,45]`1`
-                                  Value: 1
-                            BreakNode SourceSection: [53,58]`break`
-                            BlockNode SourceSection: None
-                        GetIteratorExpressionNodeGen SourceSection: [21,30]`xrange(3)`
-                          GetIteratorNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [21,30]`xrange(3)`
-                            CallNodeGen SourceSection: None
-                            IntegerLiteralNode SourceSection: [28,29]`3`
-                              Value: 3
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: xrange
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      BlockNode SourceSection: None
+                            IfNode SourceSection: [36,59]`if x == 1:↵      bre...`
+                              YesNodeGen SourceSection: None
+                                BinaryComparisonNodeGen SourceSection: [39,45]`x == 1`
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __eq__
+                                  ReadLocalVariableNode SourceSection: [39,40]`x`
+                                    Frame: [0,x,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  IntegerLiteralNode SourceSection: [44,45]`1`
+                                    Value: 1
+                              BreakNode SourceSection: [53,58]`break`
+                              BlockNode SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [21,30]`xrange(3)`
+                            GetIteratorNodeGen SourceSection: None
+                            PythonCallNodeGen SourceSection: [21,30]`xrange(3)`
+                              CallNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [28,29]`3`
+                                Value: 3
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: xrange
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

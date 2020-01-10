@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():�
                 ReturnTargetNode SourceSection: [0,161]`def outer():↵    x =...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [17,159]`x = "local"↵    ↵   ...`
                       WriteLocalCellNodeGen SourceSection: [17,28]`x = "local"`
                         Identifier: x
                         ReadLocalVariableNode SourceSection: None
@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():�
                               ReturnTargetNode SourceSection: [38,129]`def inner():↵       ...`
                                 Body: BlockNode SourceSection: None
                                   BlockNode SourceSection: None
-                                  BlockNode SourceSection: None
+                                  FunctionBodyNode SourceSection: [59,119]`nonlocal x↵        x...`
                                     ExpressionStatementNode SourceSection: [59,69]`nonlocal x`
                                       EmptyNode SourceSection: [59,69]`nonlocal x`
                                     WriteLocalCellNodeGen SourceSection: [78,92]`x = "nonlocal"`

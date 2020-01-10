@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: None
-                      ReturnTargetNode SourceSection: None
+                    InnerRootNode SourceSection: [0,73]`class A:↵    @classm...`
+                      ReturnTargetNode SourceSection: [0,73]`class A:↵    @classm...`
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
                             QualName: A
@@ -49,64 +49,66 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                               Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: [13,73]`@classmethod↵    def...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                            PythonCallNodeGen SourceSection: [13,25]`@classmethod`
-                              CallNodeGen SourceSection: None
-                              FunctionDefinitionNode Name: method SourceSection: None
-                                Arguments: None
-                                KwArguments: None
-                                Documentation: StringLiteralNode: Empty
-                                FreeVarSlots: __class__, 
-                                ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
-                                  CellVarsSlots: None
-                                FunctionRootNode SourceSection: [30,73]`def method(self, str...`
-                                  Name: method
-                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                    Param Names: self, string
-                                  CelVars: None
-                                  FreeVars: __class__
-                                  NeedsCellFrame: False
-                                  FrameDescriptor: 4 slots [self, string, __class__, <return_val>]
+                          FunctionBodyNode SourceSection: [13,73]`@classmethod↵    def...`
+                            SetItemNodeGen SourceSection: [13,73]`@classmethod↵    def...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              PythonCallNodeGen SourceSection: [13,25]`@classmethod`
+                                CallNodeGen SourceSection: None
+                                FunctionDefinitionNode Name: method SourceSection: None
+                                  Arguments: None
+                                  KwArguments: None
+                                  Documentation: StringLiteralNode: Empty
+                                  FreeVarSlots: __class__, 
                                   ExecutionSlots:
                                     FreeVarsSlots: __class__, 
                                     CellVarsSlots: None
-                                  InnerRootNode SourceSection: [30,73]`def method(self, str...`
-                                    ReturnTargetNode SourceSection: [30,73]`def method(self, str...`
-                                      Body: BlockNode SourceSection: None
-                                        BlockNode SourceSection: None
-                                          WriteLocalVariableNodeGen SourceSection: None
-                                            Identifier: self
-                                            WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [0,self,Illegal]
-                                            ArgumentExpressionNode SourceSection: None
-                                              ReadIndexedArgumentNodeGen SourceSection: None
-                                                Index: 0
-                                          WriteLocalVariableNodeGen SourceSection: None
-                                            Identifier: string
-                                            WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,string,Illegal]
-                                            ArgumentExpressionNode SourceSection: None
-                                              ReadIndexedArgumentNodeGen SourceSection: None
-                                                Index: 1
-                                        ExpressionStatementNode SourceSection: [68,72]`pass`
-                                          EmptyNode SourceSection: [68,72]`pass`
-                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: classmethod
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  FunctionRootNode SourceSection: [30,73]`def method(self, str...`
+                                    Name: method
+                                    Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                      Param Names: self, string
+                                    CelVars: None
+                                    FreeVars: __class__
+                                    NeedsCellFrame: False
+                                    FrameDescriptor: 4 slots [self, string, __class__, <return_val>]
+                                    ExecutionSlots:
+                                      FreeVarsSlots: __class__, 
+                                      CellVarsSlots: None
+                                    InnerRootNode SourceSection: [30,73]`def method(self, str...`
+                                      ReturnTargetNode SourceSection: [30,73]`def method(self, str...`
+                                        Body: BlockNode SourceSection: None
+                                          BlockNode SourceSection: None
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: self
+                                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                                Frame: [0,self,Illegal]
+                                              ArgumentExpressionNode SourceSection: None
+                                                ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 0
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: string
+                                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                                Frame: [1,string,Illegal]
+                                              ArgumentExpressionNode SourceSection: None
+                                                ReadIndexedArgumentNodeGen SourceSection: None
+                                                  Index: 1
+                                          FunctionBodyNode SourceSection: [68,72]`pass`
+                                            ExpressionStatementNode SourceSection: [68,72]`pass`
+                                              EmptyNode SourceSection: [68,72]`pass`
+                                        Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                          Frame: [3,<return_val>,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadClassAttributeNodeGen SourceSection: [13,25]`@classmethod`
+                                  GetItemNodeGen SourceSection: None
+                                    ArgumentExpressionNode SourceSection: None
+                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
+                                    StringLiteralNode SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    Identifier: classmethod
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None

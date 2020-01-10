@@ -33,24 +33,25 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                 ReturnTargetNode SourceSection: [6,34]`def f():↵ async with...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WithNode SourceSection: [22,34]`with 1: pass`
-                      ExpressionStatementNode SourceSection: [30,34]`pass`
-                        EmptyNode SourceSection: [30,34]`pass`
-                      IntegerLiteralNode SourceSection: [27,28]`1`
-                        Value: 1
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      YesNodeGen SourceSection: None
-                      GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [22,34]`with 1: pass`
+                      WithNode SourceSection: [22,34]`with 1: pass`
+                        ExpressionStatementNode SourceSection: [30,34]`pass`
+                          EmptyNode SourceSection: [30,34]`pass`
+                        IntegerLiteralNode SourceSection: [27,28]`1`
+                          Value: 1
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
+                        YesNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

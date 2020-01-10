@@ -34,7 +34,7 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
               ReturnTargetNode SourceSection: [17,78]`def setup():↵  globa...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [32,77]`global SOMETHING↵  i...`
                     ExpressionStatementNode SourceSection: [32,48]`global SOMETHING`
                       EmptyNode SourceSection: [32,48]`global SOMETHING`
                     IfNode SourceSection: [51,77]`if True : SOMETHING ...`
@@ -75,14 +75,15 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                   ReturnTargetNode SourceSection: [78,114]`def install():↵  if ...`
                     Body: BlockNode SourceSection: None
                       BlockNode SourceSection: None
-                      IfNode SourceSection: [95,114]`if SOMETHING : pass`
-                        YesNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
-                            Identifier: SOMETHING
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ExpressionStatementNode SourceSection: [110,114]`pass`
-                          EmptyNode SourceSection: [110,114]`pass`
-                        BlockNode SourceSection: None
+                      FunctionBodyNode SourceSection: [95,114]`if SOMETHING : pass`
+                        IfNode SourceSection: [95,114]`if SOMETHING : pass`
+                          YesNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
+                              Identifier: SOMETHING
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ExpressionStatementNode SourceSection: [110,114]`pass`
+                            EmptyNode SourceSection: [110,114]`pass`
+                          BlockNode SourceSection: None
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None

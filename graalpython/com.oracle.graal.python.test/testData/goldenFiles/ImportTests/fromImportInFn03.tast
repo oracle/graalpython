@@ -33,19 +33,20 @@ ModuleRootNode Name: <module 'fromImportInFn03'> SourceSection: [0,54]`def fn():
                 ReturnTargetNode SourceSection: [0,54]`def fn():↵  from sys...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ImportFromNode SourceSection: [12,54]`from sys.path import...`
-                      Importee: sys.path
-                      Level: 0
-                      FromList: dirname
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: my_dirname
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,my_dirname,Illegal]
-                        EmptyNode SourceSection: None
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __getattribute__
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __getattr__
+                    FunctionBodyNode SourceSection: [12,54]`from sys.path import...`
+                      ImportFromNode SourceSection: [12,54]`from sys.path import...`
+                        Importee: sys.path
+                        Level: 0
+                        FromList: dirname
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: my_dirname
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,my_dirname,Illegal]
+                          EmptyNode SourceSection: None
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __getattribute__
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __getattr__
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

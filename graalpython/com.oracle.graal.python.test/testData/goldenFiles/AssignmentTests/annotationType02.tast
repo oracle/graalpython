@@ -33,12 +33,13 @@ ModuleRootNode Name: <module 'annotationType02'> SourceSection: [0,28]`def fn():
                 ReturnTargetNode SourceSection: [0,28]`def fn():↵  index : ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: [12,27]`index : int = 0`
-                      Identifier: index
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,index,Illegal]
-                      IntegerLiteralNode SourceSection: [26,27]`0`
-                        Value: 0
+                    FunctionBodyNode SourceSection: [12,27]`index : int = 0`
+                      WriteLocalVariableNodeGen SourceSection: [12,27]`index : int = 0`
+                        Identifier: index
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,index,Illegal]
+                        IntegerLiteralNode SourceSection: [26,27]`0`
+                          Value: 0
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

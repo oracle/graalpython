@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                 ReturnTargetNode SourceSection: [0,47]`def fn():↵  c = 10↵ ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [12,46]`c = 10↵  (x + c for ...`
                       WriteLocalCellNodeGen SourceSection: [12,18]`c = 10`
                         Identifier: c
                         ReadLocalVariableNode SourceSection: None

@@ -36,41 +36,42 @@ ModuleRootNode Name: <module 'try03'> SourceSection: [0,105]`def gen():↵  try:
               InnerRootNode SourceSection: [0,105]`def gen():↵  try:↵  ...`
                 GeneratorReturnTargetNode SourceSection: [0,105]`def gen():↵  try:↵  ...`
                   flagSlot: 4
-                  GeneratorBlockNode SourceSection: None
-                    TryFinallyNode SourceSection: [13,59]`try:↵    pass↵  exce...`
-                      TryExceptNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [22,26]`pass`
-                          EmptyNode SourceSection: [22,26]`pass`
-                        ExceptNode SourceSection: None
-                          ExpressionStatementNode SourceSection: [52,56]`pass`
-                            EmptyNode SourceSection: [52,56]`pass`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [36,46]`ValueError`
-                            Identifier: ValueError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
-                    GeneratorTryFinallyNode SourceSection: [59,105]`try:↵    yield 3↵  e...`
-                      GeneratorTryExceptNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [68,75]`yield 3`
-                          YieldNode SourceSection: [68,75]`yield 3`
-                            flagSlot: 0
-                            IntegerLiteralNode SourceSection: [74,75]`3`
-                              Value: 3
-                            GeneratorAccessNode SourceSection: None
-                        ExceptNode SourceSection: None
-                          ExpressionStatementNode SourceSection: [101,105]`pass`
-                            EmptyNode SourceSection: [101,105]`pass`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [85,95]`ValueError`
-                            Identifier: ValueError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
+                  FunctionBodyNode SourceSection: [13,105]`try:↵    pass↵  exce...`
+                    GeneratorBlockNode SourceSection: None
+                      TryFinallyNode SourceSection: [13,59]`try:↵    pass↵  exce...`
+                        TryExceptNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [22,26]`pass`
+                            EmptyNode SourceSection: [22,26]`pass`
+                          ExceptNode SourceSection: None
+                            ExpressionStatementNode SourceSection: [52,56]`pass`
+                              EmptyNode SourceSection: [52,56]`pass`
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [36,46]`ValueError`
+                              Identifier: ValueError
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
+                      GeneratorTryFinallyNode SourceSection: [59,105]`try:↵    yield 3↵  e...`
+                        GeneratorTryExceptNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [68,75]`yield 3`
+                            YieldNode SourceSection: [68,75]`yield 3`
+                              flagSlot: 0
+                              IntegerLiteralNode SourceSection: [74,75]`3`
+                                Value: 3
+                              GeneratorAccessNode SourceSection: None
+                          ExceptNode SourceSection: None
+                            ExpressionStatementNode SourceSection: [101,105]`pass`
+                              EmptyNode SourceSection: [101,105]`pass`
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [85,95]`ValueError`
+                              Identifier: ValueError
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
+                          RestoreExceptionStateNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
-                        RestoreExceptionStateNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
-                    GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

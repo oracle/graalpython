@@ -42,14 +42,15 @@ ModuleRootNode Name: <module 'functionDef05'> SourceSection: [0,34]`def foo(par1
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                    FrameReturnNode SourceSection: [23,34]`return par1`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,<return_val>,Illegal]
-                        ReadLocalVariableNode SourceSection: [30,34]`par1`
-                          Frame: [0,par1,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [23,34]`return par1`
+                      FrameReturnNode SourceSection: [23,34]`return par1`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [1,<return_val>,Illegal]
+                          ReadLocalVariableNode SourceSection: [30,34]`par1`
+                            Frame: [0,par1,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

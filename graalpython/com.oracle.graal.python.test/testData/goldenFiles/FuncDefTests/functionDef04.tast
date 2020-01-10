@@ -48,20 +48,21 @@ ModuleRootNode Name: <module 'functionDef04'> SourceSection: [0,31]`def foo(a, b
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    FrameReturnNode SourceSection: [18,30]`return a + b`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [25,30]`a + b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          ReadLocalVariableNode SourceSection: [25,26]`a`
-                            Frame: [0,a,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: [29,30]`b`
-                            Frame: [1,b,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [18,30]`return a + b`
+                      FrameReturnNode SourceSection: [18,30]`return a + b`
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <return_val>
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [2,<return_val>,Illegal]
+                          BinaryArithmeticExpression SourceSection: [25,30]`a + b`
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __add__
+                            ReadLocalVariableNode SourceSection: [25,26]`a`
+                              Frame: [0,a,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ReadLocalVariableNode SourceSection: [29,30]`b`
+                              Frame: [1,b,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

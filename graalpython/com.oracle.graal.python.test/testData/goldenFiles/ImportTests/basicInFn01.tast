@@ -33,13 +33,14 @@ ModuleRootNode Name: <module 'basicInFn01'> SourceSection: [0,22]`def fn():↵  
                 ReturnTargetNode SourceSection: [0,22]`def fn():↵  import s...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: [19,22]`sys`
-                      Identifier: sys
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,sys,Illegal]
-                      ImportExpression SourceSection: None
-                        ImportNode SourceSection: None
-                          Module: sys
+                    FunctionBodyNode SourceSection: [19,22]`sys`
+                      WriteLocalVariableNodeGen SourceSection: [19,22]`sys`
+                        Identifier: sys
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,sys,Illegal]
+                        ImportExpression SourceSection: None
+                          ImportNode SourceSection: None
+                            Module: sys
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -49,92 +49,93 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    WriteLocalVariableNodeGen SourceSection: [23,78]`a = [join(dir, file)...`
-                      Identifier: a
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [2,a,Illegal]
-                      PythonCallNodeGen SourceSection: [28,77]`join(dir, file) for ...`
-                        CallNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
-                          Name: fn.<locals>.<genexp>:param06:2
-                          FrameDescriptor: 4 slots [file, dir, files, <return_val>]
-                          Enclosing
-                            FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
-                          Active Flags: 2
-                          For Nodes: 2
-                          Block Nodes: 0
-                          Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [44,77]`for dir in dirs for ...`
+                    FunctionBodyNode SourceSection: [23,78]`a = [join(dir, file)...`
+                      WriteLocalVariableNodeGen SourceSection: [23,78]`a = [join(dir, file)...`
+                        Identifier: a
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [2,a,Illegal]
+                        PythonCallNodeGen SourceSection: [28,77]`join(dir, file) for ...`
+                          CallNodeGen SourceSection: None
+                          GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
                             Name: fn.<locals>.<genexp>:param06:2
-                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                            CelVars: None
-                            FreeVars: files
-                            NeedsCellFrame: False
                             FrameDescriptor: 4 slots [file, dir, files, <return_val>]
-                            ExecutionSlots:
-                              FreeVarsSlots: files, 
-                              CellVarsSlots: None
-                            InnerRootNode SourceSection: [44,77]`for dir in dirs for ...`
-                              GeneratorReturnTargetNode SourceSection: [44,77]`for dir in dirs for ...`
-                                flagSlot: 1
-                                GeneratorForNode SourceSection: [44,77]`for dir in dirs for ...`
-                                  GeneratorForNode SourceSection: [60,77]`for file in files`
-                                    ExpressionStatementNode SourceSection: [28,43]`join(dir, file)`
-                                      YieldNode SourceSection: [28,43]`join(dir, file)`
-                                        flagSlot: 0
-                                        PythonCallNodeGen SourceSection: [28,43]`join(dir, file)`
-                                          CallNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [33,36]`dir`
-                                            Frame: [1,dir,Illegal]
+                            Enclosing
+                              FrameDescriptor: 4 slots [files, dirs, a, <return_val>]
+                            Active Flags: 2
+                            For Nodes: 2
+                            Block Nodes: 0
+                            Is Enclosing Frame Generator: false
+                            FunctionRootNode SourceSection: [44,77]`for dir in dirs for ...`
+                              Name: fn.<locals>.<genexp>:param06:2
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                              CelVars: None
+                              FreeVars: files
+                              NeedsCellFrame: False
+                              FrameDescriptor: 4 slots [file, dir, files, <return_val>]
+                              ExecutionSlots:
+                                FreeVarsSlots: files, 
+                                CellVarsSlots: None
+                              InnerRootNode SourceSection: [44,77]`for dir in dirs for ...`
+                                GeneratorReturnTargetNode SourceSection: [44,77]`for dir in dirs for ...`
+                                  flagSlot: 1
+                                  GeneratorForNode SourceSection: [44,77]`for dir in dirs for ...`
+                                    GeneratorForNode SourceSection: [60,77]`for file in files`
+                                      ExpressionStatementNode SourceSection: [28,43]`join(dir, file)`
+                                        YieldNode SourceSection: [28,43]`join(dir, file)`
+                                          flagSlot: 0
+                                          PythonCallNodeGen SourceSection: [28,43]`join(dir, file)`
+                                            CallNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [33,36]`dir`
+                                              Frame: [1,dir,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
+                                              Frame: [0,file,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              Identifier: join
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          GeneratorAccessNode SourceSection: None
+                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                        Identifier: file
+                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                          Frame: [0,file,Illegal]
+                                      GetIteratorExpressionNodeGen SourceSection: [72,77]`files`
+                                        GetIteratorNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [72,77]`files`
+                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                            Frame: [2,files,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
-                                            Frame: [0,file,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                            Identifier: join
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GeneratorAccessNode SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                      GetNextNode SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
+                                      GeneratorAccessNode SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                      Identifier: file
+                                      Identifier: dir
                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,file,Illegal]
-                                    GetIteratorExpressionNodeGen SourceSection: [72,77]`files`
-                                      GetIteratorNodeGen SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [72,77]`files`
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [2,files,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
+                                        Frame: [1,dir,Illegal]
+                                    ArgumentExpressionNode SourceSection: None
+                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
                                     GetNextNode SourceSection: None
                                       LookupAndCallUnaryNodeGen SourceSection: None
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
-                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                    Identifier: dir
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,dir,Illegal]
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  GetNextNode SourceSection: None
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __next__
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [3,<return_val>,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                BlockNode SourceSection: None
-                                GeneratorAccessNode SourceSection: None
-                                PRaiseNodeGen SourceSection: None
-                          GetIteratorExpressionNodeGen SourceSection: [55,59]`dirs`
-                            GetIteratorNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: [55,59]`dirs`
-                              Frame: [1,dirs,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          PythonObjectFactoryNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  PRaiseNodeGen SourceSection: None
+                            GetIteratorExpressionNodeGen SourceSection: [55,59]`dirs`
+                              GetIteratorNodeGen SourceSection: None
+                              ReadLocalVariableNode SourceSection: [55,59]`dirs`
+                                Frame: [1,dirs,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: list
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [3,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

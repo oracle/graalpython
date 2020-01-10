@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵ 
                 ReturnTargetNode SourceSection: [0,29]`def fn():↵  a = b = ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: [12,29]`a = b = c = d = e`
+                    FunctionBodyNode SourceSection: [12,29]`a = b = c = d = e`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <>temp4
                         WriteLocalFrameSlotNodeGen SourceSection: None

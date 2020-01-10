@@ -36,17 +36,18 @@ ModuleRootNode Name: <module 'yeild09'> SourceSection: [0,20]`def f(): (yield 1)
               InnerRootNode SourceSection: [0,20]`def f(): (yield 1)*2...`
                 GeneratorReturnTargetNode SourceSection: [0,20]`def f(): (yield 1)*2...`
                   flagSlot: 1
-                  ExpressionStatementNode SourceSection: [9,20]`(yield 1)*2`
-                    BinaryArithmeticExpression SourceSection: [9,20]`(yield 1)*2`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __mul__
-                      YieldNode SourceSection: [10,17]`yield 1`
-                        flagSlot: 0
-                        IntegerLiteralNode SourceSection: [16,17]`1`
-                          Value: 1
-                        GeneratorAccessNode SourceSection: None
-                      IntegerLiteralNode SourceSection: [19,20]`2`
-                        Value: 2
+                  FunctionBodyNode SourceSection: [9,20]`(yield 1)*2`
+                    ExpressionStatementNode SourceSection: [9,20]`(yield 1)*2`
+                      BinaryArithmeticExpression SourceSection: [9,20]`(yield 1)*2`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __mul__
+                        YieldNode SourceSection: [10,17]`yield 1`
+                          flagSlot: 0
+                          IntegerLiteralNode SourceSection: [16,17]`1`
+                            Value: 1
+                          GeneratorAccessNode SourceSection: None
+                        IntegerLiteralNode SourceSection: [19,20]`2`
+                          Value: 2
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

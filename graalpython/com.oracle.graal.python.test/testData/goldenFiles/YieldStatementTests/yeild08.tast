@@ -36,21 +36,22 @@ ModuleRootNode Name: <module 'yeild08'> SourceSection: [0,22]`def f(): 1 + (yiel
               InnerRootNode SourceSection: [0,22]`def f(): 1 + (yield)...`
                 GeneratorReturnTargetNode SourceSection: [0,22]`def f(): 1 + (yield)...`
                   flagSlot: 1
-                  ExpressionStatementNode SourceSection: [9,22]`1 + (yield)*2`
-                    BinaryArithmeticExpression SourceSection: [9,22]`1 + (yield)*2`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __add__
-                      IntegerLiteralNode SourceSection: [9,10]`1`
-                        Value: 1
-                      BinaryArithmeticExpression SourceSection: [13,22]`(yield)*2`
+                  FunctionBodyNode SourceSection: [9,22]`1 + (yield)*2`
+                    ExpressionStatementNode SourceSection: [9,22]`1 + (yield)*2`
+                      BinaryArithmeticExpression SourceSection: [9,22]`1 + (yield)*2`
                         LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mul__
-                        YieldNode SourceSection: [14,19]`yield`
-                          flagSlot: 0
-                          EmptyNode SourceSection: None
-                          GeneratorAccessNode SourceSection: None
-                        IntegerLiteralNode SourceSection: [21,22]`2`
-                          Value: 2
+                          Op: __add__
+                        IntegerLiteralNode SourceSection: [9,10]`1`
+                          Value: 1
+                        BinaryArithmeticExpression SourceSection: [13,22]`(yield)*2`
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __mul__
+                          YieldNode SourceSection: [14,19]`yield`
+                            flagSlot: 0
+                            EmptyNode SourceSection: None
+                            GeneratorAccessNode SourceSection: None
+                          IntegerLiteralNode SourceSection: [21,22]`2`
+                            Value: 2
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

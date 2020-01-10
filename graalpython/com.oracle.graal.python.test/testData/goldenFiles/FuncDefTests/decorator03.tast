@@ -35,8 +35,9 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                   ReturnTargetNode SourceSection: [24,38]`def fn(): pass`
                     Body: BlockNode SourceSection: None
                       BlockNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [34,38]`pass`
-                        EmptyNode SourceSection: [34,38]`pass`
+                      FunctionBodyNode SourceSection: [34,38]`pass`
+                        ExpressionStatementNode SourceSection: [34,38]`pass`
+                          EmptyNode SourceSection: [34,38]`pass`
                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                       Frame: [0,<return_val>,Illegal]
                       ReadVariableFromFrameNodeGen SourceSection: None

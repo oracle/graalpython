@@ -33,34 +33,35 @@ ModuleRootNode Name: <module 'await03'> SourceSection: [0,39]`async def f():↵ 
                 ReturnTargetNode SourceSection: [6,39]`def f():↵ foo, bar =...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    DestructuringAssignmentNodeGen SourceSection: [16,39]`foo, bar = await smt...`
-                      PythonCallNodeGen SourceSection: [27,39]`await smth()`
-                        CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: smth
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <>temp2
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [2,<>temp2,Illegal]
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <>temp3
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [3,<>temp3,Illegal]
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: foo
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [0,foo,Illegal]
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [2,<>temp2,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: bar
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,bar,Illegal]
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [3,<>temp3,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [16,39]`foo, bar = await smt...`
+                      DestructuringAssignmentNodeGen SourceSection: [16,39]`foo, bar = await smt...`
+                        PythonCallNodeGen SourceSection: [27,39]`await smth()`
+                          CallNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: smth
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <>temp2
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [2,<>temp2,Illegal]
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: <>temp3
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [3,<>temp3,Illegal]
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: foo
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [0,foo,Illegal]
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [2,<>temp2,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        WriteLocalVariableNodeGen SourceSection: None
+                          Identifier: bar
+                          WriteLocalFrameSlotNodeGen SourceSection: None
+                            Frame: [1,bar,Illegal]
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [3,<>temp3,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
