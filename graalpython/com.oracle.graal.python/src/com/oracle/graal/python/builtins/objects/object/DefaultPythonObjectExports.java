@@ -140,7 +140,6 @@ final class DefaultPythonObjectExports {
         }
     }
 
-
     @ExportMessage
     static class IsTrue {
         @Specialization(guards = "lib.isBoolean(receiver)")
@@ -188,8 +187,8 @@ final class DefaultPythonObjectExports {
         }
 
         @Specialization(guards = {
-                            "!lib.isBoolean(receiver)", "!lib.fitsInLong(receiver)",
-                            "!lib.fitsInDouble(receiver)", "!lib.hasArrayElements(receiver)"
+                        "!lib.isBoolean(receiver)", "!lib.fitsInLong(receiver)",
+                        "!lib.fitsInDouble(receiver)", "!lib.hasArrayElements(receiver)"
         })
         static boolean generic(Object receiver,
                         @CachedLibrary("receiver") InteropLibrary lib) {

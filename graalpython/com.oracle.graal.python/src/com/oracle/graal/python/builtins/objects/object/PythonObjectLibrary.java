@@ -323,9 +323,8 @@ public abstract class PythonObjectLibrary extends Library {
 
     /**
      * Checks wether this object should be interpreted as {@code
-     * true}-ish. Mimics the coercion behaviour of {@code PyObject_IsTrue}, and
-     * thus uses both {@code slot_nb_bool} coercion and {@link #length}/{@link
-     * #lengthWithState}.
+     * true}-ish. Mimics the coercion behaviour of {@code PyObject_IsTrue}, and thus uses both
+     * {@code slot_nb_bool} coercion and {@link #length}/{@link #lengthWithState}.
      */
     public boolean isTrueWithState(Object receiver, ThreadState state) {
         if (state == null) {
