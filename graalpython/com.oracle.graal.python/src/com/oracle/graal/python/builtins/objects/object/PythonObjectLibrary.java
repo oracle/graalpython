@@ -342,16 +342,17 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Compare {@code receiver} to {@code other}. If the receiver does not know
-     * how to compare itself to the argument, the comparison is tried in
-     * reverse. This implements {@code PyObject_RichCompareBool} (which calls
-     * {@code do_richcompare}) for the {@code __eq__} operator.
+     * Compare {@code receiver} to {@code other}. If the receiver does not know how to compare
+     * itself to the argument, the comparison is tried in reverse. This implements
+     * {@code PyObject_RichCompareBool} (which calls {@code do_richcompare}) for the {@code __eq__}
+     * operator.
      *
      * Exporters of this library can override this message for performance.
      *
      * @param receiver - the lhs, tried first
      * @param other - the rhs, tried only if lhs does not know how to compare itself here
-     * @param otherLibrary - a PythonObjectLibrary that accepts {@code other}. Used for the reverse dispatch.
+     * @param otherLibrary - a PythonObjectLibrary that accepts {@code other}. Used for the reverse
+     *            dispatch.
      */
     public boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary otherLibrary, ThreadState threadState) {
         if (receiver == other) {

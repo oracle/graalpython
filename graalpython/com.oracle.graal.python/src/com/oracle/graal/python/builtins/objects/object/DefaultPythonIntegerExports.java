@@ -101,32 +101,32 @@ final class DefaultPythonIntegerExports {
     @ExportMessage
     static class EqualsInternal {
         @Specialization
-        static int ib(Integer receiver, boolean other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int ib(Integer receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
             return (receiver == 1 && other || receiver == 0 && !other) ? 1 : 0;
         }
 
         @Specialization
-        static int ii(Integer receiver, int other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int ii(Integer receiver, int other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int il(Integer receiver, long other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int il(Integer receiver, long other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int iI(Integer receiver, PInt other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int iI(Integer receiver, PInt other, @SuppressWarnings("unused") ThreadState threadState) {
             return other.compareTo((int) receiver) == 0 ? 1 : 0;
         }
 
         @Specialization
-        static int id(Integer receiver, double other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int id(Integer receiver, double other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int iF(Integer receiver, PFloat other,  @SuppressWarnings("unused") ThreadState threadState,
+        static int iF(Integer receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
             if (isBuiltinFloat.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
@@ -138,7 +138,7 @@ final class DefaultPythonIntegerExports {
 
         @Fallback
         @SuppressWarnings("unused")
-        static int iO(Integer receiver, Object other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int iO(Integer receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
             return -1;
         }
     }
@@ -148,32 +148,32 @@ final class DefaultPythonIntegerExports {
     @SuppressWarnings("unused")
     static class EqualsWithState {
         @Specialization
-        static boolean ib(Integer receiver, boolean other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean ib(Integer receiver, boolean other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == 1 && other || receiver == 0 && !other;
         }
 
         @Specialization
-        static boolean ii(Integer receiver, int other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean ii(Integer receiver, int other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean il(Integer receiver, long other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean il(Integer receiver, long other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean iI(Integer receiver, PInt other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean iI(Integer receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
             return other.compareTo((int) receiver) == 0;
         }
 
         @Specialization
-        static boolean id(Integer receiver, double other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean id(Integer receiver, double other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean iF(Integer receiver, PFloat other,  PythonObjectLibrary oLib, ThreadState threadState,
+        static boolean iF(Integer receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
                         @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
             if (isBuiltinFloat.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {

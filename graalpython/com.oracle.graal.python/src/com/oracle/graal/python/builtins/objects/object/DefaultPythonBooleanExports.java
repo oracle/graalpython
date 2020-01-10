@@ -101,32 +101,32 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static class EqualsInternal {
         @Specialization
-        static int bb(Boolean receiver, boolean other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int bb(Boolean receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int bi(Boolean receiver, int other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int bi(Boolean receiver, int other, @SuppressWarnings("unused") ThreadState threadState) {
             return (receiver && other == 1 || !receiver && other == 0) ? 1 : 0;
         }
 
         @Specialization
-        static int bl(Boolean receiver, long other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int bl(Boolean receiver, long other, @SuppressWarnings("unused") ThreadState threadState) {
             return (receiver && other == 1 || !receiver && other == 0) ? 1 : 0;
         }
 
         @Specialization
-        static int bI(Boolean receiver, PInt other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int bI(Boolean receiver, PInt other, @SuppressWarnings("unused") ThreadState threadState) {
             return (receiver && other.isOne() || !receiver && other.isZero()) ? 1 : 0;
         }
 
         @Specialization
-        static int bd(Boolean receiver, double other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int bd(Boolean receiver, double other, @SuppressWarnings("unused") ThreadState threadState) {
             return (receiver && other == 1 || receiver && other == 0) ? 1 : 0;
         }
 
         @Specialization
-        static int bF(Boolean receiver, PFloat other,  @SuppressWarnings("unused") ThreadState threadState,
+        static int bF(Boolean receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
             if (isBuiltinFloat.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
@@ -138,7 +138,7 @@ final class DefaultPythonBooleanExports {
 
         @Fallback
         @SuppressWarnings("unused")
-        static int bO(Boolean receiver, Object other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int bO(Boolean receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
             return -1;
         }
     }
@@ -148,33 +148,33 @@ final class DefaultPythonBooleanExports {
     @SuppressWarnings("unused")
     static class EqualsWithState {
         @Specialization
-        static boolean bb(Boolean receiver, boolean other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean bb(Boolean receiver, boolean other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean bi(Boolean receiver, int other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean bi(Boolean receiver, int other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver ? other == 1 : other == 0;
         }
 
         @Specialization
-        static boolean bl(Boolean receiver, long other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean bl(Boolean receiver, long other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver ? other == 1 : other == 0;
         }
 
         @Specialization
-        static boolean bI(Boolean receiver, PInt other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean bI(Boolean receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
             // n.b.: subclassing is ignored in this direction in CPython
             return receiver ? other.isOne() : other.isZero();
         }
 
         @Specialization
-        static boolean bd(Boolean receiver, double other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean bd(Boolean receiver, double other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver ? other == 1 : other == 0;
         }
 
         @Specialization
-        static boolean bF(Boolean receiver, PFloat other,  PythonObjectLibrary oLib, ThreadState threadState,
+        static boolean bF(Boolean receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
                         @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
             if (isBuiltinFloat.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
                 return receiver ? other.getValue() == 1 : other.getValue() == 0;

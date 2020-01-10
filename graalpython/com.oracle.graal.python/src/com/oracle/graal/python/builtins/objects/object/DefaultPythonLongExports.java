@@ -115,32 +115,32 @@ final class DefaultPythonLongExports {
     @ExportMessage
     static class EqualsInternal {
         @Specialization
-        static int lb(Long receiver, boolean other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int lb(Long receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
             return (receiver == 1 && other || receiver == 0 && !other) ? 1 : 0;
         }
 
         @Specialization
-        static int li(Long receiver, int other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int li(Long receiver, int other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int ll(Long receiver, long other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int ll(Long receiver, long other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int lI(Long receiver, PInt other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int lI(Long receiver, PInt other, @SuppressWarnings("unused") ThreadState threadState) {
             return other.compareTo((long) receiver) == 0 ? 1 : 0;
         }
 
         @Specialization
-        static int ld(Long receiver, double other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int ld(Long receiver, double other, @SuppressWarnings("unused") ThreadState threadState) {
             return receiver == other ? 1 : 0;
         }
 
         @Specialization
-        static int lF(Long receiver, PFloat other,  @SuppressWarnings("unused") ThreadState threadState,
+        static int lF(Long receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
             if (isBuiltinFloat.profileIsAnyBuiltinClass(other.getLazyPythonClass())) {
@@ -152,7 +152,7 @@ final class DefaultPythonLongExports {
 
         @Fallback
         @SuppressWarnings("unused")
-        static int lO(Long receiver, Object other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int lO(Long receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
             return -1;
         }
     }
@@ -167,27 +167,27 @@ final class DefaultPythonLongExports {
         }
 
         @Specialization
-        static boolean li(Long receiver, int other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean li(Long receiver, int other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean ll(Long receiver, long other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean ll(Long receiver, long other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean lI(Long receiver, PInt other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean lI(Long receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
             return other.compareTo((long) receiver) == 0;
         }
 
         @Specialization
-        static boolean ld(Long receiver, double other,  PythonObjectLibrary oLib, ThreadState threadState) {
+        static boolean ld(Long receiver, double other, PythonObjectLibrary oLib, ThreadState threadState) {
             return receiver == other;
         }
 
         @Specialization
-        static boolean lF(Long receiver, PFloat other,  PythonObjectLibrary oLib, ThreadState threadState,
+        static boolean lF(Long receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
                         @Shared("isBuiltinFloat") @Cached IsBuiltinClassProfile isBuiltinFloat) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
             if (isBuiltinFloat.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {

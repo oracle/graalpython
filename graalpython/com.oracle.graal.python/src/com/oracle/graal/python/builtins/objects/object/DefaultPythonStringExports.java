@@ -99,13 +99,13 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static class EqualsInternal {
         @Specialization
-        static int ss(String receiver, String other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int ss(String receiver, String other, @SuppressWarnings("unused") ThreadState threadState) {
             return PString.equals(receiver, other) ? 1 : 0;
         }
 
         @Specialization
-        static int sP(String receiver, PString other,  @SuppressWarnings("unused") ThreadState threadState,
-                      @Cached CastToJavaStringNode castNode) {
+        static int sP(String receiver, PString other, @SuppressWarnings("unused") ThreadState threadState,
+                        @Cached CastToJavaStringNode castNode) {
             // n.b.: subclassing is ignored in this direction in CPython
             String otherString = castNode.execute(other);
             if (otherString == null) {
@@ -117,7 +117,7 @@ final class DefaultPythonStringExports {
 
         @Fallback
         @SuppressWarnings("unused")
-        static int iO(String receiver, Object other,  @SuppressWarnings("unused") ThreadState threadState) {
+        static int iO(String receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
             return -1;
         }
     }
