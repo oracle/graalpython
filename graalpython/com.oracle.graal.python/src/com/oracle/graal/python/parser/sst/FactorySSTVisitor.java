@@ -740,7 +740,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 StatementNode[] st = ((BaseBlockNode) body).getStatements();
                 if (st.length == 1) {
                     functionBody = FunctionBodyNode.create();
-                    functionBody.assignSourceSection(source.createUnavailableSection());
+                    functionBody.assignSourceSection(createSourceSection(node.endOffset - 1, node.endOffset));
                 } else {
                     if (st.length == 2) {
                         functionBody = FunctionBodyNode.create(st[1]);
@@ -760,11 +760,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 }
             } else {
                 functionBody = FunctionBodyNode.create();
-                functionBody.assignSourceSection(createSourceSection(node.endOffset, node.endOffset));
+                functionBody.assignSourceSection(createSourceSection(node.endOffset - 1, node.endOffset));
             }
         } else {
             functionBody = createFunctionBody(body);
-            functionBody.assignSourceSection(source.createUnavailableSection());
+            functionBody.assignSourceSection(createSourceSection(node.body.startOffset, node.body.endOffset));
         }
 
         body = functionBody;

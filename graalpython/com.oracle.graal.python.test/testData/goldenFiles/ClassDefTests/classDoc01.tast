@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():â†
                                     ReturnTargetNode SourceSection: [38,76]`def method():â†µ      ...`
                                       Body: BlockNode SourceSection: None
                                         BlockNode SourceSection: None
-                                        FunctionBodyNode SourceSection: [0,0]Empty
+                                        FunctionBodyNode SourceSection: [75,76]`"`
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [1,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None

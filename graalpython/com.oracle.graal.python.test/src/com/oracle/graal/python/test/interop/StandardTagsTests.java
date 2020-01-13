@@ -73,37 +73,54 @@ public class StandardTagsTests extends PythonTests {
 
     @Test
     public void testRootBodyTagModule() throws Exception {
-        String code = "import time\n" + "time.gmtime()\n";
+        String code = "import time\n" +
+                        "time.gmtime()\n";
         checkRootTagAndRootBodyTag(code);
     }
 
     @Test
     public void testRootBodyTagGenerator01() throws Exception {
-        String code = "def test():\n" + "  yield 22\n" + "for i in test():\n" + "  i\n";
+        String code = "def test():\n" +
+                        "  yield 22\n" +
+                        "for i in test():\n" +
+                        "  i\n";
         checkRootTagAndRootBodyTag(code);
     }
 
     @Test
     public void testRootBodyTagGenerator02() throws Exception {
-        String code = "def test():\n" + "  yield 22\n" + "  yield 42\n" + "  yield 62\n" + "for i in test():\n" + "  i\n";
+        String code = "def test():\n" +
+                        "  yield 22\n" +
+                        "  yield 42\n" +
+                        "  yield 62\n" +
+                        "for i in test():\n" +
+                        "  i\n";
         checkRootTagAndRootBodyTag(code);
     }
 
     @Test
     public void testRootBodyTagGenerator03() throws Exception {
-        String code = "def fn(a, b):\n" + "  yield a\n" + "  yield b\n" + "for i in fn(3,4):\n" + "  i\n";
+        String code = "def fn(a, b):\n" +
+                        "  yield a\n" +
+                        "  yield b\n" +
+                        "for i in fn(3,4):\n" +
+                        "  i\n";
         checkRootTagAndRootBodyTag(code);
     }
 
     @Test
     public void testRootBodyTagFunction01() throws Exception {
-        String code = "def test():\n" + "  return 22\n" + "test()";
+        String code = "def test():\n" +
+                        "  return 22\n" +
+                        "test()";
         checkRootTagAndRootBodyTag(code);
     }
 
     @Test
     public void testRootBodyTagFunction02() throws Exception {
-        String code = "def test(a,b):\n" + "  return a + b\n" + "test(1, 2)";
+        String code = "def test(a,b):\n" +
+                        "  return a + b\n" +
+                        "test(1, 2)";
         HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code);
         InnerRootNode inner = findInnerRootNodeWithEndOffset(rootsMap, 30);
         checkBodyPosition(rootsMap, inner, 17, 29);
@@ -111,7 +128,10 @@ public class StandardTagsTests extends PythonTests {
 
     @Test
     public void testRootBodyTagFunction03() throws Exception {
-        String code = "def test(a,b):\n" + "  '''This is a simple doc'''\n" + "  return a + b\n" + "test(1, 2)";
+        String code = "def test(a,b):\n" +
+                        "  '''This is a simple doc'''\n" +
+                        "  return a + b\n" +
+                        "test(1, 2)";
         HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code);
         InnerRootNode inner = findInnerRootNodeWithEndOffset(rootsMap, 59);
         checkBodyPosition(rootsMap, inner, 46, 58);
@@ -119,21 +139,39 @@ public class StandardTagsTests extends PythonTests {
 
     @Test
     public void testRootBodyTagFunction04() throws Exception {
-        String code = "def test():\n" + "  '''Function without body'''\n" + "test()";
-        HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code, true);
+        String code = "def test():\n" +
+                        "  '''Function without body'''\n" +
+                        "test()";
+        HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code);
         InnerRootNode inner = findInnerRootNodeWithEndOffset(rootsMap, 42);
-        Assert.assertEquals(null, rootsMap.get(inner));
+        checkBodyPosition(rootsMap, inner, 41, 42);
+    }
+
+    @Test
+    public void testRootBodyTagFunction05() throws Exception {
+        String code = "def fn():\n" +
+                        "  try:\n" +
+                        "    pass\n" +
+                        "  except ValueError as va:\n" +
+                        "    pass\n" +
+                        "fn()";
+        HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code);
+        InnerRootNode inner = findInnerRootNodeWithEndOffset(rootsMap, 62);
+        checkBodyPosition(rootsMap, inner, 12, 62);
     }
 
     @Test
     public void testRootBodyTagLambda01() throws Exception {
-        String code = "x = lambda a, b, c : a + b + c\n" + "x(5, 6, 2)";
+        String code = "x = lambda a, b, c : a + b + c\n" +
+                        "x(5, 6, 2)";
         checkRootTagAndRootBodyTag(code);
     }
 
     @Test
     public void testRootBodyTagClass01() throws Exception {
-        String code = "class MyClass:\n" + "  x = 5\n" + "m = MyClass()\n";
+        String code = "class MyClass:\n" +
+                        "  x = 5\n" +
+                        "m = MyClass()\n";
         HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code);
         InnerRootNode inner = findInnerRootNodeWithEndOffset(rootsMap, 23);
         checkBodyPosition(rootsMap, inner, 17, 22);
@@ -141,7 +179,9 @@ public class StandardTagsTests extends PythonTests {
 
     @Test
     public void testRootBodyTagClass02() throws Exception {
-        String code = "class MyClass:\n" + "  '''This is a simple test class'''\n" + "  x = 5\n" + "m = MyClass()\n";
+        String code = "class MyClass:\n" +
+                        "  '''This is a simple test class'''\n" +
+                        "  x = 5\n" + "m = MyClass()\n";
         HashMap<InstrumentableNode, InstrumentableNode> rootsMap = checkRootTagAndRootBodyTag(code);
         InnerRootNode inner = findInnerRootNodeWithEndOffset(rootsMap, 59);
         checkBodyPosition(rootsMap, inner, 53, 58);
@@ -149,10 +189,6 @@ public class StandardTagsTests extends PythonTests {
     }
 
     private HashMap<InstrumentableNode, InstrumentableNode> checkRootTagAndRootBodyTag(String code) throws Exception {
-        return checkRootTagAndRootBodyTag(code, false);
-    }
-
-    private HashMap<InstrumentableNode, InstrumentableNode> checkRootTagAndRootBodyTag(String code, boolean possibleEmptyRootTag) throws Exception {
         Engine engine = Engine.newBuilder().build();
         Context newContext = newContext(engine);
         newContext.initialize("python");
@@ -166,10 +202,8 @@ public class StandardTagsTests extends PythonTests {
 
         newContext.eval(source);
 
-        if (!possibleEmptyRootTag) {
-            for (InstrumentableNode rootBodyTag : rootsMap.values()) {
-                assertTrue("There is a RootTag node without RootBodyTag node", rootBodyTag != null);
-            }
+        for (InstrumentableNode rootBodyTag : rootsMap.values()) {
+            assertTrue("There is a RootTag node without RootBodyTag node", rootBodyTag != null);
         }
         return rootsMap;
     }
