@@ -370,7 +370,7 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(1, frame.getSourceSection().getStartLine());
-                event.prepareStepOver(7);
+                event.prepareStepOver(2);
             });
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
