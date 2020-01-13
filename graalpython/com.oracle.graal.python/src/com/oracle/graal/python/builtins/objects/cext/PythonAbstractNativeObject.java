@@ -49,11 +49,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ImportCAPISymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -244,16 +244,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"})
         public static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
-                        @Exclusive @Cached ToJavaNode toJavaNode) {
+                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
             // do not convert wrap 'object.object' since that is really the native pointer
             // object
             return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
         }
 
         public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
-            // do not convert wrap 'object.object' since that is really the native pointer
-            // object
-            return getNativeClass(object, PCallCapiFunction.getUncached(), ToJavaNodeGen.getUncached());
+            // do not wrap 'object.object' since that is really the native pointer object
+            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNode.getUncached());
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -61,12 +62,17 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallArgsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
@@ -930,17 +936,24 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    public abstract static class AllToSulongNode extends PNodeWithContext {
+    public abstract static class ConvertArgsToSulongNode extends PNodeWithContext {
+
         public abstract void executeInto(Object[] args, int argsOffset, Object[] dest, int destOffset);
 
-        protected boolean isArgsOffsetPlus(int len, int off, int plus) {
+        protected static boolean isArgsOffsetPlus(int len, int off, int plus) {
             return len == off + plus;
         }
 
-        protected boolean isLeArgsOffsetPlus(int len, int off, int plus) {
+        protected static boolean isLeArgsOffsetPlus(int len, int off, int plus) {
             return len < plus + off;
         }
 
+    }
+
+    /**
+     * Converts all arguments to native values.
+     */
+    public abstract static class AllToSulongNode extends ConvertArgsToSulongNode {
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == argsOffset"})
         void cached0(Object[] args, int argsOffset, Object[] dest, int destOffset) {
@@ -1038,6 +1051,135 @@ public abstract class CExtNodes {
 
         public static DirectUpcallNode create() {
             return DirectUpcallNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (PyObject* self) and the 2nd (PyObject* const* args) argument to native
+     * values as required for {@code METH_FASTCALL}.<br/>
+     * Signature:
+     * {@code PyObject* meth_fastcall(PyObject* self, PyObject* const* args, Py_ssize_t nargs)}
+     */
+    public abstract static class FastCallArgsToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, "invalid arguments for fastcall method (expected 3 but got %s)", args.length - argsOffset);
+        }
+
+        public static FastCallArgsToSulongNode create() {
+            return FastCallArgsToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts for native signature:
+     * {@code PyObject* meth_fastcallWithKeywords(PyObject* self, PyObject* const* args, Py_ssize_t nargs, PyObject* kwnames)}
+     */
+    public abstract static class FastCallWithKeywordsArgsToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 4)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode4) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
+            dest[destOffset + 2] = args[argsOffset + 2];
+            dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 4)"})
+        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, "invalid arguments for fastcall_with_keywords method (expected 4 but got %s)", args.length - argsOffset);
+        }
+
+        public static FastCallWithKeywordsArgsToSulongNode create() {
+            return FastCallWithKeywordsArgsToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st argument as required for {@code allocfunc}, {@code getattrfunc}, and
+     * {@code ssizeargfunc}.
+     */
+    public abstract static class BinaryFirstToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 2)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 2)"})
+        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, "invalid arguments for allocfunc (expected 2 but got %s)", args.length - argsOffset);
+        }
+
+        public static BinaryFirstToSulongNode create() {
+            return BinaryFirstToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (self/class) and the 3rd argument as required for {@code setattrfunc},
+     * {@code ssizeobjargproc}.
+     */
+    public abstract static class TernaryFirstThirdToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode3) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
+        }
+
+        public static TernaryFirstThirdToSulongNode create() {
+            return TernaryFirstThirdToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (self/class) and the 2rd argument as required for {@code richcmpfunc}.
+     */
+    public abstract static class TernaryFirstSecondToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode2) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+
+        @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
+        }
+
+        public static TernaryFirstSecondToSulongNode create() {
+            return TernaryFirstSecondToSulongNodeGen.create();
         }
     }
 
@@ -2160,11 +2302,11 @@ public abstract class CExtNodes {
                 // the info on the next call
                 flag[0] = ConditionProfile.createBinaryProfile();
                 if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
                 }
             }
             if (flag[0].profile(ref == null)) {
-                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(null, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }
             transformToNative(context, ref, e);
         }
@@ -2176,7 +2318,7 @@ public abstract class CExtNodes {
             if (frame == null) {
                 ref = context.peekTopFrameInfo();
                 if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCallerFrame(ref, FrameInstance.FrameAccess.READ_ONLY, true, 0));
+                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
                 }
             } else {
                 ref = PArguments.getCurrentFrameInfo(frame);

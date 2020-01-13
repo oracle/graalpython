@@ -109,6 +109,7 @@ double polyglot_ensure_double(void *obj) {
 }
 
 /* upcall functions for calling into Python */
+void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
@@ -134,7 +135,7 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_D(__recv__, __name__, ...) (polyglot_ensure_double(PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
-#define UPCALL_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__)))
+#define UPCALL_PTR(__recv__, __name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
@@ -190,8 +191,9 @@ extern cache_t cache;
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
 Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
 
+
 __attribute__((always_inline))
-inline void* native_to_java(PyObject* obj) {
+inline void* native_to_java(void* obj) {
     if (obj == NULL) {
         return Py_NoValue;
     } else if (obj == Py_None) {
@@ -203,6 +205,9 @@ inline void* native_to_java(PyObject* obj) {
     }
     return obj;
 }
+
+
+extern void* native_to_java_exported(PyObject* obj);
 
 __attribute__((always_inline))
 inline void* native_to_java_slim(PyObject* obj) {
@@ -229,50 +234,47 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-// prototype of C landing function
-void* wrap_direct(PyCFunction fun, ...);
-int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure);
-void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
-void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
-void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *  self, PyObject   **args, PyObject  *nargs);
-void* wrap_fastcall_with_keywords(_PyCFunctionFastWithKeywords fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
-void* wrap_unsupported(void *fun, ...);
+#define JWRAPPER_DIRECT                      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_DIRECT"))
+#define JWRAPPER_FASTCALL                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL"))
+#define JWRAPPER_FASTCALL_WITH_KEYWORDS      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_FASTCALL_WITH_KEYWORDS"))
+#define JWRAPPER_KEYWORDS                    (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_KEYWORDS"))
+#define JWRAPPER_VARARGS                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_VARARGS"))
+#define JWRAPPER_NOARGS                      (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NOARGS"))
+#define JWRAPPER_O                           (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_O"))
+#define JWRAPPER_UNSUPPORTED                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED"))
+#define JWRAPPER_ALLOC                       (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_ALLOC"))
+#define JWRAPPER_SSIZE_ARG                   JWRAPPER_ALLOC
+#define JWRAPPER_GETATTR                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GETATTR"))
+#define JWRAPPER_SETATTR                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SETATTR"))
+#define JWRAPPER_RICHCMP                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_RICHCMP"))
+#define JWRAPPER_SSIZE_OBJ_ARG               (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
+#define JWRAPPER_REVERSE                     (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE"))
+#define JWRAPPER_POW                         (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_POW"))
+#define JWRAPPER_REVERSE_POW                 (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_REVERSE_POW"))
+#define JWRAPPER_LT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LT"))
+#define JWRAPPER_LE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_LE"))
+#define JWRAPPER_EQ                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_EQ"))
+#define JWRAPPER_NE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_NE"))
+#define JWRAPPER_GT                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GT"))
+#define JWRAPPER_GE                          (polyglot_invoke(PY_TRUFFLE_CEXT, "METH_GE"))
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \
     (((flags) < 0) ?                                                                     \
-     polyglot_get_member(PY_TRUFFLE_CEXT, "METH_DIRECT") :                               \
+     JWRAPPER_DIRECT :                                                                   \
      ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
-      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL_WITH_KEYWORDS") :              \
+      JWRAPPER_FASTCALL_WITH_KEYWORDS :                                                  \
      (((flags) & METH_FASTCALL) ?                                                        \
-      polyglot_get_member(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                            \
+      JWRAPPER_FASTCALL :                                                                \
       (((flags) & METH_KEYWORDS) ?                                                       \
-       polyglot_get_member(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                           \
+       JWRAPPER_KEYWORDS :                                                               \
        (((flags) & METH_VARARGS) ?                                                       \
-        polyglot_get_member(PY_TRUFFLE_CEXT, "METH_VARARGS") :                           \
+        JWRAPPER_VARARGS :                                                               \
         (((flags) & METH_NOARGS) ?                                                       \
-         polyglot_get_member(PY_TRUFFLE_CEXT, "METH_NOARGS") :                           \
+         JWRAPPER_NOARGS :                                                               \
          (((flags) & METH_O) ?                                                           \
-          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_O") :                               \
-          polyglot_get_member(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED"))))))))
-
-#define get_method_flags_cwrapper(flags)                                                 \
-    (void*)((((flags) < 0) ?                                                             \
-     wrap_direct :                                                                       \
-     ((((flags) & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS)) ? \
-      wrap_fastcall_with_keywords :                                                      \
-      (((flags) & METH_FASTCALL) ?                                                       \
-       wrap_fastcall :                                                                   \
-       (((flags) & METH_KEYWORDS) ?                                                      \
-        wrap_keywords :                                                                  \
-        (((flags) & METH_VARARGS) ?                                                      \
-         wrap_varargs :                                                                  \
-         (((flags) & METH_NOARGS) ?                                                      \
-          wrap_noargs :                                                                  \
-          (((flags) & METH_O) ?                                                          \
-           wrap_direct :                                                                 \
-           wrap_unsupported))))))))
+          JWRAPPER_O :                                                                   \
+          JWRAPPER_UNSUPPORTED)))))))
 
 #define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\

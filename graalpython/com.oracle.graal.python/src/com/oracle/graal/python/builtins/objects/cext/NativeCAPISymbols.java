@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,6 +87,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_TUPLE_GET_ITEM = "PyTruffle_Tuple_GetItem";
     public static final String FUN_PY_TRUFFLE_OBJECT_SIZE = "PyTruffle_Object_Size";
     public static final String FUN_PY_TYPE_READY = "PyType_Ready";
+    public static final String FUN_GET_NEWFUNC_TYPE_ID = "get_newfunc_typeid";
     public static final String FUN_GET_BUFFER_R = "get_buffer_r";
     public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
     public static final String FUN_ALLOCATE_OUTVAR = "allocate_outvar";

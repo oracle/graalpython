@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CallTargetInvokeNode extends DirectInvokeNode {
@@ -94,6 +95,10 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     public static CallTargetInvokeNode create(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
         return CallTargetInvokeNodeGen.create(callTarget, isBuiltin, isGenerator);
+    }
+
+    public final Object execute(VirtualFrame frame, Object[] arguments) {
+        return execute(frame, null, null, arguments);
     }
 
     public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments);
@@ -134,5 +139,9 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     public final CallTarget getCallTarget() {
         return callNode.getCallTarget();
+    }
+
+    public final RootNode getCurrentRootNode() {
+        return callNode.getCurrentRootNode();
     }
 }

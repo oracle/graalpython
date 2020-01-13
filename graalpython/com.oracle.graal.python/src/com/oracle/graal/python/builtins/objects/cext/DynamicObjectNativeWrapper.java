@@ -415,8 +415,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonManagedClass object, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode) {
-            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, __NEW__));
+                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
+                        @Cached PCallCapiFunction callGetNewfuncTypeidNode) {
+            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, __NEW__), callGetNewfuncTypeidNode.call(NativeCAPISymbols.FUN_GET_NEWFUNC_TYPE_ID));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
@@ -444,7 +445,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (val == PNone.NO_VALUE) {
                 return 0L;
             }
-            return val != PNone.NO_VALUE ? lib.asSize(val) : 0L;
+            return lib.asSize(val);
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")

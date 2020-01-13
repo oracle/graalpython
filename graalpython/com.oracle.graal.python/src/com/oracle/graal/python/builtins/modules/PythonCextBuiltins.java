@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,14 +61,30 @@ import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.ExternalFunctionNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallRoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethFastcallWithKeywordsRoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethPowRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethRPowRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethReverseRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethRichcmpOpRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFuncRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ExternalFunctionNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -80,7 +96,13 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
@@ -89,6 +111,8 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
@@ -99,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -119,6 +144,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -134,6 +161,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -147,16 +175,11 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
-import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
@@ -165,7 +188,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -179,14 +201,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -195,12 +214,11 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -218,13 +236,11 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
@@ -409,36 +425,53 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
         private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
-        @Specialization(guards = "isNoValue(cwrapper)")
+        @Specialization(limit = "3")
+        Object doPythonCallable(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") Object wrapper,
+                        @SuppressWarnings("unused") LazyPythonClass type,
+                        @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+            // This can happen if a native type inherits slots from a managed type. Therefore,
+            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
+            // case, we assume that the object is already callable.
+            return nativeWrapperLibrary.getDelegate(callable);
+        }
+
+        @Specialization(guards = "!isNativeWrapper(callable)")
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, LazyPythonClass type,
+        PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, LazyPythonClass type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable, SIGNATURE));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(lang, name, callable, wrapper.createConvertArgsToSulongNode()));
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, callTarget);
+            return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
+        }
+
+        @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
+        PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, PExternalFunctionWrapper wrapper, @SuppressWarnings("unused") PNone type,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return doNativeCallableWithType(name, callable, wrapper, null, lang);
+        }
+
+        @Specialization(guards = {"isNoValue(wrapper)", "!isNativeWrapper(callable)"})
+        @TruffleBoundary
+        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, LazyPythonClass type, @SuppressWarnings("unused") PNone wrapper,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(createExternalFunctionRootNode(lang, name, callable, AllToSulongNode.create()));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
-        @Specialization(guards = {"isNoValue(cwrapper)", "isNoValue(type)"})
+        @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type,
+        PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, null, callable, SIGNATURE));
-            return factory().createBuiltinFunction(name, null, 0, callTarget);
+            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang);
         }
 
-        @Specialization(guards = {"!isNoValue(cwrapper)", "isNoValue(type)"})
-        @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable, SIGNATURE));
-            return factory().createBuiltinFunction(name, null, 0, callTarget);
+        static boolean isNativeWrapper(Object obj) {
+            return obj instanceof PythonNativeWrapper;
         }
 
-        @Specialization(guards = "!isNoValue(cwrapper)")
-        @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, LazyPythonClass type,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(ExternalFunctionNode.create(lang, name, cwrapper, callable, SIGNATURE));
-            return factory().createBuiltinFunction(name, type, 0, callTarget);
+        private static ExternalFunctionNode createExternalFunctionRootNode(PythonLanguage lang, String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {
+            return ExternalFunctionNode.create(lang, name, callable, SIGNATURE, convertArgsNode);
         }
     }
 
@@ -692,7 +725,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, context, raise, factory);
+            checkFunctionResult(name, false, false, context, raise, factory);
             return result;
         }
 
@@ -701,7 +734,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, context, raise, factory);
+            checkFunctionResult(name, true, false, context, raise, factory);
             return PNone.NO_VALUE;
         }
 
@@ -710,7 +743,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, context, raise, factory);
+            checkFunctionResult(name, false, false, context, raise, factory);
             return result;
         }
 
@@ -719,7 +752,29 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, context, raise, factory);
+            checkFunctionResult(name, true, false, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        int doInteger(String name, int result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            // If the native functions returns a primitive int, only a value '-1' indicates an
+            // error.
+            checkFunctionResult(name, result == -1, true, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        long doLong(String name, long result,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            // If the native functions returns a primitive int, only a value '-1' indicates an
+            // error.
+            checkFunctionResult(name, result == -1, true, context, raise, factory);
             return result;
         }
 
@@ -736,17 +791,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), context, raise, factory);
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, context, raise, factory);
             return result;
         }
 
-        private void checkFunctionResult(String name, boolean isNull, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
+        private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
-            if (isNull) {
+            if (indicatesError) {
                 // consume exception
                 context.setCurrentException(null);
-                if (!errOccurred) {
+                if (!errOccurred && !isPrimitiveResult) {
                     throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     throw currentException;
@@ -772,128 +827,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         public static CheckFunctionResultNode create() {
             return CheckFunctionResultNodeGen.create();
-        }
-    }
-
-    abstract static class ExternalFunctionNode extends PRootNode implements IndirectCallNode {
-        private final Signature signature;
-        private final TruffleObject cwrapper;
-        private final TruffleObject callable;
-        private final String name;
-        @Child private CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
-        @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
-        @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private InteropLibrary lib;
-        @Child private CalleeContext calleeContext = CalleeContext.create();
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return nativeCodeDoesntNeedExceptionState;
-        }
-
-        @Override
-        public Node copy() {
-            ExternalFunctionNode node = (ExternalFunctionNode) super.copy();
-            node.nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            node.nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            return node;
-        }
-
-        ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
-            super(lang);
-            this.signature = signature;
-            this.name = name;
-            this.cwrapper = cwrapper;
-            this.callable = callable;
-            this.lib = InteropLibrary.getFactory().create(cwrapper != null ? cwrapper : callable);
-        }
-
-        public TruffleObject getCallable() {
-            return callable;
-        }
-
-        @Specialization
-        Object doIt(VirtualFrame frame,
-                        @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached PRaiseNode raiseNode) {
-            CalleeContext.enter(frame, customLocalsProfile);
-
-            Object[] frameArgs = PArguments.getVariableArguments(frame);
-            TruffleObject fun;
-            Object[] arguments;
-
-            if (cwrapper != null) {
-                fun = cwrapper;
-                arguments = new Object[1 + frameArgs.length];
-                arguments[0] = callable;
-                toSulongNode.executeInto(frameArgs, 0, arguments, 1);
-            } else {
-                fun = callable;
-                arguments = new Object[frameArgs.length];
-                toSulongNode.executeInto(frameArgs, 0, arguments, 0);
-            }
-            // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
-            // it to the context since we cannot propagate it through the native frames.
-            Object state = ForeignCallContext.enter(frame, ctx, this);
-
-            try {
-                return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(fun, arguments))));
-            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
-            } catch (ArityException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
-            } finally {
-                // special case after calling a C function: transfer caught exception back to frame
-                // to simulate the global state semantics
-                PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, state);
-                calleeContext.exit(frame, this);
-            }
-        }
-
-        private Object fromNative(Object result) {
-            return fromForeign.executeConvert(result);
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public String toString() {
-            return "<external function root " + name + ">";
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return signature;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            // everything that is implemented in C is internal
-            return true;
-        }
-
-        public static ExternalFunctionNode create(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable, Signature signature) {
-            return ExternalFunctionNodeGen.create(lang, name, cwrapper, callable, signature);
         }
     }
 
@@ -1497,298 +1430,323 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class MethodDescriptorRoot extends PRootNode {
-        @Child protected FunctionInvokeNode invokeNode;
-        @Child protected ReadIndexedArgumentNode readSelfNode;
-        @Child private CalleeContext calleeContext = CalleeContext.create();
+    public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
 
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
-        protected final PythonObjectFactory factory;
+        private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
 
-        @TruffleBoundary
-        protected MethodDescriptorRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction builtinFunction) {
-            super(language);
-            this.factory = factory;
-            this.readSelfNode = ReadIndexedArgumentNode.create(0);
-            assert builtinFunction.getCallTarget().getRootNode() instanceof ExternalFunctionNode;
-            this.invokeNode = FunctionInvokeNode.create(builtinFunction);
+        public PExternalFunctionWrapper(LazyPythonClass cls, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+            super(cls);
+            this.convertArgsNodeSupplier = convertArgsNodeSupplier;
         }
 
-        @Override
-        public boolean isCloningAllowed() {
-            return true;
+        protected abstract RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget);
+
+        protected static RootCallTarget createCallTarget(RootNode n) {
+            return Truffle.getRuntime().createCallTarget(n);
         }
 
-        @Override
-        public String getName() {
-            return invokeNode.getCurrentRootNode().getName();
-        }
-
-        @Override
-        public String toString() {
-            return "<METH root " + invokeNode.getCurrentRootNode().getName() + ">";
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
-        }
-
-        protected final void enterCalleeContext(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
-        }
-
-        protected final void exitCalleeContext(VirtualFrame frame) {
-            calleeContext.exit(frame, this);
+        protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
+            return convertArgsNodeSupplier.get();
         }
     }
 
-    static class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
-        @Child private ReadVarArgsNode readVarargsNode;
-        @Child private ReadVarKeywordsNode readKwargsNode;
-
-        protected MethKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
-            super(language, factory, callTarget);
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            enterCalleeContext(frame);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), factory.createDict(kwargs));
-                return invokeNode.execute(frame, arguments);
-            } finally {
-                exitCalleeContext(frame);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-    }
-
-    static class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
-        @Child private ReadVarArgsNode readVarargsNode;
-
-        protected MethVarargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
-            super(language, factory, callTarget);
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            enterCalleeContext(frame);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args));
-                return invokeNode.execute(frame, arguments);
-            } finally {
-                exitCalleeContext(frame);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-    }
-
-    static class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
-
-        protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
-            super(language, factory, callTarget);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            enterCalleeContext(frame);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, PNone.NONE);
-                return invokeNode.execute(frame, arguments);
-            } finally {
-                exitCalleeContext(frame);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-    }
-
-    static class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
-        @Child private ReadIndexedArgumentNode readArgNode;
-
-        protected MethORoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
-            super(language, factory, callTarget);
-            this.readArgNode = ReadIndexedArgumentNode.create(1);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            enterCalleeContext(frame);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object arg = readArgNode.execute(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, arg);
-                return invokeNode.execute(frame, arguments);
-            } finally {
-                exitCalleeContext(frame);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-    }
-
-    static class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
-        @Child private ReadVarArgsNode readVarargsNode;
-
-        protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction callTarget) {
-            super(language, factory, callTarget);
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            enterCalleeContext(frame);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length);
-                return invokeNode.execute(frame, arguments);
-            } finally {
-                exitCalleeContext(frame);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-    }
-
-    static class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
-        @Child private ReadVarArgsNode readVarargsNode;
-        @Child private ReadVarKeywordsNode readKwargsNode;
-
-        protected MethFastcallWithKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, PBuiltinFunction fun) {
-            super(language, factory, fun);
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            enterCalleeContext(frame);
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
-                Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
-                return invokeNode.execute(frame, arguments);
-            } finally {
-                exitCalleeContext(frame);
-            }
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-    }
-
-    @Builtin(name = "METH_KEYWORDS", minNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_DIRECT", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
+    public abstract static class MethDirectNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PBuiltinFunction function,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(lang, factory(), function)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return callTarget;
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_VARARGS", minNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_KEYWORDS", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
+    public abstract static class MethKeywordsNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PBuiltinFunction function,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(lang, factory(), function)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethKeywordsRoot(language, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_NOARGS", minNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_VARARGS", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
+    public abstract static class MethVarargsNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PBuiltinFunction function,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(lang, factory(), function)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethVarargsRoot(language, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_O", minNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_NOARGS", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethONode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
+    public abstract static class MethNoargsNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PBuiltinFunction function,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethORoot(lang, factory(), function)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethNoargsRoot(language, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_FASTCALL", minNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_O", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
+    public abstract static class MethONode extends PythonBuiltinNode {
         @Specialization
-        Object call(PBuiltinFunction function,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(lang, factory(), function)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethORoot(language, callTarget));
+                }
+            };
         }
     }
 
-    @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS", minNumOfPositionalArgs = 1)
+    @Builtin(name = "METH_FASTCALL", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class MethFastcallWithKeywordsNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
+    public abstract static class MethFastcallNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PBuiltinFunction function,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), 0,
-                            Truffle.getRuntime().createCallTarget(new MethFastcallWithKeywordsRoot(lang, factory(), function)));
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallArgsToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethFastcallRoot(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_FASTCALL_WITH_KEYWORDS", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethFastcallWithKeywordsNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, FastCallWithKeywordsArgsToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_ALLOC", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethAllocNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new AllocFuncRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_GETATTR", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethGetattrNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, BinaryFirstToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new GetAttrFuncRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_SETATTR", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethSetattrNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new SetAttrFuncRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_RICHCMP", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethRichcmpNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new RichCmpFuncRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_SSIZE_OBJ_ARG", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethSSizeObjArgNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstThirdToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new SSizeObjArgProcRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_REVERSE", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethReverseNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethReverseRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_POW", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethPowNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethPowRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_REVERSE_POW", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethRPowNode extends PythonBuiltinNode {
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, AllToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethRPowRootNode(language, callTarget));
+                }
+            };
+        }
+    }
+
+    abstract static class MethRichcmpOpBaseNode extends PythonBuiltinNode {
+        // op codes for binary comparisons (defined in 'object.h')
+        static final int PY_LT = 0;
+        static final int PY_LE = 1;
+        static final int PY_EQ = 2;
+        static final int PY_NE = 3;
+        static final int PY_GT = 4;
+        static final int PY_GE = 5;
+
+        private final int op;
+
+        MethRichcmpOpBaseNode(int op) {
+            this.op = op;
+        }
+
+        @Specialization
+        PExternalFunctionWrapper call() {
+            return new PExternalFunctionWrapper(PythonBuiltinClassType.PythonObject, TernaryFirstSecondToSulongNode::create) {
+
+                @Override
+                protected RootCallTarget createCallTarget(PythonLanguage language, RootCallTarget callTarget) {
+                    return createCallTarget(new MethRichcmpOpRootNode(language, callTarget, op));
+                }
+            };
+        }
+    }
+
+    @Builtin(name = "METH_LT", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethLtNode extends MethRichcmpOpBaseNode {
+        protected MethLtNode() {
+            super(PY_LT);
+        }
+    }
+
+    @Builtin(name = "METH_LE", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethLeNode extends MethRichcmpOpBaseNode {
+        protected MethLeNode() {
+            super(PY_LE);
+        }
+    }
+
+    @Builtin(name = "METH_EQ", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethEqNode extends MethRichcmpOpBaseNode {
+        protected MethEqNode() {
+            super(PY_EQ);
+        }
+    }
+
+    @Builtin(name = "METH_NE", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethNeNode extends MethRichcmpOpBaseNode {
+        protected MethNeNode() {
+            super(PY_NE);
+        }
+    }
+
+    @Builtin(name = "METH_GT", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethGtNode extends MethRichcmpOpBaseNode {
+        protected MethGtNode() {
+            super(PY_GT);
+        }
+    }
+
+    @Builtin(name = "METH_GE", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class MethGeNode extends MethRichcmpOpBaseNode {
+        protected MethGeNode() {
+            super(PY_GE);
         }
     }
 
@@ -2111,6 +2069,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object createCache(TruffleObject ptrToResolveHandle) {
             return new HandleCache(ptrToResolveHandle);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Decorate_Function", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleDecorateFunction extends PythonBinaryBuiltinNode {
+        @Specialization
+        PyCFunctionDecorator decorate(Object fun0, Object fun1) {
+            return new PyCFunctionDecorator(fun0, fun1);
         }
     }
 
@@ -2697,6 +2664,50 @@ public class PythonCextBuiltins extends PythonBuiltins {
             CharsetDecoder decoder = Charset.forName(encoding).newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
             return decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
+        }
+    }
+
+    @Builtin(name = "PyObject_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class PyObject_Size extends PythonUnaryBuiltinNode {
+
+        // n.b.: specializations 'doSequence' and 'doMapping' are not just shortcuts but also
+        // required for correctness because CPython's implementation uses
+        // 'type->tp_as_sequence->sq_length', 'type->tp_as_mapping->mp_length' which will bypass any
+        // user implementation of '__len__'.
+        @Specialization
+        static int doSequence(PSequence sequence,
+                        @Cached SequenceNodes.LenNode seqLenNode) {
+            return seqLenNode.execute(sequence);
+        }
+
+        @Specialization
+        static int doMapping(PHashingCollection container,
+                        @Cached HashingCollectionNodes.LenNode seqLenNode) {
+            return seqLenNode.execute(container);
+        }
+
+        @Specialization(guards = "!isMappingOrSequence(obj)")
+        static long doGenericUnboxed(VirtualFrame frame, Object obj,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode,
+                        @Cached("createBinaryProfile()") ConditionProfile noLenProfile,
+                        @Cached CastToNativeLongNode castToLongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object result = callLenNode.executeObject(frame, obj);
+                if (noLenProfile.profile(result == PNone.NO_VALUE)) {
+                    return -1;
+                }
+                return castToLongNode.execute(result);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        protected static boolean isMappingOrSequence(Object obj) {
+            return obj instanceof PSequence || obj instanceof PHashingCollection;
         }
     }
 

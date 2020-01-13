@@ -902,13 +902,8 @@ def PyStructSequence_InitType2(tp_name, type_doc, field_names, field_docs):
     return new_type
 
 
-def METH_UNSUPPORTED(fun):
+def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
-
-
-def METH_DIRECT(fun):
-    return fun
-
 
 class _C:
     def _m(self): pass
@@ -931,14 +926,14 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, tpDict, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
     owner = to_java_type(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner.__name__, doc)
+        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc)
         object.__setattr__(owner, name, func)
     else:
-        func = wrapper(CreateFunction(name, cfunc, cwrapper, owner))
+        func = CreateFunction(name, cfunc, wrapper, owner)
         if isclass:
             func = classmethod(func)
         elif isstatic:
@@ -955,8 +950,8 @@ def AddFunction(primary, tpDict, name, cfunc, cwrapper, wrapper, doc, isclass=Fa
             type_dict[name] = func
 
 
-def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
-    func = wrapper(CreateFunction(name, cfunc, cwrapper))
+def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
+    func = CreateFunction(name, cfunc, wrapper)
     PyTruffle_SetAttr(func, "__name__", name)
     PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
@@ -993,11 +988,11 @@ def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
 
 
 getset_descriptor = type(type(AddMember).__code__)
-def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
+def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java_type(primary)
     fset = fget = None
     if getter:
-        getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
+        getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
             # NOTE: The 'to_java' is intended and correct because this call will do a downcall an 
             # all args will go through 'to_sulong' then. So, if we don't convert the pointer 
@@ -1006,7 +1001,7 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
 
         fget = member_getter
     if setter:
-        setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
+        setter_w = CreateFunction(name, setter, pclass)
         def member_setter(self, value):
             result = setter_w(self, value, closure)
             if result != 0:
@@ -1056,13 +1051,6 @@ def dict_from_list(lst):
     for i in range(0, len(lst), 2):
         d[lst[i]] = lst[i + 1]
     return d
-
-
-def PyObject_Size(obj):
-    try:
-        return int(len(obj))
-    except Exception:
-        return -1
 
 
 @may_raise

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -124,5 +124,15 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
         return FunctionInvokeNodeGen.create(callTarget, null, null, builtin, false);
+    }
+
+    /**
+     * Same as {@link #create(PBuiltinFunction)} but only providing the call target of the builtin
+     * function. Be careful using it. It will never provide globals or a closure to the invoked
+     * function!
+     */
+    @TruffleBoundary
+    public static FunctionInvokeNode createBuiltinFunction(RootCallTarget callTarget) {
+        return FunctionInvokeNodeGen.create(callTarget, null, null, true, false);
     }
 }
