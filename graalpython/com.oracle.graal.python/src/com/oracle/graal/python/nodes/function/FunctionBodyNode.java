@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
-import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
