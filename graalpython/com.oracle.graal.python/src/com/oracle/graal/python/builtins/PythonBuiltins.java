@@ -53,8 +53,10 @@ public abstract class PythonBuiltins {
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
     /**
-     * Initialize everything that is truly independent of commandline arguments and that can be
-     * initialized and frozen into an SVM image.
+     * Initialize everything that is truly independent of commandline arguments
+     * and that can be initialized and frozen into an SVM image. When in a
+     * subclass, any modifications to {@link #builtinConstants} or such should
+     * be made before calling {@code super.initialize(core)}.
      */
     public void initialize(PythonCore core) {
         if (builtinFunctions.size() > 0) {
