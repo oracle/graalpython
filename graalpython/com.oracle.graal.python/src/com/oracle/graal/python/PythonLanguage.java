@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -65,6 +65,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropMap;
+import com.oracle.graal.python.util.PFunctionArgsFinder;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -359,8 +360,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected Iterable<Scope> findLocalScopes(PythonContext context, Node node, Frame frame) {
         ArrayList<Scope> scopes = new ArrayList<>();
         for (Scope s : super.findLocalScopes(context, node, frame)) {
-            scopes.add(s);
+            if (frame == null) {
+                PFunctionArgsFinder argsFinder = new PFunctionArgsFinder(node);
+
+                Scope.Builder scopeBuilder = Scope.newBuilder(s.getName(), s.getVariables()).node(s.getNode()).receiver(s.getReceiverName(), s.getReceiver()).rootInstance(
+                                s.getRootInstance()).arguments(argsFinder.collectArgs());
+
+                scopes.add(scopeBuilder.build());
+            } else {
+                scopes.add(s);
+            }
         }
+
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
             if (globals != null) {
