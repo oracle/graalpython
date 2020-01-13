@@ -824,8 +824,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PThread(cls, thread));
     }
 
-    public PSemLock createSemLock(LazyPythonClass cls, int kind, Semaphore sharedSemaphore) {
-        return trace(new PSemLock(cls, kind, sharedSemaphore));
+    public PSemLock createSemLock(LazyPythonClass cls, String name, int kind, Semaphore sharedSemaphore) {
+        return trace(new PSemLock(cls, name, kind, sharedSemaphore));
     }
 
     public PScandirIterator createScandirIterator(LazyPythonClass cls, String path, DirectoryStream<TruffleFile> next) {

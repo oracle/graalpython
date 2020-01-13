@@ -55,6 +55,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -67,6 +69,12 @@ public class SemLockBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SemLockBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        builtinConstants.put("SEM_VALUE_MAX", Integer.MAX_VALUE);
+        super.initialize(core);
     }
 
     @Builtin(name = "_count", minNumOfPositionalArgs = 1)
@@ -93,6 +101,43 @@ public class SemLockBuiltins extends PythonBuiltins {
         @Specialization
         int getValue(PSemLock self) {
             return self.getValue();
+        }
+    }
+
+    @Builtin(name = "handle", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetHandleNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        int getHandle(PSemLock self) {
+            return self.hashCode();
+        }
+    }
+
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetNameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getName(@SuppressWarnings("unused") PSemLock self) {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "maxvalue", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetMaxValue extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getMax(@SuppressWarnings("unused") PSemLock self) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    @Builtin(name = "kind", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class GetKindNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int getKind(PSemLock self) {
+            return self.getKind();
         }
     }
 

@@ -52,12 +52,14 @@ public final class PSemLock extends AbstractPythonLock {
 
     private final Semaphore semaphore;
     private final int kind;
+    private final String name;
 
     private int lastThreadID = -1;
     private int count;
 
-    public PSemLock(LazyPythonClass cls, int kind, Semaphore sharedSemaphore) {
+    public PSemLock(LazyPythonClass cls, String name, int kind, Semaphore sharedSemaphore) {
         super(cls);
+        this.name = name;
         this.semaphore = sharedSemaphore;
         this.kind = kind;
     }
@@ -127,5 +129,9 @@ public final class PSemLock extends AbstractPythonLock {
 
     public int getKind() {
         return kind;
+    }
+
+    public String getName() {
+        return name;
     }
 }

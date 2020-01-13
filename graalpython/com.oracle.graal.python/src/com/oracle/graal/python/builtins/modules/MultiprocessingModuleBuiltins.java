@@ -110,7 +110,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                     semaphorePut(lang, semaphore, name);
                 }
             }
-            return factory().createSemLock(cls, kind, semaphore);
+            return factory().createSemLock(cls, name, kind, semaphore);
         }
 
         @TruffleBoundary
