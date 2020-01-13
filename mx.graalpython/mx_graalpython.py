@@ -215,7 +215,7 @@ def nativeclean(args):
 
 def python3_unittests(args):
     """run the cPython stdlib unittests"""
-    python(["graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
+    mx.run([sys.executable, "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
 def retag_unittests(args):
