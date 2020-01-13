@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,7 +94,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, "unrecognized kind");
             }
             int value = castValueToIntNode.execute(valueObj);
-            castMaxvalueToIntNode.execute(maxvalueObj); // executed for the side-effect, but ignored on posix
+            castMaxvalueToIntNode.execute(maxvalueObj); // executed for the side-effect, but ignored
+                                                        // on posix
             Semaphore semaphore = newSemaphore(value);
             int unlink = castUnlinkToIntNode.execute(unlinkObj);
             String name = castNameNode.execute(nameObj);

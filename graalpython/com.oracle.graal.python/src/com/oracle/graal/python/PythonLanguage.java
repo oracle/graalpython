@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -126,10 +126,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
     /**
-     * Named semaphores are shared between all processes in a system, and they
-     * persist until the system is shut down, unless explicitly removed. We
-     * interpret this as meaning they all exist globally per language instance,
-     * that is, they are shared between different Contexts in the same engine.
+     * Named semaphores are shared between all processes in a system, and they persist until the
+     * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
+     * globally per language instance, that is, they are shared between different Contexts in the
+     * same engine.
      */
     public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
