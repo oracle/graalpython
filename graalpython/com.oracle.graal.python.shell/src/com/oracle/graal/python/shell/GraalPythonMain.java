@@ -129,6 +129,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-O":
                 case "-OO":
                 case "-R":
+                case "-d":
                     break;
                 case "-q":
                     quietFlag = true;
