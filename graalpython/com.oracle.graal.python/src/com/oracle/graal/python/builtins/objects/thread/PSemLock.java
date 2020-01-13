@@ -56,10 +56,9 @@ public final class PSemLock extends AbstractPythonLock {
     private int lastThreadID = -1;
     private int count;
 
-    @TruffleBoundary
-    public PSemLock(LazyPythonClass cls, int kind, int value) {
+    public PSemLock(LazyPythonClass cls, int kind, Semaphore sharedSemaphore) {
         super(cls);
-        semaphore = new Semaphore(value);
+        this.semaphore = sharedSemaphore;
         this.kind = kind;
     }
 
