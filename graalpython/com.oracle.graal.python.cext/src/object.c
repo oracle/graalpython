@@ -156,7 +156,9 @@ int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
 }
 
 void* PyObject_Malloc(size_t size) {
-    return calloc(size, 1);
+	void* ptr = calloc(size, 1);
+    PyTruffle_Report_Allocation(ptr, size);
+    return ptr;
 }
 
 void* PyObject_Realloc(void *ptr, size_t new_size) {

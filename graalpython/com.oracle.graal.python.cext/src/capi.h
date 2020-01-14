@@ -179,6 +179,9 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
+typedef int (*alloc_reporter_fun_t)(PyObject* object, Py_ssize_t size);
+extern alloc_reporter_fun_t PyObject_AllocationReporter;
+
 typedef void* (*cache_t)(uint64_t);
 extern cache_t cache;
 
@@ -223,6 +226,11 @@ inline PyTypeObject* native_type_to_java(PyTypeObject* type) {
         return (PyTypeObject *)truffle_managed_from_handle(type);
     }
     return type;
+}
+
+__attribute__((always_inline))
+inline int PyTruffle_Report_Allocation(PyObject* obj, Py_ssize_t size) {
+    return PyObject_AllocationReporter(obj, size);
 }
 
 extern void* to_java(PyObject* obj);

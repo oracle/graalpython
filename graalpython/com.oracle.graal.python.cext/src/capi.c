@@ -55,6 +55,8 @@ void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
+alloc_reporter_fun_t PyObject_AllocationReporter;
+
 
 cache_t cache;
 
@@ -75,6 +77,8 @@ static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT_LANDING_PTR = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
 
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
+
+    PyObject_AllocationReporter = (alloc_reporter_fun_t) UPCALL_CEXT_PTR(polyglot_from_string("PyObject_Get_AllocationReporter", SRC_CS));
 }
 
 __attribute__((constructor (__COUNTER__)))

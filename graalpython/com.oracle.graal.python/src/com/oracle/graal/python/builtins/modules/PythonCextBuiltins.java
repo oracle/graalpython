@@ -133,6 +133,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyObjectAllocationReporter;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -2968,6 +2969,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
             VaListWrapper varargs = new VaListWrapper(nativeContext, arguments[4], callMallocOutVarPtr.call(nativeContext, NativeCAPISymbols.FUN_ALLOCATE_OUTVAR));
             return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], varargs, kwdsRefLib, kwdnamesRefLib, kwdsProfile, kwdnamesProfile,
                             functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
+        }
+    }
+
+    @Builtin(name = "PyObject_Get_AllocationReporter", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetNativeObjectAllocationReporter extends PythonBuiltinNode {
+
+        @Specialization
+        static Object doGeneric() {
+            return new PyObjectAllocationReporter();
         }
     }
 
