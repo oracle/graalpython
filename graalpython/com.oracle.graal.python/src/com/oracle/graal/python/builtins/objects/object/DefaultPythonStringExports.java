@@ -97,6 +97,11 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
+    static boolean isTrue(String self) {
+        return self.length() > 0;
+    }
+
+    @ExportMessage
     static class EqualsInternal {
         @Specialization
         static int ss(String receiver, String other, @SuppressWarnings("unused") ThreadState threadState) {
