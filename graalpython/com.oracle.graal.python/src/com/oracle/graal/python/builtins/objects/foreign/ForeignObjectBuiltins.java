@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -75,12 +75,12 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -120,25 +120,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean doForeignObject(VirtualFrame frame, Object self,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached("createIfTrueNode()") CastToBooleanNode cast) {
-            try {
-                if (lib.isBoolean(self)) {
-                    return lib.asBoolean(self);
-                } else if (lib.fitsInLong(self)) {
-                    return cast.executeBoolean(frame, lib.asLong(self));
-                } else if (lib.fitsInDouble(self)) {
-                    return cast.executeBoolean(frame, lib.asDouble(self));
-                } else if (lib.hasArrayElements(self)) {
-                    return cast.executeBoolean(frame, lib.getArraySize(self));
-                } else {
-                    return !lib.isNull(self);
-                }
-            } catch (UnsupportedMessageException e) {
-                throw raise(AttributeError, "'foreign' object has no attribute '__bool__'");
-            }
+        @Specialization(limit = "1")
+        boolean doForeignObject(Object self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.isTrue(self);
         }
     }
 

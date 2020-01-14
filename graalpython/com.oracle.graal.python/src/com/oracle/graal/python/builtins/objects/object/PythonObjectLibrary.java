@@ -322,6 +322,25 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Checks wether this object should be interpreted as {@code
+     * true}-ish. Mimics the coercion behaviour of {@code PyObject_IsTrue}, and thus uses both
+     * {@code slot_nb_bool} coercion and {@link #length}/{@link #lengthWithState}.
+     */
+    public boolean isTrueWithState(Object receiver, ThreadState state) {
+        if (state == null) {
+            return true;
+        }
+        return isTrue(receiver);
+    }
+
+    /**
+     * @see #isTrueWithState
+     */
+    public boolean isTrue(Object receiver) {
+        return isTrueWithState(receiver, null);
+    }
+
+    /**
      * Implements the logic from {@code PyObject_Size} (to which {@code
      * PySequence_Length} is an alias). The logic which is to try a) {@code
      * sq_length} and b) {@code mp_length}. Each of these can also be reached via

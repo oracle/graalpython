@@ -1,0 +1,114 @@
+/*
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.oracle.graal.python.nodes.util;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+
+/**
+ * Casts a Python boolean to a Java boolean without coercion. <b>ATTENTION:</b> If the cast fails,
+ * because the object is not a Python boolean, the node will throw a {@link CannotCastException}.
+ */
+@GenerateUncached
+@ImportStatic(PGuards.class)
+public abstract class CastToJavaBooleanNode extends PNodeWithContext {
+
+    public static final class CannotCastException extends ControlFlowException {
+        private static final long serialVersionUID = 1L;
+        private static final CannotCastException INSTANCE = new CannotCastException();
+    }
+
+    public abstract boolean execute(Object x) throws CannotCastException;
+
+    @Specialization
+    static boolean doBoolean(boolean x) {
+        return x;
+    }
+
+    @Specialization
+    static boolean doPInt(PInt x,
+                    @Cached("createBinaryProfile()") ConditionProfile isBoolean,
+                    @Cached IsSubtypeNode isSubtype) {
+        if (isBoolean.profile(isSubtype.execute(x.getLazyPythonClass(), PythonBuiltinClassType.Boolean))) {
+            return !x.isZero();
+        } else {
+            throw CannotCastException.INSTANCE;
+        }
+    }
+
+    @Specialization
+    static boolean doNativeObject(PythonNativeObject x,
+                    @Cached GetLazyClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.Boolean)) {
+            CompilerDirectives.transferToInterpreter();
+            throw new RuntimeException("casting a native long object to a Java boolean is not implemented yet");
+        }
+        // the object's type is not a subclass of 'int'
+        throw CannotCastException.INSTANCE;
+    }
+
+    @Fallback
+    static boolean doUnsupported(@SuppressWarnings("unused") Object x) {
+        throw CannotCastException.INSTANCE;
+    }
+
+    public static CastToJavaBooleanNode create() {
+        return CastToJavaBooleanNodeGen.create();
+    }
+
+    public static CastToJavaBooleanNode getUncached() {
+        return CastToJavaBooleanNodeGen.getUncached();
+    }
+}

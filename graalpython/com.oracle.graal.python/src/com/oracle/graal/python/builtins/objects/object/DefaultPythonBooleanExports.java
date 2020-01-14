@@ -76,4 +76,9 @@ final class DefaultPythonBooleanExports {
     static long hash(Boolean value) {
         return value ? 1 : 0;
     }
+
+    @ExportMessage
+    static boolean isTrue(Boolean value) {
+        return value;
+    }
 }

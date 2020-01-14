@@ -198,6 +198,11 @@ public final class PInt extends PythonBuiltinObject {
         return this;
     }
 
+    @ExportMessage
+    boolean isTrueWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return !isZero();
+    }
+
     @Override
     public int hashCode() {
         return value.hashCode();
