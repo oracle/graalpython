@@ -60,6 +60,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
     public static final String FUN_PY_FLOAT_AS_DOUBLE = "truffle_read_ob_fval";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
+    public static final String FUN_GET_OB_REFCNT = "get_ob_refcnt";
     public static final String FUN_GET_TP_DICT = "get_tp_dict";
     public static final String FUN_GET_TP_BASES = "get_tp_bases";
     public static final String FUN_GET_TP_NAME = "get_tp_name";

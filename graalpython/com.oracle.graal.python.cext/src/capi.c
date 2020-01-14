@@ -272,6 +272,11 @@ PyTypeObject* get_ob_type(PyObject* obj) {
     return native_type_to_java(obj->ob_type);
 }
 
+/** to be used from Java code only; reads native 'ob_refcnt' field */
+Py_ssize_t get_ob_refcnt(PyObject* obj) {
+    return obj->ob_refcnt;
+}
+
 /** to be used from Java code only; reads native 'tp_dict' field */
 PyObject* get_tp_dict(PyTypeObject* obj) {
 	return native_to_java(obj->tp_dict);
