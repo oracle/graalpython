@@ -44,8 +44,8 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
                       ExecutionSlots:
                         FreeVarsSlots: None
                         CellVarsSlots: __class__, 
-                      InnerRootNode SourceSection: None
-                        ReturnTargetNode SourceSection: None
+                      InnerRootNode SourceSection: [0,35]`class A:↵    class B...`
+                        ReturnTargetNode SourceSection: [0,35]`class A:↵    class B...`
                           Body: BlockNode SourceSection: None
                             ClassDefinitionPrologueNode SourceSection: None
                               QualName: A
@@ -56,62 +56,64 @@ ModuleRootNode Name: <module '<expression>'> SourceSection: [0,35]`class A:↵  
                                 Index: 0
                               SetItemIfNotPresentNodeGen SourceSection: None
                                 SetItemNodeGen SourceSection: None
-                            SetItemNodeGen SourceSection: [13,35]`class B:↵        pas...`
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                              ExpressionWithSideEffects SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <>temp2
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [2,<>temp2,Illegal]
-                                  PythonCallNodeGen SourceSection: [13,35]`class B:↵        pas...`
-                                    CallNodeGen SourceSection: None
-                                    FunctionDefinitionNode Name: B SourceSection: None
-                                      Arguments: None
-                                      KwArguments: None
-                                      Documentation: None
-                                      FreeVarSlots: None
-                                      ExecutionSlots:
-                                        FreeVarsSlots: None
-                                        CellVarsSlots: __class__, 
-                                      ClassBodyRootNode SourceSection: [13,35]`class B:↵        pas...`
-                                        Name: B
-                                        Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                          Param Names: namespace
-                                        CelVars: __class__
-                                        FreeVars: None
-                                        NeedsCellFrame: False
-                                        FrameDescriptor: 1 slots [__class__]
+                            FunctionBodyNode SourceSection: [13,35]`class B:↵        pas...`
+                              SetItemNodeGen SourceSection: [13,35]`class B:↵        pas...`
+                                ArgumentExpressionNode SourceSection: None
+                                  ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
+                                StringLiteralNode SourceSection: None
+                                ExpressionWithSideEffects SourceSection: None
+                                  WriteLocalVariableNodeGen SourceSection: None
+                                    Identifier: <>temp2
+                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                      Frame: [2,<>temp2,Illegal]
+                                    PythonCallNodeGen SourceSection: [13,35]`class B:↵        pas...`
+                                      CallNodeGen SourceSection: None
+                                      FunctionDefinitionNode Name: B SourceSection: None
+                                        Arguments: None
+                                        KwArguments: None
+                                        Documentation: None
+                                        FreeVarSlots: None
                                         ExecutionSlots:
                                           FreeVarsSlots: None
                                           CellVarsSlots: __class__, 
-                                        InnerRootNode SourceSection: None
-                                          ReturnTargetNode SourceSection: None
-                                            Body: BlockNode SourceSection: None
-                                              ClassDefinitionPrologueNode SourceSection: None
-                                                QualName: A.B
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                  Identifier: __name__
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadIndexedArgumentNodeGen SourceSection: None
-                                                  Index: 0
-                                                SetItemIfNotPresentNodeGen SourceSection: None
-                                                  SetItemNodeGen SourceSection: None
-                                              ExpressionStatementNode SourceSection: [30,34]`pass`
-                                                EmptyNode SourceSection: [30,34]`pass`
-                                            Return Expresssion: ObjectLiteralNode SourceSection: None
-                                    StringLiteralNode SourceSection: None
-                                    GetCallAttributeNodeGen SourceSection: None
-                                      BuiltinsLiteralNode SourceSection: None
-                                WriteCellVarNodeGen SourceSection: None
+                                        ClassBodyRootNode SourceSection: [13,35]`class B:↵        pas...`
+                                          Name: B
+                                          Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                            Param Names: namespace
+                                          CelVars: __class__
+                                          FreeVars: None
+                                          NeedsCellFrame: False
+                                          FrameDescriptor: 1 slots [__class__]
+                                          ExecutionSlots:
+                                            FreeVarsSlots: None
+                                            CellVarsSlots: __class__, 
+                                          InnerRootNode SourceSection: [13,35]`class B:↵        pas...`
+                                            ReturnTargetNode SourceSection: [13,35]`class B:↵        pas...`
+                                              Body: BlockNode SourceSection: None
+                                                ClassDefinitionPrologueNode SourceSection: None
+                                                  QualName: A.B
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    Identifier: __name__
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  ReadIndexedArgumentNodeGen SourceSection: None
+                                                    Index: 0
+                                                  SetItemIfNotPresentNodeGen SourceSection: None
+                                                    SetItemNodeGen SourceSection: None
+                                                FunctionBodyNode SourceSection: [30,34]`pass`
+                                                  ExpressionStatementNode SourceSection: [30,34]`pass`
+                                                    EmptyNode SourceSection: [30,34]`pass`
+                                              Return Expresssion: ObjectLiteralNode SourceSection: None
+                                      StringLiteralNode SourceSection: None
+                                      GetCallAttributeNodeGen SourceSection: None
+                                        BuiltinsLiteralNode SourceSection: None
+                                  WriteCellVarNodeGen SourceSection: None
+                                    ReadLocalVariableNode SourceSection: None
+                                      Frame: [2,<>temp2,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,<>temp2,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<>temp2,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
                           Return Expresssion: ObjectLiteralNode SourceSection: None
                   StringLiteralNode SourceSection: None
                   GetCallAttributeNodeGen SourceSection: None

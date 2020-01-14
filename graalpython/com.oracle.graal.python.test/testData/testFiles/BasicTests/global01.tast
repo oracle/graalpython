@@ -34,7 +34,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
               ReturnTargetNode SourceSection: [25,111]`def add():↵    globa...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [40,109]`global c↵    c = c +...`
                     ExpressionStatementNode SourceSection: [40,48]`global c`
                       EmptyNode SourceSection: [40,48]`global c`
                     WriteGlobalNodeGen SourceSection: [53,62]`c = c + 2`

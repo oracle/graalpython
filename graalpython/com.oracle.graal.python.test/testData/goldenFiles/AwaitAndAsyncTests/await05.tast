@@ -33,17 +33,18 @@ ModuleRootNode Name: <module 'await05'> SourceSection: [0,35]`async def f():↵ 
                 ReturnTargetNode SourceSection: [6,35]`def f():↵ foo((await...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [16,35]`foo((await smth()))`
-                      PythonCallNodeGen SourceSection: [16,35]`foo((await smth()))`
-                        CallNodeGen SourceSection: None
-                        PythonCallNodeGen SourceSection: [21,33]`await smth()`
+                    FunctionBodyNode SourceSection: [16,35]`foo((await smth()))`
+                      ExpressionStatementNode SourceSection: [16,35]`foo((await smth()))`
+                        PythonCallNodeGen SourceSection: [16,35]`foo((await smth()))`
                           CallNodeGen SourceSection: None
+                          PythonCallNodeGen SourceSection: [21,33]`await smth()`
+                            CallNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: smth
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: smth
+                            Identifier: foo
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: foo
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -36,40 +36,41 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,49]`def gen():↵  with
               InnerRootNode SourceSection: [0,49]`def gen():↵  with fn...`
                 GeneratorReturnTargetNode SourceSection: [0,49]`def gen():↵  with fn...`
                   flagSlot: 4
-                  GeneratorWithNode SourceSection: [13,49]`with fn():↵    yield...`
-                    GeneratorBlockNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [28,36]`yield 12`
-                        YieldNode SourceSection: [28,36]`yield 12`
-                          flagSlot: 0
-                          IntegerLiteralNode SourceSection: [34,36]`12`
-                            Value: 12
-                          GeneratorAccessNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [41,49]`yield 13`
-                        YieldNode SourceSection: [41,49]`yield 13`
-                          flagSlot: 1
-                          IntegerLiteralNode SourceSection: [47,49]`13`
-                            Value: 13
-                          GeneratorAccessNode SourceSection: None
-                      GeneratorAccessNode SourceSection: None
-                    PythonCallNodeGen SourceSection: [18,22]`fn()`
+                  FunctionBodyNode SourceSection: [13,49]`with fn():↵    yield...`
+                    GeneratorWithNode SourceSection: [13,49]`with fn():↵    yield...`
+                      GeneratorBlockNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [28,36]`yield 12`
+                          YieldNode SourceSection: [28,36]`yield 12`
+                            flagSlot: 0
+                            IntegerLiteralNode SourceSection: [34,36]`12`
+                              Value: 12
+                            GeneratorAccessNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [41,49]`yield 13`
+                          YieldNode SourceSection: [41,49]`yield 13`
+                            flagSlot: 1
+                            IntegerLiteralNode SourceSection: [47,49]`13`
+                              Value: 13
+                            GeneratorAccessNode SourceSection: None
+                        GeneratorAccessNode SourceSection: None
+                      PythonCallNodeGen SourceSection: [18,22]`fn()`
+                        CallNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: fn
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
+                      LookupInheritedAttributeNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
+                        GetLazyClassNodeGen SourceSection: None
                       CallNodeGen SourceSection: None
-                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                        Identifier: fn
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                    LookupInheritedAttributeNode SourceSection: None
-                      LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassNodeGen SourceSection: None
-                    LookupInheritedAttributeNode SourceSection: None
-                      LookupAttributeInMRONodeGen SourceSection: None
-                        IsSameTypeNodeGen SourceSection: None
-                      GetLazyClassNodeGen SourceSection: None
-                    CallNodeGen SourceSection: None
-                    CallNodeGen SourceSection: None
-                    YesNodeGen SourceSection: None
-                    GetClassNodeGen SourceSection: None
-                    SaveExceptionStateNodeGen SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                      CallNodeGen SourceSection: None
+                      YesNodeGen SourceSection: None
+                      GetClassNodeGen SourceSection: None
+                      SaveExceptionStateNodeGen SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'basicInFn04'> SourceSection: [0,38]`def fn():↵  
                 ReturnTargetNode SourceSection: [0,38]`def fn():↵  import s...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [19,38]`sys as system, math`
                       WriteLocalVariableNodeGen SourceSection: [19,32]`sys as system`
                         Identifier: system
                         WriteLocalFrameSlotNodeGen SourceSection: None

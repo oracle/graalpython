@@ -39,15 +39,16 @@ ModuleRootNode Name: <module 'functionDef10'> SourceSection: [0,30]`def foo(*arg
                       ArgumentExpressionNode SourceSection: None
                         ReadVarArgsNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
-                    ExpressionStatementNode SourceSection: [19,30]`print(args)`
-                      PythonCallNodeGen SourceSection: [19,30]`print(args)`
-                        CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [25,29]`args`
-                          Frame: [0,args,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: print
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [19,30]`print(args)`
+                      ExpressionStatementNode SourceSection: [19,30]`print(args)`
+                        PythonCallNodeGen SourceSection: [19,30]`print(args)`
+                          CallNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [25,29]`args`
+                            Frame: [0,args,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: print
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

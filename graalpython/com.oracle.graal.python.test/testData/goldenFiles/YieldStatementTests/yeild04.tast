@@ -36,15 +36,16 @@ ModuleRootNode Name: <module 'yeild04'> SourceSection: [0,20]`def f(): x = yield
               InnerRootNode SourceSection: [0,20]`def f(): x = yield 1...`
                 GeneratorReturnTargetNode SourceSection: [0,20]`def f(): x = yield 1...`
                   flagSlot: 1
-                  WriteGeneratorFrameVariableNodeGen SourceSection: [9,20]`x = yield 1`
-                    Identifier: x
-                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                      Frame: [0,x,Illegal]
-                    YieldNode SourceSection: [13,20]`yield 1`
-                      flagSlot: 0
-                      IntegerLiteralNode SourceSection: [19,20]`1`
-                        Value: 1
-                      GeneratorAccessNode SourceSection: None
+                  FunctionBodyNode SourceSection: [9,20]`x = yield 1`
+                    WriteGeneratorFrameVariableNodeGen SourceSection: [9,20]`x = yield 1`
+                      Identifier: x
+                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                        Frame: [0,x,Illegal]
+                      YieldNode SourceSection: [13,20]`yield 1`
+                        flagSlot: 0
+                        IntegerLiteralNode SourceSection: [19,20]`1`
+                          Value: 1
+                        GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

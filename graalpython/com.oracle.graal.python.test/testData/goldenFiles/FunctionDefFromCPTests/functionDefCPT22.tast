@@ -52,8 +52,9 @@ ModuleRootNode Name: <module 'functionDefCPT22'> SourceSection: [0,25]`def f(*ar
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
-                    ExpressionStatementNode SourceSection: [21,25]`pass`
-                      EmptyNode SourceSection: [21,25]`pass`
+                    FunctionBodyNode SourceSection: [21,25]`pass`
+                      ExpressionStatementNode SourceSection: [21,25]`pass`
+                        EmptyNode SourceSection: [21,25]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

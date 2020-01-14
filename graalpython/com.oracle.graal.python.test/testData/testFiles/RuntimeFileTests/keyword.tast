@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
               ReturnTargetNode SourceSection: [998,2207]`def main():↵    impo...`
                 Body: BlockNode SourceSection: None
                   BlockNode SourceSection: None
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [1021,2207]`sys, re↵↵    args = ...`
                     WriteLocalVariableNodeGen SourceSection: [1021,1024]`sys`
                       Identifier: sys
                       WriteLocalFrameSlotNodeGen SourceSection: None

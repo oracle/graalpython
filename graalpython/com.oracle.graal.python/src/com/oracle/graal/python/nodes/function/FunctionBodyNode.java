@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.nodes.function;
 
-package com.oracle.graal.python.parser.sst;
+import com.oracle.graal.python.nodes.control.BaseBlockNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public class ExpressionStatementSSTNode extends SSTNode {
-    protected final SSTNode expression;
+public class FunctionBodyNode extends BaseBlockNode {
 
-    public ExpressionStatementSSTNode(SSTNode expression) {
-        super(expression.startOffset, expression.endOffset);
-        this.expression = expression;
+    private FunctionBodyNode(StatementNode[] statements) {
+        super(statements);
+    }
+
+    public static FunctionBodyNode create(StatementNode... statements) {
+        return statements.length == 0 ? new FunctionBodyNode(new StatementNode[0]) : new FunctionBodyNode(statements);
     }
 
     @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
+    @ExplodeLoop
+    public void executeVoid(VirtualFrame frame) {
+        for (int i = 0; i < statements.length; i++) {
+            statements[i].executeVoid(frame);
+        }
+    }
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return StandardTags.RootBodyTag.class == tag;
     }
 
 }

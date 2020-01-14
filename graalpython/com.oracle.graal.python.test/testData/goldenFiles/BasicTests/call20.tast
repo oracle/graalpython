@@ -40,19 +40,20 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                    ExpressionStatementNode SourceSection: [14,36]`"in".format(name=nam...`
-                      PythonCallNodeGen SourceSection: [14,36]`"in".format(name=nam...`
-                        CallNodeGen SourceSection: None
-                        KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [31,35]`name`
-                              Frame: [0,name,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
-                        GetCallAttributeNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [14,18]`"in"`
+                    FunctionBodyNode SourceSection: [14,36]`"in".format(name=nam...`
+                      ExpressionStatementNode SourceSection: [14,36]`"in".format(name=nam...`
+                        PythonCallNodeGen SourceSection: [14,36]`"in".format(name=nam...`
+                          CallNodeGen SourceSection: None
+                          KeywordArgumentsNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [31,35]`name`
+                                Frame: [0,name,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            CompactKeywordsNodeGen SourceSection: None
+                            ExecuteKeywordStarargsNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
+                          GetCallAttributeNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [14,18]`"in"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

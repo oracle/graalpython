@@ -33,18 +33,41 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                 ReturnTargetNode SourceSection: [0,56]`def fn():↵  with A()...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WithNode SourceSection: [12,56]`with A() as a:↵    w...`
-                      WithNode SourceSection: [31,56]`with B() as b:↵     ...`
-                        ExpressionStatementNode SourceSection: [52,56]`pass`
-                          EmptyNode SourceSection: [52,56]`pass`
+                    FunctionBodyNode SourceSection: [12,56]`with A() as a:↵    w...`
+                      WithNode SourceSection: [12,56]`with A() as a:↵    w...`
+                        WithNode SourceSection: [31,56]`with B() as b:↵     ...`
+                          ExpressionStatementNode SourceSection: [52,56]`pass`
+                            EmptyNode SourceSection: [52,56]`pass`
+                          WriteLocalVariableNodeGen SourceSection: None
+                            Identifier: b
+                            WriteLocalFrameSlotNodeGen SourceSection: None
+                              Frame: [0,b,Illegal]
+                          PythonCallNodeGen SourceSection: [36,39]`B()`
+                            CallNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: B
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          LookupInheritedAttributeNode SourceSection: None
+                            LookupAttributeInMRONodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
+                            GetLazyClassNodeGen SourceSection: None
+                          LookupInheritedAttributeNode SourceSection: None
+                            LookupAttributeInMRONodeGen SourceSection: None
+                              IsSameTypeNodeGen SourceSection: None
+                            GetLazyClassNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
+                          CallNodeGen SourceSection: None
+                          YesNodeGen SourceSection: None
+                          GetClassNodeGen SourceSection: None
+                          SaveExceptionStateNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: b
+                          Identifier: a
                           WriteLocalFrameSlotNodeGen SourceSection: None
-                            Frame: [0,b,Illegal]
-                        PythonCallNodeGen SourceSection: [36,39]`B()`
+                            Frame: [1,a,Illegal]
+                        PythonCallNodeGen SourceSection: [17,20]`A()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: B
+                            Identifier: A
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
@@ -59,28 +82,6 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: a
-                        WriteLocalFrameSlotNodeGen SourceSection: None
-                          Frame: [1,a,Illegal]
-                      PythonCallNodeGen SourceSection: [17,20]`A()`
-                        CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: A
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      YesNodeGen SourceSection: None
-                      GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

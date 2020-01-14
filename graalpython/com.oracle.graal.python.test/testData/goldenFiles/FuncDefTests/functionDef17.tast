@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                 ReturnTargetNode SourceSection: [0,149]`def test():↵  def in...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [14,148]`def inner (end):↵   ...`
                       WriteLocalVariableNodeGen SourceSection: [14,133]`def inner (end):↵   ...`
                         Identifier: inner
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                     ArgumentExpressionNode SourceSection: None
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
-                                  BlockNode SourceSection: None
+                                  FunctionBodyNode SourceSection: [35,130]`def inner_inner():↵ ...`
                                     WriteLocalVariableNodeGen SourceSection: [35,117]`def inner_inner():↵ ...`
                                       Identifier: inner_inner
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -98,7 +98,7 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                             ReturnTargetNode SourceSection: [35,117]`def inner_inner():↵ ...`
                                               Body: BlockNode SourceSection: None
                                                 BlockNode SourceSection: None
-                                                BlockNode SourceSection: None
+                                                FunctionBodyNode SourceSection: [60,112]`print("inner_inner",...`
                                                   ExpressionStatementNode SourceSection: [60,95]`print("inner_inner",...`
                                                     PythonCallNodeGen SourceSection: [60,95]`print("inner_inner",...`
                                                       CallNodeGen SourceSection: None

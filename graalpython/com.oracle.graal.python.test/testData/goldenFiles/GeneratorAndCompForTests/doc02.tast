@@ -37,42 +37,43 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):�
               InnerRootNode SourceSection: [0,118]`def walk_stack(f):↵ ...`
                 GeneratorReturnTargetNode SourceSection: [0,118]`def walk_stack(f):↵ ...`
                   flagSlot: 2
-                  GeneratorBlockNode SourceSection: None
-                    IfNode SourceSection: [47,81]`if f is None:↵      ...`
-                      YesNodeGen SourceSection: None
-                        IsExpressionNodeGen SourceSection: [50,59]`f is None`
-                          ReadGeneratorFrameVariableNode SourceSection: [50,51]`f`
+                  FunctionBodyNode SourceSection: [47,118]`if f is None:↵      ...`
+                    GeneratorBlockNode SourceSection: None
+                      IfNode SourceSection: [47,81]`if f is None:↵      ...`
+                        YesNodeGen SourceSection: None
+                          IsExpressionNodeGen SourceSection: [50,59]`f is None`
+                            ReadGeneratorFrameVariableNode SourceSection: [50,51]`f`
+                              Frame: [0,f,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: [55,59]`None`
+                        WriteGeneratorFrameVariableNodeGen SourceSection: [69,76]`f = a()`
+                          Identifier: f
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [0,f,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ObjectLiteralNode SourceSection: [55,59]`None`
-                      WriteGeneratorFrameVariableNodeGen SourceSection: [69,76]`f = a()`
-                        Identifier: f
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [0,f,Illegal]
-                        PythonCallNodeGen SourceSection: [73,76]`a()`
-                          CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: a
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      BlockNode SourceSection: None
-                    ElseNode SourceSection: [81,118]`while f is not None:...`
-                      GeneratorWhileNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [110,117]`yield f`
-                          YieldNode SourceSection: [110,117]`yield f`
-                            flagSlot: 0
-                            ReadGeneratorFrameVariableNode SourceSection: [116,117]`f`
-                              Frame: [0,f,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            GeneratorAccessNode SourceSection: None
-                        NotNodeGen SourceSection: [87,100]`f is not None`
-                          IsExpressionNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: [87,88]`f`
-                              Frame: [0,f,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            ObjectLiteralNode SourceSection: [96,100]`None`
-                        GeneratorAccessNode SourceSection: None
-                      BlockNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                          PythonCallNodeGen SourceSection: [73,76]`a()`
+                            CallNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: a
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        BlockNode SourceSection: None
+                      ElseNode SourceSection: [81,118]`while f is not None:...`
+                        GeneratorWhileNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [110,117]`yield f`
+                            YieldNode SourceSection: [110,117]`yield f`
+                              flagSlot: 0
+                              ReadGeneratorFrameVariableNode SourceSection: [116,117]`f`
+                                Frame: [0,f,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              GeneratorAccessNode SourceSection: None
+                          NotNodeGen SourceSection: [87,100]`f is not None`
+                            IsExpressionNodeGen SourceSection: None
+                              ReadGeneratorFrameVariableNode SourceSection: [87,88]`f`
+                                Frame: [0,f,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ObjectLiteralNode SourceSection: [96,100]`None`
+                          GeneratorAccessNode SourceSection: None
+                        BlockNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

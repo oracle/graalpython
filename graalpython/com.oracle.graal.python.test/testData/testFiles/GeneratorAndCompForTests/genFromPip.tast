@@ -38,268 +38,269 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
               InnerRootNode SourceSection: [0,692]`def find_on_path(imp...`
                 GeneratorReturnTargetNode SourceSection: [0,692]`def find_on_path(imp...`
                   flagSlot: 4
-                  GeneratorBlockNode SourceSection: None
-                    GeneratorIfNode SourceSection: [55,282]`if _is_unpacked_egg(...`
-                      GeneratorAccessNode SourceSection: None
-                      YesNodeGen SourceSection: None
-                        PythonCallNodeGen SourceSection: [58,85]`_is_unpacked_egg(pat...`
+                  FunctionBodyNode SourceSection: [55,692]`if _is_unpacked_egg(...`
+                    GeneratorBlockNode SourceSection: None
+                      GeneratorIfNode SourceSection: [55,282]`if _is_unpacked_egg(...`
+                        GeneratorAccessNode SourceSection: None
+                        YesNodeGen SourceSection: None
+                          PythonCallNodeGen SourceSection: [58,85]`_is_unpacked_egg(pat...`
+                            CallNodeGen SourceSection: None
+                            ReadLocalCellNodeGen SourceSection: [75,84]`path_item`
+                              ReadGeneratorFrameVariableNode SourceSection: None
+                                Frame: [1,path_item,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadFromCellNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: _is_unpacked_egg
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        GeneratorBlockNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [95,261]`yield Distribution.f...`
+                            YieldNode SourceSection: [95,261]`yield Distribution.f...`
+                              flagSlot: 0
+                              PythonCallNodeGen SourceSection: [101,261]`Distribution.from_fi...`
+                                CallNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [141,150]`path_item`
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [1,path_item,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadFromCellNodeGen SourceSection: None
+                                KeywordArgumentsNodeGen SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    PythonCallNodeGen SourceSection: [161,251]`PathMetadata(↵      ...`
+                                      CallNodeGen SourceSection: None
+                                      ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
+                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                          Frame: [1,path_item,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadFromCellNodeGen SourceSection: None
+                                      PythonCallNodeGen SourceSection: [202,237]`os.path.join(path_it...`
+                                        CallNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
+                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                            Frame: [1,path_item,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                        StringLiteralNode SourceSection: [226,236]`'EGG-INFO'`
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          GetAttributeNodeGen SourceSection: [202,209]`os.path`
+                                            GetFixedAttributeNodeGen SourceSection: None
+                                              Key: path
+                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                Op: __getattribute__
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
+                                              Identifier: os
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        Identifier: PathMetadata
+                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  CompactKeywordsNodeGen SourceSection: None
+                                  ExecuteKeywordStarargsNodeGen SourceSection: None
+                                    EmptyNode SourceSection: None
+                                GetCallAttributeNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [101,113]`Distribution`
+                                    Identifier: Distribution
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              GeneratorAccessNode SourceSection: None
+                          ReturnNode SourceSection: [270,276]`return`
+                          GeneratorAccessNode SourceSection: None
+                        BlockNode SourceSection: None
+                      WriteGeneratorFrameVariableNodeGen SourceSection: [282,315]`entries = safe_listd...`
+                        Identifier: entries
+                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                          Frame: [3,entries,Illegal]
+                        PythonCallNodeGen SourceSection: [292,315]`safe_listdir(path_it...`
                           CallNodeGen SourceSection: None
-                          ReadLocalCellNodeGen SourceSection: [75,84]`path_item`
+                          ReadLocalCellNodeGen SourceSection: [305,314]`path_item`
                             ReadGeneratorFrameVariableNode SourceSection: None
                               Frame: [1,path_item,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: _is_unpacked_egg
+                            Identifier: safe_listdir
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      GeneratorBlockNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [95,261]`yield Distribution.f...`
-                          YieldNode SourceSection: [95,261]`yield Distribution.f...`
-                            flagSlot: 0
-                            PythonCallNodeGen SourceSection: [101,261]`Distribution.from_fi...`
-                              CallNodeGen SourceSection: None
-                              ReadLocalCellNodeGen SourceSection: [141,150]`path_item`
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [1,path_item,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadFromCellNodeGen SourceSection: None
-                              KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  PythonCallNodeGen SourceSection: [161,251]`PathMetadata(↵      ...`
-                                    CallNodeGen SourceSection: None
-                                    ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
-                                      ReadGeneratorFrameVariableNode SourceSection: None
-                                        Frame: [1,path_item,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadFromCellNodeGen SourceSection: None
-                                    PythonCallNodeGen SourceSection: [202,237]`os.path.join(path_it...`
-                                      CallNodeGen SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [1,path_item,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                      StringLiteralNode SourceSection: [226,236]`'EGG-INFO'`
-                                      GetCallAttributeNodeGen SourceSection: None
-                                        GetAttributeNodeGen SourceSection: [202,209]`os.path`
-                                          GetFixedAttributeNodeGen SourceSection: None
-                                            Key: path
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __getattribute__
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
-                                            Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                      Identifier: PathMetadata
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
-                              GetCallAttributeNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [101,113]`Distribution`
-                                  Identifier: Distribution
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            GeneratorAccessNode SourceSection: None
-                        ReturnNode SourceSection: [270,276]`return`
-                        GeneratorAccessNode SourceSection: None
-                      BlockNode SourceSection: None
-                    WriteGeneratorFrameVariableNodeGen SourceSection: [282,315]`entries = safe_listd...`
-                      Identifier: entries
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [3,entries,Illegal]
-                      PythonCallNodeGen SourceSection: [292,315]`safe_listdir(path_it...`
-                        CallNodeGen SourceSection: None
-                        ReadLocalCellNodeGen SourceSection: [305,314]`path_item`
-                          ReadGeneratorFrameVariableNode SourceSection: None
-                            Frame: [1,path_item,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadFromCellNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: safe_listdir
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                    WriteGeneratorFrameVariableNodeGen SourceSection: [321,430]`filtered = (↵       ...`
-                      Identifier: filtered
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [4,filtered,Illegal]
-                      GeneratorExpressionNode SourceSection: [356,424]`for entry in entries...`
-                        Name: find_on_path.<locals>.<genexp>:genFromPip:14
-                        FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
-                        Enclosing
-                          FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
-                        Active Flags: 4
-                        For Nodes: 1
-                        Block Nodes: 0
-                        Is Enclosing Frame Generator: true
-                        FunctionRootNode SourceSection: [356,424]`for entry in entries...`
+                      WriteGeneratorFrameVariableNodeGen SourceSection: [321,430]`filtered = (↵       ...`
+                        Identifier: filtered
+                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                          Frame: [4,filtered,Illegal]
+                        GeneratorExpressionNode SourceSection: [356,424]`for entry in entries...`
                           Name: find_on_path.<locals>.<genexp>:genFromPip:14
-                          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                          CelVars: None
-                          FreeVars: only, path_item
-                          NeedsCellFrame: False
                           FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
-                          ExecutionSlots:
-                            FreeVarsSlots: only, , path_item, 
-                            CellVarsSlots: None
-                          InnerRootNode SourceSection: [356,424]`for entry in entries...`
-                            GeneratorReturnTargetNode SourceSection: [356,424]`for entry in entries...`
-                              flagSlot: 3
-                              GeneratorForNode SourceSection: [356,424]`for entry in entries...`
-                                GeneratorIfNode SourceSection: None
+                          Enclosing
+                            FrameDescriptor: 11 slots [importer, path_item, only, entries, filtered, path_item_entries, fullpath, factory, dist, entry, <return_val>]
+                          Active Flags: 4
+                          For Nodes: 1
+                          Block Nodes: 0
+                          Is Enclosing Frame Generator: true
+                          FunctionRootNode SourceSection: [356,424]`for entry in entries...`
+                            Name: find_on_path.<locals>.<genexp>:genFromPip:14
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: only, path_item
+                            NeedsCellFrame: False
+                            FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
+                            ExecutionSlots:
+                              FreeVarsSlots: only, , path_item, 
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [356,424]`for entry in entries...`
+                              GeneratorReturnTargetNode SourceSection: [356,424]`for entry in entries...`
+                                flagSlot: 3
+                                GeneratorForNode SourceSection: [356,424]`for entry in entries...`
+                                  GeneratorIfNode SourceSection: None
+                                    GeneratorAccessNode SourceSection: None
+                                    YesNodeGen SourceSection: None
+                                      PythonCallNodeGen SourceSection: [388,424]`dist_factory(path_it...`
+                                        CallNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [401,410]`path_item`
+                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                            Frame: [1,path_item,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [412,417]`entry`
+                                          Frame: [0,entry,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [419,423]`only`
+                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                            Frame: [2,only,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          Identifier: dist_factory
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ExpressionStatementNode SourceSection: [342,347]`entry`
+                                      YieldNode SourceSection: [342,347]`entry`
+                                        flagSlot: 0
+                                        ReadGeneratorFrameVariableNode SourceSection: [342,347]`entry`
+                                          Frame: [0,entry,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        GeneratorAccessNode SourceSection: None
+                                    BlockNode SourceSection: None
+                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                    Identifier: entry
+                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                      Frame: [0,entry,Illegal]
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
+                                  GetNextNode SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
-                                  YesNodeGen SourceSection: None
-                                    PythonCallNodeGen SourceSection: [388,424]`dist_factory(path_it...`
-                                      CallNodeGen SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [401,410]`path_item`
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [1,path_item,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: [412,417]`entry`
-                                        Frame: [0,entry,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [419,423]`only`
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [2,only,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                        Identifier: dist_factory
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ExpressionStatementNode SourceSection: [342,347]`entry`
-                                    YieldNode SourceSection: [342,347]`entry`
-                                      flagSlot: 0
-                                      ReadGeneratorFrameVariableNode SourceSection: [342,347]`entry`
-                                        Frame: [0,entry,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      GeneratorAccessNode SourceSection: None
-                                  BlockNode SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: None
+                                  Frame: [3,<return_val>,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                BlockNode SourceSection: None
+                                GeneratorAccessNode SourceSection: None
+                                PRaiseNodeGen SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [369,376]`entries`
+                            GetIteratorNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [369,376]`entries`
+                              Frame: [3,entries,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
+                      WriteGeneratorFrameVariableNodeGen SourceSection: [436,488]`path_item_entries = ...`
+                        Identifier: path_item_entries
+                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                          Frame: [5,path_item_entries,Illegal]
+                        PythonCallNodeGen SourceSection: [456,488]`_by_version_descendi...`
+                          CallNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [479,487]`filtered`
+                            Frame: [4,filtered,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: _by_version_descending
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ElseNode SourceSection: [493,692]`for entry in path_it...`
+                        GeneratorForNode SourceSection: None
+                          GeneratorBlockNode SourceSection: None
+                            WriteGeneratorFrameVariableNodeGen SourceSection: [533,574]`fullpath = os.path.j...`
+                              Identifier: fullpath
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [6,fullpath,Illegal]
+                              PythonCallNodeGen SourceSection: [544,574]`os.path.join(path_it...`
+                                CallNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [557,566]`path_item`
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [1,path_item,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadFromCellNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: [568,573]`entry`
+                                  Frame: [9,entry,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                GetCallAttributeNodeGen SourceSection: None
+                                  GetAttributeNodeGen SourceSection: [544,551]`os.path`
+                                    GetFixedAttributeNodeGen SourceSection: None
+                                      Key: path
+                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                        Op: __getattribute__
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [544,546]`os`
+                                      Identifier: os
+                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            WriteGeneratorFrameVariableNodeGen SourceSection: [583,629]`factory = dist_facto...`
+                              Identifier: factory
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [7,factory,Illegal]
+                              PythonCallNodeGen SourceSection: [593,629]`dist_factory(path_it...`
+                                CallNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [606,615]`path_item`
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [1,path_item,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadFromCellNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: [617,622]`entry`
+                                  Frame: [9,entry,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [624,628]`only`
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [2,only,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadFromCellNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: dist_factory
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ElseNode SourceSection: [638,692]`for dist in factory(...`
+                              GeneratorForNode SourceSection: None
+                                ExpressionStatementNode SourceSection: [681,691]`yield dist`
+                                  YieldNode SourceSection: [681,691]`yield dist`
+                                    flagSlot: 3
+                                    ReadGeneratorFrameVariableNode SourceSection: [687,691]`dist`
+                                      Frame: [8,dist,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    GeneratorAccessNode SourceSection: None
                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                  Identifier: entry
+                                  Identifier: dist
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                    Frame: [0,entry,Illegal]
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
+                                    Frame: [8,dist,Illegal]
+                                GetIteratorExpressionNodeGen SourceSection: [650,667]`factory(fullpath)`
+                                  GetIteratorNodeGen SourceSection: None
+                                  PythonCallNodeGen SourceSection: [650,667]`factory(fullpath)`
+                                    CallNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [658,666]`fullpath`
+                                      Frame: [6,fullpath,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: None
+                                      Frame: [7,factory,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
                                 GetNextNode SourceSection: None
                                   LookupAndCallUnaryNodeGen SourceSection: None
                                     Op: __next__
                                 GeneratorAccessNode SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: None
-                                Frame: [3,<return_val>,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
-                              GeneratorAccessNode SourceSection: None
-                              PRaiseNodeGen SourceSection: None
-                        GetIteratorExpressionNodeGen SourceSection: [369,376]`entries`
-                          GetIteratorNodeGen SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [369,376]`entries`
-                            Frame: [3,entries,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                        PythonObjectFactoryNodeGen SourceSection: None
-                    WriteGeneratorFrameVariableNodeGen SourceSection: [436,488]`path_item_entries = ...`
-                      Identifier: path_item_entries
-                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                        Frame: [5,path_item_entries,Illegal]
-                      PythonCallNodeGen SourceSection: [456,488]`_by_version_descendi...`
-                        CallNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [479,487]`filtered`
-                          Frame: [4,filtered,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: _by_version_descending
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                    ElseNode SourceSection: [493,692]`for entry in path_it...`
-                      GeneratorForNode SourceSection: None
-                        GeneratorBlockNode SourceSection: None
-                          WriteGeneratorFrameVariableNodeGen SourceSection: [533,574]`fullpath = os.path.j...`
-                            Identifier: fullpath
+                            GeneratorAccessNode SourceSection: None
+                          WriteGeneratorFrameVariableNodeGen SourceSection: None
+                            Identifier: entry
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [6,fullpath,Illegal]
-                            PythonCallNodeGen SourceSection: [544,574]`os.path.join(path_it...`
-                              CallNodeGen SourceSection: None
-                              ReadLocalCellNodeGen SourceSection: [557,566]`path_item`
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [1,path_item,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadFromCellNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [568,573]`entry`
-                                Frame: [9,entry,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                              GetCallAttributeNodeGen SourceSection: None
-                                GetAttributeNodeGen SourceSection: [544,551]`os.path`
-                                  GetFixedAttributeNodeGen SourceSection: None
-                                    Key: path
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __getattribute__
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [544,546]`os`
-                                    Identifier: os
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          WriteGeneratorFrameVariableNodeGen SourceSection: [583,629]`factory = dist_facto...`
-                            Identifier: factory
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [7,factory,Illegal]
-                            PythonCallNodeGen SourceSection: [593,629]`dist_factory(path_it...`
-                              CallNodeGen SourceSection: None
-                              ReadLocalCellNodeGen SourceSection: [606,615]`path_item`
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [1,path_item,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadFromCellNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [617,622]`entry`
-                                Frame: [9,entry,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadLocalCellNodeGen SourceSection: [624,628]`only`
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [2,only,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadFromCellNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: dist_factory
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ElseNode SourceSection: [638,692]`for dist in factory(...`
-                            GeneratorForNode SourceSection: None
-                              ExpressionStatementNode SourceSection: [681,691]`yield dist`
-                                YieldNode SourceSection: [681,691]`yield dist`
-                                  flagSlot: 3
-                                  ReadGeneratorFrameVariableNode SourceSection: [687,691]`dist`
-                                    Frame: [8,dist,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  GeneratorAccessNode SourceSection: None
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: dist
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [8,dist,Illegal]
-                              GetIteratorExpressionNodeGen SourceSection: [650,667]`factory(fullpath)`
-                                GetIteratorNodeGen SourceSection: None
-                                PythonCallNodeGen SourceSection: [650,667]`factory(fullpath)`
-                                  CallNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: [658,666]`fullpath`
-                                    Frame: [6,fullpath,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [7,factory,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                              GetNextNode SourceSection: None
-                                LookupAndCallUnaryNodeGen SourceSection: None
-                                  Op: __next__
-                              GeneratorAccessNode SourceSection: None
-                            BlockNode SourceSection: None
+                              Frame: [9,entry,Illegal]
+                          GetIteratorExpressionNodeGen SourceSection: [506,523]`path_item_entries`
+                            GetIteratorNodeGen SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [506,523]`path_item_entries`
+                              Frame: [5,path_item_entries,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                          GetNextNode SourceSection: None
+                            LookupAndCallUnaryNodeGen SourceSection: None
+                              Op: __next__
                           GeneratorAccessNode SourceSection: None
-                        WriteGeneratorFrameVariableNodeGen SourceSection: None
-                          Identifier: entry
-                          WriteGeneraterFrameSlotNodeGen SourceSection: None
-                            Frame: [9,entry,Illegal]
-                        GetIteratorExpressionNodeGen SourceSection: [506,523]`path_item_entries`
-                          GetIteratorNodeGen SourceSection: None
-                          ReadGeneratorFrameVariableNode SourceSection: [506,523]`path_item_entries`
-                            Frame: [5,path_item_entries,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                        GetNextNode SourceSection: None
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __next__
-                        GeneratorAccessNode SourceSection: None
-                      BlockNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                        BlockNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [10,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'functionDef03'> SourceSection: [0,35]`↵def foo()
                 ReturnTargetNode SourceSection: [1,35]`def foo():↵    a = 1...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [16,35]`a = 10↵    return a`
                       WriteLocalVariableNodeGen SourceSection: [16,22]`a = 10`
                         Identifier: a
                         WriteLocalFrameSlotNodeGen SourceSection: None

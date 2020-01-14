@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():�
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: None
-                      ReturnTargetNode SourceSection: None
+                    InnerRootNode SourceSection: [0,76]`class Test():↵    ""...`
+                      ReturnTargetNode SourceSection: [0,76]`class Test():↵    ""...`
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
                             QualName: Test
@@ -55,37 +55,38 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():�
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             StringLiteralNode SourceSection: [18,33]`"""Class doc"""`
-                          SetItemNodeGen SourceSection: [38,76]`def method():↵      ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                            FunctionDefinitionNode Name: method SourceSection: None
-                              Arguments: None
-                              KwArguments: None
-                              Documentation: StringLiteralNode: `Method doc`
-                              FreeVarSlots: __class__, 
-                              ExecutionSlots:
-                                FreeVarsSlots: __class__, 
-                                CellVarsSlots: None
-                              FunctionRootNode SourceSection: [38,76]`def method():↵      ...`
-                                Name: method
-                                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                                CelVars: None
-                                FreeVars: __class__
-                                NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [__class__, <return_val>]
+                          FunctionBodyNode SourceSection: [38,76]`def method():↵      ...`
+                            SetItemNodeGen SourceSection: [38,76]`def method():↵      ...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: method SourceSection: None
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: `Method doc`
+                                FreeVarSlots: __class__, 
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [38,76]`def method():↵      ...`
-                                  ReturnTargetNode SourceSection: [38,76]`def method():↵      ...`
-                                    Body: BlockNode SourceSection: None
-                                      BlockNode SourceSection: None
-                                      BlockNode SourceSection: None
-                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [1,<return_val>,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                FunctionRootNode SourceSection: [38,76]`def method():↵      ...`
+                                  Name: method
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 2 slots [__class__, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [38,76]`def method():↵      ...`
+                                    ReturnTargetNode SourceSection: [38,76]`def method():↵      ...`
+                                      Body: BlockNode SourceSection: None
+                                        BlockNode SourceSection: None
+                                        FunctionBodyNode SourceSection: [75,76]`"`
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [1,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None

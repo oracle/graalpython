@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'funcDoc03'> SourceSection: [0,23]`def fn(): f'1234
                 ReturnTargetNode SourceSection: [0,23]`def fn(): f'1234'; p...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [10,23]`f'1234'; pass`
                       ExpressionStatementNode SourceSection: [10,17]`f'1234'`
                         FormatStringLiteralNode SourceSection: [10,17]`f'1234'`
                           Values: <f>1234

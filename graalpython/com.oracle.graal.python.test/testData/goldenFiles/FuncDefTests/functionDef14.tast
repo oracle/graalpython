@@ -44,8 +44,9 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
                               Index: 0
-                        ExpressionStatementNode SourceSection: [67,71]`pass`
-                          EmptyNode SourceSection: [67,71]`pass`
+                        FunctionBodyNode SourceSection: [67,71]`pass`
+                          ExpressionStatementNode SourceSection: [67,71]`pass`
+                            EmptyNode SourceSection: [67,71]`pass`
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [1,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -74,21 +75,22 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                 ReturnTargetNode SourceSection: [0,37]`def bla():â†µ  install...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [13,36]`install(extra_opts=[...`
-                      PythonCallNodeGen SourceSection: [13,36]`install(extra_opts=[...`
-                        CallNodeGen SourceSection: None
-                        KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ListLiteralNode SourceSection: [32,35]`[1]`
-                              PythonObjectFactoryNodeGen SourceSection: None
-                              IntegerLiteralNode SourceSection: [33,34]`1`
-                                Value: 1
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: install
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [13,36]`install(extra_opts=[...`
+                      ExpressionStatementNode SourceSection: [13,36]`install(extra_opts=[...`
+                        PythonCallNodeGen SourceSection: [13,36]`install(extra_opts=[...`
+                          CallNodeGen SourceSection: None
+                          KeywordArgumentsNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ListLiteralNode SourceSection: [32,35]`[1]`
+                                PythonObjectFactoryNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [33,34]`1`
+                                  Value: 1
+                            CompactKeywordsNodeGen SourceSection: None
+                            ExecuteKeywordStarargsNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: install
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

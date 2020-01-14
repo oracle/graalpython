@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                 ReturnTargetNode SourceSection: [0,87]`def formatyear():↵  ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [26,87]`for (i, row) in some...`
                       ElseNode SourceSection: [26,78]`for (i, row) in some...`
                         ForNode SourceSection: None
                           ForRepeatingNode SourceSection: None

@@ -63,8 +63,9 @@ ModuleRootNode Name: <module 'functionDefCPT11'> SourceSection: [0,30]`def f(a, 
                         ArgumentExpressionNode SourceSection: None
                           ReadVarKeywordsNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
-                    ExpressionStatementNode SourceSection: [26,30]`pass`
-                      EmptyNode SourceSection: [26,30]`pass`
+                    FunctionBodyNode SourceSection: [26,30]`pass`
+                      ExpressionStatementNode SourceSection: [26,30]`pass`
+                        EmptyNode SourceSection: [26,30]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

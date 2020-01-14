@@ -33,21 +33,22 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
                 ReturnTargetNode SourceSection: [6,39]`def f():â†µ async for ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ElseNode SourceSection: [22,39]`for i in (): pass`
-                      ForNode SourceSection: None
-                        ForRepeatingNode SourceSection: None
-                          ForNextElementNodeGen SourceSection: None
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: i
-                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                Frame: [0,i,Illegal]
-                          ExpressionStatementNode SourceSection: [35,39]`pass`
-                            EmptyNode SourceSection: [35,39]`pass`
-                        GetIteratorExpressionNodeGen SourceSection: [31,33]`()`
-                          GetIteratorNodeGen SourceSection: None
-                          TupleLiteralNode SourceSection: [31,33]`()`
-                            PythonObjectFactoryNodeGen SourceSection: None
-                      BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [22,39]`for i in (): pass`
+                      ElseNode SourceSection: [22,39]`for i in (): pass`
+                        ForNode SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              WriteLocalVariableNodeGen SourceSection: None
+                                Identifier: i
+                                WriteLocalFrameSlotNodeGen SourceSection: None
+                                  Frame: [0,i,Illegal]
+                            ExpressionStatementNode SourceSection: [35,39]`pass`
+                              EmptyNode SourceSection: [35,39]`pass`
+                          GetIteratorExpressionNodeGen SourceSection: [31,33]`()`
+                            GetIteratorNodeGen SourceSection: None
+                            TupleLiteralNode SourceSection: [31,33]`()`
+                              PythonObjectFactoryNodeGen SourceSection: None
+                        BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

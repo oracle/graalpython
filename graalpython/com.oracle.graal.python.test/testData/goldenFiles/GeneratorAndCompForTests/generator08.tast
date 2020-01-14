@@ -37,77 +37,78 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
               InnerRootNode SourceSection: [0,104]`def merge(h):↵    fo...`
                 GeneratorReturnTargetNode SourceSection: [0,104]`def merge(h):↵    fo...`
                   flagSlot: 2
-                  GeneratorBlockNode SourceSection: None
-                    ElseNode SourceSection: [18,67]`for order, it in b()...`
-                      ForNode SourceSection: None
-                        ForRepeatingNode SourceSection: None
-                          ForNextElementNodeGen SourceSection: None
-                            DestructuringAssignmentNodeGen SourceSection: None
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <>temp4
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [4,<>temp4,Illegal]
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: <>temp5
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: order
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [2,order,Illegal]
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [4,<>temp4,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                Identifier: it
-                                WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                  Frame: [3,it,Illegal]
-                                ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [5,<>temp5,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                          WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
-                            Identifier: value
-                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                              Frame: [1,value,Illegal]
-                            PythonCallNodeGen SourceSection: [56,62]`next()`
+                  FunctionBodyNode SourceSection: [18,104]`for order, it in b()...`
+                    GeneratorBlockNode SourceSection: None
+                      ElseNode SourceSection: [18,67]`for order, it in b()...`
+                        ForNode SourceSection: None
+                          ForRepeatingNode SourceSection: None
+                            ForNextElementNodeGen SourceSection: None
+                              DestructuringAssignmentNodeGen SourceSection: None
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: <>temp4
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [4,<>temp4,Illegal]
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: <>temp5
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [5,<>temp5,Illegal]
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: order
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [2,order,Illegal]
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [4,<>temp4,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                  Identifier: it
+                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                    Frame: [3,it,Illegal]
+                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                    Frame: [5,<>temp5,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                            WriteGeneratorFrameVariableNodeGen SourceSection: [48,62]`value = next()`
+                              Identifier: value
+                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                Frame: [1,value,Illegal]
+                              PythonCallNodeGen SourceSection: [56,62]`next()`
+                                CallNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: next
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [35,38]`b()`
+                            GetIteratorNodeGen SourceSection: None
+                            PythonCallNodeGen SourceSection: [35,38]`b()`
                               CallNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: next
+                                Identifier: b
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GetIteratorExpressionNodeGen SourceSection: [35,38]`b()`
-                          GetIteratorNodeGen SourceSection: None
-                          PythonCallNodeGen SourceSection: [35,38]`b()`
-                            CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: b
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      BlockNode SourceSection: None
-                    ElseNode SourceSection: [67,104]`while len(h) > 1:↵  ...`
-                      GeneratorWhileNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [93,104]`yield value`
-                          YieldNode SourceSection: [93,104]`yield value`
-                            flagSlot: 0
-                            ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
-                              Frame: [1,value,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                            GeneratorAccessNode SourceSection: None
-                        YesNodeGen SourceSection: None
-                          BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __gt__
-                            PythonCallNodeGen SourceSection: [73,79]`len(h)`
-                              CallNodeGen SourceSection: None
-                              ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
-                                Frame: [0,h,Illegal]
+                        BlockNode SourceSection: None
+                      ElseNode SourceSection: [67,104]`while len(h) > 1:↵  ...`
+                        GeneratorWhileNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [93,104]`yield value`
+                            YieldNode SourceSection: [93,104]`yield value`
+                              flagSlot: 0
+                              ReadGeneratorFrameVariableNode SourceSection: [99,104]`value`
+                                Frame: [1,value,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: len
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            IntegerLiteralNode SourceSection: [82,83]`1`
-                              Value: 1
-                        GeneratorAccessNode SourceSection: None
-                      BlockNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                              GeneratorAccessNode SourceSection: None
+                          YesNodeGen SourceSection: None
+                            BinaryComparisonNodeGen SourceSection: [73,83]`len(h) > 1`
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __gt__
+                              PythonCallNodeGen SourceSection: [73,79]`len(h)`
+                                CallNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
+                                  Frame: [0,h,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  Identifier: len
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [82,83]`1`
+                                Value: 1
+                          GeneratorAccessNode SourceSection: None
+                        BlockNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [6,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

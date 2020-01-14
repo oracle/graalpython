@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'await06'> SourceSection: [0,38]`async def f():↵ 
                 ReturnTargetNode SourceSection: [6,38]`def f():↵ await foo(...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [16,38]`await foo(); return ...`
                       ExpressionStatementNode SourceSection: [16,27]`await foo()`
                         PythonCallNodeGen SourceSection: [16,27]`await foo()`
                           CallNodeGen SourceSection: None

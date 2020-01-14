@@ -41,8 +41,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                         ExecutionSlots:
                           FreeVarsSlots: None
                           CellVarsSlots: __class__, 
-                        InnerRootNode SourceSection: None
-                          ReturnTargetNode SourceSection: None
+                        InnerRootNode SourceSection: [24,40]`class foo():pass`
+                          ReturnTargetNode SourceSection: [24,40]`class foo():pass`
                             Body: BlockNode SourceSection: None
                               ClassDefinitionPrologueNode SourceSection: None
                                 QualName: foo
@@ -53,8 +53,9 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                                   Index: 0
                                 SetItemIfNotPresentNodeGen SourceSection: None
                                   SetItemNodeGen SourceSection: None
-                              ExpressionStatementNode SourceSection: [36,40]`pass`
-                                EmptyNode SourceSection: [36,40]`pass`
+                              FunctionBodyNode SourceSection: [36,40]`pass`
+                                ExpressionStatementNode SourceSection: [36,40]`pass`
+                                  EmptyNode SourceSection: [36,40]`pass`
                             Return Expresssion: ObjectLiteralNode SourceSection: None
                     StringLiteralNode SourceSection: None
                     GetCallAttributeNodeGen SourceSection: None

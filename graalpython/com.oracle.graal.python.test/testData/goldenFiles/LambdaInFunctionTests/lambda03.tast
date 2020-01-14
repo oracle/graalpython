@@ -33,45 +33,47 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,24]`def fn():↵  lam
                 ReturnTargetNode SourceSection: [0,24]`def fn():↵  lambda *...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [12,24]`lambda *y: 0`
-                      FunctionDefinitionNode Name: anonymous SourceSection: [12,24]`lambda *y: 0`
-                        Arguments: None
-                        KwArguments: None
-                        Documentation: None
-                        FreeVarSlots: None
-                        ExecutionSlots:
-                          FreeVarsSlots: None
-                          CellVarsSlots: None
-                        FunctionRootNode SourceSection: [12,24]`lambda *y: 0`
-                          Name: anonymous
-                          Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
-                          CelVars: None
-                          FreeVars: None
-                          NeedsCellFrame: False
-                          FrameDescriptor: 2 slots [y, <return_val>]
+                    FunctionBodyNode SourceSection: [12,24]`lambda *y: 0`
+                      ExpressionStatementNode SourceSection: [12,24]`lambda *y: 0`
+                        FunctionDefinitionNode Name: anonymous SourceSection: [12,24]`lambda *y: 0`
+                          Arguments: None
+                          KwArguments: None
+                          Documentation: None
+                          FreeVarSlots: None
                           ExecutionSlots:
                             FreeVarsSlots: None
                             CellVarsSlots: None
-                          InnerRootNode SourceSection: [12,24]`lambda *y: 0`
-                            ReturnTargetNode SourceSection: [12,24]`lambda *y: 0`
-                              Body: BlockNode SourceSection: None
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: y
-                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                    Frame: [0,y,Illegal]
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadVarArgsNodeGen SourceSection: None
-                                      PythonObjectFactoryNodeGen SourceSection: None
-                                FrameReturnNode SourceSection: None
+                          FunctionRootNode SourceSection: [12,24]`lambda *y: 0`
+                            Name: anonymous
+                            Signature: varArgs=True, varKeywordArgs=False, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: None
+                            NeedsCellFrame: False
+                            FrameDescriptor: 2 slots [y, <return_val>]
+                            ExecutionSlots:
+                              FreeVarsSlots: None
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [12,24]`lambda *y: 0`
+                              ReturnTargetNode SourceSection: [12,24]`lambda *y: 0`
+                                Body: BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: None
-                                    Identifier: <return_val>
+                                    Identifier: y
                                     WriteLocalFrameSlotNodeGen SourceSection: None
-                                      Frame: [1,<return_val>,Illegal]
-                                    IntegerLiteralNode SourceSection: [23,24]`0`
-                                      Value: 0
-                              Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                Frame: [1,<return_val>,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                                      Frame: [0,y,Illegal]
+                                    ArgumentExpressionNode SourceSection: None
+                                      ReadVarArgsNodeGen SourceSection: None
+                                        PythonObjectFactoryNodeGen SourceSection: None
+                                  FrameReturnNode SourceSection: None
+                                    FunctionBodyNode SourceSection: [23,24]`0`
+                                      WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: <return_val>
+                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                          Frame: [1,<return_val>,Illegal]
+                                        IntegerLiteralNode SourceSection: [23,24]`0`
+                                          Value: 0
+                                Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                  Frame: [1,<return_val>,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

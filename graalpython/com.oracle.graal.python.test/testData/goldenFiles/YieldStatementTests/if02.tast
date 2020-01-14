@@ -37,38 +37,39 @@ ModuleRootNode Name: <module 'if02'> SourceSection: [0,72]`def gen(c, b):↵  if
               InnerRootNode SourceSection: [0,72]`def gen(c, b):↵  if ...`
                 GeneratorReturnTargetNode SourceSection: [0,72]`def gen(c, b):↵  if ...`
                   flagSlot: 4
-                  GeneratorBlockNode SourceSection: None
-                    IfNode SourceSection: [17,33]`if c:↵    b=1↵  `
-                      YesNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [20,21]`c`
-                          Frame: [0,c,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                      WriteGeneratorFrameVariableNodeGen SourceSection: [27,30]`b=1`
-                        Identifier: b
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [1,b,Illegal]
-                        IntegerLiteralNode SourceSection: [29,30]`1`
-                          Value: 1
-                      BlockNode SourceSection: None
-                    GeneratorIfNode SourceSection: [33,72]`if b:↵    yield 12↵ ...`
+                  FunctionBodyNode SourceSection: [17,72]`if c:↵    b=1↵  if b...`
+                    GeneratorBlockNode SourceSection: None
+                      IfNode SourceSection: [17,33]`if c:↵    b=1↵  `
+                        YesNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [20,21]`c`
+                            Frame: [0,c,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        WriteGeneratorFrameVariableNodeGen SourceSection: [27,30]`b=1`
+                          Identifier: b
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
+                            Frame: [1,b,Illegal]
+                          IntegerLiteralNode SourceSection: [29,30]`1`
+                            Value: 1
+                        BlockNode SourceSection: None
+                      GeneratorIfNode SourceSection: [33,72]`if b:↵    yield 12↵ ...`
+                        GeneratorAccessNode SourceSection: None
+                        YesNodeGen SourceSection: None
+                          ReadGeneratorFrameVariableNode SourceSection: [36,37]`b`
+                            Frame: [1,b,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                        ExpressionStatementNode SourceSection: [43,51]`yield 12`
+                          YieldNode SourceSection: [43,51]`yield 12`
+                            flagSlot: 0
+                            IntegerLiteralNode SourceSection: [49,51]`12`
+                              Value: 12
+                            GeneratorAccessNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [64,72]`yield 13`
+                          YieldNode SourceSection: [64,72]`yield 13`
+                            flagSlot: 1
+                            IntegerLiteralNode SourceSection: [70,72]`13`
+                              Value: 13
+                            GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                      YesNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: [36,37]`b`
-                          Frame: [1,b,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                      ExpressionStatementNode SourceSection: [43,51]`yield 12`
-                        YieldNode SourceSection: [43,51]`yield 12`
-                          flagSlot: 0
-                          IntegerLiteralNode SourceSection: [49,51]`12`
-                            Value: 12
-                          GeneratorAccessNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [64,72]`yield 13`
-                        YieldNode SourceSection: [64,72]`yield 13`
-                          flagSlot: 1
-                          IntegerLiteralNode SourceSection: [70,72]`13`
-                            Value: 13
-                          GeneratorAccessNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

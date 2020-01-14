@@ -36,15 +36,16 @@ ModuleRootNode Name: <module 'yeild10'> SourceSection: [0,24]`def f(): return; y
               InnerRootNode SourceSection: [0,24]`def f(): return; yie...`
                 GeneratorReturnTargetNode SourceSection: [0,24]`def f(): return; yie...`
                   flagSlot: 1
-                  GeneratorBlockNode SourceSection: None
-                    ReturnNode SourceSection: [9,15]`return`
-                    ExpressionStatementNode SourceSection: [17,24]`yield 1`
-                      YieldNode SourceSection: [17,24]`yield 1`
-                        flagSlot: 0
-                        IntegerLiteralNode SourceSection: [23,24]`1`
-                          Value: 1
-                        GeneratorAccessNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
+                  FunctionBodyNode SourceSection: [9,24]`return; yield 1`
+                    GeneratorBlockNode SourceSection: None
+                      ReturnNode SourceSection: [9,15]`return`
+                      ExpressionStatementNode SourceSection: [17,24]`yield 1`
+                        YieldNode SourceSection: [17,24]`yield 1`
+                          flagSlot: 0
+                          IntegerLiteralNode SourceSection: [23,24]`1`
+                            Value: 1
+                          GeneratorAccessNode SourceSection: None
+                      GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

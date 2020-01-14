@@ -36,11 +36,12 @@ ModuleRootNode Name: <module 'doc01'> SourceSection: [0,42]`def fn():↵  "This 
               InnerRootNode SourceSection: [0,42]`def fn():↵  "This is...`
                 GeneratorReturnTargetNode SourceSection: [0,42]`def fn():↵  "This is...`
                   flagSlot: 1
-                  ExpressionStatementNode SourceSection: [30,42]`yield "neco"`
-                    YieldNode SourceSection: [30,42]`yield "neco"`
-                      flagSlot: 0
-                      StringLiteralNode SourceSection: [36,42]`"neco"`
-                      GeneratorAccessNode SourceSection: None
+                  FunctionBodyNode SourceSection: [30,42]`yield "neco"`
+                    ExpressionStatementNode SourceSection: [30,42]`yield "neco"`
+                      YieldNode SourceSection: [30,42]`yield "neco"`
+                        flagSlot: 0
+                        StringLiteralNode SourceSection: [36,42]`"neco"`
+                        GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

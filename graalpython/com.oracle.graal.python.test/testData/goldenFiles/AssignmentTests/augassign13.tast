@@ -33,16 +33,17 @@ ModuleRootNode Name: <module 'augassign13'> SourceSection: [0,17]`def fn (): x +
                 ReturnTargetNode SourceSection: [0,17]`def fn (): x += 3`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: [11,17]`x += 3`
-                      Identifier: x
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,x,Illegal]
-                      LookupAndCallInplaceNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: [11,12]`x`
+                    FunctionBodyNode SourceSection: [11,17]`x += 3`
+                      WriteLocalVariableNodeGen SourceSection: [11,17]`x += 3`
+                        Identifier: x
+                        WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,x,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
-                        IntegerLiteralNode SourceSection: [16,17]`3`
-                          Value: 3
+                        LookupAndCallInplaceNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [11,12]`x`
+                            Frame: [0,x,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          IntegerLiteralNode SourceSection: [16,17]`3`
+                            Value: 3
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

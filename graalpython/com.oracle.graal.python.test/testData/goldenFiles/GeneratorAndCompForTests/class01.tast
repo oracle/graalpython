@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: None
-                      ReturnTargetNode SourceSection: None
+                    InnerRootNode SourceSection: [0,192]`class OrderedDict(di...`
+                      ReturnTargetNode SourceSection: [0,192]`class OrderedDict(di...`
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
                             QualName: OrderedDict
@@ -49,113 +49,115 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                               Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: [29,192]`def __reversed__(sel...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                            GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                              FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
-                              Active Flags: 3
-                              For Nodes: 0
-                              Block Nodes: 2
-                              Arguments: None
-                              KwArguments: None
-                              Documentation: StringLiteralNode: Empty
-                              FreeVarSlots: __class__, 
-                              ExecutionSlots:
-                                FreeVarsSlots: __class__, 
-                                CellVarsSlots: None
-                              FunctionRootNode SourceSection: [29,192]`def __reversed__(sel...`
-                                Name: __reversed__
-                                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                  Param Names: self
-                                CelVars: None
-                                FreeVars: __class__
-                                NeedsCellFrame: False
+                          FunctionBodyNode SourceSection: [29,192]`def __reversed__(sel...`
+                            SetItemNodeGen SourceSection: [29,192]`def __reversed__(sel...`
+                              ArgumentExpressionNode SourceSection: None
+                                ReadIndexedArgumentNodeGen SourceSection: None
+                                  Index: 0
+                              StringLiteralNode SourceSection: None
+                              GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                                 FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                                Active Flags: 3
+                                For Nodes: 0
+                                Block Nodes: 2
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: StringLiteralNode: Empty
+                                FreeVarSlots: __class__, 
                                 ExecutionSlots:
                                   FreeVarsSlots: __class__, 
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [29,192]`def __reversed__(sel...`
-                                  GeneratorReturnTargetNode SourceSection: [29,192]`def __reversed__(sel...`
-                                    flagSlot: 2
-                                    GeneratorBlockNode SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: [61,79]`root = self.__root`
-                                        Identifier: root
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [1,root,Illegal]
-                                        GetAttributeNodeGen SourceSection: [68,79]`self.__root`
-                                          GetFixedAttributeNodeGen SourceSection: None
-                                            Key: __root
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __getattribute__
-                                          ReadGeneratorFrameVariableNode SourceSection: [68,72]`self`
-                                            Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: [88,104]`curr = root.prev`
-                                        Identifier: curr
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,curr,Illegal]
-                                        GetAttributeNodeGen SourceSection: [95,104]`root.prev`
-                                          GetFixedAttributeNodeGen SourceSection: None
-                                            Key: prev
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __getattribute__
-                                          ReadGeneratorFrameVariableNode SourceSection: [95,99]`root`
-                                            Frame: [1,root,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                      ElseNode SourceSection: [113,192]`while curr is not ro...`
-                                        GeneratorWhileNode SourceSection: None
-                                          GeneratorBlockNode SourceSection: None
-                                            ExpressionStatementNode SourceSection: [149,163]`yield curr.key`
-                                              YieldNode SourceSection: [149,163]`yield curr.key`
-                                                flagSlot: 0
-                                                GetAttributeNodeGen SourceSection: [155,163]`curr.key`
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: key
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                  ReadGeneratorFrameVariableNode SourceSection: [155,159]`curr`
-                                                    Frame: [2,curr,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                GeneratorAccessNode SourceSection: None
-                                            WriteGeneratorFrameVariableNodeGen SourceSection: [176,192]`curr = curr.prev`
-                                              Identifier: curr
-                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                                Frame: [2,curr,Illegal]
-                                              GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: prev
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                ReadGeneratorFrameVariableNode SourceSection: [183,187]`curr`
-                                                  Frame: [2,curr,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                            GeneratorAccessNode SourceSection: None
-                                          NotNodeGen SourceSection: [119,135]`curr is not root`
-                                            IsExpressionNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
-                                                Frame: [2,curr,Illegal]
+                                FunctionRootNode SourceSection: [29,192]`def __reversed__(sel...`
+                                  Name: __reversed__
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                    Param Names: self
+                                  CelVars: None
+                                  FreeVars: __class__
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: __class__, 
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [29,192]`def __reversed__(sel...`
+                                    GeneratorReturnTargetNode SourceSection: [29,192]`def __reversed__(sel...`
+                                      flagSlot: 2
+                                      FunctionBodyNode SourceSection: [61,192]`root = self.__root↵ ...`
+                                        GeneratorBlockNode SourceSection: None
+                                          WriteGeneratorFrameVariableNodeGen SourceSection: [61,79]`root = self.__root`
+                                            Identifier: root
+                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                              Frame: [1,root,Illegal]
+                                            GetAttributeNodeGen SourceSection: [68,79]`self.__root`
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: __root
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                              ReadGeneratorFrameVariableNode SourceSection: [68,72]`self`
+                                                Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNode SourceSection: [131,135]`root`
+                                          WriteGeneratorFrameVariableNodeGen SourceSection: [88,104]`curr = root.prev`
+                                            Identifier: curr
+                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                              Frame: [2,curr,Illegal]
+                                            GetAttributeNodeGen SourceSection: [95,104]`root.prev`
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: prev
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                              ReadGeneratorFrameVariableNode SourceSection: [95,99]`root`
                                                 Frame: [1,root,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                          ElseNode SourceSection: [113,192]`while curr is not ro...`
+                                            GeneratorWhileNode SourceSection: None
+                                              GeneratorBlockNode SourceSection: None
+                                                ExpressionStatementNode SourceSection: [149,163]`yield curr.key`
+                                                  YieldNode SourceSection: [149,163]`yield curr.key`
+                                                    flagSlot: 0
+                                                    GetAttributeNodeGen SourceSection: [155,163]`curr.key`
+                                                      GetFixedAttributeNodeGen SourceSection: None
+                                                        Key: key
+                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                          Op: __getattribute__
+                                                      ReadGeneratorFrameVariableNode SourceSection: [155,159]`curr`
+                                                        Frame: [2,curr,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                    GeneratorAccessNode SourceSection: None
+                                                WriteGeneratorFrameVariableNodeGen SourceSection: [176,192]`curr = curr.prev`
+                                                  Identifier: curr
+                                                  WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                                    Frame: [2,curr,Illegal]
+                                                  GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: prev
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                    ReadGeneratorFrameVariableNode SourceSection: [183,187]`curr`
+                                                      Frame: [2,curr,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                GeneratorAccessNode SourceSection: None
+                                              NotNodeGen SourceSection: [119,135]`curr is not root`
+                                                IsExpressionNodeGen SourceSection: None
+                                                  ReadGeneratorFrameVariableNode SourceSection: [119,123]`curr`
+                                                    Frame: [2,curr,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadGeneratorFrameVariableNode SourceSection: [131,135]`root`
+                                                    Frame: [1,root,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              GeneratorAccessNode SourceSection: None
+                                            BlockNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
-                                        BlockNode SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                        Frame: [4,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                        Identifier: self
+                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                          Frame: [0,self,Illegal]
+                                        ArgumentExpressionNode SourceSection: None
+                                          ReadIndexedArgumentNodeGen SourceSection: None
+                                            Index: 0
                                       GeneratorAccessNode SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
-                                      Frame: [4,<return_val>,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                      Identifier: self
-                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                        Frame: [0,self,Illegal]
-                                      ArgumentExpressionNode SourceSection: None
-                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                          Index: 0
-                                    GeneratorAccessNode SourceSection: None
-                                    PRaiseNodeGen SourceSection: None
+                                      PRaiseNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [18,22]`dict`

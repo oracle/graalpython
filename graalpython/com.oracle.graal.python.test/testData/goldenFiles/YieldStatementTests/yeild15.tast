@@ -36,33 +36,34 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
               InnerRootNode SourceSection: [0,49]`def f():↵    for x i...`
                 GeneratorReturnTargetNode SourceSection: [0,49]`def f():↵    for x i...`
                   flagSlot: 1
-                  ElseNode SourceSection: [13,49]`for x in range(30):↵...`
-                    GeneratorForNode SourceSection: None
-                      ExpressionStatementNode SourceSection: [41,48]`yield x`
-                        YieldNode SourceSection: [41,48]`yield x`
-                          flagSlot: 0
-                          ReadGeneratorFrameVariableNode SourceSection: [47,48]`x`
+                  FunctionBodyNode SourceSection: [13,49]`for x in range(30):↵...`
+                    ElseNode SourceSection: [13,49]`for x in range(30):↵...`
+                      GeneratorForNode SourceSection: None
+                        ExpressionStatementNode SourceSection: [41,48]`yield x`
+                          YieldNode SourceSection: [41,48]`yield x`
+                            flagSlot: 0
+                            ReadGeneratorFrameVariableNode SourceSection: [47,48]`x`
+                              Frame: [0,x,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
+                            GeneratorAccessNode SourceSection: None
+                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                          Identifier: x
+                          WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [0,x,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
-                          GeneratorAccessNode SourceSection: None
-                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                        Identifier: x
-                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                          Frame: [0,x,Illegal]
-                      GetIteratorExpressionNodeGen SourceSection: [22,31]`range(30)`
-                        GetIteratorNodeGen SourceSection: None
-                        PythonCallNodeGen SourceSection: [22,31]`range(30)`
-                          CallNodeGen SourceSection: None
-                          IntegerLiteralNode SourceSection: [28,30]`30`
-                            Value: 30
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: range
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      GetNextNode SourceSection: None
-                        LookupAndCallUnaryNodeGen SourceSection: None
-                          Op: __next__
-                      GeneratorAccessNode SourceSection: None
-                    BlockNode SourceSection: None
+                        GetIteratorExpressionNodeGen SourceSection: [22,31]`range(30)`
+                          GetIteratorNodeGen SourceSection: None
+                          PythonCallNodeGen SourceSection: [22,31]`range(30)`
+                            CallNodeGen SourceSection: None
+                            IntegerLiteralNode SourceSection: [28,30]`30`
+                              Value: 30
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: range
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        GetNextNode SourceSection: None
+                          LookupAndCallUnaryNodeGen SourceSection: None
+                            Op: __next__
+                        GeneratorAccessNode SourceSection: None
+                      BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

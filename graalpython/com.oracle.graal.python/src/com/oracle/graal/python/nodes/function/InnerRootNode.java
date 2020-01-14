@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -68,7 +69,15 @@ public class InnerRootNode extends ExpressionNode {
 
     @Override
     public boolean hasTag(Class<? extends Tag> tag) {
-        return StandardTags.RootTag.class == tag;
+        if (StandardTags.RootTag.class == tag) {
+            return true;
+        }
+        if (StandardTags.RootBodyTag.class == tag && root instanceof ModuleRootNode) {
+            // Module execution doesn't process any arguments as a functin so can be marked with
+            // RootTag and RootBodyTag as well.
+            return true;
+        }
+        return false;
     }
 
     @Override

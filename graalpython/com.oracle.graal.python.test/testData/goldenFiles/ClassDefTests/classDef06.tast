@@ -37,8 +37,8 @@ ModuleRootNode Name: <module 'classDef06'> SourceSection: [0,49]`class DerivedCl
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: None
-                      ReturnTargetNode SourceSection: None
+                    InnerRootNode SourceSection: [0,49]`class DerivedClassNa...`
+                      ReturnTargetNode SourceSection: [0,49]`class DerivedClassNa...`
                         Body: BlockNode SourceSection: None
                           ClassDefinitionPrologueNode SourceSection: None
                             QualName: DerivedClassName
@@ -49,8 +49,9 @@ ModuleRootNode Name: <module 'classDef06'> SourceSection: [0,49]`class DerivedCl
                               Index: 0
                             SetItemIfNotPresentNodeGen SourceSection: None
                               SetItemNodeGen SourceSection: None
-                          ExpressionStatementNode SourceSection: [45,49]`pass`
-                            EmptyNode SourceSection: [45,49]`pass`
+                          FunctionBodyNode SourceSection: [45,49]`pass`
+                            ExpressionStatementNode SourceSection: [45,49]`pass`
+                              EmptyNode SourceSection: [45,49]`pass`
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
                 ReadNameNodeGen SourceSection: [23,28]`Base1`

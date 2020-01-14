@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                 ReturnTargetNode SourceSection: [1,139]`def outer ():↵    x ...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [19,137]`x = 10↵    def inner...`
                       WriteLocalVariableNodeGen SourceSection: [19,25]`x = 10`
                         Identifier: x
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                               ReturnTargetNode SourceSection: [30,98]`def inner():↵       ...`
                                 Body: BlockNode SourceSection: None
                                   BlockNode SourceSection: None
-                                  BlockNode SourceSection: None
+                                  FunctionBodyNode SourceSection: [51,92]`x = 5↵        print(...`
                                     WriteLocalVariableNodeGen SourceSection: [51,56]`x = 5`
                                       Identifier: x
                                       WriteLocalFrameSlotNodeGen SourceSection: None

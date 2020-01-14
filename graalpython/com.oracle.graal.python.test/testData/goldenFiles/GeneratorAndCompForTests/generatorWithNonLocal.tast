@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                 ReturnTargetNode SourceSection: [0,247]`def b_func():↵  exec...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    BlockNode SourceSection: None
+                    FunctionBodyNode SourceSection: [16,247]`exec_gen = False↵  d...`
                       WriteLocalCellNodeGen SourceSection: [16,32]`exec_gen = False`
                         Identifier: exec_gen
                         ReadLocalVariableNode SourceSection: None
@@ -69,98 +69,99 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                             InnerRootNode SourceSection: [35,190]`def _inner_func():↵ ...`
                               GeneratorReturnTargetNode SourceSection: [35,190]`def _inner_func():↵ ...`
                                 flagSlot: 1
-                                GeneratorBlockNode SourceSection: None
-                                  WriteGeneratorFrameVariableNodeGen SourceSection: [58,137]`def doit():↵      no...`
-                                    Identifier: doit
-                                    WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                      Frame: [0,doit,Illegal]
-                                    FunctionDefinitionNode Name: doit SourceSection: None
-                                      Arguments: None
-                                      KwArguments: None
-                                      Documentation: StringLiteralNode: Empty
-                                      FreeVarSlots: exec_gen, 
-                                      ExecutionSlots:
-                                        FreeVarsSlots: exec_gen, 
-                                        CellVarsSlots: None
-                                      FunctionRootNode SourceSection: [58,137]`def doit():↵      no...`
-                                        Name: doit
-                                        Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                                        CelVars: None
-                                        FreeVars: exec_gen
-                                        NeedsCellFrame: False
-                                        FrameDescriptor: 2 slots [exec_gen, <return_val>]
+                                FunctionBodyNode SourceSection: [58,190]`def doit():↵      no...`
+                                  GeneratorBlockNode SourceSection: None
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: [58,137]`def doit():↵      no...`
+                                      Identifier: doit
+                                      WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                        Frame: [0,doit,Illegal]
+                                      FunctionDefinitionNode Name: doit SourceSection: None
+                                        Arguments: None
+                                        KwArguments: None
+                                        Documentation: StringLiteralNode: Empty
+                                        FreeVarSlots: exec_gen, 
                                         ExecutionSlots:
                                           FreeVarsSlots: exec_gen, 
                                           CellVarsSlots: None
-                                        InnerRootNode SourceSection: [58,137]`def doit():↵      no...`
-                                          ReturnTargetNode SourceSection: [58,137]`def doit():↵      no...`
-                                            Body: BlockNode SourceSection: None
-                                              BlockNode SourceSection: None
-                                              BlockNode SourceSection: None
-                                                ExpressionStatementNode SourceSection: [76,93]`nonlocal exec_gen`
-                                                  EmptyNode SourceSection: [76,93]`nonlocal exec_gen`
-                                                WriteLocalCellNodeGen SourceSection: [100,115]`exec_gen = True`
-                                                  Identifier: exec_gen
-                                                  ReadLocalVariableNode SourceSection: None
-                                                    Frame: [0,exec_gen,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                  BooleanLiteralNode SourceSection: [111,115]`True`
-                                                FrameReturnNode SourceSection: [122,132]`return [1]`
-                                                  WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <return_val>
-                                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [1,<return_val>,Illegal]
-                                                    ListLiteralNode SourceSection: [129,132]`[1]`
-                                                      PythonObjectFactoryNodeGen SourceSection: None
-                                                      IntegerLiteralNode SourceSection: [130,131]`1`
-                                                        Value: 1
-                                            Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                              Frame: [1,<return_val>,Illegal]
+                                        FunctionRootNode SourceSection: [58,137]`def doit():↵      no...`
+                                          Name: doit
+                                          Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                          CelVars: None
+                                          FreeVars: exec_gen
+                                          NeedsCellFrame: False
+                                          FrameDescriptor: 2 slots [exec_gen, <return_val>]
+                                          ExecutionSlots:
+                                            FreeVarsSlots: exec_gen, 
+                                            CellVarsSlots: None
+                                          InnerRootNode SourceSection: [58,137]`def doit():↵      no...`
+                                            ReturnTargetNode SourceSection: [58,137]`def doit():↵      no...`
+                                              Body: BlockNode SourceSection: None
+                                                BlockNode SourceSection: None
+                                                FunctionBodyNode SourceSection: [76,132]`nonlocal exec_gen↵  ...`
+                                                  ExpressionStatementNode SourceSection: [76,93]`nonlocal exec_gen`
+                                                    EmptyNode SourceSection: [76,93]`nonlocal exec_gen`
+                                                  WriteLocalCellNodeGen SourceSection: [100,115]`exec_gen = True`
+                                                    Identifier: exec_gen
+                                                    ReadLocalVariableNode SourceSection: None
+                                                      Frame: [0,exec_gen,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    BooleanLiteralNode SourceSection: [111,115]`True`
+                                                  FrameReturnNode SourceSection: [122,132]`return [1]`
+                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                      Identifier: <return_val>
+                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                        Frame: [1,<return_val>,Illegal]
+                                                      ListLiteralNode SourceSection: [129,132]`[1]`
+                                                        PythonObjectFactoryNodeGen SourceSection: None
+                                                        IntegerLiteralNode SourceSection: [130,131]`1`
+                                                          Value: 1
+                                              Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                Frame: [1,<return_val>,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                    ElseNode SourceSection: [137,190]`for A in doit():↵   ...`
+                                      GeneratorForNode SourceSection: None
+                                        ElseNode SourceSection: [160,190]`for C in Y:↵        ...`
+                                          GeneratorForNode SourceSection: None
+                                            ExpressionStatementNode SourceSection: [180,187]`yield A`
+                                              YieldNode SourceSection: [180,187]`yield A`
+                                                flagSlot: 0
+                                                ReadGeneratorFrameVariableNode SourceSection: [186,187]`A`
+                                                  Frame: [2,A,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                GeneratorAccessNode SourceSection: None
+                                            WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                              Identifier: C
+                                              WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                                Frame: [1,C,Illegal]
+                                            GetIteratorExpressionNodeGen SourceSection: [169,170]`Y`
+                                              GetIteratorNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [169,170]`Y`
+                                                ReadGeneratorFrameVariableNode SourceSection: None
+                                                  Frame: [4,Y,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                            GetNextNode SourceSection: None
+                                              LookupAndCallUnaryNodeGen SourceSection: None
+                                                Op: __next__
+                                            GeneratorAccessNode SourceSection: None
+                                          BlockNode SourceSection: None
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: A
+                                          WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                            Frame: [2,A,Illegal]
+                                        GetIteratorExpressionNodeGen SourceSection: [146,152]`doit()`
+                                          GetIteratorNodeGen SourceSection: None
+                                          PythonCallNodeGen SourceSection: [146,152]`doit()`
+                                            CallNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: None
+                                              Frame: [0,doit,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                  ElseNode SourceSection: [137,190]`for A in doit():↵   ...`
-                                    GeneratorForNode SourceSection: None
-                                      ElseNode SourceSection: [160,190]`for C in Y:↵        ...`
-                                        GeneratorForNode SourceSection: None
-                                          ExpressionStatementNode SourceSection: [180,187]`yield A`
-                                            YieldNode SourceSection: [180,187]`yield A`
-                                              flagSlot: 0
-                                              ReadGeneratorFrameVariableNode SourceSection: [186,187]`A`
-                                                Frame: [2,A,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              GeneratorAccessNode SourceSection: None
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: C
-                                            WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,C,Illegal]
-                                          GetIteratorExpressionNodeGen SourceSection: [169,170]`Y`
-                                            GetIteratorNodeGen SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: [169,170]`Y`
-                                              ReadGeneratorFrameVariableNode SourceSection: None
-                                                Frame: [4,Y,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadFromCellNodeGen SourceSection: None
-                                          GetNextNode SourceSection: None
-                                            LookupAndCallUnaryNodeGen SourceSection: None
-                                              Op: __next__
-                                          GeneratorAccessNode SourceSection: None
-                                        BlockNode SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: A
-                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,A,Illegal]
-                                      GetIteratorExpressionNodeGen SourceSection: [146,152]`doit()`
-                                        GetIteratorNodeGen SourceSection: None
-                                        PythonCallNodeGen SourceSection: [146,152]`doit()`
-                                          CallNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: None
-                                            Frame: [0,doit,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                      GetNextNode SourceSection: None
-                                        LookupAndCallUnaryNodeGen SourceSection: None
-                                          Op: __next__
-                                      GeneratorAccessNode SourceSection: None
-                                    BlockNode SourceSection: None
-                                  GeneratorAccessNode SourceSection: None
+                                        GetNextNode SourceSection: None
+                                          LookupAndCallUnaryNodeGen SourceSection: None
+                                            Op: __next__
+                                        GeneratorAccessNode SourceSection: None
+                                      BlockNode SourceSection: None
+                                    GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

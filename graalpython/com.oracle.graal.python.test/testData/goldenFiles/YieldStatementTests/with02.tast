@@ -37,74 +37,75 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
               InnerRootNode SourceSection: [0,80]`def gen(a):↵  with a...`
                 GeneratorReturnTargetNode SourceSection: [0,80]`def gen(a):↵  with a...`
                   flagSlot: 4
-                  GeneratorBlockNode SourceSection: None
-                    WithNode SourceSection: [14,44]`with a:↵    bla(p1, ...`
-                      ExpressionStatementNode SourceSection: [26,41]`bla(p1, p2, p3)`
-                        PythonCallNodeGen SourceSection: [26,41]`bla(p1, p2, p3)`
-                          CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [30,32]`p1`
-                            Identifier: p1
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [34,36]`p2`
-                            Identifier: p2
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [38,40]`p3`
-                            Identifier: p3
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: bla
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
-                        Frame: [0,a,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      YesNodeGen SourceSection: None
-                      GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
-                    GeneratorWithNode SourceSection: [44,80]`with fn():↵    yield...`
-                      GeneratorBlockNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [59,67]`yield 12`
-                          YieldNode SourceSection: [59,67]`yield 12`
-                            flagSlot: 0
-                            IntegerLiteralNode SourceSection: [65,67]`12`
-                              Value: 12
-                            GeneratorAccessNode SourceSection: None
-                        ExpressionStatementNode SourceSection: [72,80]`yield 13`
-                          YieldNode SourceSection: [72,80]`yield 13`
-                            flagSlot: 1
-                            IntegerLiteralNode SourceSection: [78,80]`13`
-                              Value: 13
-                            GeneratorAccessNode SourceSection: None
-                        GeneratorAccessNode SourceSection: None
-                      PythonCallNodeGen SourceSection: [49,53]`fn()`
+                  FunctionBodyNode SourceSection: [14,80]`with a:↵    bla(p1, ...`
+                    GeneratorBlockNode SourceSection: None
+                      WithNode SourceSection: [14,44]`with a:↵    bla(p1, ...`
+                        ExpressionStatementNode SourceSection: [26,41]`bla(p1, p2, p3)`
+                          PythonCallNodeGen SourceSection: [26,41]`bla(p1, p2, p3)`
+                            CallNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [30,32]`p1`
+                              Identifier: p1
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [34,36]`p2`
+                              Identifier: p2
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [38,40]`p3`
+                              Identifier: p3
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: bla
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
+                          Frame: [0,a,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: fn
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      YesNodeGen SourceSection: None
-                      GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
+                        YesNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
+                      GeneratorWithNode SourceSection: [44,80]`with fn():↵    yield...`
+                        GeneratorBlockNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [59,67]`yield 12`
+                            YieldNode SourceSection: [59,67]`yield 12`
+                              flagSlot: 0
+                              IntegerLiteralNode SourceSection: [65,67]`12`
+                                Value: 12
+                              GeneratorAccessNode SourceSection: None
+                          ExpressionStatementNode SourceSection: [72,80]`yield 13`
+                            YieldNode SourceSection: [72,80]`yield 13`
+                              flagSlot: 1
+                              IntegerLiteralNode SourceSection: [78,80]`13`
+                                Value: 13
+                              GeneratorAccessNode SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                        PythonCallNodeGen SourceSection: [49,53]`fn()`
+                          CallNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: fn
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
+                        YesNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
+                        GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
-                    GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

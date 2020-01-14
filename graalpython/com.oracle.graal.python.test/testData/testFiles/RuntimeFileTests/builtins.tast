@@ -69,8 +69,9 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 4
-                  ExpressionStatementNode SourceSection: [2233,2237]`pass`
-                    EmptyNode SourceSection: [2233,2237]`pass`
+                  FunctionBodyNode SourceSection: [2233,2237]`pass`
+                    ExpressionStatementNode SourceSection: [2233,2237]`pass`
+                      EmptyNode SourceSection: [2233,2237]`pass`
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -113,7 +114,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 1
-                  BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [2289,2632]`sys, posix↵    modul...`
                     WriteLocalVariableNodeGen SourceSection: [2289,2292]`sys`
                       Identifier: sys
                       WriteLocalFrameSlotNodeGen SourceSection: None

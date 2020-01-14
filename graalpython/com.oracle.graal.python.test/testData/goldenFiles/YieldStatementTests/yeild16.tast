@@ -36,21 +36,22 @@ ModuleRootNode Name: <module 'yeild16'> SourceSection: [0,41]`def f():↵    if 
               InnerRootNode SourceSection: [0,41]`def f():↵    if (yie...`
                 GeneratorReturnTargetNode SourceSection: [0,41]`def f():↵    if (yie...`
                   flagSlot: 4
-                  GeneratorIfNode SourceSection: [13,41]`if (yield):↵        ...`
-                    GeneratorAccessNode SourceSection: None
-                    YesNodeGen SourceSection: None
-                      YieldNode SourceSection: [17,22]`yield`
-                        flagSlot: 0
-                        EmptyNode SourceSection: None
-                        GeneratorAccessNode SourceSection: None
-                    ExpressionStatementNode SourceSection: [33,40]`yield x`
-                      YieldNode SourceSection: [33,40]`yield x`
-                        flagSlot: 1
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`x`
-                          Identifier: x
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorAccessNode SourceSection: None
-                    BlockNode SourceSection: None
+                  FunctionBodyNode SourceSection: [13,41]`if (yield):↵        ...`
+                    GeneratorIfNode SourceSection: [13,41]`if (yield):↵        ...`
+                      GeneratorAccessNode SourceSection: None
+                      YesNodeGen SourceSection: None
+                        YieldNode SourceSection: [17,22]`yield`
+                          flagSlot: 0
+                          EmptyNode SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                      ExpressionStatementNode SourceSection: [33,40]`yield x`
+                        YieldNode SourceSection: [33,40]`yield x`
+                          flagSlot: 1
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`x`
+                            Identifier: x
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          GeneratorAccessNode SourceSection: None
+                      BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

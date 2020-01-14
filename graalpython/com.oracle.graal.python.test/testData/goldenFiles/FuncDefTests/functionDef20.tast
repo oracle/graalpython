@@ -65,8 +65,9 @@ ModuleRootNode Name: <module 'functionDef20'> SourceSection: [0,64]`def __init__
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 3
-                    ExpressionStatementNode SourceSection: [60,64]`pass`
-                      EmptyNode SourceSection: [60,64]`pass`
+                    FunctionBodyNode SourceSection: [60,64]`pass`
+                      ExpressionStatementNode SourceSection: [60,64]`pass`
+                        EmptyNode SourceSection: [60,64]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [5,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

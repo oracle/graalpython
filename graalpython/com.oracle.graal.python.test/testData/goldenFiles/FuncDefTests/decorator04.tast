@@ -33,42 +33,44 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():�
                 ReturnTargetNode SourceSection: [0,46]`def outer():↵  @deco...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WriteLocalVariableNodeGen SourceSection: [15,46]`@decorator1↵  def in...`
-                      Identifier: inner
-                      WriteLocalFrameSlotNodeGen SourceSection: None
-                        Frame: [0,inner,Illegal]
-                      PythonCallNodeGen SourceSection: [15,26]`@decorator1`
-                        CallNodeGen SourceSection: None
-                        FunctionDefinitionNode Name: inner SourceSection: None
-                          Arguments: None
-                          KwArguments: None
-                          Documentation: StringLiteralNode: Empty
-                          FreeVarSlots: None
-                          ExecutionSlots:
-                            FreeVarsSlots: None
-                            CellVarsSlots: None
-                          FunctionRootNode SourceSection: [29,46]`def inner(): pass`
-                            Name: inner
-                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                            CelVars: None
-                            FreeVars: None
-                            NeedsCellFrame: False
-                            FrameDescriptor: 1 slots [<return_val>]
+                    FunctionBodyNode SourceSection: [15,46]`@decorator1↵  def in...`
+                      WriteLocalVariableNodeGen SourceSection: [15,46]`@decorator1↵  def in...`
+                        Identifier: inner
+                        WriteLocalFrameSlotNodeGen SourceSection: None
+                          Frame: [0,inner,Illegal]
+                        PythonCallNodeGen SourceSection: [15,26]`@decorator1`
+                          CallNodeGen SourceSection: None
+                          FunctionDefinitionNode Name: inner SourceSection: None
+                            Arguments: None
+                            KwArguments: None
+                            Documentation: StringLiteralNode: Empty
+                            FreeVarSlots: None
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [29,46]`def inner(): pass`
-                              ReturnTargetNode SourceSection: [29,46]`def inner(): pass`
-                                Body: BlockNode SourceSection: None
-                                  BlockNode SourceSection: None
-                                  ExpressionStatementNode SourceSection: [42,46]`pass`
-                                    EmptyNode SourceSection: [42,46]`pass`
-                                Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [0,<return_val>,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [15,26]`@decorator1`
-                          Identifier: decorator1
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            FunctionRootNode SourceSection: [29,46]`def inner(): pass`
+                              Name: inner
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                              CelVars: None
+                              FreeVars: None
+                              NeedsCellFrame: False
+                              FrameDescriptor: 1 slots [<return_val>]
+                              ExecutionSlots:
+                                FreeVarsSlots: None
+                                CellVarsSlots: None
+                              InnerRootNode SourceSection: [29,46]`def inner(): pass`
+                                ReturnTargetNode SourceSection: [29,46]`def inner(): pass`
+                                  Body: BlockNode SourceSection: None
+                                    BlockNode SourceSection: None
+                                    FunctionBodyNode SourceSection: [42,46]`pass`
+                                      ExpressionStatementNode SourceSection: [42,46]`pass`
+                                        EmptyNode SourceSection: [42,46]`pass`
+                                  Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                    Frame: [0,<return_val>,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [15,26]`@decorator1`
+                            Identifier: decorator1
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -33,28 +33,29 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                 ReturnTargetNode SourceSection: [0,36]`def fn():↵  with ope...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    WithNode SourceSection: [12,36]`with open('x'):↵    ...`
-                      ExpressionStatementNode SourceSection: [32,36]`pass`
-                        EmptyNode SourceSection: [32,36]`pass`
-                      PythonCallNodeGen SourceSection: [17,26]`open('x')`
+                    FunctionBodyNode SourceSection: [12,36]`with open('x'):↵    ...`
+                      WithNode SourceSection: [12,36]`with open('x'):↵    ...`
+                        ExpressionStatementNode SourceSection: [32,36]`pass`
+                          EmptyNode SourceSection: [32,36]`pass`
+                        PythonCallNodeGen SourceSection: [17,26]`open('x')`
+                          CallNodeGen SourceSection: None
+                          StringLiteralNode SourceSection: [22,25]`'x'`
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: open
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
+                        LookupInheritedAttributeNode SourceSection: None
+                          LookupAttributeInMRONodeGen SourceSection: None
+                            IsSameTypeNodeGen SourceSection: None
+                          GetLazyClassNodeGen SourceSection: None
                         CallNodeGen SourceSection: None
-                        StringLiteralNode SourceSection: [22,25]`'x'`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: open
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        GetLazyClassNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
-                      YesNodeGen SourceSection: None
-                      GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
+                        CallNodeGen SourceSection: None
+                        YesNodeGen SourceSection: None
+                        GetClassNodeGen SourceSection: None
+                        SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

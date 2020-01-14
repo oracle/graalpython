@@ -33,24 +33,25 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
                 ReturnTargetNode SourceSection: [0,47]`def avg():↵    asser...`
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
-                    AssertNode SourceSection: [15,47]`assert len != 0, get...`
-                      YesNodeGen SourceSection: None
-                        BinaryComparisonNodeGen SourceSection: [22,30]`len != 0`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __ne__
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [22,25]`len`
+                    FunctionBodyNode SourceSection: [15,47]`assert len != 0, get...`
+                      AssertNode SourceSection: [15,47]`assert len != 0, get...`
+                        YesNodeGen SourceSection: None
+                          BinaryComparisonNodeGen SourceSection: [22,30]`len != 0`
+                            LookupAndCallBinaryNodeGen SourceSection: None
+                              Op: __ne__
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [22,25]`len`
+                              Identifier: len
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            IntegerLiteralNode SourceSection: [29,30]`0`
+                              Value: 0
+                        PythonCallNodeGen SourceSection: [32,47]`getMessage(len)`
+                          CallNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [43,46]`len`
                             Identifier: len
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          IntegerLiteralNode SourceSection: [29,30]`0`
-                            Value: 0
-                      PythonCallNodeGen SourceSection: [32,47]`getMessage(len)`
-                        CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [43,46]`len`
-                          Identifier: len
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: getMessage
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: getMessage
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

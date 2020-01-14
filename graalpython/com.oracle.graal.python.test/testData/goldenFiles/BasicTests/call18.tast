@@ -46,21 +46,22 @@ ModuleRootNode Name: <module 'call18'> SourceSection: [0,35]`def fn(arg = [1,2])
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
-                    ExpressionStatementNode SourceSection: [21,35]`foo(arg = [1])`
-                      PythonCallNodeGen SourceSection: [21,35]`foo(arg = [1])`
-                        CallNodeGen SourceSection: None
-                        KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ListLiteralNode SourceSection: [31,34]`[1]`
-                              PythonObjectFactoryNodeGen SourceSection: None
-                              IntegerLiteralNode SourceSection: [32,33]`1`
-                                Value: 1
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                          Identifier: foo
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                    FunctionBodyNode SourceSection: [21,35]`foo(arg = [1])`
+                      ExpressionStatementNode SourceSection: [21,35]`foo(arg = [1])`
+                        PythonCallNodeGen SourceSection: [21,35]`foo(arg = [1])`
+                          CallNodeGen SourceSection: None
+                          KeywordArgumentsNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ListLiteralNode SourceSection: [31,34]`[1]`
+                                PythonObjectFactoryNodeGen SourceSection: None
+                                IntegerLiteralNode SourceSection: [32,33]`1`
+                                  Value: 1
+                            CompactKeywordsNodeGen SourceSection: None
+                            ExecuteKeywordStarargsNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: foo
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

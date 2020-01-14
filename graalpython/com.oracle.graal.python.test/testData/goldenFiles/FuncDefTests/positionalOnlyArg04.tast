@@ -49,8 +49,9 @@ ModuleRootNode Name: <module 'positionalOnlyArg04'> SourceSection: [0,30]`def na
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 1
-                    ExpressionStatementNode SourceSection: [26,30]`pass`
-                      EmptyNode SourceSection: [26,30]`pass`
+                    FunctionBodyNode SourceSection: [26,30]`pass`
+                      ExpressionStatementNode SourceSection: [26,30]`pass`
+                        EmptyNode SourceSection: [26,30]`pass`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
