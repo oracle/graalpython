@@ -1,6 +1,4 @@
-## Interop
-
-#### Interop from Python
+# Interoperability
 
 You can import the `polyglot` module to interact with other languages.
 

@@ -1,16 +1,12 @@
-### Contributing to the GraalVM Implementation of Python
+# Contributing GraalPython
 
 Thanks for considering to contribute! To get you started, here is a bit of
 information about the structure of this implementation.
 
-##### But first...
-
-You will need to sign the [Oracle Contributor
-Agreement](http://www.graalvm.org/community/contributors/) for us to be able to
+You will need to sign the [Oracle Contributor Agreement](http://www.graalvm.org/community/contributors/) for us to be able to
 merge your work.
 
-Please also take some time to review our [code of
-conduct](http://www.graalvm.org/community/conduct/) for contributors.
+Please also take some time to review our [code of conduct](http://www.graalvm.org/community/conduct/) for contributors.
 
 ##### Getting started
 
@@ -83,20 +79,24 @@ modules that we have adapted from C Python.
 ##### Debug options
 
 The GraalVM implementation of Python provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
-or the java code, using your preferred IDE. 
+or the java code, using your preferred IDE.
 The following commands should be executed in a virtualenv environment, which provides a graalpython executable.
 
 For debug Python side code call this:
 
-```graalpython --inspect your_script.py ```
+```
+graalpython --inspect your_script.py
+```
 
 This will open a debug server, which can be accessed in Chrome Browser under URL `chrome://inspect`.
 
 For debugging java implemented code execute:
 
-```graalpython --experimental-options -debug-java your_script.py```
+```
+graalpython --experimental-options -debug-java your_script.py
+```
 
-The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly 
+The command will also start a debug server, which can be used in an IDE. If the IDE was initialized properly
 by using the command mentioned above, the existing `GraalDebug` run configuration can be used to debug.
 
 ### Advanced commands to develop and debug

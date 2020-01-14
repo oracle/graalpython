@@ -7,9 +7,9 @@ implementation of Python, in contrast, is only targeting Python 3.x.
 
 Nonetheless, there are certain features of Jython's Java integration that we can
 offer similarly. Some features are more expensive to offer, and thus are hidden
-behind a commandline flag, `--python.EmulateJython`.
+behind a command line flag, `--python.EmulateJython`.
 
-## Importing Java classes and packages
+## Importing Java Classes and Packages
 
 In the default mode, Java classes can only be imported through the `java`
 package. Additionally, only Java classes can be imported, not packages. In
@@ -44,12 +44,12 @@ speculative imports in the standard library), we ask the Java classloader to
 list currently available packages and traverse them to check if we should create
 a Java package. This slows down startup significantly.
 
-## Interacting with Java objects
+## Interacting with Java Objects
 
 Once you get hold of a Java object or class, interaction in both modes works
 naturally. Public fields and methods can be read and invoked as expected.
 
-## Subclassing Java classes and implementing interfaces with Python classes
+## Subclassing Java Classes and Implementing Interfaces with Python Classes
 
 This is not supported at all right now, there's no emulation available even in
 Jython compatibility mode. We have not seen many uses of this in the wild. Let
