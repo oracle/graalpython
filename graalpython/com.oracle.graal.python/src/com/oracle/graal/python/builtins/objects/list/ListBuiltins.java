@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -955,22 +954,6 @@ public class ListBuiltins extends PythonBuiltins {
         boolean contains(VirtualFrame frame, PSequence self, Object other,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, self.getSequenceStorage(), other);
-        }
-    }
-
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        boolean doPList(PList operand,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(operand.getSequenceStorage()) != 0;
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
