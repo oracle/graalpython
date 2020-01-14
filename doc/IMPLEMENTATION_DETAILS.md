@@ -1,4 +1,6 @@
-# Python Global Thread State
+# Implementation Details
+
+## Python Global Thread State
 
 In CPython, each stack frame is allocated on the heap, and there's a global
 thread state holding on to the chain of currently handled exceptions (e.g. if

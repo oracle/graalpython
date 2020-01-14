@@ -44,18 +44,18 @@ speculative imports in the standard library), we ask the Java classloader to
 list currently available packages and traverse them to check if we should create
 a Java package. This slows down startup significantly.
 
-### Interacting with Java Objects
+## Interacting with Java Objects
 
 Once you get hold of a Java object or class, interaction in both modes works
 naturally. Public fields and methods can be read and invoked as expected.
 
-### Subclassing Java classes and Implementing Interfaces with Python Classes
+## Subclassing Java Classes and Implementing Interfaces with Python Classes
 
 This is not supported at all right now, there's no emulation available even in
 Jython compatibility mode. We have not seen many uses of this in the wild. Let
 us know if this is of interest to you!
 
-### Catching Java exceptions
+## Catching Java exceptions
 
 By default this is not allowed, because of the additional cost of checking for
 Java exceptions in the except statement execution. However, in Jython
