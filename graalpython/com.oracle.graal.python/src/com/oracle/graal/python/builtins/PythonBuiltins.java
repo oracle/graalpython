@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -54,7 +54,9 @@ public abstract class PythonBuiltins {
 
     /**
      * Initialize everything that is truly independent of commandline arguments and that can be
-     * initialized and frozen into an SVM image.
+     * initialized and frozen into an SVM image. When in a subclass, any modifications to
+     * {@link #builtinConstants} or such should be made before calling
+     * {@code super.initialize(core)}.
      */
     public void initialize(PythonCore core) {
         if (builtinFunctions.size() > 0) {

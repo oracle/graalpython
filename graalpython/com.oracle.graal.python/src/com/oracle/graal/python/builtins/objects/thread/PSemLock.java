@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,14 +52,15 @@ public final class PSemLock extends AbstractPythonLock {
 
     private final Semaphore semaphore;
     private final int kind;
+    private final String name;
 
     private int lastThreadID = -1;
     private int count;
 
-    @TruffleBoundary
-    public PSemLock(LazyPythonClass cls, int kind, int value) {
+    public PSemLock(LazyPythonClass cls, String name, int kind, Semaphore sharedSemaphore) {
         super(cls);
-        semaphore = new Semaphore(value);
+        this.name = name;
+        this.semaphore = sharedSemaphore;
         this.kind = kind;
     }
 
@@ -128,5 +129,9 @@ public final class PSemLock extends AbstractPythonLock {
 
     public int getKind() {
         return kind;
+    }
+
+    public String getName() {
+        return name;
     }
 }

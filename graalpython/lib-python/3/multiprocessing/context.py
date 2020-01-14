@@ -311,6 +311,9 @@ if sys.platform != 'win32':
         'forkserver': ForkServerContext(),
     }
     _default_context = DefaultContext(_concrete_contexts['fork'])
+    # BEGIN TRUFFLE PATCH
+    _default_context = DefaultContext(_concrete_contexts['spawn'])
+    # END TRUFFLE PATCH
 
 else:
 

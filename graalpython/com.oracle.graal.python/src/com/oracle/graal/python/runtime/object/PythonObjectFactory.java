@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,6 +31,7 @@ import java.math.BigInteger;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -823,8 +824,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PThread(cls, thread));
     }
 
-    public PSemLock createSemLock(LazyPythonClass cls, int kind, int value, @SuppressWarnings("unused") int maxvalue, @SuppressWarnings("unused") Object nameObj) {
-        return trace(new PSemLock(cls, kind, value));
+    public PSemLock createSemLock(LazyPythonClass cls, String name, int kind, Semaphore sharedSemaphore) {
+        return trace(new PSemLock(cls, name, kind, sharedSemaphore));
     }
 
     public PScandirIterator createScandirIterator(LazyPythonClass cls, String path, DirectoryStream<TruffleFile> next) {

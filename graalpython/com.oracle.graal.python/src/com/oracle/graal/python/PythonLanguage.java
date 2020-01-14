@@ -28,6 +28,7 @@ package com.oracle.graal.python;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
@@ -131,6 +132,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
+
+    /**
+     * Named semaphores are shared between all processes in a system, and they persist until the
+     * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
+     * globally per language instance, that is, they are shared between different Contexts in the
+     * same engine.
+     */
+    public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
     /*
      * We need to store this here, because the check is on the language and can come from a thread

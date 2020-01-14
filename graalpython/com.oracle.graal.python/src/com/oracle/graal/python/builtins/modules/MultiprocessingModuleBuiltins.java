@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,18 +41,25 @@
 package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -76,21 +83,69 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class ConstructSemLockNode extends PythonBuiltinNode {
         @Specialization
         PSemLock construct(LazyPythonClass cls, Object kindObj, Object valueObj, Object maxvalueObj, Object nameObj, Object unlinkObj,
+                        @Cached CastToJavaStringNode castNameNode,
                         @Cached CastToJavaIntNode castKindToIntNode,
                         @Cached CastToJavaIntNode castValueToIntNode,
                         @Cached CastToJavaIntNode castMaxvalueToIntNode,
-                        @Cached CastToJavaIntNode castUnlinkToIntNode) {
+                        @Cached CastToJavaIntNode castUnlinkToIntNode,
+                        @CachedLanguage PythonLanguage lang) {
             int kind = castKindToIntNode.execute(kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raise(PythonBuiltinClassType.ValueError, "unrecognized kind");
             }
             int value = castValueToIntNode.execute(valueObj);
-            int maxvalue = castMaxvalueToIntNode.execute(maxvalueObj);
+            castMaxvalueToIntNode.execute(maxvalueObj); // executed for the side-effect, but ignored
+                                                        // on posix
+            Semaphore semaphore = newSemaphore(value);
             int unlink = castUnlinkToIntNode.execute(unlinkObj);
-            if (unlink != 0) {
-                throw raise(PythonBuiltinClassType.SystemError, "semaphore unlinking is not yet implemented");
+            String name = castNameNode.execute(nameObj);
+            if (unlink == 0) {
+                // CPython creates a named semaphore, and if unlink != 0 unlinks
+                // it directly so it cannot be access by other processes. We
+                // have to explicitly link it, so we do that here if we
+                // must. CPython always uses O_CREAT | O_EXCL for creating named
+                // semaphores, so a conflict raises.
+                if (semaphoreExists(lang, name)) {
+                    throw raise(PythonBuiltinClassType.FileExistsError, "Semaphore name taken: '%s'", name);
+                } else {
+                    semaphorePut(lang, semaphore, name);
+                }
             }
-            return factory().createSemLock(cls, kind, value, maxvalue, nameObj);
+            return factory().createSemLock(cls, name, kind, semaphore);
+        }
+
+        @TruffleBoundary
+        private static Object semaphorePut(PythonLanguage lang, Semaphore semaphore, String name) {
+            return lang.namedSemaphores.put(name, semaphore);
+        }
+
+        @TruffleBoundary
+        private static boolean semaphoreExists(PythonLanguage lang, String name) {
+            return lang.namedSemaphores.containsKey(name);
+        }
+
+        @TruffleBoundary
+        private static Semaphore newSemaphore(int value) {
+            return new Semaphore(value);
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "sem_unlink", parameterNames = {"name"})
+    abstract static class SemUnlink extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone doit(String name,
+                        @CachedLanguage PythonLanguage lang) {
+            Semaphore prev = semaphoreRemove(name, lang);
+            if (prev == null) {
+                throw raise(PythonBuiltinClassType.FileNotFoundError, "No such file or directory: 'semaphores:/%s'", name);
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static Semaphore semaphoreRemove(String name, PythonLanguage lang) {
+            return lang.namedSemaphores.remove(name);
         }
     }
 }
