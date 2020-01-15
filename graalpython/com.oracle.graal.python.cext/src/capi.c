@@ -360,19 +360,12 @@ uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
+/** to be used from Java code only; only creates the deref handle */
 void* PyObjectHandle_ForJavaObject(void* cobj) {
     if (truffle_cannot_be_handle(cobj)) {
         return truffle_deref_handle_for_managed(cobj);
     }
     return cobj;
-}
-
-/** to be used from Java code only; only creates the deref handle */
-void* PyObjectHandle_ForJavaType(void* ptype) {
-    if (truffle_cannot_be_handle(ptype)) {
-        return truffle_deref_handle_for_managed(ptype);
-    }
-    return ptype;
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */

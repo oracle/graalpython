@@ -336,7 +336,6 @@ void initialize_hashes();
 
 
 int PyTruffle_Debug(void *arg);
-void* PyObjectHandle_ForJavaType(void* jobj);
 
 extern PyObject marker_struct;
 extern PyObject* wrapped_null;

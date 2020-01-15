@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_BASICSIZE;
@@ -1284,23 +1283,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     abstract static class ToPyObjectNode extends CExtNodes.CExtBaseNode {
         public abstract Object execute(PythonNativeWrapper wrapper);
 
-        @Specialization(guards = "isManagedPythonClass(wrapper, lib)", limit = "1")
-        Object doClass(PythonClassNativeWrapper wrapper,
-                        @SuppressWarnings("unused") @CachedLibrary("wrapper") PythonNativeWrapperLibrary lib,
-                        @Exclusive @Cached PCallCapiFunction callNativeUnary) {
-            return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE, wrapper);
-        }
-
-        @Specialization(guards = "!isManagedPythonClass(wrapper, lib)", limit = "1")
-        Object doObject(PythonNativeWrapper wrapper,
-                        @SuppressWarnings("unused") @CachedLibrary("wrapper") PythonNativeWrapperLibrary lib,
-                        @Exclusive @Cached PCallCapiFunction callNativeUnary) {
+        @Specialization
+        static Object doObject(PythonNativeWrapper wrapper,
+                        @Cached PCallCapiFunction callNativeUnary) {
             return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT, wrapper);
-        }
-
-        protected static boolean isManagedPythonClass(PythonNativeWrapper wrapper, PythonNativeWrapperLibrary lib) {
-            assert !(wrapper instanceof PythonClassNativeWrapper) || PGuards.isManagedClass(lib.getDelegate(wrapper));
-            return wrapper instanceof PythonClassNativeWrapper && !(PGuards.isNativeClass(lib.getDelegate(wrapper)));
         }
     }
 
