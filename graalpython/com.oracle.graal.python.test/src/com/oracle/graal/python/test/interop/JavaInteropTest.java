@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,15 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
@@ -66,15 +75,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
 @RunWith(Enclosed.class)
 public class JavaInteropTest {
@@ -508,6 +508,54 @@ public class JavaInteropTest {
             Value javaObj = context.eval("python", "javaObj");
             assertTrue(javaObj.isNumber());
             assertEquals(javaObj.asInt(), 42);
+        }
+
+        @ExportLibrary(InteropLibrary.class)
+        static final class WrapString implements TruffleObject {
+            private final String str;
+
+            WrapString(String str) {
+                this.str = str;
+            }
+
+            @ExportMessage
+            @SuppressWarnings("static-method")
+            boolean isString() {
+                return true;
+            }
+
+            @ExportMessage
+            String asString() {
+                return str;
+            }
+        }
+
+        @ExportLibrary(InteropLibrary.class)
+        static final class WrapBoolean implements TruffleObject {
+            private final boolean flag;
+
+            WrapBoolean(boolean flag) {
+                this.flag = flag;
+            }
+
+            @ExportMessage
+            @SuppressWarnings("static-method")
+            boolean isBoolean() {
+                return true;
+            }
+
+            @ExportMessage
+            boolean asBoolean() {
+                return flag;
+            }
+        }
+
+        @Test
+        public void multiplyStrBool() {
+            context.getBindings("python").putMember("javaBool", new WrapBoolean(true));
+            context.getBindings("python").putMember("javaStr", new WrapString("test"));
+            assertEquals(context.eval("python", "javaStr * javaBool").asString(), "test");
+            assertEquals(context.eval("python", "javaBool * javaStr").asString(), "test");
         }
     }
 

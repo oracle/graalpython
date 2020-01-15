@@ -85,6 +85,13 @@ final class DefaultPythonObjectExports {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException(e);
             }
+        } else if (interopLib.isBoolean(receiver)) {
+            try {
+                return interopLib.asBoolean(receiver) ? 1 : 0;
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
         } else {
             throw raise.raiseIntegerInterpretationError(receiver);
         }
