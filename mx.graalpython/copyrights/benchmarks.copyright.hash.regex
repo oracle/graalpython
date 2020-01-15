@@ -1,6 +1,6 @@
 (?:#!/usr/bin/env python\n)?(?:# coding=.*)?# Copyright 2008-2010 Isaac Gouy
 # Copyright \(c\) (?:20[0-9][0-9], )*201[0-9], Regents of the University of California
-# Copyright \(c\) (?:20[0-9][0-9], )*(20[0-9][0-9]), Oracle and/or its affiliates.
+# Copyright \(c\) (20[0-9][0-9], )*(20[0-9][0-9]), Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
