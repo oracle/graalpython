@@ -205,57 +205,57 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
         @Override
         public boolean executeBoolean(VirtualFrame frame, Object arg0Value, Object arg1Value) throws UnexpectedResultException {
-            return expectBoolean(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectBooleanResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public boolean executeBoolean(VirtualFrame frame, Object arg0Value, boolean arg1Value) throws UnexpectedResultException {
-            return expectBoolean(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectBooleanResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public boolean executeBoolean(VirtualFrame frame, Object arg0Value, double arg1Value) throws UnexpectedResultException {
-            return expectBoolean(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectBooleanResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public boolean executeBoolean(VirtualFrame frame, Object arg0Value, int arg1Value) throws UnexpectedResultException {
-            return expectBoolean(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectBooleanResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public boolean executeBoolean(VirtualFrame frame, Object arg0Value, long arg1Value) throws UnexpectedResultException {
-            return expectBoolean(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectBooleanResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public double executeDouble(VirtualFrame frame, Object arg0Value, Object arg1Value) throws UnexpectedResultException {
-            return expectDouble(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectDoubleResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public double executeDouble(VirtualFrame frame, Object arg0Value, double arg1Value) throws UnexpectedResultException {
-            return expectDouble(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectDoubleResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public int executeInt(VirtualFrame frame, Object arg0Value, Object arg1Value) throws UnexpectedResultException {
-            return expectInteger(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectIntegerResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public int executeInt(VirtualFrame frame, Object arg0Value, int arg1Value) throws UnexpectedResultException {
-            return expectInteger(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectIntegerResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public long executeLong(VirtualFrame frame, Object arg0Value, Object arg1Value) throws UnexpectedResultException {
-            return expectLong(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectLongResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
         public long executeLong(VirtualFrame frame, Object arg0Value, long arg1Value) throws UnexpectedResultException {
-            return expectLong(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
+            return expectLongResult(CachedNode.call(frame, arg0Value, arg1Value, (CallNode.getUncached())));
         }
 
         @Override
@@ -267,34 +267,5 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         public boolean isAdoptable() {
             return false;
         }
-
-        private static boolean expectBoolean(Object value) throws UnexpectedResultException {
-            if (value instanceof Boolean) {
-                return (boolean) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        private static double expectDouble(Object value) throws UnexpectedResultException {
-            if (value instanceof Double) {
-                return (double) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        private static int expectInteger(Object value) throws UnexpectedResultException {
-            if (value instanceof Integer) {
-                return (int) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        private static long expectLong(Object value) throws UnexpectedResultException {
-            if (value instanceof Long) {
-                return (long) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
     }
 }

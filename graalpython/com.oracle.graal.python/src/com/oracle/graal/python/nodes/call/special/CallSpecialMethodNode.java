@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
@@ -173,5 +174,33 @@ abstract class CallSpecialMethodNode extends Node {
             return ((PBuiltinFunction) func).getCallTarget();
         }
         return null;
+    }
+
+    protected static boolean expectBooleanResult(Object value) throws UnexpectedResultException {
+        if (value instanceof Boolean) {
+            return (boolean) value;
+        }
+        throw new UnexpectedResultException(value);
+    }
+
+    protected static double expectDoubleResult(Object value) throws UnexpectedResultException {
+        if (value instanceof Double) {
+            return (double) value;
+        }
+        throw new UnexpectedResultException(value);
+    }
+
+    protected static int expectIntegerResult(Object value) throws UnexpectedResultException {
+        if (value instanceof Integer) {
+            return (int) value;
+        }
+        throw new UnexpectedResultException(value);
+    }
+
+    protected static long expectLongResult(Object value) throws UnexpectedResultException {
+        if (value instanceof Long) {
+            return (long) value;
+        }
+        throw new UnexpectedResultException(value);
     }
 }

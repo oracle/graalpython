@@ -246,42 +246,42 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
 
         @Override
         public boolean executeBool(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException {
-            return expectBoolean(executeObject(frame, callable, arg, arg2));
+            return expectBooleanResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public int executeInt(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException {
-            return expectInteger(executeObject(frame, callable, arg, arg2));
+            return expectIntegerResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public int executeInt(VirtualFrame frame, Object callable, int arg, int arg2) throws UnexpectedResultException {
-            return expectInteger(executeObject(frame, callable, arg, arg2));
+            return expectIntegerResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public long executeLong(VirtualFrame frame, Object callable, long arg, long arg2) throws UnexpectedResultException {
-            return expectLong(executeObject(frame, callable, arg, arg2));
+            return expectLongResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public double executeDouble(VirtualFrame frame, Object callable, double arg, double arg2) throws UnexpectedResultException {
-            return expectDouble(executeObject(frame, callable, arg, arg2));
+            return expectDoubleResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public boolean executeBool(VirtualFrame frame, Object callable, int arg, int arg2) throws UnexpectedResultException {
-            return expectBoolean(executeObject(frame, callable, arg, arg2));
+            return expectBooleanResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public boolean executeBool(VirtualFrame frame, Object callable, long arg, long arg2) throws UnexpectedResultException {
-            return expectBoolean(executeObject(frame, callable, arg, arg2));
+            return expectBooleanResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
         public boolean executeBool(VirtualFrame frame, Object callable, double arg, double arg2) throws UnexpectedResultException {
-            return expectBoolean(executeObject(frame, callable, arg, arg2));
+            return expectBooleanResult(executeObject(frame, callable, arg, arg2));
         }
 
         @Override
@@ -297,34 +297,6 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
         @Override
         public boolean isAdoptable() {
             return false;
-        }
-
-        private static boolean expectBoolean(Object value) throws UnexpectedResultException {
-            if (value instanceof Boolean) {
-                return (boolean) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        private static double expectDouble(Object value) throws UnexpectedResultException {
-            if (value instanceof Double) {
-                return (double) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        private static int expectInteger(Object value) throws UnexpectedResultException {
-            if (value instanceof Integer) {
-                return (int) value;
-            }
-            throw new UnexpectedResultException(value);
-        }
-
-        private static long expectLong(Object value) throws UnexpectedResultException {
-            if (value instanceof Long) {
-                return (long) value;
-            }
-            throw new UnexpectedResultException(value);
         }
     }
 }
