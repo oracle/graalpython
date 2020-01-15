@@ -1564,9 +1564,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) < 0;
+            return left.compareTo(right) < 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
@@ -1645,9 +1644,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) <= 0;
+            return left.compareTo(right) <= 0;
         }
 
         @SuppressWarnings("unused")
@@ -1691,9 +1689,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) > 0;
+            return left.compareTo(right) > 0;
         }
 
         @SuppressWarnings("unused")
@@ -1737,9 +1734,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) >= 0;
+            return left.compareTo(right) >= 0;
         }
 
         @SuppressWarnings("unused")

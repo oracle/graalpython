@@ -208,44 +208,76 @@ public final class PInt extends PythonBuiltinObject {
         return value.hashCode();
     }
 
-    @TruffleBoundary
-    public int compareTo(PInt o) {
-        return value.compareTo(o.value);
+    public int compareTo(PInt right) {
+        return compareTo(value, right.getValue());
     }
 
     @TruffleBoundary
+    private static final int compareTo(BigInteger left, BigInteger right) {
+        return left.compareTo(right);
+    }
+
     public int compareTo(long i) {
-        return value.compareTo(BigInteger.valueOf(i));
+        return compareTo(value, i);
+    }
+
+    @TruffleBoundary
+    private static final int compareTo(BigInteger left, long right) {
+        return left.compareTo(BigInteger.valueOf(right));
     }
 
     @Override
-    @TruffleBoundary
     public String toString() {
+        return toString(value);
+    }
+
+    @TruffleBoundary
+    private static final String toString(BigInteger value) {
         return value.toString();
     }
 
-    @TruffleBoundary
     public double doubleValue() {
+        return doubleValue(value);
+    }
+
+    @TruffleBoundary
+    private static final double doubleValue(BigInteger value) {
         return value.doubleValue();
     }
 
-    @TruffleBoundary
     public int intValue() {
+        return intValue(value);
+    }
+
+    @TruffleBoundary
+    private static final int intValue(BigInteger value) {
         return value.intValue();
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
     public int intValueExact() {
+        return intValueExact(value);
+    }
+
+    @TruffleBoundary(transferToInterpreterOnException = false)
+    private static final int intValueExact(BigInteger value) {
         return value.intValueExact();
     }
 
-    @TruffleBoundary
     public long longValue() {
-        return value.longValue();
+        return longValue(value);
+    }
+
+    @TruffleBoundary
+    private static final long longValue(BigInteger integer) {
+        return integer.longValue();
+    }
+
+    public long longValueExact() {
+        return longValueExact(value);
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
-    public long longValueExact() {
+    private static final long longValueExact(BigInteger value) {
         return value.longValueExact();
     }
 
@@ -257,19 +289,21 @@ public final class PInt extends PythonBuiltinObject {
         return (compareTo(val) < 0 ? this : val);
     }
 
-    @TruffleBoundary
     public int bitCount() {
+        return bitCount(value);
+    }
+
+    @TruffleBoundary
+    private static final int bitCount(BigInteger value) {
         return value.bitCount();
     }
 
-    @TruffleBoundary
     public boolean isZeroOrPositive() {
-        return value.compareTo(BigInteger.ZERO) >= 0;
+        return value.signum() >= 0;
     }
 
-    @TruffleBoundary
     public boolean isZeroOrNegative() {
-        return value.compareTo(BigInteger.ZERO) <= 0;
+        return value.signum() <= 0;
     }
 
     public static int intValue(boolean bool) {
@@ -325,8 +359,12 @@ public final class PInt extends PythonBuiltinObject {
         return (byte) val;
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
     public byte byteValueExact() {
+        return byteValueExact(value);
+    }
+
+    @TruffleBoundary(transferToInterpreterOnException = false)
+    private static final byte byteValueExact(BigInteger value) {
         return value.byteValueExact();
     }
 
@@ -337,5 +375,4 @@ public final class PInt extends PythonBuiltinObject {
     public boolean isNative() {
         return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
-
 }
