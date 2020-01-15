@@ -102,7 +102,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
             if (key.equals(DynamicObjectNativeWrapper.GP_OBJECT)) {
                 return delegate;
             }
-            return readNativeMemberNode.execute(delegate, key);
+            return readNativeMemberNode.execute(delegate, object, key);
         }
 
         protected static boolean isObBase(String key) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,11 +57,30 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     private Object delegate;
     private Object nativePointer;
 
+    /** equivalent to {@code ob_refcnt}; needed to deallocate handles */
+    private int refCount;
+
     public PythonNativeWrapper() {
     }
 
     public PythonNativeWrapper(Object delegate) {
         this.delegate = delegate;
+    }
+
+    public final void increaseRefCount() {
+        refCount++;
+    }
+
+    public final int decreaseRefCount() {
+        return --refCount;
+    }
+
+    public final int getRefCount() {
+        return refCount;
+    }
+
+    public final void setRefCount(int refCount) {
+        this.refCount = refCount;
     }
 
     protected static Assumption singleContextAssumption() {
