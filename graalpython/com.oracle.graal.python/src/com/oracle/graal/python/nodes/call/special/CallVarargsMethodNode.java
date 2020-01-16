@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,20 +71,23 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     }
 
     abstract static class CallCachedVarargsMethodNode extends CallVarargsMethodNode {
-        @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, //
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, //
                         limit = "getCallSiteInlineCacheMaxDepth()",  //
                         rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class, //
                         assumptions = "singleContextAssumption()")
         Object callVarargsDirect(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                         @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
-                        @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                        @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode,
+                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws VarargsBuiltinDirectInvocationNotSupported {
             return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
-        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
+        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
+                        "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
         Object callVarargs(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                        @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                        @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode,
+                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws VarargsBuiltinDirectInvocationNotSupported {
             return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 

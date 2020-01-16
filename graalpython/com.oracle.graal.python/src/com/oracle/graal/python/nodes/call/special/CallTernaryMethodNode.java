@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,31 +71,35 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
 
     abstract static class CallTernaryMethodCachedNode extends CallTernaryMethodNode {
 
-        @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
         Object doBuiltinFunctionOIOCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
                         @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode) {
+                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
             return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
         }
 
-        @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
         Object doBuiltinFunctionCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                         @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode) {
+                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
             return builtinNode.execute(frame, arg1, arg2, arg3);
         }
 
-        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
         Object doBuiltinFunctionOIOCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode) {
+                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
             return builtinNode.executeWithInt(frame, arg1, arg2, arg3);
         }
 
-        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
         Object doBuiltinFunctionCtCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode) {
+                        @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
             return builtinNode.execute(frame, arg1, arg2, arg3);
         }
 

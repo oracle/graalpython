@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,17 +57,19 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object arg1, Object arg2, Object arg3, Object arg4);
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode) {
+                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode) {
+                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
     }
 

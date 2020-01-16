@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -74,8 +75,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 @ReportPolymorphism
 abstract class CallSpecialMethodNode extends Node {
 
-    /** for interpreter performance: cache if we exceeded the max caller size */
-    private boolean maxSizeExceeded = false;
+    /** for interpreter performance: cache if we exceeded the max caller size. Never allow inlining in the uncached case. */
+    private boolean maxSizeExceeded = !isAdoptable();
 
     /**
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
@@ -115,6 +116,10 @@ abstract class CallSpecialMethodNode extends Node {
 
     protected Assumption singleContextAssumption() {
         return PythonLanguage.getCurrent().singleContextAssumption;
+    }
+
+    protected static boolean frameIsUnused(PythonBuiltinBaseNode builtinNode) {
+        return builtinNode == null || !builtinNode.getClass().getAnnotation(GeneratedBy.class).value().getAnnotation(Builtin.class).needsFrame();
     }
 
     PythonUnaryBuiltinNode getUnary(VirtualFrame frame, Object func) {
