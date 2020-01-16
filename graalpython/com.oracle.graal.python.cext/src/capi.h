@@ -284,12 +284,12 @@ void initialize_hashes();
           JWRAPPER_O :                                                                   \
           JWRAPPER_UNSUPPORTED)))))))
 
-#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__) {\
+#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
     0,                                          /* tp_itemsize */\
-    0,                                          /* tp_dealloc */\
+    (__DEALLOC__),                              /* tp_dealloc */\
     0,                                          /* tp_vectorcall_offset */\
     0,                                          /* tp_getattr */\
     0,                                          /* tp_setattr */\
@@ -323,11 +323,11 @@ void initialize_hashes();
     0,                                          /* tp_init */\
     (__ALLOC__),                                /* tp_alloc */\
     0,                                          /* tp_new */\
-    0,                                          /* tp_free */\
+    (__FREE__),                                 /* tp_free */\
     0,                                          /* tp_is_gc */\
 }
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0)
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0)
 
 /** to be used from Java code only; returns a type's basic size */
 #define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \

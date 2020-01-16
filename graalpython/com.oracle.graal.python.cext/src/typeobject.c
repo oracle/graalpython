@@ -48,8 +48,12 @@ typedef struct {
     PyTypeObject *obj_type;
 } superobject;
 
+static void object_dealloc(PyObject *self) {
+    Py_TYPE(self)->tp_free(self);
+}
+
 PyTypeObject PyType_Type = PY_TRUFFLE_TYPE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyTypeObject));
-PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject));
+PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), 0, object_dealloc, PyObject_Del);
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
 UPCALL_ID(PyType_IsSubtype);
