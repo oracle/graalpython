@@ -129,6 +129,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -138,6 +139,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1833,6 +1835,7 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     public static class MayRaiseNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
         private final T node;
+        private Class<T> nodeClass;
 
         public MayRaiseNodeFactory(T node) {
             this.node = node;
@@ -1844,7 +1847,16 @@ public abstract class CExtNodes {
 
         @SuppressWarnings("unchecked")
         public Class<T> getNodeClass() {
-            return (Class<T>) node.getClass();
+            CompilerAsserts.neverPartOfCompilation();
+            if (nodeClass == null) {
+                nodeClass = (Class<T>) node.getClass();
+                GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
+                if (genBy != null) {
+                    nodeClass = (Class<T>) genBy.value();
+                    assert nodeClass.isAssignableFrom(node.getClass());
+                }
+            }
+            return nodeClass;
         }
 
         public List<List<Class<?>>> getNodeSignatures() {
@@ -1857,7 +1869,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 1)
+    @Builtin(minNumOfPositionalArgs = 1, needsFrame = false)
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private FunctionInvokeNode invokeNode;
@@ -1896,7 +1908,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 2)
+    @Builtin(minNumOfPositionalArgs = 2, needsFrame = false)
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private FunctionInvokeNode invokeNode;
@@ -1935,7 +1947,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 3)
+    @Builtin(minNumOfPositionalArgs = 3, needsFrame = false)
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private FunctionInvokeNode invokeNode;
