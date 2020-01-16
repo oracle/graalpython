@@ -134,20 +134,6 @@ int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
 }
 
-void* PyObject_Malloc(size_t size) {
-	void* ptr = calloc(size, 1);
-    PyTruffle_Report_Allocation(ptr, size);
-    return ptr;
-}
-
-void* PyObject_Realloc(void *ptr, size_t new_size) {
-	return realloc(ptr, new_size);
-}
-
-void PyObject_Free(void* ptr) {
-    free(ptr);
-}
-
 UPCALL_ID(PyObject_Size);
 Py_ssize_t PyObject_Size(PyObject *o) {
     return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));

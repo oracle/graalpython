@@ -47,6 +47,20 @@ struct _PyTraceMalloc_Config _Py_tracemalloc_config = {
   .use_domain = 0
 };
 
+void* PyObject_Malloc(size_t size) {
+	void* ptr = calloc(size, 1);
+    PyTruffle_Report_Allocation(ptr, size);
+    return ptr;
+}
+
+void* PyObject_Realloc(void *ptr, size_t new_size) {
+	return realloc(ptr, new_size);
+}
+
+void PyObject_Free(void* ptr) {
+    free(ptr);
+}
+
 void* PyMem_Malloc(size_t size) {
     if (size > (size_t)PY_SSIZE_T_MAX) {
         return NULL;
