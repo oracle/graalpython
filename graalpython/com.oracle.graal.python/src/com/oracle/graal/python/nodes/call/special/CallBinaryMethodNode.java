@@ -83,6 +83,10 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
 
     public abstract Object executeObject(VirtualFrame frame, Object callable, Object arg1, Object arg2);
 
+    public final Object executeObject(Object callable, Object arg1, Object arg2) {
+        return executeObject(null, callable, arg1, arg2);
+    }
+
     abstract static class CallBinaryMethodCachedNode extends CallBinaryMethodNode {
         @Specialization(guards = {"func == cachedFunc",
                         "builtinNode != null",

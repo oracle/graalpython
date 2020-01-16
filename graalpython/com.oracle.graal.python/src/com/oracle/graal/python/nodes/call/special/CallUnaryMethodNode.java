@@ -87,6 +87,10 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
     public abstract Object executeObject(VirtualFrame frame, Object callable, Object receiver);
 
+    public final Object executeObject(Object callable, Object receiver) {
+        return executeObject(null, callable, receiver);
+    }
+
     abstract static class CachedNode extends CallUnaryMethodNode {
 
         @Specialization(guards = {"func == cachedFunc",
