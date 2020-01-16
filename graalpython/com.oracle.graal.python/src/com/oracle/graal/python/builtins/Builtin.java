@@ -68,7 +68,7 @@ public @interface Builtin {
      * not access the frame and only pass it to nodes that can deal with the frame being
      * {@code null}.
      */
-    boolean needsFrame() default true;
+    boolean needsFrame() default false;
 
     /**
      * By default the caller frame bit is set on-demand, but for some builtins it might be useful to

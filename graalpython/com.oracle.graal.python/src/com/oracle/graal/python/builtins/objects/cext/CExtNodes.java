@@ -1869,7 +1869,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 1, needsFrame = false)
+    @Builtin(minNumOfPositionalArgs = 1)
     public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private FunctionInvokeNode invokeNode;
@@ -1908,7 +1908,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 2, needsFrame = false)
+    @Builtin(minNumOfPositionalArgs = 2)
     public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private FunctionInvokeNode invokeNode;
@@ -1947,7 +1947,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 3, needsFrame = false)
+    @Builtin(minNumOfPositionalArgs = 3)
     public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
         @Child private CreateArgumentsNode createArgsNode;
         @Child private FunctionInvokeNode invokeNode;

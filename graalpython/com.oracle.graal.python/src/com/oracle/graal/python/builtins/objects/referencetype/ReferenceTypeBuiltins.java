@@ -113,12 +113,18 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         long computeHash(VirtualFrame frame, PReferenceType self,
                         @Cached("createBinaryProfile()") ConditionProfile referentProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile frameProfile,
                         // n.b.: we cannot directly specialize on lib.getObject() here, because it
                         // might go away in the meantime!
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             Object referent = self.getObject();
             if (referentProfile.profile(referent != null)) {
-                long hash = lib.hashWithState(referent, PArguments.getThreadState(frame));
+                long hash;
+                if (frameProfile.profile(frame != null)) {
+                    hash = lib.hashWithState(referent, PArguments.getThreadState(frame));
+                } else {
+                    hash = lib.hash(referent);
+                }
                 self.setHash(hash);
                 return hash;
             } else {
@@ -157,7 +163,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__eq__
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})

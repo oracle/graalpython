@@ -2199,7 +2199,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, minNumOfPositionalArgs = 1, needsFrame = false)
+    @Builtin(name = SpecialMethodNames.__BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
@@ -2269,7 +2269,7 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1, needsFrame = false)
+    @Builtin(name = SpecialMethodNames.__HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {

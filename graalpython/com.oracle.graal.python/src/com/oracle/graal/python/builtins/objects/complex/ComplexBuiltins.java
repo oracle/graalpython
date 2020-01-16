@@ -379,7 +379,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -517,7 +517,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1, needsFrame = false)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean bool(PComplex self) {
@@ -571,7 +571,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1, needsFrame = false)
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
