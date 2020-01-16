@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -181,3 +181,17 @@ def assert_exception(op, ex_type):
             raise e
         else:
             assert type(e) == ex_type, "expected exception %s but got %s" % (ex_type, type(e))
+
+
+def test_comparison_numeric_types():
+    large_int = 2 ** 65
+    numbers = [-large_int, -float(large_int), -1.4, -1, -1.0, -0.0, 0, 0.0, 1, 1.0, 1.4, large_int, float(large_int)]
+    indices = [1, 1, 2, 3, 3, 4, 4, 4, 5, 5, 6, 7, 7]
+    for i, a in zip(indices, numbers):
+        for j, b in zip(indices, numbers):
+            assert (a < b) == (i < j)
+            assert (a <= b) == (i <= j)
+            assert (a == b) == (i == j)
+            assert (a != b) == (i != j)
+            assert (a > b) == (i > j)
+            assert (a >= b) == (i >= j)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -1118,6 +1118,11 @@ public final class FloatBuiltins extends PythonBuiltins {
             return x <= y;
         }
 
+        @Specialization
+        boolean doPI(double x, PInt y) {
+            return x <= y.doubleValue();
+        }
+
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
         boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
@@ -1241,6 +1246,50 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         boolean doDL(double x, long y) {
             return x >= y;
+        }
+
+        @Specialization
+        boolean doPI(double x, PInt y) {
+            return x >= y.doubleValue();
+        }
+
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
+        boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
+            return x >= fromNativeNode.execute(frame, y);
+        }
+
+        @Specialization(guards = {
+                        "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
+                        "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
+        boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode nativeLeft,
+                        @Cached FromNativeSubclassNode nativeRight) {
+            return nativeLeft.execute(frame, x) >= nativeRight.execute(frame, y);
+        }
+
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
+        boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
+            return fromNativeNode.execute(frame, x) >= y;
+        }
+
+        @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
+        boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClass,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
+                        @Cached FromNativeSubclassNode fromNativeNode) {
+            return fromNativeNode.execute(frame, x) >= y;
         }
 
         @Fallback
