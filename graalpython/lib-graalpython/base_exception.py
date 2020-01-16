@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,6 +36,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+
+def __repr__(self):
+    if self.args:
+        if len(self.args) == 1:
+            return "%s(%r)" % (type(self).__name__, self.args[0])
+        return "%s%r" % (type(self).__name__, self.args)
+    return "%s()" % type(self).__name__
+
+
+BaseException.__repr__ = __repr__
+
 
 def __str__(self):
     if self.args:

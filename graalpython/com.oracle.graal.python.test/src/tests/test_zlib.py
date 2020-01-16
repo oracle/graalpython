@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -122,26 +122,6 @@ class BaseCompressTestCase(object):
         finally:
             data = None
 
-    def assertRaisesRegex(self, expected_exception, expected_regex, function,
-                          *args, **kwargs):
-        """Asserts that the message in a raised exception matches a regex.
-
-        Args:
-            expected_exception: Exception class expected to be raised.
-            expected_regex: Regex (re.Pattern object or string) expected
-                    to be found in error message.
-            args: Function to be called and extra positional args.
-            kwargs: Extra kwargs.
-            msg: Optional message used in case of failure. Can only be used
-                    when assertRaisesRegex is used as a context manager.
-        """
-        try: 
-            function(*args, **kwargs)
-        except expected_exception as e:
-            if not re.compile(expected_regex).search(str(e)):
-                assert False, "exception message '%r' does not match '%r'" % (e, expected_regex)
-        else:
-            assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)    
 
 class CompressTests(BaseCompressTestCase, unittest.TestCase):
     # Test compression in one go (whole message compression)

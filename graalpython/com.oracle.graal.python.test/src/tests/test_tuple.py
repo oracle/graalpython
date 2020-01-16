@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -236,12 +236,10 @@ class TupleTest(seq_tests.CommonTest):
         t = (2,)
         tt = tuple((2,))
         self.assertEqual(t,tt)
-        self.assertFalse(t is tt)
 
         ttt = tuple(t)
         self.assertEqual(t,ttt)
         self.assertEqual(tt,ttt)
-        self.assertFalse(ttt is tt)
         self.assertTrue(ttt is t)
 
         m = MyTuple((2,))

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -37,6 +37,11 @@ class repeat():
             else:
                 self.step += 1
         return self.obj
+
+    def __repr__(self):
+        if self.times is not None:
+            return "{}({}, {})".format(type(self).__name__, self.obj, self.times)
+        return "{}({})".format(type(self).__name__, self.obj)
 
 
 class chain():
@@ -120,7 +125,7 @@ class count(object):
         return _cnt
 
     def __repr__(self):
-        _repr = 'count({}'.format(self._cnt)
+        _repr = '{}({}'.format(type(self).__name__, self._cnt)
         if not isinstance(self._step, int) or self._step != 1:
             _repr += ', {}'.format(self._step)
         return _repr + ')'

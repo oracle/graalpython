@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.IllegalFormatException;
 import java.util.List;
@@ -48,7 +47,6 @@ import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToL
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -77,17 +75,6 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         Object init(PBaseException self, Object[] args) {
             self.setArgs(factory().createTuple(args));
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object repr(PBaseException self,
-                        @Cached("create()") GetLazyClassNode getClassNode) {
-            return self.getFormattedMessage(getClassNode);
         }
     }
 

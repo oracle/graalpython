@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -311,6 +311,7 @@ def test_delitem():
     assert b == bytearray()
 
 
+@unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
 def test_subclass():
 
     class MyByteArray(bytearray):
@@ -321,7 +322,7 @@ def test_subclass():
     b1 = bytearray(range(10))
     b2 = MyByteArray(range(10))
     assert b1 == b2
-    assert "<<%s>>" % str(b1) == str(b2)
+    assert "<<%s>>" % str(b1).replace('bytearray', 'MyByteArray') == str(b2)
 
     class MyBytes(bytes):
 

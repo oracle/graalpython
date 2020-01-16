@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -341,7 +341,7 @@ class deque(object):
             maxlen_repr = ''
         else:
             maxlen_repr = ', maxlen=%d' % (self.maxlen,)
-        return 'deque(%s%s)' % (list_repr, maxlen_repr)
+        return '%s(%s%s)' % (type(self).__name__, list_repr, maxlen_repr)
 
     def __compare__(self, other, op):
         if not isinstance(other, deque):

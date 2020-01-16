@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -372,7 +372,7 @@ class TestPEP380Operation(unittest.TestCase):
             return [42]
         self.assertEqual(list(g1()), ["g2"])
 
-
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
     def test_generator_return_value(self):
         """
         Test generator return value
@@ -419,7 +419,7 @@ class TestPEP380Operation(unittest.TestCase):
             "Yielded g2 spam",
             "Yielded g2 more spam",
             "Finishing g2",
-            "g2 returned StopIteration(3,)",
+            "g2 returned StopIteration(3)",
             "Yielded g1 eggs",
             "Finishing g1",
         ])
@@ -666,6 +666,7 @@ class TestPEP380Operation(unittest.TestCase):
             "Finishing g1",
         ])
 
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
     def test_next_and_return_with_value(self):
         """
         Test next and return with value
@@ -697,17 +698,18 @@ class TestPEP380Operation(unittest.TestCase):
             "g starting",
             "f resuming g",
             "g returning 1",
-            "f caught StopIteration(1,)",
+            "f caught StopIteration(1)",
             "g starting",
             "f resuming g",
             "g returning (2,)",
-            "f caught StopIteration((2,),)",
+            "f caught StopIteration((2,))",
             "g starting",
             "f resuming g",
-            "g returning StopIteration(3,)",
-            "f caught StopIteration(StopIteration(3,),)",
+            "g returning StopIteration(3)",
+            "f caught StopIteration(StopIteration(3))",
         ])
 
+    @unittest.skipIf(sys.version_info.minor < 7, "Requires Python 3.7+")
     def test_send_and_return_with_value(self):
         """
         Test send and return with value
@@ -742,17 +744,17 @@ class TestPEP380Operation(unittest.TestCase):
             "f sending spam to g",
             "g received 'spam'",
             "g returning 1",
-            'f caught StopIteration(1,)',
+            'f caught StopIteration(1)',
             'g starting',
             'f sending spam to g',
             "g received 'spam'",
             'g returning (2,)',
-            'f caught StopIteration((2,),)',
+            'f caught StopIteration((2,))',
             'g starting',
             'f sending spam to g',
             "g received 'spam'",
-            'g returning StopIteration(3,)',
-            'f caught StopIteration(StopIteration(3,),)'
+            'g returning StopIteration(3)',
+            'f caught StopIteration(StopIteration(3))'
         ])
 
     # def test_catching_exception_from_subgen_and_returning(self):
