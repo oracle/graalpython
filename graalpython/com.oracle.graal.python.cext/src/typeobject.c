@@ -170,6 +170,31 @@ static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 }
 
 static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
+    PyTypeObject *basebase;
+
+#undef SLOTDEFINED
+#undef COPYSLOT
+#undef COPYNUM
+#undef COPYSEQ
+#undef COPYMAP
+#undef COPYBUF
+
+#define SLOTDEFINED(SLOT) \
+    (base->SLOT != 0 && \
+     (basebase == NULL || base->SLOT != basebase->SLOT))
+
+#define COPYSLOT(SLOT) \
+    if (!type->SLOT && SLOTDEFINED(SLOT)) type->SLOT = base->SLOT
+
+#define COPYASYNC(SLOT) COPYSLOT(tp_as_async->SLOT)
+#define COPYNUM(SLOT) COPYSLOT(tp_as_number->SLOT)
+#define COPYSEQ(SLOT) COPYSLOT(tp_as_sequence->SLOT)
+#define COPYMAP(SLOT) COPYSLOT(tp_as_mapping->SLOT)
+#define COPYBUF(SLOT) COPYSLOT(tp_as_buffer->SLOT)
+
+    basebase = base->tp_base;
+
+    COPYSLOT(tp_dealloc);
     if (type->tp_getattr == NULL && type->tp_getattro == NULL) {
         type->tp_getattr = base->tp_getattr;
         type->tp_getattro = base->tp_getattro;

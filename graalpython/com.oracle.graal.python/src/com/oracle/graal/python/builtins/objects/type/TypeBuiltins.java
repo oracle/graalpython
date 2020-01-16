@@ -131,6 +131,8 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
     public static final HiddenKey TYPE_ALLOC = new HiddenKey(__ALLOC__);
+    public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
+    public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

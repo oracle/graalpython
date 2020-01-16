@@ -63,6 +63,8 @@ public final class NativeMemberNames {
     public static final String TP_WEAKLISTOFFSET = "tp_weaklistoffset";
     public static final String TP_DOC = "tp_doc";
     public static final String TP_ALLOC = "tp_alloc";
+    public static final String TP_DEALLOC = "tp_dealloc";
+    public static final String TP_FREE = "tp_free";
     public static final String TP_AS_NUMBER = "tp_as_number";
     public static final String TP_HASH = "tp_hash";
     public static final String TP_RICHCOMPARE = "tp_richcompare";

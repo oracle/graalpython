@@ -350,6 +350,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(result);
         }
 
+        @Specialization(guards = "eq(TP_DEALLOC, key)")
+        static Object doTpDealloc(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            Object result = lookupNativeMemberNode.execute(object, NativeMemberNames.TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
+            return toSulongNode.execute(result);
+        }
+
+        @Specialization(guards = "eq(TP_FREE, key)")
+        static Object doTpFree(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            Object result = lookupNativeMemberNode.execute(object, NativeMemberNames.TP_FREE, TypeBuiltins.TYPE_FREE);
+            return toSulongNode.execute(result);
+        }
+
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
         static Object doTpAsNumber(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             // TODO check for type and return 'NULL'
@@ -736,7 +752,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 dict = factory.createDictFixedStorage(object);
                 lib.setDict(object, dict);
             }
-            assert dict instanceof PDict;
+            assert dict != null;
             return toSulongNode.execute(dict);
         }
 
@@ -980,6 +996,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 this.lib = lib;
                 this.subclasses = subclasses;
             }
+        }
+
+        @Specialization(guards = "eq(TP_DEALLOC, key)")
+        static Object doTpDelloc(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+            writeAttrNode.execute(object, TypeBuiltins.TYPE_DEALLOC, asPythonObjectNode.execute(deallocFunc));
+            return deallocFunc;
+        }
+
+        @Specialization(guards = "eq(TP_FREE, key)")
+        static Object doTpFree(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+            writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));
+            return freeFunc;
         }
 
         @GenerateUncached
@@ -1390,7 +1422,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     @ExportLibrary(ReferenceLibrary.class)
     public static final class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
-        public static final byte PRIMITIVE_STATE_BOOL = 1 << 0;
+        public static final byte PRIMITIVE_STATE_BOOL = 1;
         public static final byte PRIMITIVE_STATE_BYTE = 1 << 1;
         public static final byte PRIMITIVE_STATE_INT = 1 << 2;
         public static final byte PRIMITIVE_STATE_LONG = 1 << 3;

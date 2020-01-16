@@ -92,13 +92,21 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
-    allocfunc alloc = structure->tp_alloc;
+    allocfunc alloc_fun = structure->tp_alloc;
+    destructor dealloc_fun = structure->tp_dealloc;
+    freefunc free_fun = structure->tp_free;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
-    if (alloc) {
-    	type_handle->tp_alloc = alloc;
+    if (alloc_fun) {
+    	type_handle->tp_alloc = alloc_fun;
+    }
+    if (dealloc_fun) {
+    	type_handle->tp_dealloc = dealloc_fun;
+    }
+    if (free_fun) {
+    	type_handle->tp_free = free_fun;
     }
 }
 
