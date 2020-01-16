@@ -57,6 +57,32 @@ int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
     return ((int (*)(void* a, void* b))_jls_PyType_IsSubtype)(native_type_to_java(a), native_type_to_java(b));
 }
 
+PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
+    const size_t size = _PyObject_VAR_SIZE(cls, nitems+1);
+
+    // TODO(fa): GC malloc if 'cls' is a heap type
+    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
+
+    memset(newObj, '\0', size);
+
+    if (cls->tp_flags & Py_TPFLAGS_HEAPTYPE)
+        Py_INCREF(cls);
+
+    if (cls->tp_itemsize == 0)
+        (void)PyObject_INIT(newObj, cls);
+    else
+        (void) PyObject_INIT_VAR((PyVarObject *)newObj, cls, nitems);
+
+    return newObj;
+}
+
+PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
+    PyObject* newInstance = cls->tp_alloc(cls, 0);
+    // TODO(fa): CPython does not do it here; verify if that's correct
+    Py_TYPE(newInstance) = cls;
+    return newInstance;
+}
+
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
     void* key = (void *) type;
     if (key == NULL) {

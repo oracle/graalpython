@@ -44,14 +44,6 @@ PyObject* PyObject_SelfIter(PyObject* obj) {
     return obj;
 }
 
-PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
-    PyObject* newInstance;
-    newInstance = cls->tp_alloc(cls, 0);
-    newInstance->ob_refcnt = 0;
-    Py_TYPE(newInstance) = cls;
-    return newInstance;
-}
-
 /*
 None is a non-NULL undefined value.
 There is (and should be!) no way to create other objects of this type,
@@ -137,19 +129,6 @@ PyObject _Py_NotImplementedStruct = {
     _PyObject_EXTRA_INIT
     1, &_PyNotImplemented_Type
 };
-
-PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
-	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems;
-    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
-    if(cls->tp_dictoffset) {
-    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
-    }
-    Py_TYPE(newObj) = cls;
-    if (nitems > 0) {
-        ((PyVarObject*)newObj)->ob_size = nitems;
-    }
-    return newObj;
-}
 
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
