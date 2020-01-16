@@ -74,7 +74,7 @@ public class CellBuiltins extends PythonBuiltins {
         return CellBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization

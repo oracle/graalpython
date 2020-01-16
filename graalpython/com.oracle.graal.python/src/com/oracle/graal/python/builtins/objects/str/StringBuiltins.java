@@ -261,7 +261,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class EqNode extends BinaryStringOpNode {
         @Override
@@ -1380,7 +1380,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = SpecialMethodNames.__LEN__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization

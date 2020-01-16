@@ -157,7 +157,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__eq__
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class RefTypeEqNode extends PythonBuiltinNode {
         @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})

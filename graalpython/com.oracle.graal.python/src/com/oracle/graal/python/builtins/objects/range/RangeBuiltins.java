@@ -84,7 +84,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -93,7 +93,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization

@@ -395,9 +395,16 @@ public class AbstractBytesBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object mul(VirtualFrame frame, PBytes self, Object times,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
                         @CachedLibrary("times") PythonObjectLibrary lib) {
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), lib.asSizeWithState(times, PArguments.getThreadState(frame)));
+            int timesInt;
+            if (hasFrame.profile(frame != null)) {
+                timesInt = lib.asSizeWithState(times, PArguments.getThreadState(frame));
+            } else {
+                timesInt = lib.asSize(times);
+            }
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), timesInt);
             return factory().createBytes(res);
         }
 

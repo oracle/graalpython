@@ -57,7 +57,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         return DictValuesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization

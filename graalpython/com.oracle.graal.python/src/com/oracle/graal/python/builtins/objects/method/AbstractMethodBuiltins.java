@@ -146,7 +146,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization

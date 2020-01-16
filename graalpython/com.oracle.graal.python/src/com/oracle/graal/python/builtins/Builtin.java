@@ -64,7 +64,9 @@ public @interface Builtin {
     boolean isStaticmethod() default false;
 
     /**
-     * Some built-ins don't ever need the frame.
+     * Some built-ins don't ever need the frame. This should be set to false for builtins that do
+     * not access the frame and only pass it to nodes that can deal with the frame being
+     * {@code null}.
      */
     boolean needsFrame() default true;
 

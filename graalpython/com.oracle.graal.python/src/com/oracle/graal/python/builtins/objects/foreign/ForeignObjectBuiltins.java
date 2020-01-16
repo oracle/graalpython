@@ -117,7 +117,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         return ForeignObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
@@ -147,7 +147,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         return null;
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -489,7 +489,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {

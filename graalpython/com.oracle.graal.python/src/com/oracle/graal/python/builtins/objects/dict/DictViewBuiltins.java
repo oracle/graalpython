@@ -105,7 +105,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         return DictViewBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization

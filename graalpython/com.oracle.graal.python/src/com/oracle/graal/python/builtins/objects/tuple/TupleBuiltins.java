@@ -285,7 +285,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -544,7 +544,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1, needsFrame = false)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization

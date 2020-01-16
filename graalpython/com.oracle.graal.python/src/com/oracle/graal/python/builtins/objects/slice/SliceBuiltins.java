@@ -64,7 +64,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2, needsFrame = false)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
