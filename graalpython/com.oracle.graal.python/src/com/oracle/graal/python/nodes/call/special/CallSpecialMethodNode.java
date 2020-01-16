@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -112,35 +113,35 @@ abstract class CallSpecialMethodNode extends Node {
         return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
-    PythonUnaryBuiltinNode getUnary(Object func) {
+    PythonUnaryBuiltinNode getUnary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
         }
         return null;
     }
 
-    PythonBinaryBuiltinNode getBinary(Object func) {
+    PythonBinaryBuiltinNode getBinary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonBinaryBuiltinNode.class);
         }
         return null;
     }
 
-    PythonTernaryBuiltinNode getTernary(Object func) {
+    PythonTernaryBuiltinNode getTernary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
         }
         return null;
     }
 
-    PythonQuaternaryBuiltinNode getQuaternary(Object func) {
+    PythonQuaternaryBuiltinNode getQuaternary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
         }
         return null;
     }
 
-    PythonVarargsBuiltinNode getVarargs(Object func) {
+    PythonVarargsBuiltinNode getVarargs(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin((PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
         }

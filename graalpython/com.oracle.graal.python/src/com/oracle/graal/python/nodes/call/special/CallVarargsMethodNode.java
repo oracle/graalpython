@@ -77,14 +77,14 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
                         assumptions = "singleContextAssumption()")
         Object callVarargsDirect(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                         @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
-                        @Cached("getVarargs(func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                        @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
             return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
         @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
         Object callVarargs(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                        @Cached("getVarargs(func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                        @Cached("getVarargs(frame, func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
             return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
@@ -92,7 +92,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                         @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                        @Cached("getVarargs(func.getFunction())") PythonVarargsBuiltinNode builtinNode) {
+                        @Cached("getVarargs(frame, func.getFunction())") PythonVarargsBuiltinNode builtinNode) {
             return builtinNode.varArgExecute(frame, func.getSelf(), arguments, keywords);
         }
 
@@ -100,7 +100,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
                         @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                        @Cached("getVarargs(func.getFunction())") PythonVarargsBuiltinNode builtinNode) {
+                        @Cached("getVarargs(frame, func.getFunction())") PythonVarargsBuiltinNode builtinNode) {
             return builtinNode.varArgExecute(frame, func.getSelf(), arguments, keywords);
         }
 
