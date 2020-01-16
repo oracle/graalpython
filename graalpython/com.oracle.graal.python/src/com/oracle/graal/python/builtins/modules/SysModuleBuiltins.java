@@ -308,7 +308,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return os;
     }
 
-    @Builtin(name = "exc_info")
+    @Builtin(name = "exc_info" , needsFrame = true)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
 
@@ -345,7 +345,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class GetFrameNode extends PythonBuiltinNode {
         @Specialization

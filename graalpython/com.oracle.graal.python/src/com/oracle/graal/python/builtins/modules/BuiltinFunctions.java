@@ -1919,7 +1919,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locals", minNumOfPositionalArgs = 0)
+    @Builtin(name = "locals", minNumOfPositionalArgs = 0, needsFrame = true)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
 
