@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -80,9 +81,12 @@ abstract class CallSpecialMethodNode extends Node {
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
      * otherwise.
      */
-    private <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
+    private <T extends PythonBuiltinBaseNode> T getBuiltin(VirtualFrame frame, PBuiltinFunction func, Class<T> clazz) {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
+        if (builtinNodeFactory.getNodeClass().getAnnotation(Builtin.class).needsFrame() && frame == null) {
+            return null;
+        }
         if (builtinNodeFactory != null && clazz.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
             T builtinNode = clazz.cast(func.getBuiltinNodeFactory().createNode());
             if (!callerExceedsMaxSize(builtinNode)) {
@@ -115,35 +119,35 @@ abstract class CallSpecialMethodNode extends Node {
 
     PythonUnaryBuiltinNode getUnary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
-            return getBuiltin((PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
+            return getBuiltin(frame, (PBuiltinFunction) func, PythonUnaryBuiltinNode.class);
         }
         return null;
     }
 
     PythonBinaryBuiltinNode getBinary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
-            return getBuiltin((PBuiltinFunction) func, PythonBinaryBuiltinNode.class);
+            return getBuiltin(frame, (PBuiltinFunction) func, PythonBinaryBuiltinNode.class);
         }
         return null;
     }
 
     PythonTernaryBuiltinNode getTernary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
-            return getBuiltin((PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
+            return getBuiltin(frame, (PBuiltinFunction) func, PythonTernaryBuiltinNode.class);
         }
         return null;
     }
 
     PythonQuaternaryBuiltinNode getQuaternary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
-            return getBuiltin((PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
+            return getBuiltin(frame, (PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
         }
         return null;
     }
 
     PythonVarargsBuiltinNode getVarargs(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
-            return getBuiltin((PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
+            return getBuiltin(frame, (PBuiltinFunction) func, PythonVarargsBuiltinNode.class);
         }
         return null;
     }

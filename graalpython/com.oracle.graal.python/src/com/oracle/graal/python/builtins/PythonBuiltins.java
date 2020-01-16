@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +45,8 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 
 public abstract class PythonBuiltins {
     protected final Map<String, Object> builtinConstants = new HashMap<>();
@@ -118,8 +121,21 @@ public abstract class PythonBuiltins {
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Builtin builtin = factory.getNodeClass().getAnnotation(Builtin.class);
+            assert builtin.needsFrame() == true || !builtinTakesFrame(factory.getNodeClass());
             func.accept(factory, builtin);
         }
+    }
+
+    private static boolean builtinTakesFrame(Class<? extends PythonBuiltinBaseNode> nodeClass) {
+        for (Method m : nodeClass.getDeclaredMethods()) {
+            if (m.getAnnotation(Specialization.class) != null) {
+                Class<?>[] pTypes = m.getParameterTypes();
+                if (pTypes.length > 0 && Frame.class.isAssignableFrom(pTypes[0])) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static int numDefaults(Builtin builtin) {
