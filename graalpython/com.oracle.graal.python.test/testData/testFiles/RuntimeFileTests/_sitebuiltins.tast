@@ -257,7 +257,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             ReadLocalVariableNode SourceSection: [765,769]`code`
                                               Frame: [1,code,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [754,764]`SystemExit`
                                               Identifier: SystemExit
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
@@ -612,7 +612,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                           Frame: [3,filename,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         StringLiteralNode SourceSection: [1427,1430]`"r"`
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [1412,1416]`open`
                                                           Identifier: open
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       LookupInheritedAttributeNode SourceSection: None
@@ -693,7 +693,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               ReadLocalVariableNode SourceSection: [1668,1672]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [1664,1667]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -756,7 +756,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   ReadLocalVariableNode SourceSection: [1745,1749]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [1741,1744]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [1762,1775]`self.MAXLINES`
@@ -895,7 +895,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               ReadLocalVariableNode SourceSection: [2182,2183]`i`
                                                                 Frame: [3,i,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [2163,2168]`print`
                                                               Identifier: print
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       GetIteratorExpressionNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
@@ -919,7 +919,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               ReadLocalVariableNode SourceSection: [2127,2131]`self`
                                                                 Frame: [0,self,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [2104,2109]`range`
                                                             Identifier: range
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     BlockNode SourceSection: None
@@ -969,7 +969,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                 ReadLocalVariableNode SourceSection: [2391,2397]`prompt`
                                                                   Frame: [1,prompt,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                ReadGlobalOrBuiltinNodeGen SourceSection: [2385,2390]`input`
                                                                   Identifier: input
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             IfNode SourceSection: [2419,2495]`if key not in ('', '...`

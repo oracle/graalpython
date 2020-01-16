@@ -146,6 +146,15 @@ public class ClassDefTests extends ParserTestBase {
     }
 
     @Test
+    public void classDef13() throws Exception {
+        checkScopeAndTree("class Point:\n" +
+                        "  x = 0\n" +
+                        "  y = 0\n" +
+                        "p = Point()\n" +
+                        "a = p.x + p.y\n");
+    }
+
+    @Test
     public void decorator01() throws Exception {
         checkScopeAndTree("@class_decorator\n" +
                         "class foo():pass");

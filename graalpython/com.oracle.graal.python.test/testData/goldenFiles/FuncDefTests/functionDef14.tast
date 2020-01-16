@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                             CompactKeywordsNodeGen SourceSection: None
                             ExecuteKeywordStarargsNodeGen SourceSection: None
                               EmptyNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [13,20]`install`
                             Identifier: install
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

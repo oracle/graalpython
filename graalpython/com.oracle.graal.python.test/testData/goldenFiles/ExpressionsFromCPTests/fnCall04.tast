@@ -14,5 +14,5 @@ ModuleRootNode Name: <module 'fnCall04'> SourceSection: [0,14]`foo(key=value)`
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

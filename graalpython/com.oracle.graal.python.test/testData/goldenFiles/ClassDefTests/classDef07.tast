@@ -102,7 +102,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                           ExpressionStatementNode SourceSection: [75,89]`dict_setitem()`
                                             PythonCallNodeGen SourceSection: [75,89]`dict_setitem()`
                                               CallNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [75,87]`dict_setitem`
                                                 Frame: [0,dict_setitem,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [94,106]`dict.clear()`

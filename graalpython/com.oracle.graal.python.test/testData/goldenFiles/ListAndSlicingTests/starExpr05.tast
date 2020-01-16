@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'starExpr05'> SourceSection: [0,19]`a, *b, c = rang
             CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [17,18]`5`
               Value: 5
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [11,16]`range`
               Identifier: range
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0

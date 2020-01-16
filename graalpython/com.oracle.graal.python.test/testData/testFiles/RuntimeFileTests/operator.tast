@@ -663,7 +663,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           ReadLocalVariableNode SourceSection: [1891,1892]`a`
                             Frame: [0,a,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [1886,1890]`_abs`
                             Identifier: _abs
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1646,7 +1646,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             Frame: [0,a,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [3007,3020]`'__getitem__'`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [2996,3003]`hasattr`
                             Identifier: hasattr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -1668,7 +1668,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 ReadLocalVariableNode SourceSection: [3080,3081]`a`
                                   Frame: [0,a,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [3075,3079]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [3100,3120]`raise TypeError(msg)...`
@@ -1677,7 +1677,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [3116,3119]`msg`
                               Frame: [2,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [3106,3115]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           EmptyNode SourceSection: None
@@ -2049,14 +2049,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [3580,3581]`a`
                               Frame: [0,a,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [3570,3579]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [3642,3698]`raise ValueError('se...`
                         PythonCallNodeGen SourceSection: [3648,3698]`ValueError('sequence...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [3659,3697]`'sequence.index(x): ...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3648,3658]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -2175,7 +2175,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4141,4144]`int`
                             Identifier: int
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [4121,4131]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -2197,7 +2197,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 ReadLocalVariableNode SourceSection: [4234,4241]`default`
                                   Frame: [1,default,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4229,4233]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [4261,4281]`raise TypeError(msg)...`
@@ -2206,7 +2206,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [4277,4280]`msg`
                               Frame: [2,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [4267,4276]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           EmptyNode SourceSection: None
@@ -2223,7 +2223,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               ReadLocalVariableNode SourceSection: [4311,4314]`obj`
                                 Frame: [0,obj,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4307,4310]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -2250,7 +2250,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               ReadLocalVariableNode SourceSection: [4381,4384]`obj`
                                 Frame: [0,obj,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4376,4380]`type`
                                 Identifier: type
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -2278,7 +2278,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [4481,4484]`obj`
                               Frame: [0,obj,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [4476,4480]`hint`
                               Frame: [3,hint,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -2323,7 +2323,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4611,4614]`int`
                             Identifier: int
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [4595,4605]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -2345,7 +2345,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 ReadLocalVariableNode SourceSection: [4696,4699]`val`
                                   Frame: [4,val,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4691,4695]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [4719,4739]`raise TypeError(msg)...`
@@ -2354,7 +2354,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [4735,4738]`msg`
                               Frame: [2,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [4725,4734]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           EmptyNode SourceSection: None
@@ -2381,7 +2381,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [4834,4837]`msg`
                               Frame: [2,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [4823,4833]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           EmptyNode SourceSection: None
@@ -2519,14 +2519,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [5441,5444]`str`
                                                     Identifier: str
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5424,5434]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               RaiseNodeGen SourceSection: [5463,5513]`raise TypeError('att...`
                                                 PythonCallNodeGen SourceSection: [5469,5513]`TypeError('attribute...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [5479,5512]`'attribute name must...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5469,5478]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -2607,7 +2607,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                     ReadLocalVariableNode SourceSection: [5685,5689]`name`
                                                                       Frame: [1,name,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [5672,5679]`getattr`
                                                                       Identifier: getattr
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                               GetIteratorExpressionNodeGen SourceSection: [5639,5644]`names`
@@ -2674,10 +2674,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     ReadLocalVariableNode SourceSection: [5848,5852]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5832,5835]`map`
                                                     Identifier: map
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5826,5831]`tuple`
                                                   Identifier: tuple
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [5874,5965]`def func(obj):↵     ...`
@@ -2755,7 +2755,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                                     Frame: [1,obj,Illegal]
                                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                                   ReadFromCellNodeGen SourceSection: None
-                                                                                ReadGeneratorFrameVariableNode SourceSection: None
+                                                                                ReadGeneratorFrameVariableNode SourceSection: [5918,5924]`getter`
                                                                                   Frame: [0,getter,Illegal]
                                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                               GeneratorAccessNode SourceSection: None
@@ -2784,7 +2784,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       ReadFromCellNodeGen SourceSection: None
                                                                   PythonObjectFactoryNodeGen SourceSection: None
-                                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5912,5917]`tuple`
                                                                   Identifier: tuple
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2948,7 +2948,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       ReadLocalVariableNode SourceSection: [6235,6239]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [6225,6228]`map`
                                                       Identifier: map
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -3355,7 +3355,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       ReadFromCellNodeGen SourceSection: None
                                                                   PythonObjectFactoryNodeGen SourceSection: None
-                                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                ReadGlobalOrBuiltinNodeGen SourceSection: [6901,6906]`tuple`
                                                                   Identifier: tuple
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3519,7 +3519,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       ReadLocalVariableNode SourceSection: [7208,7212]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [7198,7201]`map`
                                                       Identifier: map
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -3709,7 +3709,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [7668,7672]`args`
                                                   Frame: [0,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [7664,7667]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [7676,7677]`2`
@@ -3726,7 +3726,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [7785,7788]`msg`
                                                   Frame: [2,msg,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [7775,7784]`TypeError`
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -3767,14 +3767,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7880,7883]`str`
                                                 Identifier: str
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [7857,7867]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [7898,7945]`raise TypeError('met...`
                                             PythonCallNodeGen SourceSection: [7904,7945]`TypeError('method na...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [7914,7944]`'method name must be...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [7904,7913]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3876,7 +3876,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     ReadLocalVariableNode SourceSection: [8091,8095]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                              PythonCallNodeGen SourceSection: None
+                                              PythonCallNodeGen SourceSection: [8051,8075]`getattr(obj, self._n...`
                                                 CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [8059,8062]`obj`
                                                   Frame: [1,obj,Illegal]
@@ -3889,7 +3889,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   ReadLocalVariableNode SourceSection: [8064,8068]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [8051,8058]`getattr`
                                                   Identifier: getattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3946,7 +3946,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [8151,8155]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [8146,8150]`repr`
                                                 Identifier: repr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [8172,8206]`args.extend(map(repr...`
@@ -3965,7 +3965,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [8194,8198]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [8184,8187]`map`
                                                 Identifier: map
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -4246,7 +4246,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           ReadLocalVariableNode SourceSection: [8668,8672]`self`
                                                             Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [8630,8637]`partial`
                                                       Frame: [1,partial,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [8683,8693]`self._args`
@@ -4443,7 +4443,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             Frame: [0,a,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [8990,9003]`'__getitem__'`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [8979,8986]`hasattr`
                             Identifier: hasattr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -4465,7 +4465,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 ReadLocalVariableNode SourceSection: [9063,9064]`a`
                                   Frame: [0,a,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [9058,9062]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         RaiseNodeGen SourceSection: [9083,9103]`raise TypeError(msg)...`
@@ -4474,7 +4474,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadLocalVariableNode SourceSection: [9099,9102]`msg`
                               Frame: [2,msg,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [9089,9098]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           EmptyNode SourceSection: None

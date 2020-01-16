@@ -181,7 +181,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadLocalVariableNode SourceSection: [2131,2135]`attr`
                                     Frame: [5,attr,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2114,2121]`getattr`
                                     Identifier: getattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExceptNode SourceSection: None
@@ -202,7 +202,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadLocalVariableNode SourceSection: [2234,2239]`value`
                                     Frame: [4,value,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2211,2218]`setattr`
                                     Identifier: setattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               SaveExceptionStateNodeGen SourceSection: None
@@ -233,7 +233,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 DictLiteralNode SourceSection: [2327,2329]`{}`
                                   PythonObjectFactoryNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [2304,2311]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -245,7 +245,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadLocalVariableNode SourceSection: [2291,2295]`attr`
                                     Frame: [5,attr,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2274,2281]`getattr`
                                     Identifier: getattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2257,2264]`updated`
@@ -350,7 +350,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             CompactKeywordsNodeGen SourceSection: None
                             ExecuteKeywordStarargsNodeGen SourceSection: None
                               EmptyNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3106,3113]`partial`
                             Identifier: partial
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1662,7 +1662,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [0,op,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [7499,7503]`None`
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [7482,7489]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [7512,7537]`getattr(object, op, ...`
@@ -1674,7 +1674,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [0,op,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [7532,7536]`None`
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [7512,7519]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [7457,7459]`op`
@@ -1720,7 +1720,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         PythonCallNodeGen SourceSection: [7571,7639]`ValueError('must def...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [7582,7638]`'must define at leas...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [7571,7581]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -1734,7 +1734,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadLocalVariableNode SourceSection: [7655,7660]`roots`
                           Frame: [1,roots,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [7651,7654]`max`
                           Identifier: max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [7718,7870]`for opname, opfunc i...`
@@ -1799,7 +1799,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadLocalVariableNode SourceSection: [7858,7864]`opfunc`
                                     Frame: [4,opfunc,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [7837,7844]`setattr`
                                     Identifier: setattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
@@ -2033,7 +2033,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                 ReadLocalVariableNode SourceSection: [8337,8342]`other`
                                                                   Frame: [1,other,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadLocalCellNodeGen SourceSection: None
+                                                              ReadLocalCellNodeGen SourceSection: [8321,8326]`mycmp`
                                                                 ReadLocalVariableNode SourceSection: None
                                                                   Frame: [2,mycmp,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2112,7 +2112,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                 ReadLocalVariableNode SourceSection: [8420,8425]`other`
                                                                   Frame: [1,other,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadLocalCellNodeGen SourceSection: None
+                                                              ReadLocalCellNodeGen SourceSection: [8404,8409]`mycmp`
                                                                 ReadLocalVariableNode SourceSection: None
                                                                   Frame: [2,mycmp,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2191,7 +2191,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                 ReadLocalVariableNode SourceSection: [8503,8508]`other`
                                                                   Frame: [1,other,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadLocalCellNodeGen SourceSection: None
+                                                              ReadLocalCellNodeGen SourceSection: [8487,8492]`mycmp`
                                                                 ReadLocalVariableNode SourceSection: None
                                                                   Frame: [2,mycmp,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2270,7 +2270,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                 ReadLocalVariableNode SourceSection: [8587,8592]`other`
                                                                   Frame: [1,other,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadLocalCellNodeGen SourceSection: None
+                                                              ReadLocalCellNodeGen SourceSection: [8571,8576]`mycmp`
                                                                 ReadLocalVariableNode SourceSection: None
                                                                   Frame: [2,mycmp,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2349,7 +2349,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                 ReadLocalVariableNode SourceSection: [8671,8676]`other`
                                                                   Frame: [1,other,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadLocalCellNodeGen SourceSection: None
+                                                              ReadLocalCellNodeGen SourceSection: [8655,8660]`mycmp`
                                                                 ReadLocalVariableNode SourceSection: None
                                                                   Frame: [2,mycmp,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2521,7 +2521,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             PythonCallNodeGen SourceSection: [9298,9360]`TypeError("descripto...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [9308,9359]`"descriptor '__new__...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9298,9307]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -2536,7 +2536,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [9376,9380]`args`
                                                   Frame: [0,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [9372,9375]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [9384,9385]`2`
@@ -2545,7 +2545,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             PythonCallNodeGen SourceSection: [9405,9460]`TypeError("type 'par...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [9415,9459]`"type 'partial' take...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9405,9414]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -2594,14 +2594,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadLocalVariableNode SourceSection: [9517,9521]`func`
                                                 Frame: [3,func,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9508,9516]`callable`
                                                 Identifier: callable
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [9536,9590]`raise TypeError("the...`
                                             PythonCallNodeGen SourceSection: [9542,9590]`TypeError("the first...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [9552,9589]`"the first argument ...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9542,9551]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -2615,7 +2615,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadLocalVariableNode SourceSection: [9612,9616]`args`
                                               Frame: [0,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [9606,9611]`tuple`
                                               Identifier: tuple
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [9627,9854]`if hasattr(func, "fu...`
@@ -2626,7 +2626,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Frame: [3,func,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [9644,9650]`"func"`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9630,9637]`hasattr`
                                                 Identifier: hasattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -2721,7 +2721,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [9876,9879]`cls`
                                                   Frame: [2,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [9861,9866]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [9903,9919]`self.func = func`
@@ -2811,7 +2811,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             PythonCallNodeGen SourceSection: [10075,10138]`TypeError("descripto...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [10085,10137]`"descriptor '__call_...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [10075,10084]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -2954,7 +2954,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [10376,10380]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [10371,10375]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [10403,10427]`args = [repr(self.fu...`
@@ -2973,7 +2973,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadLocalVariableNode SourceSection: [10416,10420]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [10411,10415]`repr`
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [10436,10475]`args.extend(repr(x) ...`
@@ -3010,7 +3010,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                               ReadGeneratorFrameVariableNode SourceSection: [10453,10454]`x`
                                                                 Frame: [0,x,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                              ReadGlobalOrBuiltinNodeGen SourceSection: [10448,10452]`repr`
                                                                 Identifier: repr
                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             GeneratorAccessNode SourceSection: None
@@ -3146,7 +3146,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     ReadLocalVariableNode SourceSection: [10562,10566]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [10557,10561]`type`
                                                       Identifier: type
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [10582,10593]`"functools"`
@@ -3224,7 +3224,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [10752,10756]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [10747,10751]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [10759,10771]`(self.func,)`
@@ -3333,14 +3333,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [10926,10931]`tuple`
                                                 Identifier: tuple
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [10908,10918]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [10946,11005]`raise TypeError("arg...`
                                             PythonCallNodeGen SourceSection: [10952,11005]`TypeError("argument ...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [10962,11004]`"argument to __setst...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [10952,10961]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3355,7 +3355,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [11021,11026]`state`
                                                   Frame: [1,state,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [11017,11020]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [11031,11032]`4`
@@ -3364,7 +3364,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             PythonCallNodeGen SourceSection: [11052,11109]`TypeError(f"expected...`
                                               CallNodeGen SourceSection: None
                                               FormatStringLiteralNode SourceSection: [11062,11108]`f"expected 4 items i...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [11052,11061]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3428,7 +3428,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ReadLocalVariableNode SourceSection: [11179,11183]`func`
                                                         Frame: [2,func,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [11170,11178]`callable`
                                                         Identifier: callable
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   NotNodeGen SourceSection: [11188,11215]`not isinstance(args,...`
@@ -3440,7 +3440,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [11209,11214]`tuple`
                                                         Identifier: tuple
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [11192,11202]`isinstance`
                                                         Identifier: isinstance
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
@@ -3460,7 +3460,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [11273,11277]`dict`
                                                         Identifier: dict
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [11256,11266]`isinstance`
                                                         Identifier: isinstance
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
@@ -3481,7 +3481,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [11347,11351]`dict`
                                                       Identifier: dict
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [11325,11335]`isinstance`
                                                       Identifier: isinstance
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 YesNodeGen SourceSection: None
@@ -3490,7 +3490,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             PythonCallNodeGen SourceSection: [11374,11408]`TypeError("invalid p...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [11384,11407]`"invalid partial sta...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [11374,11383]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3504,7 +3504,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadLocalVariableNode SourceSection: [11431,11435]`args`
                                               Frame: [3,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [11425,11430]`tuple`
                                               Identifier: tuple
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [11476,11631]`if kwds is None:↵   ...`
@@ -3528,7 +3528,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadLocalVariableNode SourceSection: [11533,11537]`kwds`
                                                     Frame: [4,kwds,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [11528,11532]`type`
                                                     Identifier: type
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [11546,11550]`dict`
@@ -3543,7 +3543,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [11617,11621]`kwds`
                                                   Frame: [4,kwds,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [11612,11616]`dict`
                                                   Identifier: dict
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
@@ -3741,7 +3741,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadLocalVariableNode SourceSection: [12194,12198]`func`
                                                     Frame: [1,func,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [12185,12193]`callable`
                                                     Identifier: callable
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               NotNodeGen SourceSection: [12204,12232]`not hasattr(func, "_...`
@@ -3751,7 +3751,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     Frame: [1,func,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [12222,12231]`"__get__"`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [12208,12215]`hasattr`
                                                     Identifier: hasattr
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
@@ -3765,7 +3765,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [12262,12300]`"{!r} is not callabl...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [12252,12261]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3780,7 +3780,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12528,12541]`partialmethod`
                                                 Identifier: partialmethod
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [12511,12521]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -3929,7 +3929,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [13064,13068]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [13054,13057]`map`
                                                 Identifier: map
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -4258,7 +4258,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                             ReadLocalVariableNode SourceSection: [13824,13828]`rest`
                                                               Frame: [4,rest,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [13818,13823]`tuple`
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       FrameReturnNode SourceSection: [13842,13887]`return self.func(*ca...`
@@ -4390,7 +4390,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [14081,14090]`"__get__"`
                                             ObjectLiteralNode SourceSection: [14092,14096]`None`
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [14062,14069]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [14106,14119]`result = None`
@@ -4418,7 +4418,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [14180,14183]`cls`
                                                   Frame: [2,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [14171,14174]`get`
                                                   Frame: [3,get,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             IfNode SourceSection: [14197,14573]`if new_func is not s...`
@@ -4466,7 +4466,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                           ReadLocalVariableNode SourceSection: [14409,14413]`self`
                                                             Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [14377,14384]`partial`
                                                       Identifier: partial
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 TryFinallyNode SourceSection: [14440,14573]`try:↵               ...`
@@ -4586,7 +4586,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [14878,14900]`"__isabstractmethod_...`
                                                 BooleanLiteralNode SourceSection: [14902,14907]`False`
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [14859,14866]`getattr`
                                                   Identifier: getattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4625,7 +4625,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
             StringLiteralNode SourceSection: [15153,15161]`"misses"`
             StringLiteralNode SourceSection: [15163,15172]`"maxsize"`
             StringLiteralNode SourceSection: [15174,15184]`"currsize"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [15120,15130]`namedtuple`
             Identifier: namedtuple
       WriteNameNodeGen SourceSection: [15188,15601]`class _HashedSeq(lis...`
         Identifier: _HashedSeq
@@ -4761,7 +4761,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadLocalVariableNode SourceSection: [15540,15543]`tup`
                                               Frame: [1,tup,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [15535,15539]`hash`
                                               Frame: [2,hash,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4839,7 +4839,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               PythonObjectFactoryNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [15659,15667]`object()`
                 CallNodeGen SourceSection: None
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [15659,15665]`object`
                   Identifier: object
             SetLiteralNode SourceSection: [15696,15729]`{int, str, frozenset...`
               PythonObjectFactoryNodeGen SourceSection: None
@@ -4852,7 +4852,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               PythonCallNodeGen SourceSection: [15718,15728]`type(None)`
                 CallNodeGen SourceSection: None
                 ObjectLiteralNode SourceSection: [15723,15727]`None`
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [15718,15722]`type`
                   Identifier: type
             ReadNameNodeGen SourceSection: [15750,15755]`tuple`
               Identifier: tuple
@@ -5039,7 +5039,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadGeneratorFrameVariableNode SourceSection: [16639,16640]`v`
                                                 Frame: [0,v,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalCellNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [16634,16638]`type`
                                                 ReadGeneratorFrameVariableNode SourceSection: None
                                                   Frame: [1,type,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5068,7 +5068,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [0,args,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [16628,16633]`tuple`
                                 Frame: [5,tuple,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         IfNode SourceSection: [16665,16735]`if kwds:↵           ...`
@@ -5117,7 +5117,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadGeneratorFrameVariableNode SourceSection: [16704,16705]`v`
                                                   Frame: [0,v,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalCellNodeGen SourceSection: None
+                                                ReadLocalCellNodeGen SourceSection: [16699,16703]`type`
                                                   ReadGeneratorFrameVariableNode SourceSection: None
                                                     Frame: [1,type,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5149,7 +5149,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           Frame: [1,kwds,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [16693,16698]`tuple`
                                   Frame: [5,tuple,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                           BlockNode SourceSection: None
@@ -5164,7 +5164,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 ReadLocalVariableNode SourceSection: [16744,16747]`key`
                                   Frame: [8,key,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [16740,16743]`len`
                                   Frame: [7,len,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [16752,16753]`1`
@@ -5184,7 +5184,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [16767,16768]`0`
                                     Value: 0
-                                ReadLocalCellNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [16758,16762]`type`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [6,type,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5212,7 +5212,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           ReadLocalVariableNode SourceSection: [16829,16832]`key`
                             Frame: [8,key,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [16818,16828]`_HashedSeq`
                             Identifier: _HashedSeq
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -5285,7 +5285,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ReadGlobalOrBuiltinNodeGen SourceSection: [18067,18070]`int`
                                 Identifier: int
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [18047,18057]`isinstance`
                                 Identifier: isinstance
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
@@ -5293,7 +5293,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         PythonCallNodeGen SourceSection: [18087,18141]`TypeError('Expected ...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [18097,18140]`'Expected maxsize to...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [18087,18096]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -5354,7 +5354,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [18255,18265]`_CacheInfo`
                                         Identifier: _CacheInfo
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [18205,18223]`_lru_cache_wrapper`
                                         Identifier: _lru_cache_wrapper
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   FrameReturnNode SourceSection: [18275,18320]`return update_wrappe...`
@@ -5370,7 +5370,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         ReadLocalVariableNode SourceSection: [18306,18319]`user_function`
                                           Frame: [0,user_function,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [18282,18296]`update_wrapper`
                                           Identifier: update_wrapper
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -5452,7 +5452,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [18487,18495]`object()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [18487,18493]`object`
                           Identifier: object
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [18553,18573]`make_key = _make_key...`
@@ -5595,7 +5595,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadVariableFromFrameNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [18906,18913]`RLock()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [18906,18911]`RLock`
                           Identifier: RLock
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [18975,18984]`root = []`
@@ -5703,7 +5703,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadLocalVariableNode SourceSection: [19326,19330]`kwds`
                                               Frame: [1,kwds,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [19303,19316]`user_function`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [3,user_function,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5802,7 +5802,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [5,typed,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [19558,19566]`make_key`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [7,make_key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5821,7 +5821,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [6,sentinel,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [19607,19616]`cache_get`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [11,cache_get,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5877,7 +5877,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadLocalVariableNode SourceSection: [19771,19775]`kwds`
                                                 Frame: [1,kwds,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [19748,19761]`user_function`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [4,user_function,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5979,7 +5979,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [14,typed,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [20038,20046]`make_key`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [15,make_key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5995,7 +5995,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadLocalVariableNode SourceSection: [20122,20125]`key`
                                                 Frame: [2,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalCellNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [20112,20121]`cache_get`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [24,cache_get,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6212,7 +6212,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               ReadLocalVariableNode SourceSection: [20666,20670]`kwds`
                                                 Frame: [1,kwds,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [20643,20656]`user_function`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [12,user_function,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6467,7 +6467,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       Op: __ge__
                                                     PythonCallNodeGen SourceSection: [22627,22638]`cache_len()`
                                                       CallNodeGen SourceSection: None
-                                                      ReadLocalCellNodeGen SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: [22627,22636]`cache_len`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [25,cache_len,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6571,12 +6571,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadFromCellNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [22838,22849]`cache_len()`
                                             CallNodeGen SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: None
+                                            ReadLocalCellNodeGen SourceSection: [22838,22847]`cache_len`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [4,cache_len,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [22804,22814]`_CacheInfo`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [1,_CacheInfo,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -6968,7 +6968,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 PythonCallNodeGen SourceSection: [24224,24262]`RuntimeError("Incons...`
                                   CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [24237,24261]`"Inconsistent hierar...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [24224,24236]`RuntimeError`
                                     Identifier: RuntimeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -7102,7 +7102,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [25447,25468]`'__abstractmethods__...`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [25433,25440]`hasattr`
                                   Identifier: hasattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
@@ -7123,7 +7123,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       ReadLocalVariableNode SourceSection: [25498,25501]`cls`
                                         Frame: [0,cls,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [25494,25497]`len`
                                       Identifier: len
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [25515,25516]`i`
@@ -7145,10 +7145,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 ReadLocalVariableNode SourceSection: [25405,25408]`cls`
                                   Frame: [0,cls,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [25396,25404]`reversed`
                                 Identifier: reversed
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [25386,25395]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [25613,25625]`boundary = 0`
@@ -7176,7 +7176,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Frame: [1,abcs,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [25637,25641]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ListLiteralNode SourceSection: [25661,25663]`[]`
@@ -7203,7 +7203,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Frame: [2,boundary,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [25685,25689]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [25720,25739]`abstract_bases = []`
@@ -7234,7 +7234,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ReadVariableFromFrameNodeGen SourceSection: None
                             EmptyNode SourceSection: None
                             EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [25758,25762]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [25793,26107]`for base in abcs:↵  ...`
@@ -7259,7 +7259,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       Frame: [4,base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     ReadFromCellNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [25822,25832]`issubclass`
                                     Identifier: issubclass
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 NotNodeGen SourceSection: [25848,25929]`not any(↵           ...`
@@ -7301,7 +7301,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                         Frame: [1,base,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ReadFromCellNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [25873,25883]`issubclass`
                                                       Identifier: issubclass
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
@@ -7333,7 +7333,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             Frame: [0,cls,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [25852,25855]`any`
                                       Identifier: any
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 YesNodeGen SourceSection: None
@@ -7434,7 +7434,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           CompactKeywordsNodeGen SourceSection: None
                                           ExecuteKeywordStarargsNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [26185,26192]`_c3_mro`
                                           Identifier: _c3_mro
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -7511,7 +7511,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           CompactKeywordsNodeGen SourceSection: None
                                           ExecuteKeywordStarargsNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [26262,26269]`_c3_mro`
                                           Identifier: _c3_mro
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -7588,7 +7588,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           CompactKeywordsNodeGen SourceSection: None
                                           ExecuteKeywordStarargsNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [26336,26343]`_c3_mro`
                                           Identifier: _c3_mro
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -7674,7 +7674,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               ReadLocalVariableNode SourceSection: [26535,26546]`other_bases`
                                 Frame: [7,other_bases,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [26397,26406]`_c3_merge`
                             Identifier: _c3_merge
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -7739,7 +7739,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                               Frame: [0,cls,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [26827,26830]`set`
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [26924,27069]`def is_related(typ):...`
@@ -7803,7 +7803,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [0,typ,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [26995,27004]`'__mro__'`
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [26982,26989]`hasattr`
                                               Identifier: hasattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
@@ -7817,7 +7817,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadLocalVariableNode SourceSection: [27059,27062]`typ`
                                             Frame: [0,typ,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [27043,27053]`issubclass`
                                             Identifier: issubclass
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -7862,7 +7862,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         ReadGeneratorFrameVariableNode SourceSection: [27109,27110]`n`
                                           Frame: [0,n,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [27098,27108]`is_related`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [1,is_related,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -8037,7 +8037,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGeneratorFrameVariableNode SourceSection: [27429,27430]`n`
                                             Frame: [0,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [27414,27428]`is_strict_base`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [1,is_strict_base,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8090,7 +8090,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             Frame: [1,types,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadFromCellNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [27569,27572]`set`
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [27584,27592]`mro = []`
@@ -8149,7 +8149,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadLocalVariableNode SourceSection: [27727,27730]`sub`
                                               Frame: [8,sub,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [27711,27721]`issubclass`
                                               Identifier: issubclass
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
@@ -8363,7 +8363,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             CompactKeywordsNodeGen SourceSection: None
                             ExecuteKeywordStarargsNodeGen SourceSection: None
                               EmptyNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [28130,28137]`_c3_mro`
                             Identifier: _c3_mro
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -8424,7 +8424,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             ReadLocalVariableNode SourceSection: [28574,28582]`registry`
                               Frame: [1,registry,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [28556,28568]`_compose_mro`
                           Identifier: _compose_mro
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [28595,28607]`match = None`
@@ -8507,7 +8507,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadLocalVariableNode SourceSection: [28979,28980]`t`
                                             Frame: [4,t,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [28961,28971]`issubclass`
                                             Identifier: issubclass
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       YesNodeGen SourceSection: None
@@ -8524,7 +8524,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [29019,29049]`"Ambiguous dispatch:...`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [29006,29018]`RuntimeError`
                                         Identifier: RuntimeError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     EmptyNode SourceSection: None
@@ -8701,7 +8701,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Frame: [1,current_token,Illegal]
                                             PythonCallNodeGen SourceSection: [30254,30271]`get_cache_token()`
                                               CallNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [30254,30269]`get_cache_token`
                                                 Identifier: get_cache_token
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IfNode SourceSection: [30284,30408]`if cache_token != cu...`
@@ -8784,7 +8784,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                             Frame: [3,registry,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [30583,30593]`_find_impl`
                                                           Identifier: _find_impl
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [30550,30558]`KeyError`
@@ -8887,7 +8887,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [30934,30938]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [30918,30928]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             FrameReturnNode SourceSection: [30957,30990]`return lambda f: reg...`
@@ -8940,7 +8940,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                                   ReadLocalVariableNode SourceSection: [30988,30989]`f`
                                                                     Frame: [0,f,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  ReadLocalCellNodeGen SourceSection: None
+                                                                  ReadLocalCellNodeGen SourceSection: [30974,30982]`register`
                                                                     ReadLocalVariableNode SourceSection: None
                                                                       Frame: [2,register,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -8963,7 +8963,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               StringLiteralNode SourceSection: [31022,31039]`'__annotations__'`
                                               DictLiteralNode SourceSection: [31041,31043]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [31009,31016]`getattr`
                                                 Identifier: getattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IfNode SourceSection: [31057,31334]`if not ann:↵        ...`
@@ -8975,7 +8975,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               PythonCallNodeGen SourceSection: [31091,31321]`TypeError(↵         ...`
                                                 CallNodeGen SourceSection: None
                                                 FormatStringLiteralNode SourceSection: [31122,31303]`f"Invalid first argu...`
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [31091,31100]`TypeError`
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -9015,13 +9015,13 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ReadLocalVariableNode SourceSection: [31512,31516]`func`
                                                         Frame: [1,func,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [31497,31511]`get_type_hints`
                                                         Frame: [3,get_type_hints,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [31492,31496]`iter`
                                                   Identifier: iter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [31487,31491]`next`
                                                 Identifier: next
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: None
@@ -9059,7 +9059,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31563,31567]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [31547,31557]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             FormatStringLiteralNode SourceSection: [31588,31650]`f"Invalid annotation...`
@@ -9096,7 +9096,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [31742,31763]`'__abstractmethods__...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [31729,31736]`hasattr`
                                                 Identifier: hasattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
@@ -9107,7 +9107,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [31792,31809]`get_cache_token()`
                                             CallNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [31792,31807]`get_cache_token`
                                               Identifier: get_cache_token
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
@@ -9191,7 +9191,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadLocalVariableNode SourceSection: [31944,31946]`kw`
                                                   Frame: [1,kw,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            PythonCallNodeGen SourceSection: None
+                                            PythonCallNodeGen SourceSection: [31907,31934]`dispatch(args[0].__c...`
                                               CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [31916,31933]`args[0].__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
@@ -9204,7 +9204,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [31921,31922]`0`
                                                     Value: 0
-                                              ReadLocalCellNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [31907,31915]`dispatch`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [2,dispatch,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9284,7 +9284,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                             ReadLocalVariableNode SourceSection: [32173,32177]`func`
                               Frame: [0,func,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [32149,32163]`update_wrapper`
                               Identifier: update_wrapper
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [32183,32197]`return wrapper`

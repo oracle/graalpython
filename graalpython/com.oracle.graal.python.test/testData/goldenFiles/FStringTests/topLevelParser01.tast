@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'topLevelParser01'> SourceSection: [0,36]`name = 'P
           CallNodeGen SourceSection: None
           FormatStringLiteralNode SourceSection: [20,35]`f"hello {name}"`
             Values: <f>hello {name}
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [14,19]`print`
             Identifier: print
       SideEffect:
         WriteNameNodeGen SourceSection: [0,13]`name = 'Pepa'`

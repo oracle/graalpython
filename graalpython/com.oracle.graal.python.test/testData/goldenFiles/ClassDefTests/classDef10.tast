@@ -110,7 +110,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [81,82]`1`
                                                         Value: 1
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
                                                       Identifier: test
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           Return Expresssion: ReadLocalVariableNode SourceSection: None

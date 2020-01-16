@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                                 Frame: [1,value,Illegal]
                               PythonCallNodeGen SourceSection: [46,52]`next()`
                                 CallNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [46,50]`next`
                                   Identifier: next
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None

@@ -371,7 +371,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 PythonCallNodeGen SourceSection: [2764,2815]`Error('_locale emula...`
                                   CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [2770,2814]`'_locale emulation o...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2764,2769]`Error`
                                     Identifier: Error
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -397,7 +397,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             YesNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [2921,2930]`globals()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [2921,2928]`globals`
                 Identifier: globals
             StringLiteralNode SourceSection: [2904,2913]`'strxfrm'`
         WriteNameNodeGen SourceSection: [2936,2954]`strxfrm = _strxfrm`
@@ -413,7 +413,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             YesNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [2975,2984]`globals()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [2975,2982]`globals`
                 Identifier: globals
             StringLiteralNode SourceSection: [2958,2967]`'strcoll'`
         WriteNameNodeGen SourceSection: [2990,3008]`strcoll = _strcoll`
@@ -462,7 +462,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Frame: [0,d,Illegal]
                         PythonCallNodeGen SourceSection: [3235,3248]`_localeconv()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3235,3246]`_localeconv`
                             Identifier: _localeconv
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       IfNode SourceSection: [3253,3321]`if _override_localec...`
@@ -573,7 +573,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   PythonCallNodeGen SourceSection: [3763,3793]`ValueError("invalid ...`
                                     CallNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [3774,3792]`"invalid grouping"`
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [3763,3773]`ValueError`
                                       Identifier: ValueError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
@@ -682,7 +682,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [2,conv,Illegal]
                       PythonCallNodeGen SourceSection: [3994,4006]`localeconv()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [3994,4004]`localeconv`
                           Identifier: localeconv
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [4011,4084]`thousands_sep = conv...`
@@ -775,7 +775,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [4271,4279]`stripped`
                                   Frame: [5,stripped,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4267,4270]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               EmptyNode SourceSection: None
@@ -893,7 +893,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [4417,4425]`grouping`
                               Frame: [4,grouping,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [4397,4416]`_grouping_intervals`
                               Identifier: _grouping_intervals
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -956,7 +956,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [4811,4824]`thousands_sep`
                                 Frame: [3,thousands_sep,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4807,4810]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BinaryArithmeticExpression SourceSection: [4829,4844]`len(groups) - 1`
@@ -967,7 +967,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [4833,4839]`groups`
                                   Frame: [8,groups,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4829,4832]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4843,4844]`1`
@@ -1075,7 +1075,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [5050,5051]`s`
                             Frame: [0,s,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [5046,5049]`len`
                             Identifier: len
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [5055,5056]`1`
@@ -1311,7 +1311,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 CompactKeywordsNodeGen SourceSection: None
                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [5670,5676]`_group`
                                 Identifier: _group
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: None
@@ -1346,7 +1346,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           GetItemNodeGen SourceSection: [5730,5841]`localeconv()[monetar...`
                             PythonCallNodeGen SourceSection: [5730,5742]`localeconv()`
                               CallNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [5730,5740]`localeconv`
                                 Identifier: localeconv
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             OrNode SourceSection: [5743,5840]`monetary and 'mon_de...`
@@ -1388,7 +1388,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [5955,5959]`seps`
                                 Frame: [6,seps,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [5929,5943]`_strip_padding`
                                 Identifier: _strip_padding
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
@@ -1431,7 +1431,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   CompactKeywordsNodeGen SourceSection: None
                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                     EmptyNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [6060,6066]`_group`
                                   Identifier: _group
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
@@ -1474,7 +1474,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [6164,6168]`seps`
                                   Frame: [6,seps,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [6138,6152]`_strip_padding`
                                   Identifier: _strip_padding
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
@@ -1561,7 +1561,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6562,6573]`_percent_re`
                               Identifier: _percent_re
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [6557,6561]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [6591,6623]`new_f = _percent_re....`
@@ -1593,7 +1593,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6648,6664]`_collections_abc`
                               Identifier: _collections_abc
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [6632,6642]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -1654,7 +1654,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       ReadLocalVariableNode SourceSection: [6886,6894]`monetary`
                                         Frame: [3,monetary,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [6849,6856]`_format`
                                         Identifier: _format
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
@@ -1678,7 +1678,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadGlobalOrBuiltinNodeGen SourceSection: [6938,6943]`tuple`
                                 Identifier: tuple
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [6922,6932]`isinstance`
                                 Identifier: isinstance
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [6958,6970]`val = (val,)`
@@ -1805,7 +1805,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
                                           ExecutePositionalStarargsNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [7222,7229]`_format`
                                           Identifier: _format
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -1843,7 +1843,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadLocalVariableNode SourceSection: [7503,7510]`new_val`
                           Frame: [6,new_val,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [7497,7502]`tuple`
                           Identifier: tuple
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [7517,7535]`return new_f % val`
@@ -1982,7 +1982,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadLocalVariableNode SourceSection: [7928,7933]`match`
                                     Frame: [6,match,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [7924,7927]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [7945,7957]`len(percent)`
@@ -1990,7 +1990,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [7949,7956]`percent`
                                 Frame: [0,percent,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [7945,7948]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
@@ -2006,10 +2006,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [8096,8103]`percent`
                                 Frame: [0,percent,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8091,8095]`repr`
                                 Identifier: repr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [7973,7983]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -2038,7 +2038,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Frame: [4,additional,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ExecutePositionalStarargsNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [8117,8124]`_format`
                             Identifier: _format
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2107,7 +2107,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [4,conv,Illegal]
                       PythonCallNodeGen SourceSection: [8339,8351]`localeconv()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [8339,8349]`localeconv`
                           Identifier: localeconv
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8388,8455]`digits = conv[intern...`
@@ -2141,7 +2141,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         PythonCallNodeGen SourceSection: [8492,8591]`ValueError("Currency...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [8503,8590]`"Currency formatting...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [8492,8502]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -2164,7 +2164,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [8632,8635]`val`
                             Frame: [0,val,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [8628,8631]`abs`
                             Identifier: abs
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [8638,8646]`grouping`
@@ -2176,7 +2176,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [8601,8608]`_format`
                           Identifier: _format
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8751,8768]`s = '<' + s + '>'`
@@ -2557,7 +2557,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [9812,9815]`val`
                             Frame: [0,val,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [9795,9802]`_format`
                             Identifier: _format
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2601,7 +2601,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Frame: [1,conv,Illegal]
                       PythonCallNodeGen SourceSection: [9933,9945]`localeconv()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [9933,9943]`localeconv`
                           Identifier: localeconv
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9987,10013]`ts = conv['thousands...`
@@ -2727,10 +2727,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [10340,10346]`string`
                               Frame: [0,string,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [10329,10339]`delocalize`
                               Identifier: delocalize
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [10324,10328]`func`
                             Frame: [1,func,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2780,10 +2780,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [10466,10472]`string`
                               Frame: [0,string,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [10455,10465]`delocalize`
                               Identifier: delocalize
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [10451,10454]`int`
                             Identifier: int
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2821,7 +2821,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Identifier: LC_ALL
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [10511,10513]`""`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [10493,10502]`setlocale`
                           Identifier: setlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [10536,10573]`s1 = format_string("...`
@@ -2835,7 +2835,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Value: 123456789
                         IntegerLiteralNode SourceSection: [10571,10572]`1`
                           Value: 1
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [10541,10554]`format_string`
                           Identifier: format_string
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [10578,10603]`print(s1, "is", atoi...`
@@ -2850,10 +2850,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [10599,10601]`s1`
                             Frame: [0,s1,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [10594,10598]`atoi`
                             Identifier: atoi
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [10578,10583]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [10633,10647]`s1 = str(3.14)`
@@ -2863,7 +2863,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       PythonCallNodeGen SourceSection: [10638,10647]`str(3.14)`
                         CallNodeGen SourceSection: None
                         DoubleLiteralNode SourceSection: [10642,10646]`3.14`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [10638,10641]`str`
                           Identifier: str
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [10652,10677]`print(s1, "is", atof...`
@@ -2878,10 +2878,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [10673,10675]`s1`
                             Frame: [0,s1,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [10668,10672]`atof`
                             Identifier: atof
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [10652,10657]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3275,7 +3275,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [0,code,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [12227,12239]`'ISO8859-15'`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [12203,12220]`_replace_encoding`
                                   Identifier: _replace_encoding
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
@@ -3635,7 +3635,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadLocalVariableNode SourceSection: [13904,13912]`modifier`
                                       Frame: [2,modifier,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [13881,13897]`_append_modifier`
                                       Identifier: _append_modifier
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BlockNode SourceSection: None
@@ -3752,7 +3752,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadLocalVariableNode SourceSection: [14439,14447]`encoding`
                                       Frame: [4,encoding,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [14415,14432]`_replace_encoding`
                                       Identifier: _replace_encoding
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BlockNode SourceSection: None
@@ -3807,7 +3807,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       ReadLocalVariableNode SourceSection: [14540,14548]`encoding`
                                         Frame: [4,encoding,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [14516,14533]`_replace_encoding`
                                         Identifier: _replace_encoding
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [14552,14555]`'@'`
@@ -3866,7 +3866,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ReadLocalVariableNode SourceSection: [14901,14909]`encoding`
                                           Frame: [4,encoding,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [14877,14894]`_replace_encoding`
                                           Identifier: _replace_encoding
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [14931,14970]`return _append_modif...`
@@ -3882,7 +3882,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           ReadLocalVariableNode SourceSection: [14961,14969]`modifier`
                                             Frame: [2,modifier,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [14938,14954]`_append_modifier`
                                             Identifier: _append_modifier
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
@@ -3951,7 +3951,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                             ReadLocalVariableNode SourceSection: [15119,15127]`encoding`
                                               Frame: [4,encoding,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [15095,15112]`_replace_encoding`
                                               Identifier: _replace_encoding
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [15131,15134]`'@'`
@@ -4014,7 +4014,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadLocalVariableNode SourceSection: [15688,15698]`localename`
                           Frame: [0,localename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [15678,15687]`normalize`
                           Identifier: normalize
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [15704,16082]`if '@' in code:↵    ...`
@@ -4124,7 +4124,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 IntegerLiteralNode SourceSection: [16136,16137]`2`
                                   Value: 2
                                 EmptyNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [16113,16118]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       IfNode SourceSection: None
@@ -4156,7 +4156,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [16232,16242]`localename`
                             Frame: [0,localename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [16198,16208]`ValueError`
                           Identifier: ValueError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       EmptyNode SourceSection: None
@@ -4275,7 +4275,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             PythonCallNodeGen SourceSection: [16698,16826]`TypeError('Locale mu...`
                               CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [16708,16825]`'Locale must be None...`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [16698,16707]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ObjectLiteralNode SourceSection: [16832,16836]`None`
@@ -4429,7 +4429,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [18345,18346]`0`
                                     Value: 0
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [18335,18338]`int`
                                     Identifier: int
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
@@ -4494,7 +4494,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [7,variable,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ObjectLiteralNode SourceSection: [18607,18611]`None`
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [18591,18597]`lookup`
                                   Frame: [5,lookup,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             IfNode SourceSection: [18621,18751]`if localename:↵     ...`
@@ -4549,7 +4549,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [18811,18821]`localename`
                             Frame: [6,localename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [18793,18810]`_parse_localename`
                             Identifier: _parse_localename
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4598,7 +4598,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadLocalVariableNode SourceSection: [19267,19275]`category`
                           Frame: [0,category,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [19256,19266]`_setlocale`
                           Identifier: _setlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [19281,19390]`if category == LC_AL...`
@@ -4626,7 +4626,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         PythonCallNodeGen SourceSection: [19340,19385]`TypeError('category ...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [19350,19384]`'category LC_ALL is ...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [19340,19349]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -4641,7 +4641,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [19415,19425]`localename`
                             Frame: [1,localename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [19397,19414]`_parse_localename`
                             Identifier: _parse_localename
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4703,7 +4703,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadGlobalOrBuiltinNodeGen SourceSection: [19869,19881]`_builtin_str`
                                 Identifier: _builtin_str
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [19850,19860]`isinstance`
                                 Identifier: isinstance
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
@@ -4718,10 +4718,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [19957,19963]`locale`
                               Frame: [1,locale,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [19939,19956]`_build_localename`
                               Identifier: _build_localename
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [19929,19938]`normalize`
                             Identifier: normalize
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -4738,7 +4738,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNode SourceSection: [19998,20004]`locale`
                             Frame: [1,locale,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [19977,19987]`_setlocale`
                             Identifier: _setlocale
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4788,13 +4788,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           CallNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [20266,20284]`getdefaultlocale()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [20266,20282]`getdefaultlocale`
                               Identifier: getdefaultlocale
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [20248,20265]`_build_localename`
                             Identifier: _build_localename
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [20227,20237]`_setlocale`
                           Identifier: _setlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4903,7 +4903,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     ReadNameNodeGen SourceSection: [20753,20756]`sys`
                       Identifier: sys
                     StringLiteralNode SourceSection: [20758,20778]`'getandroidapilevel'...`
-                    ReadNameNodeGen SourceSection: None
+                    ReadNameNodeGen SourceSection: [20745,20752]`hasattr`
                       Identifier: hasattr
                 WriteNameNodeGen SourceSection: [20923,21009]`def getpreferredenco...`
                   Identifier: getpreferredencoding
@@ -5009,7 +5009,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 GetItemNodeGen SourceSection: [21357,21378]`getdefaultlocale()[1...`
                                   PythonCallNodeGen SourceSection: [21357,21375]`getdefaultlocale()`
                                     CallNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [21357,21373]`getdefaultlocale`
                                       Identifier: getdefaultlocale
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [21376,21377]`1`
@@ -5117,7 +5117,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21886,21894]`LC_CTYPE`
                                     Identifier: LC_CTYPE
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21876,21885]`setlocale`
                                     Identifier: setlocale
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               TryFinallyNode SourceSection: [21912,22028]`try:↵               ...`
@@ -5129,7 +5129,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         Identifier: LC_CTYPE
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [21957,21959]`""`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [21937,21946]`setlocale`
                                         Identifier: setlocale
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ExceptNode SourceSection: None
@@ -5166,7 +5166,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [22142,22148]`oldloc`
                                   Frame: [2,oldloc,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [22122,22131]`setlocale`
                                   Identifier: setlocale
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
@@ -5326,7 +5326,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 GetCallAttributeNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [25102,25123]`locale_encoding_alia...`
                     Identifier: locale_encoding_alias
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [25095,25101]`sorted`
                 Identifier: sorted
         BlockNode SourceSection: None
       WriteNameNodeGen SourceSection: [31240,67420]`locale_alias = {↵   ...`
@@ -7266,7 +7266,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           GetCallAttributeNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [76196,76205]`globals()`
                                               CallNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [76196,76203]`globals`
                                                 Identifier: globals
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
@@ -7276,7 +7276,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     ExpressionStatementNode SourceSection: [76284,76302]`_init_categories()`
                       PythonCallNodeGen SourceSection: [76284,76302]`_init_categories()`
                         CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNode SourceSection: [76284,76300]`_init_categories`
                           Frame: [1,_init_categories,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     DeleteItemNodeGen SourceSection: [76307,76331]`del categories['LC_A...`
@@ -7288,7 +7288,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       PythonCallNodeGen SourceSection: [76337,76398]`print('Locale defaul...`
                         CallNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [76343,76397]`'Locale defaults as ...`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76337,76342]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76403,76416]`print('-'*72)`
@@ -7300,13 +7300,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           StringLiteralNode SourceSection: [76409,76412]`'-'`
                           IntegerLiteralNode SourceSection: [76413,76415]`72`
                             Value: 72
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76403,76408]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [76421,76451]`lang, enc = getdefau...`
                       PythonCallNodeGen SourceSection: [76433,76451]`getdefaultlocale()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76433,76449]`getdefaultlocale`
                           Identifier: getdefaultlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
@@ -7341,7 +7341,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [76484,76497]`'(undefined)'`
                           YesNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76456,76461]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76503,76544]`print('Encoding: ', ...`
@@ -7354,20 +7354,20 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [76530,76543]`'(undefined)'`
                           YesNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76503,76508]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76549,76556]`print()`
                       PythonCallNodeGen SourceSection: [76549,76556]`print()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76549,76554]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76562,76598]`print('Locale settin...`
                       PythonCallNodeGen SourceSection: [76562,76598]`print('Locale settin...`
                         CallNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [76568,76597]`'Locale settings on ...`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76562,76567]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76603,76616]`print('-'*72)`
@@ -7379,7 +7379,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           StringLiteralNode SourceSection: [76609,76612]`'-'`
                           IntegerLiteralNode SourceSection: [76613,76615]`72`
                             Value: 72
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76603,76608]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [76621,76857]`for name,category in...`
@@ -7417,7 +7417,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [4,name,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [76682,76687]`'...'`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [76670,76675]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: [76697,76728]`lang, enc = getlocal...`
@@ -7426,7 +7426,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [76719,76727]`category`
                                   Frame: [5,category,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [76709,76718]`getlocale`
                                   Identifier: getlocale
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
@@ -7461,7 +7461,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [76768,76781]`'(undefined)'`
                                   YesNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [76737,76742]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [76791,76835]`print('   Encoding: ...`
@@ -7474,13 +7474,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [76821,76834]`'(undefined)'`
                                   YesNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [76791,76796]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [76844,76851]`print()`
                               PythonCallNodeGen SourceSection: [76844,76851]`print()`
                                 CallNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [76844,76849]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [76642,76660]`categories.items()`
@@ -7495,14 +7495,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     ExpressionStatementNode SourceSection: [76857,76864]`print()`
                       PythonCallNodeGen SourceSection: [76857,76864]`print()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76857,76862]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76869,76922]`print('Locale settin...`
                       PythonCallNodeGen SourceSection: [76869,76922]`print('Locale settin...`
                         CallNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [76875,76921]`'Locale settings aft...`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76869,76874]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76927,76940]`print('-'*72)`
@@ -7514,13 +7514,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           StringLiteralNode SourceSection: [76933,76936]`'-'`
                           IntegerLiteralNode SourceSection: [76937,76939]`72`
                             Value: 72
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76927,76932]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [76945,76958]`resetlocale()`
                       PythonCallNodeGen SourceSection: [76945,76958]`resetlocale()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [76945,76956]`resetlocale`
                           Identifier: resetlocale
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [76963,77199]`for name,category in...`
@@ -7558,7 +7558,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [4,name,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [77024,77029]`'...'`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77012,77017]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: [77039,77070]`lang, enc = getlocal...`
@@ -7567,7 +7567,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [77061,77069]`category`
                                   Frame: [5,category,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77051,77060]`getlocale`
                                   Identifier: getlocale
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
@@ -7602,7 +7602,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [77110,77123]`'(undefined)'`
                                   YesNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77079,77084]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [77133,77177]`print('   Encoding: ...`
@@ -7615,13 +7615,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [77163,77176]`'(undefined)'`
                                   YesNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77133,77138]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [77186,77193]`print()`
                               PythonCallNodeGen SourceSection: [77186,77193]`print()`
                                 CallNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77186,77191]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [76984,77002]`categories.items()`
@@ -7642,7 +7642,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               Identifier: LC_ALL
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [77230,77232]`""`
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [77212,77221]`setlocale`
                               Identifier: setlocale
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -7651,35 +7651,35 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               PythonCallNodeGen SourceSection: [77254,77268]`print('NOTE:')`
                                 CallNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [77260,77267]`'NOTE:'`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77254,77259]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [77277,77343]`print('setlocale(LC_...`
                               PythonCallNodeGen SourceSection: [77277,77343]`print('setlocale(LC_...`
                                 CallNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [77283,77342]`'setlocale(LC_ALL, "...`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77277,77282]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [77352,77399]`print('given in the ...`
                               PythonCallNodeGen SourceSection: [77352,77399]`print('given in the ...`
                                 CallNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [77358,77398]`'given in the OS env...`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [77352,77357]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [77418,77425]`print()`
                             PythonCallNodeGen SourceSection: [77418,77425]`print()`
                               CallNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [77418,77423]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [77434,77495]`print('Locale settin...`
                             PythonCallNodeGen SourceSection: [77434,77495]`print('Locale settin...`
                               CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [77440,77494]`'Locale settings aft...`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [77434,77439]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [77504,77517]`print('-'*72)`
@@ -7691,7 +7691,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 StringLiteralNode SourceSection: [77510,77513]`'-'`
                                 IntegerLiteralNode SourceSection: [77514,77516]`72`
                                   Value: 72
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [77504,77509]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ElseNode SourceSection: [77526,77783]`for name,category in...`
@@ -7729,7 +7729,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         Frame: [4,name,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [77591,77596]`'...'`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [77579,77584]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: [77610,77641]`lang, enc = getlocal...`
@@ -7738,7 +7738,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       ReadLocalVariableNode SourceSection: [77632,77640]`category`
                                         Frame: [5,category,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [77622,77631]`getlocale`
                                         Identifier: getlocale
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: None
@@ -7773,7 +7773,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [77685,77698]`'(undefined)'`
                                         YesNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [77654,77659]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ExpressionStatementNode SourceSection: [77712,77756]`print('   Encoding: ...`
@@ -7786,13 +7786,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [77742,77755]`'(undefined)'`
                                         YesNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [77712,77717]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ExpressionStatementNode SourceSection: [77769,77776]`print()`
                                     PythonCallNodeGen SourceSection: [77769,77776]`print()`
                                       CallNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [77769,77774]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [77547,77565]`categories.items()`
@@ -7843,37 +7843,37 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                 PythonCallNodeGen SourceSection: [77901,77926]`print('Locale aliasi...`
                   CallNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [77907,77925]`'Locale aliasing:'`
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [77901,77906]`print`
                     Identifier: print
               ExpressionStatementNode SourceSection: [77931,77938]`print()`
                 PythonCallNodeGen SourceSection: [77931,77938]`print()`
                   CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [77931,77936]`print`
                     Identifier: print
               ExpressionStatementNode SourceSection: [77943,77958]`_print_locale()`
                 PythonCallNodeGen SourceSection: [77943,77958]`_print_locale()`
                   CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [77943,77956]`_print_locale`
                     Identifier: _print_locale
               ExpressionStatementNode SourceSection: [77963,77970]`print()`
                 PythonCallNodeGen SourceSection: [77963,77970]`print()`
                   CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [77963,77968]`print`
                     Identifier: print
               ExpressionStatementNode SourceSection: [77975,78002]`print('Number format...`
                 PythonCallNodeGen SourceSection: [77975,78002]`print('Number format...`
                   CallNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [77981,78001]`'Number formatting:'...`
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [77975,77980]`print`
                     Identifier: print
               ExpressionStatementNode SourceSection: [78007,78014]`print()`
                 PythonCallNodeGen SourceSection: [78007,78014]`print()`
                   CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [78007,78012]`print`
                     Identifier: print
               ExpressionStatementNode SourceSection: [78019,78026]`_test()`
                 PythonCallNodeGen SourceSection: [78019,78026]`_test()`
                   CallNodeGen SourceSection: None
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [78019,78024]`_test`
                     Identifier: _test
             BlockNode SourceSection: None

@@ -434,7 +434,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
           GetCallAttributeNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [7809,7818]`globals()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [7809,7816]`globals`
                 Identifier: globals
       WriteNameNodeGen SourceSection: [7866,7891]`error = sre_compile....`
         Identifier: error
@@ -513,7 +513,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [8174,8179]`flags`
                                 Frame: [2,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8156,8164]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -587,7 +587,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [8384,8389]`flags`
                                 Frame: [2,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8366,8374]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -661,7 +661,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [8604,8609]`flags`
                                 Frame: [2,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8586,8594]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -757,7 +757,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [9063,9068]`flags`
                                 Frame: [4,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [9045,9053]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -853,7 +853,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [9662,9667]`flags`
                                 Frame: [4,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [9644,9652]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -939,7 +939,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [10194,10199]`flags`
                                 Frame: [3,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [10176,10184]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1013,7 +1013,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [10579,10584]`flags`
                                 Frame: [2,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [10561,10569]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1087,7 +1087,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [10854,10859]`flags`
                                 Frame: [2,flags,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [10836,10844]`_compile`
                                 Identifier: _compile
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1148,7 +1148,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadLocalVariableNode SourceSection: [11011,11016]`flags`
                             Frame: [1,flags,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [10993,11001]`_compile`
                             Identifier: _compile
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1257,7 +1257,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             ReadGlobalOrBuiltinNodeGen SourceSection: [11254,11255]`T`
                               Identifier: T
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [11230,11238]`_compile`
                             Identifier: _compile
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1307,7 +1307,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadGeneratorFrameVariableNode SourceSection: [11475,11476]`i`
                                 Frame: [0,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [11471,11474]`chr`
                                 Identifier: chr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorAccessNode SourceSection: None
@@ -1378,7 +1378,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11630,11633]`str`
                             Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [11610,11620]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [11644,11688]`return pattern.trans...`
@@ -1406,7 +1406,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               Frame: [0,pattern,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [11730,11738]`'latin1'`
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [11717,11720]`str`
                               Identifier: str
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [11748,11809]`return pattern.trans...`
@@ -1442,7 +1442,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             GetCallAttributeNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [11826,11837]`sre_compile`
                 Identifier: sre_compile
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [11821,11825]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [11854,11904]`Match = type(sre_com...`
         Identifier: Match
@@ -1460,7 +1460,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                 GetCallAttributeNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [11867,11878]`sre_compile`
                     Identifier: sre_compile
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [11862,11866]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [11990,12001]`_cache = {}`
         Identifier: _cache
@@ -1520,7 +1520,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12118,12127]`RegexFlag`
                             Identifier: RegexFlag
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [12100,12110]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [12138,12157]`flags = flags.value`
@@ -1554,7 +1554,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   ReadLocalVariableNode SourceSection: [12194,12201]`pattern`
                                     Frame: [0,pattern,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [12189,12193]`type`
                                     Identifier: type
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [12204,12211]`pattern`
@@ -1581,7 +1581,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12281,12288]`Pattern`
                             Identifier: Pattern
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [12261,12271]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -1594,7 +1594,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             PythonCallNodeGen SourceSection: [12327,12411]`ValueError(↵        ...`
                               CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [12355,12410]`"cannot process flag...`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [12327,12337]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             EmptyNode SourceSection: None
@@ -1623,7 +1623,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         PythonCallNodeGen SourceSection: [12491,12553]`TypeError("first arg...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12501,12552]`"first argument must...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [12491,12500]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -1666,7 +1666,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12641,12647]`_cache`
                                   Identifier: _cache
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [12637,12640]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12652,12661]`_MAXCACHE`
@@ -1685,10 +1685,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12752,12758]`_cache`
                                       Identifier: _cache
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [12747,12751]`iter`
                                       Identifier: iter
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [12742,12746]`next`
                                     Identifier: next
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExceptNode SourceSection: None
@@ -1719,7 +1719,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNode SourceSection: [12863,12870]`pattern`
                                 Frame: [0,pattern,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [12858,12862]`type`
                                 Identifier: type
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [12873,12880]`pattern`
@@ -1947,7 +1947,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         ReadLocalVariableNode SourceSection: [13395,13402]`pattern`
                           Frame: [0,pattern,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [13371,13384]`_compile_repl`
                           Identifier: _compile_repl
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [13408,13518]`if not template[0] a...`
@@ -1971,7 +1971,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [13444,13445]`1`
                                   Value: 1
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [13431,13434]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [13451,13452]`1`
@@ -2273,7 +2273,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14057,14066]`RegexFlag`
                                                     Identifier: RegexFlag
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14039,14049]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [14081,14100]`flags = flags.value`
@@ -2570,7 +2570,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                         Frame: [6,m,Illegal]
                                                       PythonCallNodeGen SourceSection: [14788,14795]`match()`
                                                         CallNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [14788,14793]`match`
                                                           Frame: [4,match,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     IfNode SourceSection: [14808,14852]`if not m:↵          ...`
@@ -2639,7 +2639,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                           ReadLocalVariableNode SourceSection: [14985,14991]`action`
                                                             Frame: [8,action,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [14976,14984]`callable`
                                                             Identifier: callable
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
@@ -2666,7 +2666,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                                 ReadLocalVariableNode SourceSection: [15063,15064]`m`
                                                                   Frame: [6,m,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: None
+                                                            ReadLocalVariableNode SourceSection: [15050,15056]`action`
                                                               Frame: [8,action,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
@@ -2683,7 +2683,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                           ReadLocalVariableNode SourceSection: [15132,15138]`action`
                                                             Frame: [8,action,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadLocalVariableNode SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [15125,15131]`append`
                                                             Frame: [3,append,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                       BlockNode SourceSection: None

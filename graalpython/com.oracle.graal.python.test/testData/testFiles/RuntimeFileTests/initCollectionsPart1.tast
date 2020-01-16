@@ -214,7 +214,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadLocalVariableNode SourceSection: [1826,1830]`name`
                               Frame: [0,name,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [1800,1807]`getattr`
                               Identifier: getattr
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [1847,1855]`warnings`
@@ -245,7 +245,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         SetItemNodeGen SourceSection: [2123,2144]`globals()[name] = ob...`
                           PythonCallNodeGen SourceSection: [2123,2132]`globals()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2123,2130]`globals`
                               Identifier: globals
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2133,2137]`name`
@@ -267,7 +267,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       PythonCallNodeGen SourceSection: [2174,2238]`AttributeError(f'mod...`
                         CallNodeGen SourceSection: None
                         FormatStringLiteralNode SourceSection: [2189,2237]`f'module {__name__!r...`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2174,2188]`AttributeError`
                           Identifier: AttributeError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       EmptyNode SourceSection: None
@@ -364,7 +364,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadGeneratorFrameVariableNode SourceSection: [2531,2535]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [2522,2530]`reversed`
                                               Identifier: reversed
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: None
@@ -509,7 +509,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadGeneratorFrameVariableNode SourceSection: [2661,2665]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [2652,2660]`reversed`
                                                 Identifier: reversed
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetNextNode SourceSection: None
@@ -654,7 +654,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadGeneratorFrameVariableNode SourceSection: [2838,2842]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [2829,2837]`reversed`
                                                 Identifier: reversed
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetNextNode SourceSection: None
@@ -856,7 +856,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             PythonCallNodeGen SourceSection: [4064,4171]`TypeError("descripto...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [4074,4170]`"descriptor '__init_...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [4064,4073]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -897,7 +897,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadLocalVariableNode SourceSection: [4214,4218]`args`
                                                   Frame: [0,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4210,4213]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [4222,4223]`1`
@@ -914,10 +914,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadLocalVariableNode SourceSection: [4298,4302]`args`
                                                     Frame: [0,args,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [4294,4297]`len`
                                                     Identifier: len
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [4243,4252]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -942,7 +942,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [4403,4410]`_Link()`
                                                     CallNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [4403,4408]`_Link`
                                                       Identifier: _Link
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: [4423,4467]`self.__root = root =...`
@@ -960,7 +960,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: [4451,4455]`self`
                                                           Frame: [2,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [4444,4450]`_proxy`
                                                         Identifier: _proxy
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   SetAttributeNodeGen SourceSection: None
@@ -1158,7 +1158,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [10,<>temp10,Illegal]
                                                 PythonCallNodeGen SourceSection: [4958,4964]`Link()`
                                                   CallNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [4958,4962]`Link`
                                                     Frame: [5,Link,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               SetItemNodeGen SourceSection: None
@@ -1273,7 +1273,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadLocalVariableNode SourceSection: [5145,5149]`link`
                                                   Frame: [6,link,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [5139,5144]`proxy`
                                                   Frame: [4,proxy,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -1289,7 +1289,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadLocalVariableNode SourceSection: [5183,5188]`value`
                                               Frame: [2,value,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [5159,5171]`dict_setitem`
                                               Frame: [3,dict_setitem,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1368,7 +1368,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadLocalVariableNode SourceSection: [5484,5487]`key`
                                               Frame: [1,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [5465,5477]`dict_delitem`
                                               Frame: [2,dict_delitem,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [5497,5523]`link = self.__map.po...`
@@ -1809,7 +1809,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             PythonCallNodeGen SourceSection: [6653,6684]`KeyError('dictionary...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [6662,6683]`'dictionary is empty...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [6653,6661]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -2257,7 +2257,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [7941,7945]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [7937,7940]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [7949,7950]`1`
@@ -2276,7 +2276,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [8028,8032]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [8021,8027]`sizeof`
                                               Frame: [1,sizeof,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [8084,8114]`size += sizeof(self....`
@@ -2300,7 +2300,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadLocalVariableNode SourceSection: [8099,8103]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [8092,8098]`sizeof`
                                                   Frame: [1,sizeof,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [8113,8114]`2`
@@ -2326,7 +2326,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadLocalVariableNode SourceSection: [8182,8186]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [8175,8181]`sizeof`
                                                   Frame: [1,sizeof,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [8201,8202]`n`
@@ -2353,7 +2353,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadLocalVariableNode SourceSection: [8245,8249]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [8238,8244]`sizeof`
                                                   Frame: [1,sizeof,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [8260,8261]`n`
@@ -2455,7 +2455,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [8496,8500]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [8475,8495]`_OrderedDictKeysView...`
                                                 Identifier: _OrderedDictKeysView
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2506,7 +2506,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [8632,8636]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [8610,8631]`_OrderedDictItemsVie...`
                                                 Identifier: _OrderedDictItemsView
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2557,7 +2557,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [8764,8768]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [8741,8763]`_OrderedDictValuesVi...`
                                                 Identifier: _OrderedDictValuesView
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2594,7 +2594,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             StringLiteralNode SourceSection: None
                             PythonCallNodeGen SourceSection: [8839,8847]`object()`
                               CallNodeGen SourceSection: None
-                              ReadClassAttributeNodeGen SourceSection: None
+                              ReadClassAttributeNodeGen SourceSection: [8839,8845]`object`
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
                                     ReadIndexedArgumentNodeGen SourceSection: None
@@ -2722,7 +2722,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadLocalVariableNode SourceSection: [9255,9258]`key`
                                                 Frame: [1,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9246,9254]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -2934,7 +2934,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: [9820,9824]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [9815,9819]`list`
                                                       Identifier: list
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2998,7 +2998,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadLocalVariableNode SourceSection: [9935,9939]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [9930,9934]`vars`
                                                   Identifier: vars
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ElseNode SourceSection: [9956,10029]`for k in vars(Ordere...`
@@ -3026,10 +3026,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 CallNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [9970,9983]`OrderedDict()`
                                                   CallNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [9970,9981]`OrderedDict`
                                                     Identifier: OrderedDict
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [9965,9969]`vars`
                                                   Identifier: vars
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -3065,7 +3065,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [10086,10090]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [10081,10085]`iter`
                                                   Identifier: iter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3182,7 +3182,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [3,self,Illegal]
                                             PythonCallNodeGen SourceSection: [10383,10388]`cls()`
                                               CallNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [10383,10386]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           ElseNode SourceSection: [10397,10456]`for key in iterable:...`
@@ -3282,7 +3282,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [10689,10700]`OrderedDict`
                                                 Identifier: OrderedDict
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [10671,10681]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [10715,10777]`return dict.__eq__(s...`
@@ -3316,10 +3316,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [10770,10775]`other`
                                                       Frame: [1,other,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [10755,10758]`map`
                                                       Identifier: map
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [10751,10754]`all`
                                                     Identifier: all
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 YesNodeGen SourceSection: None
@@ -3465,7 +3465,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12258,12261]`str`
                             Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [12234,12244]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalCellNodeGen SourceSection: [12272,12323]`field_names = field_...`
@@ -3504,10 +3504,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Frame: [1,field_names,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [12347,12350]`map`
                             Identifier: map
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [12342,12346]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12374,12411]`typename = _sys.inte...`
@@ -3521,7 +3521,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           ReadLocalVariableNode SourceSection: [12401,12409]`typename`
                             Frame: [0,typename,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [12397,12400]`str`
                             Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
@@ -3540,7 +3540,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Frame: [6,seen,Illegal]
                           PythonCallNodeGen SourceSection: [12443,12448]`set()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [12443,12446]`set`
                               Identifier: set
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ElseNode SourceSection: [12457,12731]`for index, name in e...`
@@ -3588,7 +3588,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadLocalVariableNode SourceSection: [12570,12574]`name`
                                               Frame: [8,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [12559,12569]`_iskeyword`
                                               Identifier: _iskeyword
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
@@ -3641,7 +3641,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Frame: [1,field_names,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [12476,12485]`enumerate`
                                   Identifier: enumerate
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
@@ -3663,7 +3663,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadLocalVariableNode SourceSection: [12785,12789]`name`
                                       Frame: [8,name,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [12780,12784]`type`
                                       Identifier: type
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12798,12801]`str`
@@ -3673,7 +3673,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 PythonCallNodeGen SourceSection: [12821,12876]`TypeError('Type name...`
                                   CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [12831,12875]`'Type names and fiel...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [12821,12830]`TypeError`
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -3690,7 +3690,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 PythonCallNodeGen SourceSection: [12931,13040]`ValueError('Type nam...`
                                   CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [12942,13039]`'Type names and fiel...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [12931,12941]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -3702,14 +3702,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ReadLocalVariableNode SourceSection: [13063,13067]`name`
                                     Frame: [8,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13052,13062]`_iskeyword`
                                     Identifier: _iskeyword
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [13082,13191]`raise ValueError('Ty...`
                                 PythonCallNodeGen SourceSection: [13088,13191]`ValueError('Type nam...`
                                   CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13099,13190]`'Type names and fiel...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13088,13098]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -3736,7 +3736,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         Frame: [6,seen,Illegal]
                       PythonCallNodeGen SourceSection: [13204,13209]`set()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [13204,13207]`set`
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [13214,13535]`for name in field_na...`
@@ -3767,7 +3767,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 PythonCallNodeGen SourceSection: [13305,13405]`ValueError('Field na...`
                                   CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13316,13404]`'Field names cannot ...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13305,13315]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -3788,7 +3788,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 PythonCallNodeGen SourceSection: [13449,13506]`ValueError(f'Encount...`
                                   CallNodeGen SourceSection: None
                                   FormatStringLiteralNode SourceSection: [13460,13505]`f'Encountered duplic...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13449,13459]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -3834,7 +3834,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             ReadLocalVariableNode SourceSection: [13609,13617]`defaults`
                               Frame: [4,defaults,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [13603,13608]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [13627,13744]`if len(defaults) > l...`
@@ -3847,7 +3847,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 ReadLocalVariableNode SourceSection: [13634,13642]`defaults`
                                   Frame: [4,defaults,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [13630,13633]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [13646,13662]`len(field_names)`
@@ -3857,14 +3857,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Frame: [1,field_names,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [13646,13649]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           RaiseNodeGen SourceSection: [13676,13735]`raise TypeError('Got...`
                             PythonCallNodeGen SourceSection: [13682,13735]`TypeError('Got more ...`
                               CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [13692,13734]`'Got more default va...`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [13682,13691]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             EmptyNode SourceSection: None
@@ -3888,7 +3888,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [1,field_names,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadFromCellNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [13784,13792]`reversed`
                                       Identifier: reversed
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonCallNodeGen SourceSection: [13855,13873]`reversed(defaults)`
@@ -3896,19 +3896,19 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     ReadLocalVariableNode SourceSection: [13864,13872]`defaults`
                                       Frame: [4,defaults,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [13855,13863]`reversed`
                                       Identifier: reversed
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [13780,13783]`zip`
                                     Identifier: zip
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [13775,13779]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [13766,13774]`reversed`
                                 Identifier: reversed
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [13761,13765]`dict`
                               Identifier: dict
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -3934,10 +3934,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Frame: [1,field_names,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [13954,13957]`map`
                             Identifier: map
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [13948,13953]`tuple`
                           Identifier: tuple
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalCellNodeGen SourceSection: [13989,14018]`num_fields = len(fie...`
@@ -3952,7 +3952,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             Frame: [1,field_names,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadFromCellNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [14002,14005]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14023,14074]`arg_list = repr(fiel...`
@@ -3972,7 +3972,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Frame: [1,field_names,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [14034,14038]`repr`
                                 Identifier: repr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         SliceLiteralNodeGen SourceSection: [14069,14073]`1:-1`
@@ -4113,7 +4113,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         ReadLocalVariableNode SourceSection: [14523,14532]`namespace`
                           Frame: [16,namespace,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [14515,14519]`exec`
                           Identifier: exec
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14538,14568]`__new__ = namespace[...`
@@ -4203,7 +4203,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadLocalVariableNode SourceSection: [14789,14797]`iterable`
                                           Frame: [1,iterable,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [14774,14783]`tuple_new`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [4,tuple_new,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4218,7 +4218,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadLocalVariableNode SourceSection: [14815,14821]`result`
                                               Frame: [2,result,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: None
+                                            ReadLocalCellNodeGen SourceSection: [14810,14814]`_len`
                                               ReadLocalVariableNode SourceSection: None
                                                 Frame: [5,_len,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4232,7 +4232,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         PythonCallNodeGen SourceSection: [14856,14920]`TypeError(f'Expected...`
                                           CallNodeGen SourceSection: None
                                           FormatStringLiteralNode SourceSection: [14866,14919]`f'Expected {num_fiel...`
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [14856,14865]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         EmptyNode SourceSection: None
@@ -4329,7 +4329,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadLocalVariableNode SourceSection: [15158,15163]`_self`
                                           Frame: [0,_self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [15131,15134]`map`
                                           Identifier: map
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -4345,7 +4345,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       PythonCallNodeGen SourceSection: [15201,15258]`ValueError(f'Got une...`
                                         CallNodeGen SourceSection: None
                                         FormatStringLiteralNode SourceSection: [15212,15257]`f'Got unexpected fie...`
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [15201,15211]`ValueError`
                                           Identifier: ValueError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       EmptyNode SourceSection: None
@@ -4490,10 +4490,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadLocalVariableNode SourceSection: [15695,15699]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [15677,15680]`zip`
                                             Identifier: zip
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [15665,15676]`OrderedDict`
                                           Identifier: OrderedDict
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4543,7 +4543,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadLocalVariableNode SourceSection: [15820,15824]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [15814,15819]`tuple`
                                           Identifier: tuple
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4714,7 +4714,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ReadLocalVariableNode SourceSection: [16731,16736]`index`
                                           Frame: [7,index,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [16719,16730]`_itemgetter`
                                           Identifier: _itemgetter
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [16750,16789]`doc = f'Alias for fi...`
@@ -4762,7 +4762,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   CompactKeywordsNodeGen SourceSection: None
                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                     EmptyNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [16872,16880]`property`
                                   Identifier: property
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [16575,16597]`enumerate(field_name...`
@@ -4774,7 +4774,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 Frame: [1,field_names,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadFromCellNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [16575,16584]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -4795,7 +4795,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                         ReadLocalVariableNode SourceSection: [16948,16963]`class_namespace`
                           Frame: [24,class_namespace,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [16923,16927]`type`
                           Identifier: type
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [17327,17502]`if module is None:↵ ...`
@@ -4947,7 +4947,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [17919,17920]`0`
                                   Value: 0
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [17901,17912]`mapping_get`
                                   Frame: [2,mapping_get,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [17924,17925]`1`
@@ -5084,7 +5084,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 PythonCallNodeGen SourceSection: [20744,20847]`TypeError("descripto...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [20754,20846]`"descriptor '__init_...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [20744,20753]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5125,7 +5125,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [20890,20894]`args`
                                                       Frame: [0,args,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [20886,20889]`len`
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20898,20899]`1`
@@ -5142,10 +5142,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       ReadLocalVariableNode SourceSection: [20974,20978]`args`
                                                         Frame: [0,args,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [20970,20973]`len`
                                                         Identifier: len
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [20919,20928]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5162,7 +5162,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [21004,21008]`self`
                                                       Frame: [2,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [20989,20994]`super`
                                                       Identifier: super
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ExpressionStatementNode SourceSection: [21029,21055]`self.update(*args, *...`
@@ -5309,7 +5309,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           CallNodeGen SourceSection: None
                                                           IntegerLiteralNode SourceSection: [21654,21655]`1`
                                                             Value: 1
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [21642,21653]`_itemgetter`
                                                             Identifier: _itemgetter
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       KeywordLiteralNode SourceSection: None
@@ -5317,7 +5317,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       CompactKeywordsNodeGen SourceSection: None
                                                       ExecuteKeywordStarargsNodeGen SourceSection: None
                                                         EmptyNode SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [21617,21623]`sorted`
                                                       Identifier: sorted
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
@@ -5343,7 +5343,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         CallNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [21736,21737]`1`
                                                           Value: 1
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [21724,21735]`_itemgetter`
                                                           Identifier: _itemgetter
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     CompactKeywordsNodeGen SourceSection: None
@@ -5409,7 +5409,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadLocalVariableNode SourceSection: [22544,22548]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [22526,22534]`_starmap`
                                                       Identifier: _starmap
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -5476,7 +5476,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 PythonCallNodeGen SourceSection: [22817,22917]`NotImplementedError(...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [22850,22916]`'Counter.fromkeys() ...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [22817,22836]`NotImplementedError`
                                                     Identifier: NotImplementedError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5544,7 +5544,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 PythonCallNodeGen SourceSection: [23913,24014]`TypeError("descripto...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [23923,24013]`"descriptor 'update'...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [23913,23922]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5585,7 +5585,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [24057,24061]`args`
                                                       Frame: [0,args,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [24053,24056]`len`
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [24065,24066]`1`
@@ -5602,10 +5602,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       ReadLocalVariableNode SourceSection: [24141,24145]`args`
                                                         Frame: [0,args,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [24137,24140]`len`
                                                         Identifier: len
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [24086,24095]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5648,7 +5648,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [24262,24278]`_collections_abc`
                                                         Identifier: _collections_abc
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [24241,24251]`isinstance`
                                                       Identifier: isinstance
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 IfNode SourceSection: [24305,24600]`if self:↵           ...`
@@ -5716,7 +5716,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [24471,24472]`0`
                                                                   Value: 0
-                                                                ReadLocalVariableNode SourceSection: None
+                                                                ReadLocalVariableNode SourceSection: [24456,24464]`self_get`
                                                                   Frame: [4,self_get,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                         GetIteratorExpressionNodeGen SourceSection: [24393,24409]`iterable.items()`
@@ -5743,7 +5743,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           ReadLocalVariableNode SourceSection: [24531,24535]`self`
                                                             Frame: [2,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [24516,24521]`super`
                                                             Identifier: super
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [24622,24653]`_count_elements(self...`
@@ -5755,7 +5755,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [24644,24652]`iterable`
                                                       Frame: [3,iterable,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [24622,24637]`_count_elements`
                                                       Identifier: _count_elements
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
@@ -5830,7 +5830,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 PythonCallNodeGen SourceSection: [25484,25587]`TypeError("descripto...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [25494,25586]`"descriptor 'subtrac...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [25484,25493]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5871,7 +5871,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadLocalVariableNode SourceSection: [25630,25634]`args`
                                                       Frame: [0,args,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [25626,25629]`len`
                                                       Identifier: len
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [25638,25639]`1`
@@ -5888,10 +5888,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       ReadLocalVariableNode SourceSection: [25714,25718]`args`
                                                         Frame: [0,args,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [25710,25713]`len`
                                                         Identifier: len
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [25659,25668]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -5947,7 +5947,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [25867,25883]`_collections_abc`
                                                           Identifier: _collections_abc
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [25846,25856]`isinstance`
                                                         Identifier: isinstance
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ElseNode SourceSection: [25910,26018]`for elem, count in i...`
@@ -5994,7 +5994,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [25995,25996]`0`
                                                                 Value: 0
-                                                              ReadLocalVariableNode SourceSection: None
+                                                              ReadLocalVariableNode SourceSection: [25980,25988]`self_get`
                                                                 Frame: [4,self_get,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [26000,26005]`count`
@@ -6034,7 +6034,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               IntegerLiteralNode SourceSection: [26110,26111]`0`
                                                                 Value: 0
-                                                              ReadLocalVariableNode SourceSection: None
+                                                              ReadLocalVariableNode SourceSection: [26095,26103]`self_get`
                                                                 Frame: [4,self_get,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [26115,26116]`1`
@@ -6174,7 +6174,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       ReadLocalVariableNode SourceSection: [26320,26324]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [26315,26319]`dict`
                                                         Identifier: dict
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -6244,7 +6244,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     PythonCallNodeGen SourceSection: [26481,26488]`super()`
                                                       CallNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [26481,26486]`super`
                                                         Identifier: super
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
@@ -6337,7 +6337,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                             ReadLocalVariableNode SourceSection: [26670,26674]`self`
                                                               Frame: [0,self,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [26648,26651]`map`
                                                           Identifier: map
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
@@ -6395,7 +6395,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           ReadLocalVariableNode SourceSection: [26908,26912]`self`
                                                             Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [26903,26907]`dict`
                                                             Identifier: dict
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
@@ -6461,7 +6461,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [27461,27468]`Counter`
                                                     Identifier: Counter
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [27443,27453]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               FrameReturnNode SourceSection: [27483,27504]`return NotImplemente...`
@@ -6479,7 +6479,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [2,result,Illegal]
                                               PythonCallNodeGen SourceSection: [27522,27531]`Counter()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [27522,27529]`Counter`
                                                   Identifier: Counter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ElseNode SourceSection: [27540,27693]`for elem, count in s...`
@@ -6691,7 +6691,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [28064,28071]`Counter`
                                                     Identifier: Counter
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [28046,28056]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               FrameReturnNode SourceSection: [28086,28107]`return NotImplemente...`
@@ -6709,7 +6709,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [2,result,Illegal]
                                               PythonCallNodeGen SourceSection: [28125,28134]`Counter()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [28125,28132]`Counter`
                                                   Identifier: Counter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ElseNode SourceSection: [28143,28296]`for elem, count in s...`
@@ -6926,7 +6926,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [28678,28685]`Counter`
                                                     Identifier: Counter
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [28660,28670]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               FrameReturnNode SourceSection: [28700,28721]`return NotImplemente...`
@@ -6944,7 +6944,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [2,result,Illegal]
                                               PythonCallNodeGen SourceSection: [28739,28748]`Counter()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [28739,28746]`Counter`
                                                   Identifier: Counter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ElseNode SourceSection: [28757,28974]`for elem, count in s...`
@@ -7171,7 +7171,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [29328,29335]`Counter`
                                                     Identifier: Counter
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [29310,29320]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               FrameReturnNode SourceSection: [29350,29371]`return NotImplemente...`
@@ -7189,7 +7189,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [2,result,Illegal]
                                               PythonCallNodeGen SourceSection: [29389,29398]`Counter()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [29389,29396]`Counter`
                                                   Identifier: Counter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ElseNode SourceSection: [29407,29624]`for elem, count in s...`
@@ -7334,7 +7334,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [1,result,Illegal]
                                               PythonCallNodeGen SourceSection: [29759,29768]`Counter()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [29759,29766]`Counter`
                                                   Identifier: Counter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ElseNode SourceSection: [29777,29881]`for elem, count in s...`
@@ -7446,7 +7446,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [1,result,Illegal]
                                               PythonCallNodeGen SourceSection: [30074,30083]`Counter()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [30074,30081]`Counter`
                                                   Identifier: Counter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ElseNode SourceSection: [30092,30200]`for elem, count in s...`

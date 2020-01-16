@@ -117,7 +117,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                       Frame: [1,t,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
                                   Identifier: tuple
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None

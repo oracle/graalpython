@@ -15,5 +15,5 @@ ModuleRootNode Name: <module 'call12'> SourceSection: [0,25]`foo(**mydict1, **my
               Identifier: mydict1
             ReadNameNodeGen SourceSection: [17,24]`mydict2`
               Identifier: mydict2
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

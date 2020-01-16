@@ -112,6 +112,8 @@ import org.graalvm.options.OptionValues;
                 StandardTags.RootBodyTag.class,
                 StandardTags.TryBlockTag.class,
                 StandardTags.ExpressionTag.class,
+                StandardTags.ReadVariableTag.class,
+                StandardTags.WriteVariableTag.class,
                 DebuggerTags.AlwaysHalt.class
 })
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {

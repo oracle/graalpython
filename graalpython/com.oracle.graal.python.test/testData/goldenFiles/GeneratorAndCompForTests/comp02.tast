@@ -100,7 +100,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                                       Frame: [1,base,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadFromCellNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [66,76]`issubclass`
                                                     Identifier: issubclass
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GeneratorAccessNode SourceSection: None
@@ -132,7 +132,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           Frame: [0,cls,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonObjectFactoryNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [62,65]`any`
                                     Identifier: any
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [123,150]`abstract_bases.appen...`
@@ -203,7 +203,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                             CompactKeywordsNodeGen SourceSection: None
                                             ExecuteKeywordStarargsNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [164,167]`mro`
                                             Identifier: mro
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None

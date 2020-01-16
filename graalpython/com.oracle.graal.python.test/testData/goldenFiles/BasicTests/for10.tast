@@ -34,7 +34,7 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                         Value: 2
                       ReadNameNodeGen SourceSection: [45,48]`num`
                         Identifier: num
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [37,42]`range`
                         Identifier: range
                 ExpressionStatementNode SourceSection: [96,100]`pass`
                   EmptyNode SourceSection: [96,100]`pass`
@@ -46,6 +46,6 @@ ModuleRootNode Name: <module 'for10'> SourceSection: [0,100]`for num in range(10
                   Value: 10
                 IntegerLiteralNode SourceSection: [20,22]`20`
                   Value: 20
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [11,16]`range`
                   Identifier: range
           BlockNode SourceSection: None

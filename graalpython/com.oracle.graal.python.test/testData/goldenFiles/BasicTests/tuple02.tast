@@ -17,6 +17,6 @@ ModuleRootNode Name: <module 'tuple02'> SourceSection: [0,27]`(1, call01((1,2,))
             Value: 1
           IntegerLiteralNode SourceSection: [14,15]`2`
             Value: 2
-        ReadNameNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [4,10]`call01`
           Identifier: call01
       StringLiteralNode SourceSection: [20,26]`'ahoj'`

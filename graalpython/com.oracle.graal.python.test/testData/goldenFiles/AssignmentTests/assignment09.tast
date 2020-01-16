@@ -13,7 +13,7 @@ ModuleRootNode Name: <module 'assignment09'> SourceSection: [0,9]`f().b = 1`
           Attribute: b
           PythonCallNodeGen SourceSection: [0,3]`f()`
             CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [0,1]`f`
               Identifier: f
           IntegerLiteralNode SourceSection: [8,9]`1`
             Value: 1

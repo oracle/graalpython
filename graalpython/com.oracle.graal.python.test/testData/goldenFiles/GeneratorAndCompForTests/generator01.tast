@@ -64,6 +64,6 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
           CallNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [20,22]`10`
             Value: 10
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [14,19]`range`
             Identifier: range
       PythonObjectFactoryNodeGen SourceSection: None

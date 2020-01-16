@@ -8,19 +8,19 @@ ModuleRootNode Name: <module 'slice05'> SourceSection: [0,16]`a()[b():c():d()]`
     GetItemNodeGen SourceSection: [0,16]`a()[b():c():d()]`
       PythonCallNodeGen SourceSection: [0,3]`a()`
         CallNodeGen SourceSection: None
-        ReadNameNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [0,1]`a`
           Identifier: a
       SliceLiteralNodeGen SourceSection: [4,15]`b():c():d()`
         PythonObjectFactoryNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [4,7]`b()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [4,5]`b`
             Identifier: b
         PythonCallNodeGen SourceSection: [8,11]`c()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [8,9]`c`
             Identifier: c
         PythonCallNodeGen SourceSection: [12,15]`d()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [12,13]`d`
             Identifier: d

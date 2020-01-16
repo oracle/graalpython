@@ -238,7 +238,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                           Frame: [0,filename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [2575,2581]`"exec"`
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2548,2555]`compile`
                           Identifier: compile
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2587,2614]`exec(code, module.__...`
@@ -255,7 +255,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
                           ReadLocalVariableNode SourceSection: [2598,2604]`module`
                             Frame: [4,module,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2587,2591]`exec`
                           Identifier: exec
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2619,2632]`return module`
@@ -274,39 +274,39 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2880]`# Copyright (c)
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2646,2663]`"%s/functions.py"`
           StringLiteralNode SourceSection: [2665,2675]`"builtins"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2635,2645]`__import__`
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2677,2717]`__import__("%s/prope...`
         PythonCallNodeGen SourceSection: [2677,2717]`__import__("%s/prope...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2688,2704]`"%s/property.py"`
           StringLiteralNode SourceSection: [2706,2716]`"builtins"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2677,2687]`__import__`
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2718,2760]`__import__("%s/excep...`
         PythonCallNodeGen SourceSection: [2718,2760]`__import__("%s/excep...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2729,2747]`"%s/exceptions.py"`
           StringLiteralNode SourceSection: [2749,2759]`"builtins"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2718,2728]`__import__`
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2761,2798]`__import__("%s/super...`
         PythonCallNodeGen SourceSection: [2761,2798]`__import__("%s/super...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2772,2785]`"%s/super.py"`
           StringLiteralNode SourceSection: [2787,2797]`"builtins"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2761,2771]`__import__`
             Identifier: __import__
       ExpressionStatementNode SourceSection: [2799,2839]`__import__("%s/ellip...`
         PythonCallNodeGen SourceSection: [2799,2839]`__import__("%s/ellip...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2810,2826]`"%s/ellipsis.py"`
           StringLiteralNode SourceSection: [2828,2838]`"builtins"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2799,2809]`__import__`
             Identifier: __import__
       PythonCallNodeGen SourceSection: [2840,2879]`__import__("%s/timso...`
         CallNodeGen SourceSection: None
         StringLiteralNode SourceSection: [2851,2866]`"%s/timsort.py"`
         StringLiteralNode SourceSection: [2868,2878]`"builtins"`
-        ReadNameNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [2840,2850]`__import__`
           Identifier: __import__

@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                       ReadGeneratorFrameVariableNode SourceSection: [32,33]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [22,31]`condition`
                         Identifier: condition
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: [1,5]`f(x)`
@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                         ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                           Identifier: f
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       GeneratorAccessNode SourceSection: None

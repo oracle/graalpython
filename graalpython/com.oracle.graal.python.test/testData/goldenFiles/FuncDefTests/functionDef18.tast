@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                               ReadLocalVariableNode SourceSection: [102,110]`currsize`
                                 Frame: [4,currsize,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
                               Identifier: _tuple_new
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

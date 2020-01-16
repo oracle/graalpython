@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
             Identifier: a
           PythonCallNodeGen SourceSection: [5,8]`A()`
             CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [5,6]`A`
               Identifier: A
           LookupInheritedAttributeNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None

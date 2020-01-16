@@ -70,7 +70,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
             CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [25,26]`3`
               Value: 3
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [19,24]`range`
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None

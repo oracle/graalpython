@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
       Expression:
         PythonCallNodeGen SourceSection: [126,132]`test()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [126,130]`test`
             Identifier: test
       SideEffect:
         WriteNameNodeGen SourceSection: [0,126]`def test():↵  def in...`
@@ -113,7 +113,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                         CompactKeywordsNodeGen SourceSection: None
                                                         ExecuteKeywordStarargsNodeGen SourceSection: None
                                                           EmptyNode SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [60,65]`print`
                                                         Identifier: print
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -122,7 +122,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                     ExpressionStatementNode SourceSection: [94,107]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [94,107]`inner_inner()`
                                         CallNodeGen SourceSection: None
-                                        ReadLocalVariableNode SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [94,105]`inner_inner`
                                           Frame: [1,inner_inner,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -132,7 +132,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                         PythonCallNodeGen SourceSection: [110,125]`inner(" baf\n")`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [116,124]`" baf\n"`
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [110,115]`inner`
                             Frame: [0,inner,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

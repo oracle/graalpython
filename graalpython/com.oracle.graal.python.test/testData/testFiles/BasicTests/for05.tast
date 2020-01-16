@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
       Expression:
         PythonCallNodeGen SourceSection: [115,119]`fn()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [115,117]`fn`
             Identifier: fn
       SideEffect:
         WriteNameNodeGen SourceSection: [0,115]`def fn():↵  for x in...`
@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                     PythonCallNodeGen SourceSection: [62,76]`print('jedna')`
                                       CallNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [68,75]`'jedna'`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [62,67]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BreakNode SourceSection: [83,88]`break`
@@ -77,7 +77,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                     ReadLocalVariableNode SourceSection: [111,112]`x`
                                       Frame: [0,x,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [105,110]`print`
                                       Identifier: print
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [21,29]`range(3)`
@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                               CallNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [27,28]`3`
                                 Value: 3
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [21,26]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None

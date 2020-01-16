@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                               Frame: [0,b,Illegal]
                           PythonCallNodeGen SourceSection: [36,39]`B()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [36,37]`B`
                               Identifier: B
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           LookupInheritedAttributeNode SourceSection: None
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                             Frame: [1,a,Illegal]
                         PythonCallNodeGen SourceSection: [17,20]`A()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [17,18]`A`
                             Identifier: A
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None

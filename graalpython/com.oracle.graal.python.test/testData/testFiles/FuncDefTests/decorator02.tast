@@ -122,7 +122,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
                                                             Frame: [0,args,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ExecutePositionalStarargsNodeGen SourceSection: None
-                                                        ReadLocalCellNodeGen SourceSection: None
+                                                        ReadLocalCellNodeGen SourceSection: [91,93]`fn`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [1,fn,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -204,7 +204,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
         CallNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [204,215]`getNumber()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [204,213]`getNumber`
             Identifier: getNumber
-        ReadNameNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [198,203]`print`
           Identifier: print

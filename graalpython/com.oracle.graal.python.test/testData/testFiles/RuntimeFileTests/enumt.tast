@@ -110,7 +110,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Frame: [0,obj,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [469,478]`'__get__'`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [456,463]`hasattr`
                                 Identifier: hasattr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [495,518]`hasattr(obj, '__set_...`
@@ -119,7 +119,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Frame: [0,obj,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [508,517]`'__set__'`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [495,502]`hasattr`
                                 Identifier: hasattr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             YesNodeGen SourceSection: None
@@ -129,7 +129,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               Frame: [0,obj,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [547,559]`'__delete__'`
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [534,541]`hasattr`
                               Identifier: hasattr
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
@@ -255,7 +255,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ReadLocalVariableNode SourceSection: [778,782]`name`
                                 Frame: [0,name,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [774,777]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [786,787]`4`
@@ -371,7 +371,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ReadLocalVariableNode SourceSection: [1000,1004]`name`
                                 Frame: [0,name,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [996,999]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [1008,1009]`2`
@@ -464,7 +464,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ReadLocalVariableNode SourceSection: [1184,1188]`self`
                                           Frame: [0,self,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [1149,1158]`TypeError`
                                         Identifier: TypeError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     EmptyNode SourceSection: None
@@ -492,7 +492,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         Identifier: _auto_null
         PythonCallNodeGen SourceSection: [1283,1291]`object()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1283,1289]`object`
             Identifier: object
       WriteNameNodeGen SourceSection: [1292,1420]`class auto:↵    """↵...`
         Identifier: auto
@@ -654,7 +654,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [1653,1660]`super()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [1653,1658]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [1680,1703]`self._member_names =...`
@@ -738,7 +738,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [2067,2070]`key`
                                                 Frame: [1,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [2056,2066]`_is_sunder`
                                                 Identifier: _is_sunder
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -762,7 +762,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 PythonCallNodeGen SourceSection: [2273,2327]`ValueError('_names_ ...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [2284,2326]`'_names_ are reserve...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2273,2283]`ValueError`
                                                     Identifier: ValueError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -786,7 +786,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [2429,2434]`value`
                                                     Frame: [2,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2391,2398]`setattr`
                                                     Identifier: setattr
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               IfNode SourceSection: None
@@ -809,7 +809,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2509,2512]`str`
                                                           Identifier: str
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [2491,2501]`isinstance`
                                                           Identifier: isinstance
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [2535,2573]`value = value.replac...`
@@ -836,7 +836,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadLocalVariableNode SourceSection: [2629,2634]`value`
                                                           Frame: [2,value,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [2624,2628]`list`
                                                           Identifier: list
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   SetAttributeNodeGen SourceSection: [2652,2672]`self._ignore = value...`
@@ -859,7 +859,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadLocalVariableNode SourceSection: [2703,2708]`value`
                                                           Frame: [2,value,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [2699,2702]`set`
                                                           Identifier: set
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       PythonCallNodeGen SourceSection: [2712,2735]`set(self._member_nam...`
@@ -872,7 +872,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadLocalVariableNode SourceSection: [2716,2720]`self`
                                                             Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [2712,2715]`set`
                                                           Identifier: set
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   IfNode SourceSection: [2752,2872]`if already:↵        ...`
@@ -892,7 +892,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             ReadLocalVariableNode SourceSection: [2852,2859]`already`
                                                               Frame: [3,already,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [2790,2800]`ValueError`
                                                           Identifier: ValueError
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       EmptyNode SourceSection: None
@@ -905,7 +905,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [2888,2891]`key`
                                                   Frame: [1,key,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [2877,2887]`_is_dunder`
                                                   Identifier: _is_dunder
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IfNode SourceSection: [2906,2969]`if key == '__order__...`
@@ -950,7 +950,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [3106,3109]`key`
                                                       Frame: [1,key,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [3065,3074]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -980,7 +980,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadLocalVariableNode SourceSection: [3194,3199]`value`
                                                         Frame: [2,value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [3179,3193]`_is_descriptor`
                                                         Identifier: _is_descriptor
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
@@ -1015,7 +1015,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 ReadLocalVariableNode SourceSection: [3352,3355]`key`
                                                                   Frame: [1,key,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [3301,3310]`TypeError`
                                                             Identifier: TypeError
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         EmptyNode SourceSection: None
@@ -1030,7 +1030,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3392,3396]`auto`
                                                             Identifier: auto
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [3374,3384]`isinstance`
                                                             Identifier: isinstance
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
@@ -1072,7 +1072,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   ReadLocalVariableNode SourceSection: [3517,3521]`self`
                                                                     Frame: [0,self,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3513,3516]`len`
                                                                   Identifier: len
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                               GetItemNodeGen SourceSection: [3538,3558]`self._last_values[:]...`
@@ -1150,7 +1150,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [3691,3698]`super()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3691,3696]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1277,7 +1277,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [3,enum_dict,Illegal]
                                             PythonCallNodeGen SourceSection: [4134,4145]`_EnumDict()`
                                               CallNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [4134,4143]`_EnumDict`
                                                 Identifier: _EnumDict
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: [4222,4275]`member_type, first_e...`
@@ -1331,7 +1331,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [4380,4403]`'_generate_next_valu...`
                                                 ObjectLiteralNode SourceSection: [4405,4409]`None`
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4360,4367]`getattr`
                                                   Identifier: getattr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
@@ -1689,7 +1689,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [5592,5604]`enum_members`
                                                 Frame: [11,enum_members,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5588,5591]`set`
                                                 Identifier: set
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             SetLiteralNode SourceSection: [5608,5617]`{'mro', }`
@@ -1714,7 +1714,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     StringLiteralNode SourceSection: [5729,5732]`','`
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [5673,5704]`'Invalid enum member...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5662,5672]`ValueError`
                                                 Identifier: ValueError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -1763,7 +1763,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [5971,5978]`super()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5971,5976]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6027,6057]`enum_class._member_n...`
@@ -1780,7 +1780,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [6134,6147]`OrderedDict()`
                                             CallNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [6134,6145]`OrderedDict`
                                               Identifier: OrderedDict
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6179,6217]`enum_class._member_t...`
@@ -1989,7 +1989,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           Frame: [17,methods,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                       PythonObjectFactoryNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [7407,7410]`any`
                                                       Identifier: any
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [7476,7511]`_make_class_unpickla...`
@@ -1998,7 +1998,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [7500,7510]`enum_class`
                                                       Frame: [15,enum_class,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [7476,7499]`_make_class_unpickla...`
                                                       Identifier: _make_class_unpicklable
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
@@ -2034,7 +2034,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [7896,7901]`tuple`
                                                         Identifier: tuple
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [7878,7888]`isinstance`
                                                         Identifier: isinstance
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [7920,7936]`args = (value, )`
@@ -2089,7 +2089,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadLocalVariableNode SourceSection: [8181,8191]`enum_class`
                                                           Frame: [15,enum_class,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [8173,8180]`__new__`
                                                           Frame: [8,__new__,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     IfNode SourceSection: [8209,8309]`if not hasattr(enum_...`
@@ -2100,7 +2100,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             Frame: [20,enum_member,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [8237,8246]`'_value_'`
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [8216,8223]`hasattr`
                                                             Identifier: hasattr
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       SetAttributeNodeGen SourceSection: [8269,8296]`enum_member._value_ ...`
@@ -2127,7 +2127,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             Frame: [19,args,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ExecutePositionalStarargsNodeGen SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [8345,8352]`__new__`
                                                           Frame: [8,__new__,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                     IfNode SourceSection: [8388,8629]`if not hasattr(enum_...`
@@ -2138,7 +2138,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             Frame: [20,enum_member,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [8416,8425]`'_value_'`
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [8395,8402]`hasattr`
                                                             Identifier: hasattr
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       IfNode SourceSection: [8448,8629]`if member_type is ob...`
@@ -2172,7 +2172,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 Frame: [19,args,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ExecutePositionalStarargsNodeGen SourceSection: None
-                                                            ReadLocalCellNodeGen SourceSection: None
+                                                            ReadLocalCellNodeGen SourceSection: [8598,8609]`member_type`
                                                               ReadLocalVariableNode SourceSection: None
                                                                 Frame: [6,member_type,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2328,7 +2328,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadLocalVariableNode SourceSection: [9517,9528]`enum_member`
                                                         Frame: [20,enum_member,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [9484,9491]`setattr`
                                                         Identifier: setattr
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
@@ -2406,7 +2406,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [10187,10191]`name`
                                                       Frame: [12,name,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [10167,10174]`getattr`
                                                       Identifier: getattr
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [10205,10250]`obj_method = getattr...`
@@ -2424,7 +2424,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Frame: [12,name,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ObjectLiteralNode SourceSection: [10245,10249]`None`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [10218,10225]`getattr`
                                                       Identifier: getattr
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [10263,10308]`enum_method = getatt...`
@@ -2440,7 +2440,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Frame: [12,name,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ObjectLiteralNode SourceSection: [10303,10307]`None`
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [10277,10284]`getattr`
                                                       Identifier: getattr
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 IfNode SourceSection: [10321,10576]`if obj_method is not...`
@@ -2472,7 +2472,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadLocalVariableNode SourceSection: [10421,10432]`enum_method`
                                                         Frame: [25,enum_method,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [10395,10402]`setattr`
                                                         Identifier: setattr
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
@@ -2539,7 +2539,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [10993,10996]`str`
                                                     Identifier: str
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [10973,10983]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [11015,11058]`_order_ = _order_.re...`
@@ -2578,7 +2578,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 PythonCallNodeGen SourceSection: [11134,11182]`TypeError('member or...`
                                                   CallNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [11144,11181]`'member order does n...`
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [11134,11143]`TypeError`
                                                     Identifier: TypeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 EmptyNode SourceSection: None
@@ -2850,7 +2850,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12812,12816]`Enum`
                                                 Identifier: Enum
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [12793,12803]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -2889,7 +2889,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [13070,13073]`cls`
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [13051,13061]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ContainsNodeGen SourceSection: [13079,13112]`member._name_ in cls...`
@@ -2991,7 +2991,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [13372,13375]`cls`
                                                     Frame: [0,cls,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [13301,13315]`AttributeError`
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3005,7 +3005,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [13394,13401]`super()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [13394,13399]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3121,7 +3121,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [13932,13936]`name`
                                                 Frame: [1,name,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [13921,13931]`_is_dunder`
                                                 Identifier: _is_dunder
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [13951,13977]`raise AttributeError...`
@@ -3130,7 +3130,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [13972,13976]`name`
                                                 Frame: [1,name,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [13957,13971]`AttributeError`
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3161,7 +3161,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [14091,14095]`name`
                                                     Frame: [1,name,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14076,14090]`AttributeError`
                                                     Identifier: AttributeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ObjectLiteralNode SourceSection: [14102,14106]`None`
@@ -3401,7 +3401,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [14315,14318]`cls`
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [14311,14314]`len`
                                                 Identifier: len
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3459,7 +3459,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [14606,14609]`cls`
                                                     Frame: [0,cls,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [14589,14605]`MappingProxyType`
                                                   Identifier: MappingProxyType
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3642,7 +3642,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Frame: [0,cls,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ReadFromCellNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14769,14777]`reversed`
                                                     Identifier: reversed
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -3733,7 +3733,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonCallNodeGen SourceSection: [15210,15252]`AttributeError('Cann...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [15225,15251]`'Cannot reassign mem...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [15210,15224]`AttributeError`
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -3750,7 +3750,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [15261,15268]`super()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [15261,15266]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3942,7 +3942,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16081,16084]`str`
                                                 Identifier: str
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [16063,16073]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [16099,16138]`names = names.replac...`
@@ -3978,7 +3978,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [16176,16180]`list`
                                                       Identifier: list
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [16150,16160]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [16187,16192]`names`
@@ -3996,7 +3996,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [16218,16221]`str`
                                                   Identifier: str
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [16197,16207]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
@@ -4125,7 +4125,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [16340,16354]`original_names`
                                                       Frame: [13,original_names,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [16330,16339]`enumerate`
                                                       Identifier: enumerate
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
@@ -4149,7 +4149,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [16671,16674]`str`
                                                         Identifier: str
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [16654,16664]`isinstance`
                                                         Identifier: isinstance
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   DestructuringAssignmentNodeGen SourceSection: [16693,16738]`member_name, member_...`
@@ -4310,7 +4310,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [17292,17302]`enum_class`
                                                 Frame: [21,enum_class,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [17268,17291]`_make_class_unpickla...`
                                                 Identifier: _make_class_unpicklable
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           SetAttributeNodeGen SourceSection: [17330,17360]`enum_class.__module_...`
@@ -4452,7 +4452,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18098,18102]`Enum`
                                                             Identifier: Enum
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [18081,18091]`issubclass`
                                                             Identifier: issubclass
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         YesNodeGen SourceSection: None
@@ -4469,7 +4469,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     PythonCallNodeGen SourceSection: [18172,18211]`TypeError("Cannot ex...`
                                                       CallNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [18182,18210]`"Cannot extend enume...`
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [18172,18181]`TypeError`
                                                         Identifier: TypeError
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     EmptyNode SourceSection: None
@@ -4490,14 +4490,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [18289,18293]`Enum`
                                                   Identifier: Enum
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [18272,18282]`issubclass`
                                                   Identifier: issubclass
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [18308,18422]`raise TypeError("new...`
                                               PythonCallNodeGen SourceSection: [18314,18422]`TypeError("new enume...`
                                                 CallNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [18324,18421]`"new enumerations mu...`
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [18314,18323]`TypeError`
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -4515,7 +4515,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [18578,18582]`Enum`
                                                   Identifier: Enum
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [18557,18567]`issubclass`
                                                   Identifier: issubclass
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
@@ -4557,7 +4557,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [19026,19030]`Enum`
                                                           Identifier: Enum
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [19009,19019]`issubclass`
                                                           Identifier: issubclass
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     IfNode SourceSection: [19053,19134]`if first_enum is Non...`
@@ -4741,7 +4741,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   Frame: [7,method,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 ObjectLiteralNode SourceSection: [20258,20262]`None`
-                                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                ReadGlobalOrBuiltinNodeGen SourceSection: [20232,20239]`getattr`
                                                                   Identifier: getattr
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             IfNode SourceSection: [20284,20583]`if target not in {↵ ...`
@@ -4990,7 +4990,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [21413,21418]`value`
                                                   Frame: [1,value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [21408,21412]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [21423,21426]`cls`
@@ -5207,7 +5207,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [22137,22148]`last_values`
                                                   Frame: [3,last_values,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [22128,22136]`reversed`
                                                   Identifier: reversed
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [22283,22295]`return start`
@@ -5286,7 +5286,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [22403,22406]`cls`
                                                       Frame: [0,cls,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [22359,22369]`ValueError`
                                                 Identifier: ValueError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -5704,7 +5704,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [23269,23273]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [23265,23268]`str`
                                                   Identifier: str
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -5802,7 +5802,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [23474,23478]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [23469,23473]`hash`
                                                 Identifier: hash
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -6090,7 +6090,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [24715,24721]`module`
                                                   Frame: [2,module,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [24698,24702]`vars`
                                                 Identifier: vars
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           IfNode SourceSection: [24732,25187]`if source:↵         ...`
@@ -6112,7 +6112,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Frame: [4,source,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [24764,24768]`vars`
                                                   Identifier: vars
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalCellNodeGen SourceSection: [24803,24826]`source = module_glob...`
@@ -6160,7 +6160,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               ReadGeneratorFrameVariableNode SourceSection: [25304,25308]`name`
                                                                 Frame: [0,name,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadLocalCellNodeGen SourceSection: None
+                                                              ReadLocalCellNodeGen SourceSection: [25297,25303]`filter`
                                                                 ReadGeneratorFrameVariableNode SourceSection: None
                                                                   Frame: [1,filter,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6363,7 +6363,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 CompactKeywordsNodeGen SourceSection: None
                                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [25569,25572]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           SetAttributeNodeGen SourceSection: [25611,25649]`cls.__reduce_ex__ = ...`
@@ -6702,7 +6702,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadLocalVariableNode SourceSection: [26442,26452]`last_value`
                                                           Frame: [5,last_value,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [26432,26441]`_high_bit`
                                                           Identifier: _high_bit
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     BreakNode SourceSection: [26470,26475]`break`
@@ -6717,7 +6717,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadLocalVariableNode SourceSection: [26565,26575]`last_value`
                                                             Frame: [5,last_value,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [26528,26537]`TypeError`
                                                           Identifier: TypeError
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ObjectLiteralNode SourceSection: [26582,26586]`None`
@@ -6733,7 +6733,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [26374,26385]`last_values`
                                                   Frame: [3,last_values,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [26365,26373]`reversed`
                                                   Identifier: reversed
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -6966,7 +6966,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [27262,27267]`value`
                                                     Frame: [1,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [27246,27256]`_decompose`
                                                     Identifier: _decompose
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: None
@@ -7016,7 +7016,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadLocalVariableNode SourceSection: [27363,27366]`cls`
                                                             Frame: [0,cls,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [27319,27329]`ValueError`
                                                       Identifier: ValueError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
@@ -7148,7 +7148,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [27855,27859]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [27837,27847]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -7326,7 +7326,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [28387,28391]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [28371,28381]`_decompose`
                                               Identifier: _decompose
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: None
@@ -7420,7 +7420,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                           Frame: [0,m,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                       YesNodeGen SourceSection: None
-                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [28490,28493]`str`
                                                                       Identifier: str
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   GeneratorAccessNode SourceSection: None
@@ -7564,7 +7564,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [28776,28780]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [28760,28770]`_decompose`
                                               Identifier: _decompose
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: None
@@ -7600,7 +7600,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [28805,28812]`members`
                                                     Frame: [2,members,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [28801,28804]`len`
                                                     Identifier: len
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [28817,28818]`1`
@@ -7718,7 +7718,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                             Frame: [0,m,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                         YesNodeGen SourceSection: None
-                                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [29023,29026]`str`
                                                                         Identifier: str
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                     GeneratorAccessNode SourceSection: None
@@ -7803,7 +7803,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [29137,29141]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [29132,29136]`bool`
                                                 Identifier: bool
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -7867,7 +7867,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [29214,29218]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [29196,29206]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [29243,29264]`return NotImplemente...`
@@ -7970,7 +7970,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [29389,29393]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [29371,29381]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [29418,29439]`return NotImplemente...`
@@ -8073,7 +8073,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [29564,29568]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [29546,29556]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [29593,29614]`return NotImplemente...`
@@ -8172,7 +8172,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadLocalVariableNode SourceSection: [29758,29762]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [29731,29741]`_decompose`
                                               Identifier: _decompose
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: None
@@ -8409,7 +8409,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [30142,30145]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [30124,30134]`isinstance`
                                                   Identifier: isinstance
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [30160,30224]`raise ValueError("%r...`
@@ -8432,7 +8432,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadLocalVariableNode SourceSection: [30210,30213]`cls`
                                                         Frame: [0,cls,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [30166,30176]`ValueError`
                                                   Identifier: ValueError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -8560,7 +8560,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [30587,30592]`value`
                                                     Frame: [1,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [30571,30581]`_decompose`
                                                     Identifier: _decompose
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: None
@@ -8602,7 +8602,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadLocalVariableNode SourceSection: [30711,30722]`extra_flags`
                                                             Frame: [5,extra_flags,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [30701,30710]`_high_bit`
                                                             Identifier: _high_bit
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       WriteLocalVariableNodeGen SourceSection: [30740,30761]`flag_value = 2 ** bi...`
@@ -8758,7 +8758,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadLocalVariableNode SourceSection: [31150,31164]`need_to_create`
                                                         Frame: [3,need_to_create,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [31141,31149]`reversed`
                                                         Identifier: reversed
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
@@ -8846,7 +8846,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31681,31684]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [31646,31656]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [31700,31721]`return NotImplemente...`
@@ -8967,7 +8967,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31903,31906]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [31868,31878]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [31922,31943]`return NotImplemente...`
@@ -9081,7 +9081,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [32101,32104]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [32066,32076]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [32120,32141]`return NotImplemente...`
@@ -9538,7 +9538,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 ReadLocalVariableNode SourceSection: [32999,33012]`alias_details`
                                   Frame: [4,alias_details,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [32921,32931]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           EmptyNode SourceSection: None
@@ -9725,7 +9725,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       ReadLocalVariableNode SourceSection: [33553,33557]`flag`
                                         Frame: [0,flag,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [33548,33552]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -9781,7 +9781,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadGeneratorFrameVariableNode SourceSection: [33879,33880]`v`
                                               Frame: [0,v,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [33865,33878]`_power_of_two`
                                               Identifier: _power_of_two
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
@@ -9849,7 +9849,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       ReadLocalVariableNode SourceSection: [33791,33795]`flag`
                                         Frame: [0,flag,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [33786,33790]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -10057,7 +10057,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ReadLocalVariableNode SourceSection: [34286,34293]`members`
                                 Frame: [5,members,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [34282,34285]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [34297,34298]`1`
@@ -10180,7 +10180,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   ReadLocalVariableNode SourceSection: [34554,34559]`value`
                                     Frame: [0,value,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [34544,34553]`_high_bit`
                                     Identifier: _high_bit
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     Return Expresssion: ReadLocalVariableNode SourceSection: None

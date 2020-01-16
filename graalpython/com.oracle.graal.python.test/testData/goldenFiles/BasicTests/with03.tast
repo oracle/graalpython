@@ -43,7 +43,7 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,35]`def fn():↵  with 
                             Frame: [0,a,Illegal]
                         PythonCallNodeGen SourceSection: [17,20]`A()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [17,18]`A`
                             Identifier: A
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None

@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
       Expression:
         PythonCallNodeGen SourceSection: [139,146]`outer()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [139,144]`outer`
             Identifier: outer
       SideEffect:
         WriteNameNodeGen SourceSection: [1,139]`def outer ():↵    x ...`
@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                                         ReadLocalVariableNode SourceSection: [90,91]`x`
                                           Frame: [0,x,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [65,70]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -92,7 +92,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                       ExpressionStatementNode SourceSection: [98,105]`inner()`
                         PythonCallNodeGen SourceSection: [98,105]`inner()`
                           CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [98,103]`inner`
                             Frame: [1,inner,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,137]`print("Outer, local ...`
@@ -102,7 +102,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                           ReadLocalVariableNode SourceSection: [135,136]`x`
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [110,115]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

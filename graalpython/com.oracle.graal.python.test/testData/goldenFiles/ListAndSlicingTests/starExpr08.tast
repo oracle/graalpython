@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                   CallNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [50,51]`b`
                     Identifier: b
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [44,49]`print`
                     Identifier: print
             GetIteratorExpressionNodeGen SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
               GetIteratorNodeGen SourceSection: None

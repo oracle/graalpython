@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'comparision04'> SourceSection: [0,12]`x < y() <= z
               Frame: [0,<>temp0,Illegal]
             PythonCallNodeGen SourceSection: [4,7]`y()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [4,5]`y`
                 Identifier: y
       BinaryComparisonNodeGen SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None

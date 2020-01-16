@@ -60,8 +60,8 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
             CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [21,23]`10`
               Value: 10
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

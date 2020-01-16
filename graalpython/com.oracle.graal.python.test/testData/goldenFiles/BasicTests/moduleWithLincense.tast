@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'moduleWithLincense'> SourceSection: [0,179]`# Copy
         PythonCallNodeGen SourceSection: [162,179]`print("module A")`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [168,178]`"module A"`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [162,167]`print`
             Identifier: print
       SideEffect:
         ExpressionStatementNode SourceSection: [143,161]`"""MODULE A DOC"""`

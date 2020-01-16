@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 Frame: [1,path_item,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadFromCellNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [58,74]`_is_unpacked_egg`
                               Identifier: _is_unpacked_egg
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorBlockNode SourceSection: None
@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
                                               Identifier: os
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [161,173]`PathMetadata`
                                         Identifier: PathMetadata
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   CompactKeywordsNodeGen SourceSection: None
@@ -115,7 +115,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               Frame: [1,path_item,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [292,304]`safe_listdir`
                             Identifier: safe_listdir
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: [321,430]`filtered = (↵       ...`
@@ -163,7 +163,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                             Frame: [2,only,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [388,400]`dist_factory`
                                           Identifier: dist_factory
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [342,347]`entry`
@@ -206,7 +206,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           ReadGeneratorFrameVariableNode SourceSection: [479,487]`filtered`
                             Frame: [4,filtered,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [456,478]`_by_version_descendi...`
                             Identifier: _by_version_descending
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ElseNode SourceSection: [493,692]`for entry in path_it...`
@@ -254,7 +254,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     Frame: [2,only,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [593,605]`dist_factory`
                                   Identifier: dist_factory
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ElseNode SourceSection: [638,692]`for dist in factory(...`
@@ -277,7 +277,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     ReadGeneratorFrameVariableNode SourceSection: [658,666]`fullpath`
                                       Frame: [6,fullpath,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [650,657]`factory`
                                       Frame: [7,factory,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 GetNextNode SourceSection: None

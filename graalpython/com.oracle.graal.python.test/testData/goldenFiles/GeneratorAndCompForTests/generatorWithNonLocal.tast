@@ -153,7 +153,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                           GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [146,152]`doit()`
                                             CallNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [146,150]`doit`
                                               Frame: [0,doit,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         GetNextNode SourceSection: None
@@ -174,7 +174,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                           Frame: [2,gen,Illegal]
                         PythonCallNodeGen SourceSection: [196,209]`_inner_func()`
                           CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [196,207]`_inner_func`
                             Frame: [1,_inner_func,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       WriteLocalCellNodeGen SourceSection: [212,222]`Y = [1, 2]`
@@ -194,7 +194,7 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                           ReadLocalVariableNode SourceSection: [230,233]`gen`
                             Frame: [2,gen,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [225,229]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [237,247]`return gen`

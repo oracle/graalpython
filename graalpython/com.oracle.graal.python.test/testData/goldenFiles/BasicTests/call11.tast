@@ -12,5 +12,5 @@ ModuleRootNode Name: <module 'call11'> SourceSection: [0,13]`foo(**mydict)`
         ExecuteKeywordStarargsNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [6,12]`mydict`
             Identifier: mydict
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
