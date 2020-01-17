@@ -1233,11 +1233,18 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
         Object gcd(VirtualFrame frame, Object x, Object y,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("create()") GcdNode recursiveNode) {
-            ThreadState threadState = PArguments.getThreadState(frame);
-            Object xValue = lib.asIndexWithState(x, threadState);
-            Object yValue = lib.asIndexWithState(y, threadState);
+            Object xValue, yValue;
+            if (hasFrame.profile(frame != null)) {
+                ThreadState threadState = PArguments.getThreadState(frame);
+                xValue = lib.asIndexWithState(x, threadState);
+                yValue = lib.asIndexWithState(y, threadState);
+            } else {
+                xValue = lib.asIndex(x);
+                yValue = lib.asIndex(y);
+            }
             return recursiveNode.execute(frame, xValue, yValue);
         }
 

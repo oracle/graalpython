@@ -1458,8 +1458,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public boolean bool(VirtualFrame frame, Object cls, Object obj,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.isTrueWithState(obj, PArguments.getThreadState(frame));
+            if (hasFrame.profile(frame != null)) {
+                return lib.isTrueWithState(obj, PArguments.getThreadState(frame));
+            } else {
+                return lib.isTrue(obj);
+            }
         }
     }
 

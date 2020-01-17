@@ -48,6 +48,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSentinelIterator)
 public class SentinelIteratorBuiltins extends PythonBuiltins {
@@ -63,6 +64,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
                         @Cached CallNode callNode,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             if (iterator.sentinelReached()) {
@@ -76,7 +78,13 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
                 iterator.markSentinelReached();
                 throw e;
             }
-            if (lib.equalsWithState(nextValue, iterator.getSentinel(), lib, PArguments.getThreadState(frame))) {
+            boolean iteratorDone;
+            if (hasFrame.profile(frame != null)) {
+                iteratorDone = lib.equalsWithState(nextValue, iterator.getSentinel(), lib, PArguments.getThreadState(frame));
+            } else {
+                iteratorDone = lib.equals(nextValue, iterator.getSentinel(), lib);
+            }
+            if (iteratorDone) {
                 iterator.markSentinelReached();
                 throw raise(StopIteration);
             }

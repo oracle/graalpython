@@ -304,12 +304,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index = lib.asIndexWithState(x, PArguments.getThreadState(frame));
+            Object index;
+            if (hasFrame.profile(frame != null)) {
+                index = lib.asIndexWithState(x, PArguments.getThreadState(frame));
+            } else {
+                index = lib.asIndex(x);
+            }
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
@@ -1209,8 +1215,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public int len(VirtualFrame frame, Object obj,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lengthWithState(obj, PArguments.getThreadState(frame));
+            if (hasFrame.profile(frame != null)) {
+                return lib.lengthWithState(obj, PArguments.getThreadState(frame));
+            } else {
+                return lib.length(obj);
+            }
         }
     }
 

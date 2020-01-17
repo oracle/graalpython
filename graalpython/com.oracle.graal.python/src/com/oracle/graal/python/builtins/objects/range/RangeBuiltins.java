@@ -274,9 +274,14 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object doGeneric(VirtualFrame frame, PRange self, Object elem,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("elem") PythonObjectLibrary lib) {
             try {
-                return doInt(self, lib.asSizeWithState(elem, PArguments.getThreadState(frame)));
+                if (hasFrame.profile(frame != null)) {
+                    return doInt(self, lib.asSizeWithState(elem, PArguments.getThreadState(frame)));
+                } else {
+                    return doInt(self, lib.asSize(elem));
+                }
             } catch (PException e) {
                 throw raise(ValueError, "%s is not in range", elem);
             }
@@ -300,16 +305,25 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-
             int len = self.len();
             int cnt = 0;
-            ThreadState state = PArguments.getThreadState(frame);
+            ThreadState state = null;
+            if (hasFrame.profile(frame != null)) {
+                state = PArguments.getThreadState(frame);
+            }
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, self.getSequenceStorage(), i);
-                if (lib.equalsWithState(elem, item, lib, state)) {
-                    cnt++;
+                if (hasFrame.profile(frame != null)) {
+                    if (lib.equalsWithState(elem, item, lib, state)) {
+                        cnt++;
+                    }
+                } else {
+                    if (lib.equals(elem, item, lib)) {
+                        cnt++;
+                    }
                 }
             }
             return cnt;

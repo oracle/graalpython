@@ -153,7 +153,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getDictItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castToBoolean,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
@@ -163,7 +163,15 @@ public final class DictViewBuiltins extends PythonBuiltins {
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = getDictItemNode.execute(frame, dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0));
-            return value != null && lib.equalsWithState(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, PArguments.getThreadState(frame));
+            if (value != null) {
+                if (hasFrame.profile(frame != null)) {
+                    return lib.equalsWithState(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, PArguments.getThreadState(frame));
+                } else {
+                    return lib.equals(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib);
+                }
+            } else {
+                return false;
+            }
         }
     }
 

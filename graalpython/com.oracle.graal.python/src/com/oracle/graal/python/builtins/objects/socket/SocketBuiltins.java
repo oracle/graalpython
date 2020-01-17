@@ -367,7 +367,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // recv_into(bufsize[, flags])
-    @Builtin(name = "recv_into", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "recv_into", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, needsFrame = true)
     @GenerateNodeFactory
     abstract static class RecvIntoNode extends PythonTernaryBuiltinNode {
         protected static SequenceStorageNodes.SetItemNode createSetItem() {

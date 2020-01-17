@@ -84,7 +84,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         return LZMADecompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"self", "data", "max_length"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"self", "data", "max_length"}, needsFrame = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DecompressNode extends PythonTernaryBuiltinNode {

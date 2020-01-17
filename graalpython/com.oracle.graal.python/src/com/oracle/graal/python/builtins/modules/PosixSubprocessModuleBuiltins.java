@@ -88,7 +88,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "fork_exec", minNumOfPositionalArgs = 17, parameterNames = {"args", "executable_list", "close_fds",
                     "fds_to_keep", "cwd", "env", "p2cread", "p2cwrite", "c2pread", "c2pwrite", "errread", "errwrite",
-                    "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"})
+                    "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"}, needsFrame = true)
     @GenerateNodeFactory
     abstract static class ForkExecNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
