@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Pytho
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -622,6 +623,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public long computeHash(VirtualFrame frame, PFrozenSet self,
+                        @Cached("createBinaryProfile()") ConditionProfile gotFrame,
                         @Cached HashingStorageNodes.LenNode getLen,
                         @Cached HashingStorageNodes.GetItemNode getItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
@@ -634,9 +636,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             long c2 = 0x2338c7c1;
             long hash = 0;
 
+            ThreadState threadState = null;
+            if (gotFrame.profile(frame != null)) {
+                threadState = PArguments.getThreadState(frame);
+            }
             for (Object key : storage.keys()) {
                 Object value = getItemNode.execute(frame, storage, key);
-                long tmp = lib.hashWithState(value, PArguments.getThreadState(frame));
+                long tmp;
+                if (gotFrame.profile(frame != null)) {
+                    tmp = lib.hashWithState(value, threadState);
+                } else {
+                    tmp = lib.hash(value);
+                }
                 hash ^= shuffleBits(tmp);
             }
 
