@@ -88,6 +88,9 @@ abstract class CallSpecialMethodNode extends Node {
     private <T extends PythonBuiltinBaseNode> T getBuiltin(VirtualFrame frame, PBuiltinFunction func, Class<T> clazz) {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
+        if (builtinNodeFactory == null) {
+            return null; // see for example MethodDescriptorRoot and subclasses
+        }
         assert builtinNodeFactory.getNodeClass().getAnnotation(Builtin.class) != null;
         if (builtinNodeFactory.getNodeClass().getAnnotation(Builtin.class).needsFrame() && frame == null) {
             return null;
