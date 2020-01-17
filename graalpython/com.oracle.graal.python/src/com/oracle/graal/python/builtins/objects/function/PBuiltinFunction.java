@@ -92,6 +92,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
+        CompilerAsserts.neverPartOfCompilation();
         RootNode functionRootNode = getFunctionRootNode();
         if (functionRootNode instanceof BuiltinFunctionRootNode) {
             return ((BuiltinFunctionRootNode) functionRootNode).getFactory();
