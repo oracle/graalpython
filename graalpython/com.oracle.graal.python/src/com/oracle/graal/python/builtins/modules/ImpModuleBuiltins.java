@@ -227,62 +227,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) {
-            if (path.endsWith(HPY_SUFFIX)) {
-                return loadHPyCAPIModule(name, path, interop);
-            }
-            return loadCPythonCAPIModule(name, path, interop);
-        }
-
-        @TruffleBoundary
-        private Object loadHPyCAPIModule(String name, String path, InteropLibrary interop) {
-            PythonContext context = getContext();
-            GraalHPyContext hpyContext = ensureHPyWasLoaded(context);
-            Env env = context.getEnv();
-            String basename = name.substring(name.lastIndexOf('.') + 1);
-            TruffleObject sulongLibrary;
-            try {
-                CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, HPY_SUFFIX)).build());
-                sulongLibrary = (TruffleObject) callTarget.call();
-            } catch (SecurityException | IOException e) {
-                LOGGER.severe(() -> String.format("cannot load HPY C extension '%s'", path));
-                logJavaException(e);
-                throw raise(ImportError, "cannot load %s: %m", path, e);
-            } catch (RuntimeException e) {
-                throw reportImportError(e, path);
-            }
-            TruffleObject pyinitFunc;
-            String initFuncName = "HPyInit_" + basename;
-            try {
-                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-                throw raise(ImportError, "no function %s found in %s", initFuncName, path);
-            }
-            try {
-                Object nativeResult = interop.execute(pyinitFunc, hpyContext);
-                getCheckResultNode().execute(initFuncName, nativeResult);
-
-                Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
-                if (!(result instanceof PythonModule)) {
-                    // PyModuleDef_Init(pyModuleDef)
-                    // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                    throw raise(PythonErrorType.NotImplementedError, "multi-phase init of extension module %s", name);
-                } else {
-                    ((PythonObject) result).setAttribute(__FILE__, path);
-                    // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                    PDict sysModules = context.getSysModules();
-                    getSetItemNode().execute(null, sysModules, name, result);
-                    return result;
-                }
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                e.printStackTrace();
-                throw raise(ImportError, "cannot initialize %s with %s", path, initFuncName);
-            } catch (RuntimeException e) {
-                throw reportImportError(e, path);
-            }
-        }
-
-        @TruffleBoundary
-        private Object loadCPythonCAPIModule(String name, String path, InteropLibrary interop) {
+            // we always need to load the CPython C API (even for HPy modules)
             ensureCapiWasLoaded();
             PythonContext context = getContext();
             Env env = context.getEnv();
@@ -295,37 +240,81 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (SecurityException | IOException e) {
                 LOGGER.severe(() -> String.format("cannot load C extension '%s'", path));
                 logJavaException(e);
-                throw raise(ImportError, ErrorMessages.CANNOT_LOAD_M, path, e);
+                throw raise(ImportError, "cannot load %s: %m", path, e);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
             }
-            TruffleObject pyinitFunc;
-            try {
-                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, "PyInit_" + basename);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "PyInit_", basename, path);
-            }
-            try {
-                Object nativeResult = interop.execute(pyinitFunc);
-                getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
-                Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
-                if (!(result instanceof PythonModule)) {
-                    // PyModuleDef_Init(pyModuleDef)
-                    // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                    throw raise(PythonErrorType.NotImplementedError, "multi-phase init of extension module %s", name);
-                } else {
-                    ((PythonObject) result).setAttribute(__FILE__, path);
-                    // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                    PDict sysModules = context.getSysModules();
-                    getSetItemNode().execute(null, sysModules, name, result);
-                    return result;
+            // Now, try to detect the C extension's API by looking for the appropriate init
+            // functions.
+            String hpyInitFuncName = "HPyInit_" + basename;
+            String initFuncName = "PyInit_" + basename;
+            try {
+                if (interop.isMemberExisting(sulongLibrary, hpyInitFuncName)) {
+                    return initHPyModule(sulongLibrary, hpyInitFuncName, name, path, interop);
                 }
+                return initCApiModule(sulongLibrary, initFuncName, name, path, interop);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 e.printStackTrace();
-                throw raise(ImportError, ErrorMessages.CANNOT_INITIALIZE_WITH, "PyInit_", path, basename);
+                throw raise(ImportError, "cannot initialize %s with %s", path, initFuncName);
             } catch (RuntimeException e) {
                 throw reportImportError(e, path);
+            }
+        }
+
+        @TruffleBoundary
+        private Object initHPyModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+            PythonContext context = getContext();
+            GraalHPyContext hpyContext = ensureHPyWasLoaded(context);
+
+            TruffleObject pyinitFunc;
+            try {
+                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+            }
+            Object nativeResult = interop.execute(pyinitFunc, hpyContext);
+            getCheckResultNode().execute(initFuncName, nativeResult);
+
+            Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
+            if (!(result instanceof PythonModule)) {
+                // PyModuleDef_Init(pyModuleDef)
+                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+                throw raise(PythonErrorType.NotImplementedError, "multi-phase init of extension module %s", name);
+            } else {
+                ((PythonObject) result).setAttribute(__FILE__, path);
+                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+                PDict sysModules = context.getSysModules();
+                getSetItemNode().execute(null, sysModules, name, result);
+                return result;
+            }
+        }
+
+        @TruffleBoundary
+        private Object initCApiModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+            PythonContext context = getContext();
+            TruffleObject pyinitFunc;
+            try {
+                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+            }
+            Object nativeResult = interop.execute(pyinitFunc);
+            getCheckResultNode().execute(initFuncName, nativeResult);
+
+            Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
+            if (!(result instanceof PythonModule)) {
+                // PyModuleDef_Init(pyModuleDef)
+                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+                throw raise(PythonErrorType.NotImplementedError, "multi-phase init of extension module %s", path);
+            } else {
+                ((PythonObject) result).setAttribute(__FILE__, path);
+                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+                PDict sysModules = context.getSysModules();
+                getSetItemNode().execute(null, sysModules, name, result);
+                return result;
             }
         }
 
