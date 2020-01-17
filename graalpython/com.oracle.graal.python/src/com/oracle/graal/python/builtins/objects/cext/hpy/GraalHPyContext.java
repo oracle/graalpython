@@ -177,7 +177,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
-    private int freeHandleIdx = -1;
+    private final HandleStack freeStack = new HandleStack(16);
     Object nativePointer;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
@@ -342,10 +342,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary(allowInlining = true)
     private int allocateHandle() {
-        if(freeHandleIdx != -1) {
-            int idx = freeHandleIdx;
-            freeHandleIdx = -1;
-            return idx;
+        int freeItem = freeStack.pop();
+        if(freeItem != -1) {
+            assert 0 <= freeItem  && freeItem < hpyHandleTable.length;
+            assert hpyHandleTable[freeItem] == null;
+            return freeItem;
         }
         for (int i = 1; i < hpyHandleTable.length; i++) {
             if (hpyHandleTable[i] == null) {
@@ -381,7 +382,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         assert hpyHandleTable[handle] != null : "releasing handle that has already been released: " + handle;
 //        PythonLanguage.getLogger().fine(() -> "releasing HPy handle " + handle);
         hpyHandleTable[handle] = null;
-        freeHandleIdx = handle;
+        freeStack.push(handle);
     }
 
     // nb. keep in sync with 'meth.h'
@@ -402,4 +403,28 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return hpyNullHandle;
     }
 
+
+    private static final class HandleStack {
+        private int[] handles;
+        private int top = 0;
+
+        public HandleStack(int initialCapacity) {
+            handles = new int[initialCapacity];
+        }
+
+        void push(int i) {
+            if(top >= handles.length) {
+                handles = Arrays.copyOf(handles, handles.length * 2);
+            }
+            handles[top++] = i;
+        }
+
+        int pop() {
+            if(top <= 0) {
+                return -1;
+            }
+            return handles[--top];
+        }
+
+    }
 }
