@@ -22,5 +22,5 @@ ModuleRootNode Name: <module 'fnCall09'> SourceSection: [0,25]`foo(a, b, c, *arg
         ExecuteKeywordStarargsNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [22,24]`kw`
             Identifier: kw
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

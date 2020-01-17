@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                                 ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [65,66]`1`
                               Value: 1
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [42,46]`test`
                               Identifier: test
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

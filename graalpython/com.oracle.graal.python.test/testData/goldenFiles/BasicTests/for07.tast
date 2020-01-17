@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                       CallNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [66,67]`x`
                         Identifier: x
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [60,65]`print`
                         Identifier: print
             GetIteratorExpressionNodeGen SourceSection: [9,18]`range(10)`
               GetIteratorNodeGen SourceSection: None
@@ -46,6 +46,6 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                 CallNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [15,17]`10`
                   Value: 10
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
           BlockNode SourceSection: None

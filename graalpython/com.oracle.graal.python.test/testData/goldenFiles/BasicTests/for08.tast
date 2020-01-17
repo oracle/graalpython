@@ -24,7 +24,7 @@ ModuleRootNode Name: <module 'for08'> SourceSection: [0,71]`for x in range(10):â
                           Op: __eq__
                         PythonCallNodeGen SourceSection: [27,35]`call01()`
                           CallNodeGen SourceSection: None
-                          ReadNameNodeGen SourceSection: None
+                          ReadNameNodeGen SourceSection: [27,33]`call01`
                             Identifier: call01
                         IntegerLiteralNode SourceSection: [39,40]`0`
                           Value: 0
@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'for08'> SourceSection: [0,71]`for x in range(10):â
                       CallNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [69,70]`x`
                         Identifier: x
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [63,68]`print`
                         Identifier: print
             GetIteratorExpressionNodeGen SourceSection: [9,18]`range(10)`
               GetIteratorNodeGen SourceSection: None
@@ -43,6 +43,6 @@ ModuleRootNode Name: <module 'for08'> SourceSection: [0,71]`for x in range(10):â
                 CallNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [15,17]`10`
                   Value: 10
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
           BlockNode SourceSection: None

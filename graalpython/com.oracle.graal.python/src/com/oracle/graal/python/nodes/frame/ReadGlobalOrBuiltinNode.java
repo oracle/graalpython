@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -54,6 +55,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -167,6 +170,16 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     public String getAttributeId() {
         return attributeId;
+    }
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return StandardTags.ReadVariableTag.class == tag || super.hasTag(tag);
+    }
+
+    @Override
+    public Object getNodeObject() {
+        return NodeObjectDescriptor.createNodeObjectDescriptor(StandardTags.ReadVariableTag.NAME, attributeId);
     }
 }
 

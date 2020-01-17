@@ -111,7 +111,7 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                               ReadLocalVariableNode SourceSection: [61,64]`arg`
                                 Frame: [2,arg,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [57,60]`sum`
                                 Identifier: sum
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

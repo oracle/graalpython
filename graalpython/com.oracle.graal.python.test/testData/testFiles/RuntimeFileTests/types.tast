@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [386,388]`_f`
             Identifier: _f
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [381,385]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [390,421]`LambdaType = type(la...`
         Identifier: LambdaType
@@ -87,7 +87,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [0,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [403,407]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [453,481]`CodeType = type(_f._...`
         Identifier: CodeType
@@ -100,7 +100,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [469,471]`_f`
               Identifier: _f
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [464,468]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [482,520]`MappingProxyType = t...`
         Identifier: MappingProxyType
@@ -113,7 +113,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [506,510]`type`
               Identifier: type
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [501,505]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [521,563]`SimpleNamespace = ty...`
         Identifier: SimpleNamespace
@@ -126,7 +126,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [544,547]`sys`
               Identifier: sys
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [539,543]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [565,587]`def _g():↵    yield ...`
         Identifier: _g
@@ -174,9 +174,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           CallNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [608,612]`_g()`
             CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [608,610]`_g`
               Identifier: _g
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [603,607]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [621,636]`def _c(): pass↵`
         Identifier: _c
@@ -212,7 +212,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: _c
         PythonCallNodeGen SourceSection: [641,645]`_c()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [641,643]`_c`
             Identifier: _c
       WriteNameNodeGen SourceSection: [646,670]`CoroutineType = type...`
         Identifier: CoroutineType
@@ -220,7 +220,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [667,669]`_c`
             Identifier: _c
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [662,666]`type`
             Identifier: type
       ExpressionStatementNode SourceSection: [671,681]`_c.close()`
         PythonCallNodeGen SourceSection: [671,681]`_c.close()`
@@ -271,7 +271,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: _ag
         PythonCallNodeGen SourceSection: [743,748]`_ag()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [743,746]`_ag`
             Identifier: _ag
       WriteNameNodeGen SourceSection: [749,779]`AsyncGeneratorType =...`
         Identifier: AsyncGeneratorType
@@ -279,7 +279,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [775,778]`_ag`
             Identifier: _ag
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [770,774]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [781,814]`class _C:↵    def _m...`
         Identifier: _C
@@ -384,9 +384,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             PythonCallNodeGen SourceSection: [832,836]`_C()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [832,834]`_C`
                 Identifier: _C
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [827,831]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [842,873]`BuiltinFunctionType ...`
         Identifier: BuiltinFunctionType
@@ -394,7 +394,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [869,872]`len`
             Identifier: len
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [864,868]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [874,909]`BuiltinMethodType = ...`
         Identifier: BuiltinMethodType
@@ -407,7 +407,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ListLiteralNode SourceSection: [899,901]`[]`
               PythonObjectFactoryNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [894,898]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [945,990]`WrapperDescriptorTyp...`
         Identifier: WrapperDescriptorType
@@ -420,7 +420,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [974,980]`object`
               Identifier: object
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [969,973]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [991,1033]`MethodWrapperType = ...`
         Identifier: MethodWrapperType
@@ -433,9 +433,9 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             PythonCallNodeGen SourceSection: [1016,1024]`object()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [1016,1022]`object`
                 Identifier: object
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1011,1015]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [1034,1071]`MethodDescriptorType...`
         Identifier: MethodDescriptorType
@@ -448,7 +448,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [1062,1065]`str`
               Identifier: str
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1057,1061]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [1072,1131]`ClassMethodDescripto...`
         Identifier: ClassMethodDescriptorType
@@ -463,7 +463,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               ReadNameNodeGen SourceSection: [1105,1109]`dict`
                 Identifier: dict
             StringLiteralNode SourceSection: [1119,1129]`'fromkeys'`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1100,1104]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [1133,1155]`ModuleType = type(sy...`
         Identifier: ModuleType
@@ -471,7 +471,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1151,1154]`sys`
             Identifier: sys
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1146,1150]`type`
             Identifier: type
       TryFinallyNode SourceSection: [1157,1365]`try:↵    raise TypeE...`
         TryExceptNode SourceSection: None
@@ -497,7 +497,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   CallNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [1252,1254]`tb`
                     Identifier: tb
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [1247,1251]`type`
                     Identifier: type
               WriteNameNodeGen SourceSection: [1260,1289]`FrameType = type(tb....`
                 Identifier: FrameType
@@ -510,7 +510,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         Op: __getattribute__
                     ReadNameNodeGen SourceSection: [1277,1279]`tb`
                       Identifier: tb
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [1272,1276]`type`
                     Identifier: type
               WriteNameNodeGen SourceSection: [1294,1303]`tb = None`
                 Identifier: tb
@@ -532,7 +532,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [1393,1405]`FunctionType`
               Identifier: FunctionType
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1388,1392]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [1416,1469]`MemberDescriptorType...`
         Identifier: MemberDescriptorType
@@ -545,7 +545,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [1444,1456]`FunctionType`
               Identifier: FunctionType
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1439,1443]`type`
             Identifier: type
       BlockNode SourceSection: [1471,1495]`del sys, _f, _g, _C,...`
         DeleteNameNodeGen SourceSection: None
@@ -625,7 +625,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         ReadLocalVariableNode SourceSection: [1771,1776]`bases`
                           Frame: [1,bases,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [1757,1770]`resolve_bases`
                           Identifier: resolve_bases
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [1782,1840]`meta, ns, kwds = pre...`
@@ -640,7 +640,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         ReadLocalVariableNode SourceSection: [1835,1839]`kwds`
                           Frame: [2,kwds,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [1799,1812]`prepare_class`
                           Identifier: prepare_class
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
@@ -689,7 +689,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalVariableNode SourceSection: [1889,1891]`ns`
                             Frame: [6,ns,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [1879,1888]`exec_body`
                             Frame: [3,exec_body,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -733,7 +733,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               ReadLocalVariableNode SourceSection: [2010,2014]`kwds`
                                 Frame: [2,kwds,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [1977,1981]`meta`
                             Frame: [5,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -780,7 +780,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         ReadLocalVariableNode SourceSection: [2131,2136]`bases`
                           Frame: [0,bases,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2126,2130]`list`
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2142,2157]`updated = False`
@@ -833,7 +833,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2237,2241]`type`
                                       Identifier: type
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2220,2230]`isinstance`
                                       Identifier: isinstance
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ContinueNode SourceSection: [2256,2264]`continue`
@@ -846,7 +846,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       Frame: [6,base,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [2294,2311]`"__mro_entries__"`
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2280,2287]`hasattr`
                                       Identifier: hasattr
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ContinueNode SourceSection: [2326,2334]`continue`
@@ -879,14 +879,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2441,2446]`tuple`
                                       Identifier: tuple
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2420,2430]`isinstance`
                                       Identifier: isinstance
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 RaiseNodeGen SourceSection: [2461,2515]`raise TypeError("__m...`
                                   PythonCallNodeGen SourceSection: [2467,2515]`TypeError("__mro_ent...`
                                     CallNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [2477,2514]`"__mro_entries__ mus...`
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2467,2476]`TypeError`
                                       Identifier: TypeError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
@@ -940,7 +940,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNode SourceSection: [2607,2615]`new_base`
                                             Frame: [4,new_base,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [2603,2606]`len`
                                             Identifier: len
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [2619,2620]`1`
@@ -952,7 +952,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             ReadLocalVariableNode SourceSection: [2201,2206]`bases`
                               Frame: [0,bases,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2191,2200]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -980,7 +980,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalVariableNode SourceSection: [2679,2688]`new_bases`
                             Frame: [1,new_bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [2673,2678]`tuple`
                             Identifier: tuple
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1058,7 +1058,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalVariableNode SourceSection: [3195,3199]`kwds`
                             Frame: [2,kwds,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3190,3194]`dict`
                             Identifier: dict
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [3240,3405]`if 'metaclass' in kw...`
@@ -1099,7 +1099,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [3359,3360]`0`
                                 Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [3348,3352]`type`
                               Identifier: type
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [3389,3400]`meta = type`
@@ -1119,7 +1119,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3425,3429]`type`
                             Identifier: type
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3408,3418]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [3578,3613]`meta = _calculate_me...`
@@ -1134,7 +1134,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalVariableNode SourceSection: [3607,3612]`bases`
                             Frame: [1,bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3585,3600]`_calculate_meta`
                             Identifier: _calculate_meta
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -1146,7 +1146,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Frame: [3,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [3635,3648]`'__prepare__'`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [3621,3628]`hasattr`
                             Identifier: hasattr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [3659,3701]`ns = meta.__prepare_...`
@@ -1262,7 +1262,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [3903,3907]`base`
                                     Frame: [4,base,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [3898,3902]`type`
                                     Identifier: type
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IfNode SourceSection: [3917,3980]`if issubclass(winner...`
@@ -1275,7 +1275,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ReadLocalVariableNode SourceSection: [3939,3948]`base_meta`
                                       Frame: [3,base_meta,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [3920,3930]`issubclass`
                                       Identifier: issubclass
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ContinueNode SourceSection: [3963,3971]`continue`
@@ -1290,7 +1290,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ReadLocalVariableNode SourceSection: [4005,4011]`winner`
                                       Frame: [2,winner,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [3983,3993]`issubclass`
                                       Identifier: issubclass
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
@@ -1307,7 +1307,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 PythonCallNodeGen SourceSection: [4096,4310]`TypeError("metaclass...`
                                   CallNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [4106,4309]`"metaclass conflict:...`
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [4096,4105]`TypeError`
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -1509,10 +1509,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5283,5305]`'__isabstractmethod_...`
                                               BooleanLiteralNode SourceSection: [5307,5312]`False`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5269,5276]`getattr`
                                                 Identifier: getattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [5264,5268]`bool`
                                               Identifier: bool
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1599,7 +1599,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             RaiseNodeGen SourceSection: [5477,5499]`raise AttributeError...`
                                               PythonCallNodeGen SourceSection: [5483,5499]`AttributeError()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5483,5497]`AttributeError`
                                                   Identifier: AttributeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -1619,7 +1619,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               PythonCallNodeGen SourceSection: [5550,5588]`AttributeError("unre...`
                                                 CallNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [5565,5587]`"unreadable attribut...`
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5550,5564]`AttributeError`
                                                   Identifier: AttributeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -1707,7 +1707,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             PythonCallNodeGen SourceSection: [5713,5750]`AttributeError("can'...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5728,5749]`"can't set attribute...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5713,5727]`AttributeError`
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -1787,7 +1787,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             PythonCallNodeGen SourceSection: [5871,5911]`AttributeError("can'...`
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5886,5910]`"can't delete attrib...`
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5871,5885]`AttributeError`
                                                 Identifier: AttributeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
@@ -1909,12 +1909,12 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                            PythonCallNodeGen SourceSection: None
+                                            PythonCallNodeGen SourceSection: [6046,6056]`type(self)`
                                               CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [6051,6055]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [6046,6050]`type`
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6115,6156]`result.overwrite_doc...`
@@ -2017,12 +2017,12 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadLocalVariableNode SourceSection: [6264,6268]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            PythonCallNodeGen SourceSection: None
+                                            PythonCallNodeGen SourceSection: [6225,6235]`type(self)`
                                               CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [6230,6234]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [6225,6229]`type`
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6286,6327]`result.overwrite_doc...`
@@ -2125,12 +2125,12 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadLocalVariableNode SourceSection: [6436,6440]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            PythonCallNodeGen SourceSection: None
+                                            PythonCallNodeGen SourceSection: [6397,6407]`type(self)`
                                               CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [6402,6406]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [6397,6401]`type`
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6458,6499]`result.overwrite_doc...`
@@ -2289,7 +2289,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [6731,6741]`'__name__'`
                                             ObjectLiteralNode SourceSection: [6743,6747]`None`
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [6718,6725]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [6757,6811]`self.__qualname__ = ...`
@@ -2304,7 +2304,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [6790,6804]`'__qualname__'`
                                             ObjectLiteralNode SourceSection: [6806,6810]`None`
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [6777,6784]`getattr`
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -2880,7 +2880,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 ReadLocalVariableNode SourceSection: [7479,7483]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [7474,7478]`next`
                                                 Identifier: next
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3023,14 +3023,14 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Frame: [0,func,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [7718,7726]`callable`
                             Identifier: callable
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       RaiseNodeGen SourceSection: [7742,7797]`raise TypeError('typ...`
                         PythonCallNodeGen SourceSection: [7748,7797]`TypeError('types.cor...`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [7758,7796]`'types.coroutine() e...`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [7748,7757]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -3067,7 +3067,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadFromCellNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [7864,7874]`'__code__'`
                                 ObjectLiteralNode SourceSection: [7876,7880]`None`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [7850,7857]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7895,7903]`CodeType`
@@ -3274,7 +3274,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   ReadLocalVariableNode SourceSection: [8704,8706]`co`
                                     Frame: [2,co,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [8325,8333]`CodeType`
                                   Identifier: CodeType
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             FrameReturnNode SourceSection: [8732,8743]`return func`
@@ -3365,7 +3365,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadLocalVariableNode SourceSection: [9119,9125]`kwargs`
                                               Frame: [1,kwargs,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [9105,9109]`func`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [3,func,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3445,7 +3445,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                   Frame: [4,_collections_abc,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [9365,9375]`isinstance`
                                               Identifier: isinstance
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NotNodeGen SourceSection: [9426,9474]`not isinstance(coro,...`
@@ -3464,7 +3464,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                     Frame: [4,_collections_abc,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [9430,9440]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
@@ -3478,7 +3478,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadLocalVariableNode SourceSection: [9702,9706]`coro`
                                               Frame: [2,coro,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [9684,9701]`_GeneratorWrapper`
                                               Identifier: _GeneratorWrapper
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
@@ -3592,7 +3592,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   GetIteratorNodeGen SourceSection: None
                   PythonCallNodeGen SourceSection: [9891,9900]`globals()`
                     CallNodeGen SourceSection: None
-                    ReadNameNodeGen SourceSection: None
+                    ReadNameNodeGen SourceSection: [9891,9898]`globals`
                       Identifier: globals
                 PythonObjectFactoryNodeGen SourceSection: None
               ReadGlobalOrBuiltinNodeGen SourceSection: None

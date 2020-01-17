@@ -32,5 +32,5 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
             PythonCallNodeGen SourceSection: [73,86]`print('done')`
               CallNodeGen SourceSection: None
               StringLiteralNode SourceSection: [79,85]`'done'`
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [73,78]`print`
                 Identifier: print

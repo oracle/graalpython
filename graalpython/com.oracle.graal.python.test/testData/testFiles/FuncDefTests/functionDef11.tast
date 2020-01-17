@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
       Expression:
         PythonCallNodeGen SourceSection: [40,47]`outer()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [40,45]`outer`
             Identifier: outer
       SideEffect:
         WriteNameNodeGen SourceSection: [1,40]`def outer ():↵    x ...`
@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                           ReadLocalVariableNode SourceSection: [36,37]`x`
                             Frame: [0,x,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [30,35]`print`
                             Identifier: print
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

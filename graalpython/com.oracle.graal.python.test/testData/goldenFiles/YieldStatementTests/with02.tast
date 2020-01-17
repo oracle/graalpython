@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                             ReadGlobalOrBuiltinNodeGen SourceSection: [38,40]`p3`
                               Identifier: p3
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [26,29]`bla`
                               Identifier: bla
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                           GeneratorAccessNode SourceSection: None
                         PythonCallNodeGen SourceSection: [49,53]`fn()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [49,51]`fn`
                             Identifier: fn
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None

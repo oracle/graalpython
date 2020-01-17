@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                             CallNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [28,30]`30`
                               Value: 30
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [22,27]`range`
                               Identifier: range
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetNextNode SourceSection: None

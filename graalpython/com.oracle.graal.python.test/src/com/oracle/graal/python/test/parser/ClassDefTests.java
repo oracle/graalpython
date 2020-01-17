@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -143,6 +143,15 @@ public class ClassDefTests extends ParserTestBase {
                                         "                return str(self)\n" +
                                         "        return Test()\n" +
                                         "    t = get_nested_class()\n");
+    }
+
+    @Test
+    public void classDef13() throws Exception {
+        checkScopeAndTree("class Point:\n" +
+                        "  x = 0\n" +
+                        "  y = 0\n" +
+                        "p = Point()\n" +
+                        "a = p.x + p.y\n");
     }
 
     @Test

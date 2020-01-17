@@ -89,12 +89,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [6350,6354]`heap`
                               Frame: [0,heap,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [6346,6349]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [6356,6357]`1`
                             Value: 1
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [6327,6336]`_siftdown`
                           Identifier: _siftdown
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -175,7 +175,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [6624,6625]`0`
                               Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [6610,6617]`_siftup`
                               Identifier: _siftup
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [6635,6652]`return returnitem`
@@ -265,7 +265,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [7261,7262]`0`
                           Value: 0
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [7247,7254]`_siftup`
                           Identifier: _siftup
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [7268,7285]`return returnitem`
@@ -383,7 +383,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [7468,7469]`0`
                               Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [7454,7461]`_siftup`
                               Identifier: _siftup
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -439,7 +439,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [7583,7584]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [7579,7582]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [7961,8016]`for i in reversed(ra...`
@@ -459,7 +459,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadLocalVariableNode SourceSection: [8012,8013]`i`
                                 Frame: [2,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8001,8008]`_siftup`
                                 Identifier: _siftup
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [7970,7991]`reversed(range(n//2)...`
@@ -476,10 +476,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [7988,7989]`2`
                                   Value: 2
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [7979,7984]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [7970,7978]`reversed`
                               Identifier: reversed
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -561,7 +561,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [8251,8252]`0`
                               Value: 0
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [8233,8244]`_siftup_max`
                               Identifier: _siftup_max
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8262,8279]`return returnitem`
@@ -651,7 +651,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [8515,8516]`0`
                           Value: 0
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [8497,8508]`_siftup_max`
                           Identifier: _siftup_max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [8522,8539]`return returnitem`
@@ -706,7 +706,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [8644,8645]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [8640,8643]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [8651,8879]`for i in reversed(ra...`
@@ -726,7 +726,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadLocalVariableNode SourceSection: [8706,8707]`i`
                                 Frame: [2,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8691,8702]`_siftup_max`
                                 Identifier: _siftup_max
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [8660,8681]`reversed(range(n//2)...`
@@ -743,10 +743,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [8678,8679]`2`
                                   Value: 2
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [8669,8674]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [8660,8668]`reversed`
                               Identifier: reversed
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -949,7 +949,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [11384,11388]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [11380,11383]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [11394,11408]`startpos = pos`
@@ -1113,7 +1113,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [12071,12074]`pos`
                           Frame: [1,pos,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [12045,12054]`_siftdown`
                           Identifier: _siftdown
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1315,7 +1315,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [12593,12597]`heap`
                           Frame: [0,heap,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [12589,12592]`len`
                           Identifier: len
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12603,12617]`startpos = pos`
@@ -1479,7 +1479,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [13281,13284]`pos`
                           Frame: [1,pos,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [13251,13264]`_siftdown_max`
                           Identifier: _siftdown_max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1658,7 +1658,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [14423,14429]`next()`
                                             CallNodeGen SourceSection: None
-                                            ReadGeneratorFrameVariableNode SourceSection: None
+                                            ReadGeneratorFrameVariableNode SourceSection: [14423,14427]`next`
                                               Frame: [9,next,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           BinaryArithmeticExpression SourceSection: [14431,14448]`order * direction`
@@ -1673,7 +1673,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           ReadGeneratorFrameVariableNode SourceSection: [14450,14454]`next`
                                             Frame: [9,next,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [14413,14421]`h_append`
                                           Frame: [4,h_append,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   ExceptNode SourceSection: None
@@ -1696,10 +1696,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadGeneratorFrameVariableNode SourceSection: [14332,14341]`iterables`
                                     Frame: [0,iterables,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14322,14325]`map`
                                     Identifier: map
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [14312,14321]`enumerate`
                                   Identifier: enumerate
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
@@ -1709,7 +1709,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadGeneratorFrameVariableNode SourceSection: [14529,14530]`h`
                               Frame: [3,h,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGeneratorFrameVariableNode SourceSection: None
+                            ReadGeneratorFrameVariableNode SourceSection: [14520,14528]`_heapify`
                               Frame: [5,_heapify,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         ElseNode SourceSection: [14540,14946]`while len(h) > 1:↵  ...`
@@ -1789,7 +1789,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Value: 0
                                         PythonCallNodeGen SourceSection: [14712,14718]`next()`
                                           CallNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [14712,14716]`next`
                                             Frame: [9,next,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [14787,14805]`_heapreplace(h, s)`
@@ -1801,7 +1801,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           ReadGeneratorFrameVariableNode SourceSection: [14803,14804]`s`
                                             Frame: [13,s,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadGeneratorFrameVariableNode SourceSection: None
+                                          ReadGeneratorFrameVariableNode SourceSection: [14787,14799]`_heapreplace`
                                             Frame: [7,_heapreplace,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -1816,7 +1816,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadGeneratorFrameVariableNode SourceSection: [14895,14896]`h`
                                         Frame: [3,h,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [14886,14894]`_heappop`
                                         Frame: [6,_heappop,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [14855,14868]`StopIteration`
@@ -1838,7 +1838,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadGeneratorFrameVariableNode SourceSection: [14550,14551]`h`
                                     Frame: [3,h,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14546,14549]`len`
                                     Identifier: len
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [14555,14556]`1`
@@ -1967,7 +1967,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [12,value,Illegal]
                                   PythonCallNodeGen SourceSection: [15245,15251]`next()`
                                     CallNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [15245,15249]`next`
                                       Frame: [9,next,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 ExpressionStatementNode SourceSection: [15264,15318]`h_append([key(value)...`
@@ -1980,7 +1980,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadGeneratorFrameVariableNode SourceSection: [15278,15283]`value`
                                           Frame: [12,value,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: [15274,15277]`key`
                                           Frame: [1,key,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       BinaryArithmeticExpression SourceSection: [15286,15303]`order * direction`
@@ -1998,7 +1998,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadGeneratorFrameVariableNode SourceSection: [15312,15316]`next`
                                         Frame: [9,next,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNode SourceSection: None
+                                    ReadGeneratorFrameVariableNode SourceSection: [15264,15272]`h_append`
                                       Frame: [4,h_append,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                               ExceptNode SourceSection: None
@@ -2021,10 +2021,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadGeneratorFrameVariableNode SourceSection: [15168,15177]`iterables`
                                 Frame: [0,iterables,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [15158,15161]`map`
                                 Identifier: map
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [15148,15157]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -2034,7 +2034,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadGeneratorFrameVariableNode SourceSection: [15379,15380]`h`
                           Frame: [3,h,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGeneratorFrameVariableNode SourceSection: None
+                        ReadGeneratorFrameVariableNode SourceSection: [15370,15378]`_heapify`
                           Frame: [5,_heapify,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     ElseNode SourceSection: [15386,15713]`while len(h) > 1:↵  ...`
@@ -2123,7 +2123,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Frame: [12,value,Illegal]
                                     PythonCallNodeGen SourceSection: [15550,15556]`next()`
                                       CallNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15550,15554]`next`
                                         Frame: [9,next,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   SetItemNodeGen SourceSection: [15573,15590]`s[0] = key(value)`
@@ -2137,7 +2137,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadGeneratorFrameVariableNode SourceSection: [15584,15589]`value`
                                         Frame: [12,value,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15580,15583]`key`
                                         Frame: [1,key,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   SetItemNodeGen SourceSection: [15607,15619]`s[2] = value`
@@ -2158,7 +2158,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadGeneratorFrameVariableNode SourceSection: [15652,15653]`s`
                                         Frame: [13,s,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNode SourceSection: None
+                                      ReadGeneratorFrameVariableNode SourceSection: [15636,15648]`_heapreplace`
                                         Frame: [7,_heapreplace,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   GeneratorAccessNode SourceSection: None
@@ -2173,7 +2173,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadGeneratorFrameVariableNode SourceSection: [15706,15707]`h`
                                     Frame: [3,h,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                  ReadGeneratorFrameVariableNode SourceSection: [15697,15705]`_heappop`
                                     Frame: [6,_heappop,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15670,15683]`StopIteration`
@@ -2195,7 +2195,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadGeneratorFrameVariableNode SourceSection: [15396,15397]`h`
                                 Frame: [3,h,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [15392,15395]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [15401,15402]`1`
@@ -2381,7 +2381,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [19181,19189]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [19176,19180]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19199,19218]`sentinel = object()`
@@ -2390,7 +2390,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [4,sentinel,Illegal]
                           PythonCallNodeGen SourceSection: [19210,19218]`object()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [19210,19216]`object`
                               Identifier: object
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [19227,19368]`if key is None:↵    ...`
@@ -2419,7 +2419,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CompactKeywordsNodeGen SourceSection: None
                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [19264,19267]`min`
                                 Identifier: min
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [19316,19359]`result = min(it, def...`
@@ -2445,7 +2445,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CompactKeywordsNodeGen SourceSection: None
                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [19325,19328]`min`
                                 Identifier: min
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [19368,19413]`return [] if result ...`
@@ -2481,7 +2481,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [19491,19499]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [19487,19490]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -2527,7 +2527,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     CompactKeywordsNodeGen SourceSection: None
                                     ExecuteKeywordStarargsNodeGen SourceSection: None
                                       EmptyNode SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [19605,19611]`sorted`
                                     Identifier: sorted
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 SliceLiteralNodeGen SourceSection: [19631,19633]`:n`
@@ -2558,7 +2558,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [19721,19729]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [19716,19720]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19852,19905]`result = [(elem, i) ...`
@@ -2647,13 +2647,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadLocalVariableNode SourceSection: [19897,19898]`n`
                                       Frame: [0,n,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [19891,19896]`range`
                                       Identifier: range
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [19901,19903]`it`
                                     Frame: [3,it,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [19887,19890]`zip`
                                     Identifier: zip
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
@@ -2680,7 +2680,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [19976,19982]`result`
                               Frame: [5,result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [19963,19975]`_heapify_max`
                               Identifier: _heapify_max
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [19992,20010]`top = result[0][0]`
@@ -2744,7 +2744,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadLocalVariableNode SourceSection: [20164,20169]`order`
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [20136,20148]`_heapreplace`
                                         Frame: [9,_heapreplace,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: [20188,20211]`top, _order = result...`
@@ -2892,7 +2892,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [20361,20369]`iterable`
                           Frame: [1,iterable,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [20356,20360]`iter`
                           Identifier: iter
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20375,20439]`result = [(key(elem)...`
@@ -2934,7 +2934,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           ReadGeneratorFrameVariableNode SourceSection: [20390,20394]`elem`
                                             Frame: [1,elem,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [20386,20389]`key`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [2,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -2991,13 +2991,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ReadLocalVariableNode SourceSection: [20431,20432]`n`
                                   Frame: [0,n,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [20425,20430]`range`
                                   Identifier: range
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20435,20437]`it`
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [20421,20424]`zip`
                                 Identifier: zip
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3024,7 +3024,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [20498,20504]`result`
                           Frame: [5,result,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [20485,20497]`_heapify_max`
                           Identifier: _heapify_max
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20510,20528]`top = result[0][0]`
@@ -3072,7 +3072,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ReadLocalVariableNode SourceSection: [20615,20619]`elem`
                                   Frame: [11,elem,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalCellNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [20611,20614]`key`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3106,7 +3106,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadLocalVariableNode SourceSection: [20685,20689]`elem`
                                         Frame: [11,elem,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [20653,20665]`_heapreplace`
                                       Frame: [9,_heapreplace,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 DestructuringAssignmentNodeGen SourceSection: [20704,20734]`top, _order, _elem =...`
@@ -3338,7 +3338,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [21060,21068]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [21055,21059]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21078,21097]`sentinel = object()`
@@ -3347,7 +3347,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             Frame: [4,sentinel,Illegal]
                           PythonCallNodeGen SourceSection: [21089,21097]`object()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [21089,21095]`object`
                               Identifier: object
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: [21106,21247]`if key is None:↵    ...`
@@ -3376,7 +3376,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CompactKeywordsNodeGen SourceSection: None
                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [21143,21146]`max`
                                 Identifier: max
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [21195,21238]`result = max(it, def...`
@@ -3402,7 +3402,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 CompactKeywordsNodeGen SourceSection: None
                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [21204,21207]`max`
                                 Identifier: max
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [21247,21292]`return [] if result ...`
@@ -3438,7 +3438,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [21370,21378]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [21366,21369]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -3486,7 +3486,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     CompactKeywordsNodeGen SourceSection: None
                                     ExecuteKeywordStarargsNodeGen SourceSection: None
                                       EmptyNode SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21484,21490]`sorted`
                                     Identifier: sorted
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 SliceLiteralNodeGen SourceSection: [21524,21526]`:n`
@@ -3517,7 +3517,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [21614,21622]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [21609,21613]`iter`
                               Identifier: iter
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21632,21693]`result = [(elem, i) ...`
@@ -3613,13 +3613,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21684,21686]`-1`
                                       Value: -1
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [21671,21676]`range`
                                       Identifier: range
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [21689,21691]`it`
                                     Frame: [3,it,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21667,21670]`zip`
                                     Identifier: zip
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
@@ -3646,7 +3646,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNode SourceSection: [21759,21765]`result`
                               Frame: [5,result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [21751,21758]`heapify`
                               Identifier: heapify
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [21775,21793]`top = result[0][0]`
@@ -3713,7 +3713,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadLocalVariableNode SourceSection: [21943,21948]`order`
                                           Frame: [8,order,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [21915,21927]`_heapreplace`
                                         Frame: [9,_heapreplace,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: [21967,21990]`top, _order = result...`
@@ -3867,7 +3867,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [22152,22160]`iterable`
                           Frame: [1,iterable,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [22147,22151]`iter`
                           Identifier: iter
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22166,22238]`result = [(key(elem)...`
@@ -3909,7 +3909,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           ReadGeneratorFrameVariableNode SourceSection: [22181,22185]`elem`
                                             Frame: [1,elem,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [22177,22180]`key`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [2,key,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3973,13 +3973,13 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [22229,22231]`-1`
                                   Value: -1
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [22216,22221]`range`
                                   Identifier: range
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [22234,22236]`it`
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [22212,22215]`zip`
                                 Identifier: zip
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -4006,7 +4006,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNode SourceSection: [22292,22298]`result`
                           Frame: [5,result,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [22284,22291]`heapify`
                           Identifier: heapify
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22304,22322]`top = result[0][0]`
@@ -4057,7 +4057,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ReadLocalVariableNode SourceSection: [22405,22409]`elem`
                                   Frame: [11,elem,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadLocalCellNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [22401,22404]`key`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [2,key,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -4091,7 +4091,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadLocalVariableNode SourceSection: [22475,22479]`elem`
                                         Frame: [11,elem,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [22443,22455]`_heapreplace`
                                       Frame: [9,_heapreplace,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 DestructuringAssignmentNodeGen SourceSection: [22494,22524]`top, _order, _elem =...`
@@ -4356,6 +4356,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     GetCallAttributeNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [22997,23004]`doctest`
                         Identifier: doctest
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [22991,22996]`print`
                     Identifier: print
             BlockNode SourceSection: None

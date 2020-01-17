@@ -72,14 +72,14 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 Frame: [1,value,Illegal]
                               PythonCallNodeGen SourceSection: [56,62]`next()`
                                 CallNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [56,60]`next`
                                   Identifier: next
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [35,38]`b()`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [35,38]`b()`
                               CallNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [35,36]`b`
                                 Identifier: b
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
@@ -101,7 +101,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                 ReadGeneratorFrameVariableNode SourceSection: [77,78]`h`
                                   Frame: [0,h,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [73,76]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [82,83]`1`

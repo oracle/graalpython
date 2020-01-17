@@ -17,5 +17,5 @@ ModuleRootNode Name: <module 'tuple10'> SourceSection: [0,14]`t = 1, call1()`
               Value: 1
             PythonCallNodeGen SourceSection: [7,14]`call1()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [7,12]`call1`
                 Identifier: call1

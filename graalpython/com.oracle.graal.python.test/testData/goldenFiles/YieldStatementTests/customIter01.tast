@@ -164,7 +164,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                             CallNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [140,142]`42`
                                                               Value: 42
-                                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [126,139]`StopIteration`
                                                               Identifier: StopIteration
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           EmptyNode SourceSection: None
@@ -228,7 +228,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                         GeneratorAccessNode SourceSection: None
                                         PythonCallNodeGen SourceSection: [205,213]`MyIter()`
                                           CallNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [205,211]`MyIter`
                                             ReadGeneratorFrameVariableNode SourceSection: None
                                               Frame: [0,MyIter,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -251,10 +251,10 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                           CallNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [238,243]`gen()`
                             CallNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [238,241]`gen`
                               Frame: [1,gen,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [233,237]`list`
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

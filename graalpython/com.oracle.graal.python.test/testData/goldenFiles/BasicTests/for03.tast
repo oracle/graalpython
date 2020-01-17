@@ -32,6 +32,6 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                 CallNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [16,17]`3`
                   Value: 3
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [9,15]`xrange`
                   Identifier: xrange
           BlockNode SourceSection: None

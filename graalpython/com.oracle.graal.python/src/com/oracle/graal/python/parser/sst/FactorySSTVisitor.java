@@ -309,9 +309,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
         ArgListBuilder argBuilder = node.parameters;
         ExpressionNode callNode = PythonCallNode.create(target, argBuilder.getArgs(this), argBuilder.getNameArgs(this), argBuilder.getStarArgs(this), argBuilder.getKwArgs(this));
-        // remove source section for the taget to be comaptiable with old parser behavior
-        // TODO check, whether we really need to delete the source sections
-        target.assignSourceSection(null);
         callNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return callNode;
     }

@@ -14,5 +14,5 @@ ModuleRootNode Name: <module 'call03'> SourceSection: [0,12]`foo(arg = 1)`
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

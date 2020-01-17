@@ -245,7 +245,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                           PythonCallNodeGen SourceSection: [293,306]`str("global")`
                                                                             CallNodeGen SourceSection: None
                                                                             StringLiteralNode SourceSection: [297,305]`"global"`
-                                                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [293,296]`str`
                                                                               Identifier: str
                                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -296,7 +296,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                             ReadLocalVariableNode SourceSection: [361,365]`self`
                                                                               Frame: [0,self,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                            ReadGlobalOrBuiltinNodeGen SourceSection: [357,360]`str`
                                                                               Identifier: str
                                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -323,7 +323,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                           Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [382,388]`Test()`
                                           CallNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [382,386]`Test`
                                             Frame: [1,Test,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -335,7 +335,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                           Frame: [1,t,Illegal]
                         PythonCallNodeGen SourceSection: [397,415]`get_nested_class()`
                           CallNodeGen SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [397,413]`get_nested_class`
                             Frame: [0,get_nested_class,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

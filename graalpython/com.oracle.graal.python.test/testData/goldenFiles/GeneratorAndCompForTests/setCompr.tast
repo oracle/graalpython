@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
             CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [18,19]`3`
               Value: 3
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [12,17]`range`
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None

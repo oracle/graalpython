@@ -16,5 +16,5 @@ ModuleRootNode Name: <module 'call10'> SourceSection: [0,23]`foo(*mylist1, *myli
           ReadNameNodeGen SourceSection: [15,22]`mylist2`
             Identifier: mylist2
         ExecutePositionalStarargsNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

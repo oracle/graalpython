@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [976,982]`kwlist`
               Identifier: kwlist
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [966,975]`frozenset`
               Identifier: frozenset
       WriteNameNodeGen SourceSection: [998,2207]`def main():↵    impo...`
         Identifier: main
@@ -152,7 +152,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                             ReadLocalVariableNode SourceSection: [1119,1123]`args`
                               Frame: [2,args,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [1115,1118]`len`
                               Identifier: len
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [1127,1128]`1`
@@ -198,7 +198,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [1297,1301]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
@@ -243,7 +243,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [1392,1393]`0`
                                       Value: 0
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [1381,1384]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             EmptyNode SourceSection: None
@@ -351,7 +351,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         ReadLocalVariableNode SourceSection: [1481,1488]`iptfile`
                           Frame: [3,iptfile,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [1476,1480]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
@@ -488,7 +488,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           CompactKeywordsNodeGen SourceSection: None
                           ExecuteKeywordStarargsNodeGen SourceSection: None
                             EmptyNode SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2138,2142]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None
@@ -522,6 +522,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
             ExpressionStatementNode SourceSection: [2238,2244]`main()`
               PythonCallNodeGen SourceSection: [2238,2244]`main()`
                 CallNodeGen SourceSection: None
-                ReadNameNodeGen SourceSection: None
+                ReadNameNodeGen SourceSection: [2238,2242]`main`
                   Identifier: main
             BlockNode SourceSection: None

@@ -134,7 +134,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                     Frame: [2,fields,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
-                                              ReadClassAttributeNodeGen SourceSection: None
+                                              ReadClassAttributeNodeGen SourceSection: [124,127]`len`
                                                 GetItemNodeGen SourceSection: None
                                                   ArgumentExpressionNode SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None

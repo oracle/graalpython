@@ -1,0 +1,103 @@
+ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵  x = 0...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor: 1 slots [<>temp0]
+  Documentation: None
+  InnerRootNode SourceSection: [0,55]`class Point:↵  x = 0...`
+    ExpressionWithSideEffects SourceSection: [0,54]`class Point:↵  x = 0...`
+      WriteNameNodeGen SourceSection: [0,29]`class Point:↵  x = 0...`
+        Identifier: Point
+        ExpressionWithSideEffects SourceSection: None
+          WriteLocalVariableNodeGen SourceSection: None
+            Identifier: <>temp0
+            WriteLocalFrameSlotNodeGen SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+            PythonCallNodeGen SourceSection: [0,29]`class Point:↵  x = 0...`
+              CallNodeGen SourceSection: None
+              FunctionDefinitionNode Name: Point SourceSection: None
+                Arguments: None
+                KwArguments: None
+                Documentation: None
+                FreeVarSlots: None
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: __class__, 
+                ClassBodyRootNode SourceSection: [0,29]`class Point:↵  x = 0...`
+                  Name: Point
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                    Param Names: namespace
+                  CelVars: __class__
+                  FreeVars: None
+                  NeedsCellFrame: False
+                  FrameDescriptor: 3 slots [x, y, __class__]
+                  ExecutionSlots:
+                    FreeVarsSlots: None
+                    CellVarsSlots: __class__, 
+                  InnerRootNode SourceSection: [0,29]`class Point:↵  x = 0...`
+                    ReturnTargetNode SourceSection: [0,29]`class Point:↵  x = 0...`
+                      Body: BlockNode SourceSection: None
+                        ClassDefinitionPrologueNode SourceSection: None
+                          QualName: Point
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: __name__
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                          SetItemIfNotPresentNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: None
+                        FunctionBodyNode SourceSection: [15,28]`x = 0↵  y = 0`
+                          SetItemNodeGen SourceSection: [15,20]`x = 0`
+                            ArgumentExpressionNode SourceSection: None
+                              ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
+                            StringLiteralNode SourceSection: None
+                            IntegerLiteralNode SourceSection: [19,20]`0`
+                              Value: 0
+                          SetItemNodeGen SourceSection: [23,28]`y = 0`
+                            ArgumentExpressionNode SourceSection: None
+                              ReadIndexedArgumentNodeGen SourceSection: None
+                                Index: 0
+                            StringLiteralNode SourceSection: None
+                            IntegerLiteralNode SourceSection: [27,28]`0`
+                              Value: 0
+                      Return Expresssion: ObjectLiteralNode SourceSection: None
+              StringLiteralNode SourceSection: None
+              GetCallAttributeNodeGen SourceSection: None
+                BuiltinsLiteralNode SourceSection: None
+          WriteCellVarNodeGen SourceSection: None
+            ReadLocalVariableNode SourceSection: None
+              Frame: [0,<>temp0,Illegal]
+              ReadVariableFromFrameNodeGen SourceSection: None
+          ReadLocalVariableNode SourceSection: None
+            Frame: [0,<>temp0,Illegal]
+            ReadVariableFromFrameNodeGen SourceSection: None
+      WriteNameNodeGen SourceSection: [29,40]`p = Point()`
+        Identifier: p
+        PythonCallNodeGen SourceSection: [33,40]`Point()`
+          CallNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [33,38]`Point`
+            Identifier: Point
+      ExpressionWithSideEffect SourceSection: None
+        Expression:
+          EmptyNode SourceSection: None
+        SideEffect:
+          WriteNameNodeGen SourceSection: [41,54]`a = p.x + p.y`
+            Identifier: a
+            BinaryArithmeticExpression SourceSection: [45,54]`p.x + p.y`
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __add__
+              GetAttributeNodeGen SourceSection: [45,48]`p.x`
+                GetFixedAttributeNodeGen SourceSection: None
+                  Key: x
+                  LookupAndCallBinaryNodeGen SourceSection: None
+                    Op: __getattribute__
+                ReadNameNodeGen SourceSection: [45,46]`p`
+                  Identifier: p
+              GetAttributeNodeGen SourceSection: [51,54]`p.y`
+                GetFixedAttributeNodeGen SourceSection: None
+                  Key: y
+                  LookupAndCallBinaryNodeGen SourceSection: None
+                    Op: __getattribute__
+                ReadNameNodeGen SourceSection: [51,52]`p`
+                  Identifier: p

@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'await01'> SourceSection: [0,28]`async def f():↵ 
                       ExpressionStatementNode SourceSection: [16,28]`await smth()`
                         PythonCallNodeGen SourceSection: [16,28]`await smth()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [22,26]`smth`
                             Identifier: smth
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

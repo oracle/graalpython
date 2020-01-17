@@ -7,5 +7,5 @@ ModuleRootNode Name: <module 'call01'> SourceSection: [0,5]`foo()`
   InnerRootNode SourceSection: [0,5]`foo()`
     PythonCallNodeGen SourceSection: [0,5]`foo()`
       CallNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                         PythonCallNodeGen SourceSection: [17,26]`open('x')`
                           CallNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [22,25]`'x'`
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [17,21]`open`
                             Identifier: open
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         LookupInheritedAttributeNode SourceSection: None

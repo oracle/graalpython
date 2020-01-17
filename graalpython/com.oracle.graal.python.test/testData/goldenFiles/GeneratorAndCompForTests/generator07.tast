@@ -119,7 +119,7 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                               ReadGeneratorFrameVariableNode SourceSection: [28,29]`h`
                                 Frame: [0,h,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [24,27]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [33,34]`1`

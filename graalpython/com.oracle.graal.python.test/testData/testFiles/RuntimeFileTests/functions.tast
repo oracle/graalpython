@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                           Frame: [2,default,Illegal]
                         PythonCallNodeGen SourceSection: [2049,2057]`object()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [2049,2055]`object`
                             Identifier: object
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [2062,2110]`return getattr(obj, ...`
@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                 ReadLocalVariableNode SourceSection: [2087,2094]`default`
                                   Frame: [2,default,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [2069,2076]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2103,2110]`default`
@@ -346,7 +346,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                   ReadLocalVariableNode SourceSection: [2500,2501]`i`
                                     Frame: [4,i,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2490,2499]`predicate`
                                     Frame: [3,predicate,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               ExpressionStatementNode SourceSection: [2516,2532]`result.append(i)`
@@ -376,7 +376,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                             ReadLocalVariableNode SourceSection: [2550,2556]`result`
                               Frame: [2,result,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2544,2549]`tuple`
                               Identifier: tuple
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -466,7 +466,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                               ReadLocalVariableNode SourceSection: [2793,2799]`kwargs`
                                 Frame: [4,kwargs,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [2789,2792]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [2803,2804]`0`
@@ -484,7 +484,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                           PythonCallNodeGen SourceSection: [2836,2922]`print("Tried to use ...`
                             CallNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [2842,2921]`"Tried to use keywor...`
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2836,2841]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [2931,2946]`_posix.exit(-1)`
@@ -509,7 +509,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                         ReadLocalVariableNode SourceSection: [2968,2970]`ns`
                           Frame: [6,ns,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2963,2967]`func`
                           Frame: [0,func,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2976,3004]`return type(name, ba...`
@@ -528,7 +528,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                           ReadLocalVariableNode SourceSection: [3001,3003]`ns`
                             Frame: [6,ns,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [2983,2987]`type`
                             Identifier: type
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -651,7 +651,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                               ReadLocalVariableNode SourceSection: [3126,3134]`iterable`
                                                 Frame: [2,iterable,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [3121,3125]`iter`
                                                 Identifier: iter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ElseNode SourceSection: [3145,3206]`for i in args:↵     ...`
@@ -670,7 +670,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                                     ReadLocalVariableNode SourceSection: [3194,3195]`i`
                                                       Frame: [5,i,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [3189,3193]`iter`
                                                       Identifier: iter
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -751,7 +751,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                                     ReadLocalVariableNode SourceSection: [3343,3345]`it`
                                                       Frame: [2,it,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [3338,3342]`next`
                                                       Identifier: next
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -925,7 +925,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3476,3479]`map`
                                                   Identifier: map
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -1005,7 +1005,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                               ReadLocalVariableNode SourceSection: [3824,3827]`obj`
                                 Frame: [0,obj,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [3820,3823]`len`
                                 Identifier: len
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [3832,3833]`0`
@@ -1024,7 +1024,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                 CallNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [3974,3975]`1`
                                   Value: 1
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [3961,3973]`__getframe__`
                                   Identifier: __getframe__
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IfNode SourceSection: None
@@ -1037,7 +1037,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                 ReadLocalVariableNode SourceSection: [3999,4002]`obj`
                                   Frame: [0,obj,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [3995,3998]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4007,4008]`1`
@@ -1046,7 +1046,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                             PythonCallNodeGen SourceSection: [4024,4069]`TypeError("vars() ta...`
                               CallNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [4034,4068]`"vars() takes at mos...`
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4024,4033]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             EmptyNode SourceSection: None
@@ -1074,7 +1074,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                               PythonCallNodeGen SourceSection: [4151,4208]`TypeError("vars() ar...`
                                 CallNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [4161,4207]`"vars() argument mus...`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4151,4160]`TypeError`
                                   Identifier: TypeError
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               EmptyNode SourceSection: None
@@ -1150,7 +1150,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                 ReadLocalVariableNode SourceSection: [4463,4468]`value`
                                   Frame: [0,value,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [4458,4462]`type`
                                   Identifier: type
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1222,7 +1222,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                               ReadLocalVariableNode SourceSection: [4824,4832]`iterable`
                                 Frame: [0,iterable,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [4819,4823]`list`
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [4838,4875]`result.sort(key=key,...`

@@ -12,5 +12,5 @@ ModuleRootNode Name: <module 'getAttr02'> SourceSection: [0,5]`a().b`
           Op: __getattribute__
       PythonCallNodeGen SourceSection: [0,3]`a()`
         CallNodeGen SourceSection: None
-        ReadNameNodeGen SourceSection: None
+        ReadNameNodeGen SourceSection: [0,1]`a`
           Identifier: a

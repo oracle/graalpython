@@ -65,8 +65,8 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
             CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [23,25]`10`
               Value: 10
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [17,22]`range`
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

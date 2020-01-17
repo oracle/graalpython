@@ -13,7 +13,7 @@ ModuleRootNode Name: <module 'comparision05'> SourceSection: [0,16]`x() < y() <=
               Op: __lt__
             PythonCallNodeGen SourceSection: [0,3]`x()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [0,1]`x`
                 Identifier: x
             ReadLocalVariableNode SourceSection: None
               Frame: [0,<>temp0,Illegal]
@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'comparision05'> SourceSection: [0,16]`x() < y() <=
               Frame: [0,<>temp0,Illegal]
             PythonCallNodeGen SourceSection: [6,9]`y()`
               CallNodeGen SourceSection: None
-              ReadNameNodeGen SourceSection: None
+              ReadNameNodeGen SourceSection: [6,7]`y`
                 Identifier: y
       BinaryComparisonNodeGen SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
@@ -35,6 +35,6 @@ ModuleRootNode Name: <module 'comparision05'> SourceSection: [0,16]`x() < y() <=
           ReadVariableFromFrameNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [13,16]`z()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [13,14]`z`
             Identifier: z
       YesNodeGen SourceSection: None

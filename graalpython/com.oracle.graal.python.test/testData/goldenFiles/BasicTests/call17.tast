@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'call17'> SourceSection: [0,22]`def fn(): foo(arg =
                             CompactKeywordsNodeGen SourceSection: None
                             ExecuteKeywordStarargsNodeGen SourceSection: None
                               EmptyNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [10,13]`foo`
                             Identifier: foo
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

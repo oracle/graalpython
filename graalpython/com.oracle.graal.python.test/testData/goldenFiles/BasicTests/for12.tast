@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                                 ReadLocalVariableNode SourceSection: [50,51]`a`
                                   Frame: [0,a,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [44,49]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [24,38]`((1,2), (3,4))`

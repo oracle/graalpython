@@ -91,7 +91,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                             ReadGeneratorFrameVariableNode SourceSection: [38,42]`file`
                                               Frame: [0,file,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`join`
                                               Identifier: join
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None

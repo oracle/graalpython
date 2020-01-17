@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                         YesNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [44,47]`a()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [44,45]`a`
                               Identifier: a
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorBlockNode SourceSection: None

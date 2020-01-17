@@ -18,5 +18,5 @@ ModuleRootNode Name: <module 'call08'> SourceSection: [0,31]`foo('ahoj', arg1 = 
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
           EmptyNode SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo

@@ -38,7 +38,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                       ReadGeneratorFrameVariableNode SourceSection: [37,38]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [27,36]`condition`
                         Identifier: condition
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   ExpressionStatementNode SourceSection: None

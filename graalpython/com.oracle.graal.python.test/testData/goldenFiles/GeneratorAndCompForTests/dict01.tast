@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
             CallNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [22,24]`20`
               Value: 20
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [16,21]`range`
               Identifier: range
         PythonObjectFactoryNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None

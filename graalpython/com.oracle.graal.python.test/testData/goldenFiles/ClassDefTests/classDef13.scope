@@ -1,0 +1,10 @@
+Scope: []
+    Kind: Module
+    FrameDescriptor: [<>temp0]
+    CellVars: Empty
+    FreeVars: Empty
+    Scope: Point
+        Kind: Class
+        FrameDescriptor: [x, y, __class__]
+        CellVars: [__class__]
+        FreeVars: Empty

@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                   CallNodeGen SourceSection: None
                   IntegerLiteralNode SourceSection: [34,35]`2`
                     Value: 2
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [27,32]`print`
                     Identifier: print
               IfNode SourceSection: None
                 YesNodeGen SourceSection: None
@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                   PythonCallNodeGen SourceSection: [56,67]`print (1.5)`
                     CallNodeGen SourceSection: None
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
-                    ReadNameNodeGen SourceSection: None
+                    ReadNameNodeGen SourceSection: [56,61]`print`
                       Identifier: print
                 IfNode SourceSection: None
                   YesNodeGen SourceSection: None
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       CallNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [94,95]`1`
                         Value: 1
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [87,92]`print`
                         Identifier: print
                   BlockNode SourceSection: None
       SideEffect:

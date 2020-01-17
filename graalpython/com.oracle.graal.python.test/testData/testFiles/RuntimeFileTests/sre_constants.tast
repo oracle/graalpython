@@ -205,7 +205,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [1203,1206]`str`
                                                     Identifier: str
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [1183,1193]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [1225,1239]`newline = '\n'`
@@ -341,7 +341,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             GetCallAttributeNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [1595,1602]`super()`
                                                 CallNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [1595,1600]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -472,7 +472,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 ReadLocalVariableNode SourceSection: [1724,1727]`cls`
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [1699,1704]`super`
                                                   Identifier: super
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [1757,1773]`self.name = name`
@@ -579,7 +579,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           ReadNameNodeGen SourceSection: [1898,1907]`MAXREPEAT`
             Identifier: MAXREPEAT
           StringLiteralNode SourceSection: [1909,1920]`'MAXREPEAT'`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [1880,1897]`_NamedIntConstant`
             Identifier: _NamedIntConstant
       WriteNameNodeGen SourceSection: [1923,2206]`def _makecodes(names...`
         Identifier: _makecodes
@@ -666,7 +666,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         ReadGeneratorFrameVariableNode SourceSection: [2014,2018]`name`
                                           Frame: [1,name,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [1993,2010]`_NamedIntConstant`
                                           Identifier: _NamedIntConstant
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -713,7 +713,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               ReadLocalVariableNode SourceSection: [2045,2050]`names`
                                 Frame: [0,names,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [2035,2044]`enumerate`
                                 Identifier: enumerate
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -794,7 +794,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         GetCallAttributeNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [2057,2066]`globals()`
                             CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2057,2064]`globals`
                               Identifier: globals
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2115,2127]`return items`
@@ -813,7 +813,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         PythonCallNodeGen SourceSection: [2216,2868]`_makecodes("""↵    F...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2227,2867]`"""↵    FAILURE SUCC...`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2216,2226]`_makecodes`
             Identifier: _makecodes
       DeleteItemNodeGen SourceSection: [2869,2885]`del OPCODES[-2:]`
         ReadNameNodeGen SourceSection: None
@@ -829,14 +829,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         PythonCallNodeGen SourceSection: [2944,3169]`_makecodes("""↵    A...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2955,3168]`"""↵    AT_BEGINNING...`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2944,2954]`_makecodes`
             Identifier: _makecodes
       WriteNameNodeGen SourceSection: [3184,3607]`CHCODES = _makecodes...`
         Identifier: CHCODES
         PythonCallNodeGen SourceSection: [3194,3607]`_makecodes("""↵    C...`
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [3205,3606]`"""↵    CATEGORY_DIG...`
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [3194,3204]`_makecodes`
             Identifier: _makecodes
       WriteNameNodeGen SourceSection: [3658,3739]`OP_IGNORE = {↵    LI...`
         Identifier: OP_IGNORE
@@ -1099,7 +1099,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                 ReadLocalVariableNode SourceSection: [5659,5660]`d`
                                   Frame: [1,d,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [5652,5658]`sorted`
                                   Identifier: sorted
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ElseNode SourceSection: [5670,5758]`for item in items:↵ ...`
@@ -1170,7 +1170,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       ReadNameNodeGen SourceSection: [6259,6266]`OPCODES`
                         Identifier: OPCODES
                       StringLiteralNode SourceSection: [6268,6276]`"SRE_OP"`
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [6251,6255]`dump`
                         Identifier: dump
                   ExpressionStatementNode SourceSection: [6286,6309]`dump(f, ATCODES, "SR...`
                     PythonCallNodeGen SourceSection: [6286,6309]`dump(f, ATCODES, "SR...`
@@ -1180,7 +1180,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       ReadNameNodeGen SourceSection: [6294,6301]`ATCODES`
                         Identifier: ATCODES
                       StringLiteralNode SourceSection: [6303,6308]`"SRE"`
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [6286,6290]`dump`
                         Identifier: dump
                   ExpressionStatementNode SourceSection: [6318,6341]`dump(f, CHCODES, "SR...`
                     PythonCallNodeGen SourceSection: [6318,6341]`dump(f, CHCODES, "SR...`
@@ -1190,7 +1190,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       ReadNameNodeGen SourceSection: [6326,6333]`CHCODES`
                         Identifier: CHCODES
                       StringLiteralNode SourceSection: [6335,6340]`"SRE"`
-                      ReadNameNodeGen SourceSection: None
+                      ReadNameNodeGen SourceSection: [6318,6322]`dump`
                         Identifier: dump
                   ExpressionStatementNode SourceSection: [6351,6412]`f.write("#define SRE...`
                     PythonCallNodeGen SourceSection: [6351,6412]`f.write("#define SRE...`
@@ -1342,7 +1342,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                   CallNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [5768,5785]`"sre_constants.h"`
                   StringLiteralNode SourceSection: [5787,5790]`"w"`
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [5763,5767]`open`
                     Identifier: open
                 LookupInheritedAttributeNode SourceSection: None
                   LookupAttributeInMRONodeGen SourceSection: None
@@ -1361,6 +1361,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                 PythonCallNodeGen SourceSection: [7163,7176]`print("done")`
                   CallNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [7169,7175]`"done"`
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [7163,7168]`print`
                     Identifier: print
             BlockNode SourceSection: None

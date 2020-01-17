@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                           StringLiteralNode SourceSection: [2190,2197]`"micro"`
                           StringLiteralNode SourceSection: [2199,2213]`"releaselevel"`
                           StringLiteralNode SourceSection: [2215,2223]`"serial"`
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2123,2145]`make_named_tuple_cla...`
                           Frame: [1,make_named_tuple_class,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2235,2406]`return SimpleNamespa...`
@@ -84,7 +84,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2354,2366]`version_info`
                                   Identifier: version_info
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [2336,2353]`version_info_type`
                                   Frame: [2,version_info_type,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             KeywordLiteralNode SourceSection: None
@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                             CompactKeywordsNodeGen SourceSection: None
                             ExecuteKeywordStarargsNodeGen SourceSection: None
                               EmptyNode SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [2242,2257]`SimpleNamespace`
                             Frame: [0,SimpleNamespace,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -104,7 +104,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
         Identifier: implementation
         PythonCallNodeGen SourceSection: [2424,2450]`make_implementation_...`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2424,2448]`make_implementation_...`
             Identifier: make_implementation_info
       DeleteNameNodeGen SourceSection: [2451,2479]`del make_implementat...`
         Identifier: make_implementation_info
@@ -173,10 +173,10 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2647,2663]`make_flags_class`
                               Identifier: make_flags_class
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [2642,2646]`type`
                               Identifier: type
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2637,2641]`type`
                           Identifier: type
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2680,2942]`names = ["bytes_warn...`
@@ -210,7 +210,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                         ReadLocalVariableNode SourceSection: [2998,3003]`names`
                           Frame: [2,names,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2962,2984]`make_named_tuple_cla...`
                           Frame: [0,make_named_tuple_class,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [3010,3109]`def make_func(i):↵  ...`
@@ -355,7 +355,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                       ReadLocalVariableNode SourceSection: [3205,3206]`i`
                                         Frame: [5,i,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [3195,3204]`make_func`
                                         Frame: [4,make_func,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                   KeywordLiteralNode SourceSection: None
@@ -369,10 +369,10 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                   CompactKeywordsNodeGen SourceSection: None
                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                     EmptyNode SourceSection: None
-                                ReadLocalVariableNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [3171,3189]`get_set_descriptor`
                                   Frame: [1,get_set_descriptor,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [3147,3154]`setattr`
                                 Identifier: setattr
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3121,3137]`enumerate(names)`
@@ -382,7 +382,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                             ReadLocalVariableNode SourceSection: [3131,3136]`names`
                               Frame: [2,names,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [3121,3130]`enumerate`
                               Identifier: enumerate
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -401,9 +401,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
         Identifier: flags
         PythonCallNodeGen SourceSection: [3271,3291]`make_flags_class()()...`
           CallNodeGen SourceSection: None
-          PythonCallNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [3271,3289]`make_flags_class()`
             CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [3271,3287]`make_flags_class`
               Identifier: make_flags_class
       DeleteNameNodeGen SourceSection: [3292,3312]`del make_flags_class...`
         Identifier: make_flags_class
@@ -466,7 +466,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                             StringLiteralNode SourceSection: [3616,3625]`"epsilon"`
                             StringLiteralNode SourceSection: [3636,3643]`"radix"`
                             StringLiteralNode SourceSection: [3654,3662]`"rounds"`
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [3406,3428]`make_named_tuple_cla...`
                             Frame: [0,make_named_tuple_class,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -478,9 +478,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3707,3717]`float_info`
             Identifier: float_info
-          PythonCallNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [3683,3706]`make_float_info_clas...`
             CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [3683,3704]`make_float_info_clas...`
               Identifier: make_float_info_class
       DeleteNameNodeGen SourceSection: [3719,3744]`del make_float_info_...`
         Identifier: make_float_info_class
@@ -541,7 +541,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                             StringLiteralNode SourceSection: [4007,4012]`"nan"`
                             StringLiteralNode SourceSection: [4023,4034]`"seed_bits"`
                             StringLiteralNode SourceSection: [4045,4052]`"width"`
-                          ReadLocalVariableNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: [3837,3859]`make_named_tuple_cla...`
                             Frame: [0,make_named_tuple_class,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -566,7 +566,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 PythonCallNodeGen SourceSection: [4119,4131]`float('inf')`
                   CallNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [4125,4130]`'inf'`
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [4119,4124]`float`
                     Identifier: float
             IntegerLiteralNode SourceSection: [4144,4145]`7`
               Value: 7
@@ -576,15 +576,15 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                 PythonCallNodeGen SourceSection: [4147,4159]`float('nan')`
                   CallNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [4153,4158]`'nan'`
-                  ReadNameNodeGen SourceSection: None
+                  ReadNameNodeGen SourceSection: [4147,4152]`float`
                     Identifier: float
             IntegerLiteralNode SourceSection: [4172,4173]`0`
               Value: 0
             IntegerLiteralNode SourceSection: [4175,4177]`64`
               Value: 64
-          PythonCallNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [4072,4094]`make_hash_info_class...`
             CallNodeGen SourceSection: None
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [4072,4092]`make_hash_info_class...`
               Identifier: make_hash_info_class
       DeleteNameNodeGen SourceSection: [4181,4205]`del make_hash_info_c...`
         Identifier: make_hash_info_class
@@ -652,7 +652,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                           ReadLocalVariableNode SourceSection: [4545,4548]`arg`
                             Frame: [0,arg,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [4534,4544]`SystemExit`
                             Identifier: SystemExit
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -733,7 +733,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                         CompactKeywordsNodeGen SourceSection: None
                                         ExecuteKeywordStarargsNodeGen SourceSection: None
                                           EmptyNode SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [4618,4623]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [4684,4704]`tb = e.__traceback__...`
@@ -819,7 +819,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                                 CompactKeywordsNodeGen SourceSection: None
                                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [4747,4752]`print`
                                                 Identifier: print
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [4948,4963]`tb = tb.tb_next`
@@ -844,7 +844,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                       ReadLocalVariableNode SourceSection: [4982,4983]`e`
                                         Frame: [0,e,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [4978,4981]`str`
                                         Identifier: str
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   IfNode SourceSection: [4993,5144]`if msg:↵            ...`
@@ -871,7 +871,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                                 ReadLocalVariableNode SourceSection: [5036,5037]`e`
                                                   Frame: [0,e,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [5031,5035]`type`
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5053,5056]`msg`
@@ -885,7 +885,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                           CompactKeywordsNodeGen SourceSection: None
                                           ExecuteKeywordStarargsNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [5013,5018]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [5098,5138]`print(type(e).__qual...`
@@ -901,7 +901,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                             ReadLocalVariableNode SourceSection: [5109,5110]`e`
                                               Frame: [0,e,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [5104,5108]`type`
                                               Identifier: type
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
@@ -912,7 +912,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                           CompactKeywordsNodeGen SourceSection: None
                                           ExecuteKeywordStarargsNodeGen SourceSection: None
                                             EmptyNode SourceSection: None
-                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [5098,5103]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1007,7 +1007,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                                 CompactKeywordsNodeGen SourceSection: None
                                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5330,5335]`print`
                                                 Identifier: print
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [5391,5418]`simple_print_traceba...`
@@ -1016,7 +1016,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                               ReadLocalVariableNode SourceSection: [5414,5417]`exc`
                                                 Frame: [4,exc,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalCellNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [5391,5413]`simple_print_traceba...`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [5,simple_print_traceback,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1033,7 +1033,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                                 CompactKeywordsNodeGen SourceSection: None
                                                 ExecuteKeywordStarargsNodeGen SourceSection: None
                                                   EmptyNode SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5431,5436]`print`
                                                 Identifier: print
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [5493,5522]`simple_print_traceba...`
@@ -1042,7 +1042,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                               ReadLocalVariableNode SourceSection: [5516,5521]`value`
                                                 Frame: [1,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadLocalCellNodeGen SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [5493,5515]`simple_print_traceba...`
                                                 ReadLocalVariableNode SourceSection: None
                                                   Frame: [5,simple_print_traceback,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1074,7 +1074,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
         Identifier: __excepthook__
         PythonCallNodeGen SourceSection: [5574,5591]`make_excepthook()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [5574,5589]`make_excepthook`
             Identifier: make_excepthook
       WriteNameNodeGen SourceSection: [5592,5619]`excepthook = __excep...`
         Identifier: excepthook
@@ -1172,7 +1172,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                 ReadLocalVariableNode SourceSection: [5800,5808]`hookname`
                                   Frame: [5,hookname,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [5796,5799]`len`
                                   Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [5813,5814]`0`
@@ -1295,7 +1295,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                 ReadLocalVariableNode SourceSection: [6209,6217]`funcname`
                                   Frame: [8,funcname,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [6193,6200]`getattr`
                                   Identifier: getattr
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExceptNode SourceSection: None
@@ -1336,7 +1336,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                 ReadLocalVariableNode SourceSection: [6400,6403]`kws`
                                   Frame: [1,kws,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                            ReadLocalVariableNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [6386,6390]`hook`
                               Frame: [10,hook,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -1454,7 +1454,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                           ReadLocalVariableNode SourceSection: [6689,6694]`value`
                             Frame: [0,value,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [6684,6688]`repr`
                             Identifier: repr
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       TryFinallyNode SourceSection: [6700,7013]`try:↵        stdout....`
@@ -1498,7 +1498,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
                                       Identifier: stdout
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [6855,6863]`'buffer'`
-                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                    ReadGlobalOrBuiltinNodeGen SourceSection: [6839,6846]`hasattr`
                                       Identifier: hasattr
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ExpressionStatementNode SourceSection: [6878,6904]`stdout.buffer.write(...`

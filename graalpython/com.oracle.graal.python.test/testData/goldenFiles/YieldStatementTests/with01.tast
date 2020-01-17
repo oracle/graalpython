@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,49]`def gen():↵  with
                         GeneratorAccessNode SourceSection: None
                       PythonCallNodeGen SourceSection: [18,22]`fn()`
                         CallNodeGen SourceSection: None
-                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [18,20]`fn`
                           Identifier: fn
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       LookupInheritedAttributeNode SourceSection: None

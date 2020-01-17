@@ -37,7 +37,7 @@ ModuleRootNode Name: <module 'await06'> SourceSection: [0,38]`async def f():↵ 
                       ExpressionStatementNode SourceSection: [16,27]`await foo()`
                         PythonCallNodeGen SourceSection: [16,27]`await foo()`
                           CallNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [22,25]`foo`
                             Identifier: foo
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [29,38]`return 42`

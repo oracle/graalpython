@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -181,6 +181,14 @@ public class FuncDefTests extends ParserTestBase {
     @Test
     public void functionDef20() throws Exception {
         checkScopeAndTree("def __init__(self, max_size=0, *, ctx, pending_work_items): pass");
+    }
+
+    @Test
+    public void functionDef21() throws Exception {
+        checkScopeAndTree("c = 2\n" +
+                        "def foo(a, b): \n" +
+                        "  return a + b + c\n" +
+                        "foo(1,2)\n");
     }
 
     @Test

@@ -118,7 +118,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [384,389]`set()`
                                       CallNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [384,387]`set`
                                         Identifier: set
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [399,792]`def wrapper(self):↵ ...`
@@ -166,12 +166,12 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       ReadLocalVariableNode SourceSection: [439,443]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [436,438]`id`
                                                         Identifier: id
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     PythonCallNodeGen SourceSection: [446,457]`get_ident()`
                                                       CallNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [446,455]`get_ident`
                                                         Identifier: get_ident
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 IfNode SourceSection: [470,539]`if key in repr_runni...`
@@ -222,7 +222,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalVariableNode SourceSection: [617,621]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadLocalCellNodeGen SourceSection: None
+                                                        ReadLocalCellNodeGen SourceSection: [603,616]`user_function`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [3,user_function,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -265,7 +265,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [836,848]`'__module__'`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [813,820]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   SetAttributeNodeGen SourceSection: [858,909]`wrapper.__doc__ = ge...`
@@ -281,7 +281,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [899,908]`'__doc__'`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [876,883]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   SetAttributeNodeGen SourceSection: [918,971]`wrapper.__name__ = g...`
@@ -297,7 +297,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [960,970]`'__name__'`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [937,944]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   SetAttributeNodeGen SourceSection: [980,1041]`wrapper.__qualname__...`
@@ -313,7 +313,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadFromCellNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [1026,1040]`'__qualname__'`
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [1003,1010]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   SetAttributeNodeGen SourceSection: [1050,1121]`wrapper.__annotation...`
@@ -331,7 +331,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       StringLiteralNode SourceSection: [1099,1116]`'__annotations__'`
                                       DictLiteralNode SourceSection: [1118,1120]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                      ReadGlobalOrBuiltinNodeGen SourceSection: [1076,1083]`getattr`
                                         Identifier: getattr
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   FrameReturnNode SourceSection: [1130,1144]`return wrapper`
@@ -644,7 +644,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadLocalVariableNode SourceSection: [1628,1629]`x`
                                                 Frame: [1,x,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [1623,1627]`type`
                                                 Identifier: type
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [1648,1752]`if ' ' in typename:↵...`
@@ -694,7 +694,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadLocalVariableNode SourceSection: [1779,1787]`typename`
                                                   Frame: [3,typename,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [1755,1762]`hasattr`
                                                 Identifier: hasattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [1802,1852]`return getattr(self,...`
@@ -710,7 +710,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadLocalVariableNode SourceSection: [1846,1851]`level`
                                                   Frame: [2,level,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                PythonCallNodeGen SourceSection: None
+                                                PythonCallNodeGen SourceSection: [1809,1842]`getattr(self, 'repr_...`
                                                   CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [1817,1821]`self`
                                                     Frame: [0,self,Illegal]
@@ -722,7 +722,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     ReadLocalVariableNode SourceSection: [1833,1841]`typename`
                                                       Frame: [3,typename,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [1809,1816]`getattr`
                                                     Identifier: getattr
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [1879,1914]`return self.repr_ins...`
@@ -833,7 +833,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [2004,2005]`x`
                                               Frame: [1,x,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [2000,2003]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [2015,2360]`if level <= 0 and n:...`
@@ -925,7 +925,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                                     Frame: [1,newlevel,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   ReadFromCellNodeGen SourceSection: None
-                                                                ReadLocalCellNodeGen SourceSection: None
+                                                                ReadLocalCellNodeGen SourceSection: [2158,2163]`repr1`
                                                                   ReadGeneratorFrameVariableNode SourceSection: None
                                                                     Frame: [2,repr1,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -958,7 +958,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       ReadLocalVariableNode SourceSection: [2202,2209]`maxiter`
                                                         Frame: [5,maxiter,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [2192,2198]`islice`
                                                         Identifier: islice
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   PythonObjectFactoryNodeGen SourceSection: None
@@ -1401,7 +1401,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [2942,2943]`x`
                                               Frame: [1,x,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [2925,2941]`_possibly_sorted`
                                               Identifier: _possibly_sorted
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [2953,3012]`return self._repr_it...`
@@ -1505,7 +1505,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [3134,3135]`x`
                                               Frame: [1,x,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [3117,3133]`_possibly_sorted`
                                               Identifier: _possibly_sorted
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [3145,3256]`return self._repr_it...`
@@ -1677,7 +1677,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadLocalVariableNode SourceSection: [3423,3424]`x`
                                               Frame: [1,x,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [3419,3422]`len`
                                               Identifier: len
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [3434,3456]`if n == 0: return '{...`
@@ -1765,7 +1765,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     ReadLocalVariableNode SourceSection: [3666,3674]`newlevel`
                                                       Frame: [4,newlevel,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [3655,3660]`repr1`
                                                       Frame: [5,repr1,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [3688,3721]`valrepr = repr1(x[ke...`
@@ -1784,7 +1784,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     ReadLocalVariableNode SourceSection: [3712,3720]`newlevel`
                                                       Frame: [4,newlevel,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [3698,3703]`repr1`
                                                       Frame: [5,repr1,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [3734,3778]`pieces.append('%s: %...`
@@ -1815,7 +1815,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   ReadLocalVariableNode SourceSection: [3614,3615]`x`
                                                     Frame: [1,x,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [3597,3613]`_possibly_sorted`
                                                     Identifier: _possibly_sorted
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [3618,3630]`self.maxdict`
@@ -1826,7 +1826,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   ReadLocalVariableNode SourceSection: [3618,3622]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3590,3596]`islice`
                                                   Identifier: islice
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -1969,7 +1969,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadLocalVariableNode SourceSection: [3984,3985]`s`
                                                   Frame: [3,s,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [3980,3983]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [3989,4003]`self.maxstring`
@@ -2007,7 +2007,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       Value: 3
                                                   IntegerLiteralNode SourceSection: [4048,4049]`2`
                                                     Value: 2
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4024]`max`
                                                   Identifier: max
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [4063,4093]`j = max(0, self.maxs...`
@@ -2037,7 +2037,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   ReadLocalVariableNode SourceSection: [4091,4092]`i`
                                                     Frame: [4,i,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4067,4070]`max`
                                                   Identifier: max
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [4106,4145]`s = builtins.repr(x[...`
@@ -2074,7 +2074,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                           ReadLocalVariableNode SourceSection: [4138,4139]`x`
                                                             Frame: [1,x,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                          ReadGlobalOrBuiltinNodeGen SourceSection: [4134,4137]`len`
                                                             Identifier: len
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [4141,4142]`j`
@@ -2122,7 +2122,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalVariableNode SourceSection: [4184,4185]`s`
                                                           Frame: [3,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [4180,4183]`len`
                                                           Identifier: len
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [4187,4188]`j`
@@ -2215,7 +2215,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadLocalVariableNode SourceSection: [4321,4322]`s`
                                                   Frame: [3,s,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4317,4320]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [4326,4338]`self.maxlong`
@@ -2253,7 +2253,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       Value: 3
                                                   IntegerLiteralNode SourceSection: [4381,4382]`2`
                                                     Value: 2
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4356,4359]`max`
                                                   Identifier: max
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [4396,4424]`j = max(0, self.maxl...`
@@ -2283,7 +2283,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   ReadLocalVariableNode SourceSection: [4422,4423]`i`
                                                     Frame: [4,i,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4400,4403]`max`
                                                   Identifier: max
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [4437,4469]`s = s[:i] + '...' + ...`
@@ -2322,7 +2322,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalVariableNode SourceSection: [4463,4464]`s`
                                                           Frame: [3,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [4459,4462]`len`
                                                           Identifier: len
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [4466,4467]`j`
@@ -2437,7 +2437,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalVariableNode SourceSection: [4775,4776]`x`
                                                           Frame: [1,x,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [4772,4774]`id`
                                                           Identifier: id
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4694,4703]`Exception`
@@ -2455,7 +2455,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadLocalVariableNode SourceSection: [4794,4795]`s`
                                                   Frame: [3,s,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4790,4793]`len`
                                                   Identifier: len
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [4799,4812]`self.maxother`
@@ -2493,7 +2493,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       Value: 3
                                                   IntegerLiteralNode SourceSection: [4856,4857]`2`
                                                     Value: 2
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4830,4833]`max`
                                                   Identifier: max
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [4871,4900]`j = max(0, self.maxo...`
@@ -2523,7 +2523,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   ReadLocalVariableNode SourceSection: [4898,4899]`i`
                                                     Frame: [4,i,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [4875,4878]`max`
                                                   Identifier: max
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [4913,4945]`s = s[:i] + '...' + ...`
@@ -2562,7 +2562,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadLocalVariableNode SourceSection: [4939,4940]`s`
                                                           Frame: [3,s,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [4935,4938]`len`
                                                           Identifier: len
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [4942,4943]`j`
@@ -2637,7 +2637,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                               ReadLocalVariableNode SourceSection: [5185,5186]`x`
                                 Frame: [0,x,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [5178,5184]`sorted`
                                 Identifier: sorted
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExceptNode SourceSection: None
@@ -2651,7 +2651,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                 ReadLocalVariableNode SourceSection: [5230,5231]`x`
                                   Frame: [0,x,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [5225,5229]`list`
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [5199,5208]`Exception`
@@ -2666,7 +2666,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
         Identifier: aRepr
         PythonCallNodeGen SourceSection: [5242,5248]`Repr()`
           CallNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [5242,5246]`Repr`
             Identifier: Repr
       ExpressionWithSideEffect SourceSection: None
         Expression:

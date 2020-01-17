@@ -42,7 +42,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2028,2030]`_f`
             Identifier: _f
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2023,2027]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [2032,2072]`descriptor = type(Fu...`
         Identifier: descriptor
@@ -55,7 +55,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [2050,2062]`FunctionType`
               Identifier: FunctionType
-          ReadNameNodeGen SourceSection: None
+          ReadNameNodeGen SourceSection: [2045,2049]`type`
             Identifier: type
       WriteNameNodeGen SourceSection: [2075,2974]`def make_named_tuple...`
         Identifier: make_named_tuple_class
@@ -183,7 +183,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   Frame: [2,fields,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
-                                            ReadClassAttributeNodeGen SourceSection: None
+                                            ReadClassAttributeNodeGen SourceSection: [2199,2202]`len`
                                               GetItemNodeGen SourceSection: None
                                                 ArgumentExpressionNode SourceSection: None
                                                   ReadIndexedArgumentNodeGen SourceSection: None
@@ -347,10 +347,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                       ReadLocalVariableNode SourceSection: [2490,2491]`f`
                                                                         Frame: [2,f,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [2476,2483]`getattr`
                                                                         Identifier: getattr
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [2471,2475]`repr`
                                                                       Identifier: repr
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                   GetCallAttributeNodeGen SourceSection: None
@@ -589,7 +589,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                       ReadLocalVariableNode SourceSection: [2878,2879]`i`
                                                         Frame: [1,i,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [2868,2877]`make_func`
                                                         Frame: [0,make_func,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
@@ -605,10 +605,10 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   CompactKeywordsNodeGen SourceSection: None
                                                   ExecuteKeywordStarargsNodeGen SourceSection: None
                                                     EmptyNode SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                                ReadGlobalOrBuiltinNodeGen SourceSection: [2852,2862]`descriptor`
                                                   Identifier: descriptor
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [2825,2832]`setattr`
                                                 Identifier: setattr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [2669,2686]`enumerate(fields)`
@@ -620,7 +620,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               Frame: [3,fields,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadFromCellNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [2669,2678]`enumerate`
                                             Identifier: enumerate
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
@@ -630,7 +630,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                     ExpressionStatementNode SourceSection: [2919,2948]`_define_named_tuple_...`
                       PythonCallNodeGen SourceSection: [2919,2948]`_define_named_tuple_...`
                         CallNodeGen SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
+                        ReadLocalVariableNode SourceSection: [2919,2946]`_define_named_tuple_...`
                           Frame: [3,_define_named_tuple_methods,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [2953,2971]`return named_tuple`

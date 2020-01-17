@@ -13,6 +13,6 @@ ModuleRootNode Name: <module 'raise03'> SourceSection: [0,24]`raise NameError('P
           PythonCallNodeGen SourceSection: [6,24]`NameError('Pavel')`
             CallNodeGen SourceSection: None
             StringLiteralNode SourceSection: [16,23]`'Pavel'`
-            ReadNameNodeGen SourceSection: None
+            ReadNameNodeGen SourceSection: [6,15]`NameError`
               Identifier: NameError
           EmptyNode SourceSection: None

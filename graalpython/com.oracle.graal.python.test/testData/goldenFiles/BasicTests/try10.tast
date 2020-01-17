@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               PythonCallNodeGen SourceSection: [88,114]`print("division by z...`
                                 CallNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [94,113]`"division by zero!"`
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [88,93]`print`
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [61,78]`ZeroDivisionError`
@@ -82,7 +82,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               ReadLocalVariableNode SourceSection: [152,158]`result`
                                 Frame: [2,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [133,138]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           SaveExceptionStateNodeGen SourceSection: None
@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                           PythonCallNodeGen SourceSection: [181,214]`print("executing fin...`
                             CallNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [187,213]`"executing finally c...`
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [181,186]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

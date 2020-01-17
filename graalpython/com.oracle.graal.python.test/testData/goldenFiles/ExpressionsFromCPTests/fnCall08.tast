@@ -17,5 +17,5 @@ ModuleRootNode Name: <module 'fnCall08'> SourceSection: [0,19]`foo(a, b, c, *arg
         ReadNameNodeGen SourceSection: [14,18]`args`
           Identifier: args
         ExecutePositionalStarargsNodeGen SourceSection: None
-      ReadNameNodeGen SourceSection: None
+      ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
