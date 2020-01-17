@@ -95,6 +95,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public class GraalHPyNodes {
 
@@ -169,6 +170,7 @@ public class GraalHPyNodes {
         }
     }
 
+    @ExportLibrary(NativeTypeLibrary.class)
     @ExportLibrary(InteropLibrary.class)
     public static class PtrArray implements TruffleObject {
 
@@ -211,6 +213,16 @@ public class GraalHPyNodes {
         @ExportMessage
         void writeArrayElement(long idx, Object value) {
             arr[(int) idx] = value;
+        }
+
+        @ExportMessage
+        boolean hasNativeType() {
+            return false;
+        }
+
+        @ExportMessage
+        Object getNativeType() {
+            return null;
         }
     }
 
@@ -431,7 +443,7 @@ public class GraalHPyNodes {
 
         @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"}, limit = "2")
         static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
-                                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
+                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
             try {
                 return doLongWithContext(hpyContext, interopLibrary.asPointer(handle));
             } catch (UnsupportedMessageException e) {
