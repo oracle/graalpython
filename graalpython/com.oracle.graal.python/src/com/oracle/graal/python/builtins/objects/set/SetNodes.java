@@ -93,7 +93,7 @@ public abstract class SetNodes {
         @SuppressWarnings("unused")
         PSet set(LazyPythonClass cls, PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createSet();
+            return factory.createSet(cls);
         }
 
         @Specialization(guards = "!isNoValue(iterable)")
