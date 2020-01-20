@@ -58,7 +58,12 @@ void* PyObject_Realloc(void *ptr, size_t new_size) {
 }
 
 void PyObject_Free(void* ptr) {
-    free(ptr);
+	(void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GC_Untrack", ptr);
+	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
+		(void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_Free", native_to_java(ptr));
+	} else {
+		free(ptr);
+	}
 }
 
 void* PyMem_Malloc(size_t size) {

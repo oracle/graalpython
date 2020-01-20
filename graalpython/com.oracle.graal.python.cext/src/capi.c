@@ -376,6 +376,15 @@ void* PyObjectHandle_ForJavaObject(void* cobj) {
     return cobj;
 }
 
+/** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
+void PyTruffle_Free(void* obj) {
+	if(!truffle_cannot_be_handle(obj) && truffle_is_handle_to_managed(obj)) {
+		truffle_release_handle(obj);
+	} else {
+		free(obj);
+	}
+}
+
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
 void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
     return truffle_deref_handle_for_managed(jobj);

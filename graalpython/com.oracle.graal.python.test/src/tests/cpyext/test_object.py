@@ -597,3 +597,69 @@ class TestObjectFunctions(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_dealloc = CPyExtFunction(
+        lambda args: None,
+        lambda: (
+            (None, ),
+        ),
+        code='''PyObject* dealloc_tuple(PyObject* element) {
+            PyObject** native_storage = (PyObject**) malloc(sizeof(PyObject*));
+            // returns a tuple with refcnt == 1
+            PyObject* object = PyTuple_New(1);
+            PyTuple_SetItem(object, 0, element);
+            
+            // seal tuple; refcnt == 2
+            Py_INCREF(object);
+            
+            // this will force the object to native
+            native_storage[0] = object;
+            
+            Py_DECREF(object);
+            // this will free the tuple
+            Py_DECREF(object);
+            
+            return Py_None;
+        }
+        ''',
+        arguments=["PyObject* element"],
+        resultspec="O",
+        argspec="O",
+        callfunction="dealloc_tuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_deref_dealloc = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            (None, ),
+        ),
+        code='''
+        #include <stddef.h>
+        
+        PyObject* dealloc_tuple(PyObject* element) {
+            uint64_t val = 0;
+            // returns a tuple with refcnt == 1
+            PyObject* object = PyTuple_New(1);
+            PyTuple_SetItem(object, 0, element);
+            
+            // seal tuple; refcnt == 2
+            Py_INCREF(object);
+            
+            // this will force the object to native
+            val = (uint64_t) object;
+            val += offsetof(PyObject, ob_refcnt) + sizeof(PyObject*);
+            
+            Py_DECREF(object);
+            // this will free the tuple
+            Py_DECREF(object);
+            
+            return Py_TYPE(object) == *((PyTypeObject**)val) ? Py_True : Py_False;
+        }
+        ''',
+        arguments=["PyObject* element"],
+        resultspec="O",
+        argspec="O",
+        callfunction="dealloc_tuple",
+        cmpfunc=unhandled_error_compare
+    )
+

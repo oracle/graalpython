@@ -60,8 +60,10 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import com.oracle.graal.python.util.Supplier;
+import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -2975,6 +2977,48 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric() {
             return new PyObjectAllocationReporter();
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Object_Free", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleObjectFree extends PythonUnaryBuiltinNode {
+
+        @Specialization(limit = "3")
+        static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
+                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
+                        @Cached PCallCapiFunction callReleaseHandleNode) {
+            if (nativeWrapper.getRefCount() > 0) {
+                throw new IllegalStateException("deallocating native object with refcnt > 0");
+            }
+            if (lib.isNative(nativeWrapper)) {
+                // clear native wrapper
+                Object delegate = lib.getDelegate(nativeWrapper);
+                if (delegate instanceof PythonAbstractObject) {
+                    ((PythonAbstractObject) delegate).clearNativeWrapper();
+                }
+                // We do not call 'truffle_release_handle' directly because we still want to support
+                // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
+                // necessary distinction.
+                callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, lib.getNativePointer(nativeWrapper));
+            }
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_GC_Untrack", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleGcUntrack extends PythonUnaryBuiltinNode {
+        private static final Set<Object> freed = new HashSet<>();
+
+        @Specialization
+        @TruffleBoundary
+        static int doNativeWrapper(Object ptr) {
+            if (freed.contains(ptr)) {
+                throw new IllegalStateException("double free of " + ptr);
+            }
+            freed.add(ptr);
+            return 0;
         }
     }
 

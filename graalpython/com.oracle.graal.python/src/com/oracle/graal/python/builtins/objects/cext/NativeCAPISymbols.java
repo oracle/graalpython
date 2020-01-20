@@ -94,6 +94,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_NATIVE_UNICODE_AS_STRING = "native_unicode_as_string";
     public static final String FUN_PY_UNICODE_GET_LENGTH = "PyUnicode_GetLength";
     public static final String FUN_GET_UINT32_ARRAY_TYPE_ID = "get_uint32_array_typeid";
+    public static final String FUN_PY_TRUFFLE_FREE = "PyTruffle_Free";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
