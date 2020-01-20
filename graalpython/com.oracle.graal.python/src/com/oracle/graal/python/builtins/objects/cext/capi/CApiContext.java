@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,59 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.WeakrefCallbackAction;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
+import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+
 public final class CApiContext extends CExtContext {
+
+    private final ReferenceQueue<PythonAbstractNativeObject> nativeObjectsQueue;
+
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
+        nativeObjectsQueue = new ReferenceQueue<>();
+
+        context.registerAsyncAction(() -> {
+            Reference<? extends Object> reference = null;
+            try {
+                reference = nativeObjectsQueue.remove();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            //if (reference instanceof PythonAbstractNativeObject) {
+                return new CApiReferenceCleanerAction((PReferenceType.WeakRefStorage) reference);
+            //} else {
+                //return null;
+            //}
+        });
     }
+
+    public ReferenceQueue<PythonAbstractNativeObject> getNativeObjectsQueue() {
+        return nativeObjectsQueue;
+    }
+
+    private static class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
+        private final WeakRefStorage reference;
+
+        public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
+            this.reference = reference;
+        }
+
+        public Object callable() {
+            return reference.getCallback();
+        }
+
+        public Object[] arguments() {
+            return new Object[]{reference.getRef()};
+        }
+    }
+
 }

@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -133,7 +134,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -501,10 +501,12 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached PythonObjectFactory factory,
-                        @SuppressWarnings("unused") @Cached("create()") GetLazyClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached("create()") IsBuiltinClassProfile isForeignClassProfile) {
-            return factory.createNativeObjectWrapper(object);
+                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            PythonAbstractNativeObject obj = new PythonAbstractNativeObject(object);
+            new WeakReference<>(obj, context.getCApiContext().getNativeObjectsQueue());
+            return obj;
         }
 
         @Specialization
@@ -563,21 +565,6 @@ public abstract class CExtNodes {
 
         protected static boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
             return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.ForeignObject);
-        }
-
-        @TruffleBoundary
-        public static Object doSlowPath(Object object, boolean forceNativeClass) {
-            if (object instanceof PythonNativeWrapper) {
-                return PythonNativeWrapperLibrary.getUncached().getDelegate((PythonNativeWrapper) object);
-            } else if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(object), PythonBuiltinClassType.ForeignObject)) {
-                if (forceNativeClass) {
-                    return PythonObjectFactory.getUncached().createNativeClassWrapper((TruffleObject) object);
-                }
-                return PythonObjectFactory.getUncached().createNativeObjectWrapper((TruffleObject) object);
-            } else if (object instanceof String || object instanceof Number || object instanceof Boolean || object instanceof PythonNativeNull || object instanceof PythonAbstractObject) {
-                return object;
-            }
-            throw PRaiseNode.getUncached().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
         }
     }
 
