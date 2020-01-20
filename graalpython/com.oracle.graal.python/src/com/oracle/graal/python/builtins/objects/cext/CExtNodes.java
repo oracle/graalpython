@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.BinaryFirstToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallArgsToSulongNodeGen;
@@ -577,20 +578,6 @@ public abstract class CExtNodes {
                 return object;
             }
             throw PRaiseNode.getUncached().raise(PythonErrorType.SystemError, "invalid object from native: %s", object);
-        }
-
-        // TODO(fa): Workaround for DSL bug: did not import factory at users
-        public static AsPythonObjectNode create() {
-            return CExtNodesFactory.AsPythonObjectNodeGen.create();
-        }
-
-        // TODO(fa): Workaround for DSL bug: did not import factory at users
-        public static AsPythonObjectNode getUncached() {
-            return CExtNodesFactory.AsPythonObjectNodeGen.getUncached();
-        }
-
-        public static AsPythonObjectNode createForceClass() {
-            return CExtNodesFactory.AsPythonObjectNodeGen.create();
         }
     }
 
@@ -2189,7 +2176,7 @@ public abstract class CExtNodes {
         }
 
         protected Object doSlowPath(Object obj, String getterFuncName) {
-            return AsPythonObjectNode.getUncached().execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
+            return AsPythonObjectNodeGen.getUncached().execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
         protected String getterFuncName(String memberName) {

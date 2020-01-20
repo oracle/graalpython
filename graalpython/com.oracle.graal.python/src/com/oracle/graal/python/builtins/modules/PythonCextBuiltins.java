@@ -114,6 +114,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
@@ -282,9 +283,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_java", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class AsPythonObjectNode extends PythonUnaryBuiltinNode {
+    public abstract static class ToJavaObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(Object object,
+        static Object run(Object object,
                         @Cached CExtNodes.AsPythonObjectNode toJavaNode) {
             return toJavaNode.execute(object);
         }
@@ -292,12 +293,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "to_java_type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class AsPythonClassNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object run(Object object,
-                        @Cached("createForceClass()") CExtNodes.AsPythonObjectNode toJavaNode) {
-            return toJavaNode.execute(object);
-        }
+    public abstract static class ToJavaClassNode extends ToJavaObjectNode {
     }
 
     /**
@@ -2210,7 +2206,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         int doSlow(VirtualFrame frame, Object derived, Object cls) {
-            return doGeneric(frame, derived, cls, CExtNodes.AsPythonObjectNode.getUncached(), CExtNodes.AsPythonObjectNode.getUncached());
+            return doGeneric(frame, derived, cls, CExtNodesFactory.AsPythonObjectNodeGen.getUncached(), CExtNodesFactory.AsPythonObjectNodeGen.getUncached());
         }
     }
 
