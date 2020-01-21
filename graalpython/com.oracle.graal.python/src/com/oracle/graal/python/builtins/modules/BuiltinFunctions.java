@@ -147,7 +147,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIterat
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -1051,7 +1051,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class IsInstanceNode extends PythonBinaryBuiltinNode {
         @Child private GetClassNode getClassNode = GetClassNode.create();
         @Child private LookupAndCallBinaryNode instanceCheckNode = LookupAndCallBinaryNode.create(__INSTANCECHECK__);
-        @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
+        @Child private CoerceToBooleanNode castToBooleanNode = CoerceToBooleanNode.createIfTrueNode();
         @Child private TypeBuiltins.InstanceCheckNode typeInstanceCheckNode = TypeBuiltins.InstanceCheckNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
@@ -1128,7 +1128,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode subclassCheckNode = LookupAndCallBinaryNode.create(__SUBCLASSCHECK__);
-        @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
+        @Child private CoerceToBooleanNode castToBooleanNode = CoerceToBooleanNode.createIfTrueNode();
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
@@ -1283,7 +1283,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
             return minmaxBinaryWithKey(frame, arg1, args, null, compare, null, moreThanTwo, castToBooleanNode);
         }
 
@@ -1292,7 +1292,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
-                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
@@ -1465,7 +1465,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         PNone printGeneric(VirtualFrame frame, Object[] values, Object sepIn, Object endIn, Object fileIn, Object flushIn,
                         @Cached CastToJavaStringNode castSep,
                         @Cached CastToJavaStringNode castEnd,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castFlush,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode) {
             String sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
             if (sep == null) {

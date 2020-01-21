@@ -57,7 +57,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ContainsNode extends BinaryOpNode {
     @Child private LookupAndCallBinaryNode callNode = LookupAndCallBinaryNode.create(__CONTAINS__, null);
-    @Child private CastToBooleanNode castBool = CastToBooleanNode.createIfTrueNode();
+    @Child private CoerceToBooleanNode castBool = CoerceToBooleanNode.createIfTrueNode();
 
     @Child private GetIteratorNode getIterator;
     @Child private GetNextNode next;

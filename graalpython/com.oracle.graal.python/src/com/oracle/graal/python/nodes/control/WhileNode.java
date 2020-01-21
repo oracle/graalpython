@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.control;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -44,10 +44,10 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
     private final LoopConditionProfile conditionProfile = LoopConditionProfile.createCountingProfile();
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-    @Child CastToBooleanNode condition;
+    @Child CoerceToBooleanNode condition;
     @Child StatementNode body;
 
-    WhileRepeatingNode(CastToBooleanNode condition, StatementNode body) {
+    WhileRepeatingNode(CoerceToBooleanNode condition, StatementNode body) {
         this.condition = condition;
         this.body = body;
     }
@@ -72,7 +72,7 @@ public final class WhileNode extends LoopNode {
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
 
-    public WhileNode(CastToBooleanNode condition, StatementNode body) {
+    public WhileNode(CoerceToBooleanNode condition, StatementNode body) {
         this.loopNode = Truffle.getRuntime().createLoopNode(new WhileRepeatingNode(condition, body));
     }
 
@@ -81,7 +81,7 @@ public final class WhileNode extends LoopNode {
         return ((WhileRepeatingNode) loopNode.getRepeatingNode()).body;
     }
 
-    public CastToBooleanNode getCondition() {
+    public CoerceToBooleanNode getCondition() {
         return ((WhileRepeatingNode) loopNode.getRepeatingNode()).condition;
     }
 

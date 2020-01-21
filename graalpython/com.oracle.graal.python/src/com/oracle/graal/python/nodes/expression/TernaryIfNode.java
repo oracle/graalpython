@@ -43,17 +43,17 @@ package com.oracle.graal.python.nodes.expression;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class TernaryIfNode extends ExpressionNode {
-    @Child private CastToBooleanNode condition;
+    @Child private CoerceToBooleanNode condition;
     @Child private ExpressionNode then;
     @Child private ExpressionNode orelse;
 
-    public TernaryIfNode(CastToBooleanNode condition, ExpressionNode then, ExpressionNode orelse) {
+    public TernaryIfNode(CoerceToBooleanNode condition, ExpressionNode then, ExpressionNode orelse) {
         this.condition = condition;
         this.then = then;
         this.orelse = orelse;
     }
 
-    public CastToBooleanNode getCondition() {
+    public CoerceToBooleanNode getCondition() {
         return condition;
     }
 

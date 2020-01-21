@@ -41,19 +41,27 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.parser.*;
 import com.oracle.graal.python.nodes.PNode;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
@@ -64,11 +72,10 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
@@ -102,6 +109,8 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
+import com.oracle.graal.python.parser.ScopeEnvironment;
+import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.RootCallTarget;
@@ -110,12 +119,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
@@ -977,7 +980,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(NotSSTNode node) {
-        PNode result = CastToBooleanNode.createIfFalseNode((ExpressionNode) node.value.accept(this));
+        PNode result = CoerceToBooleanNode.createIfFalseNode((ExpressionNode) node.value.accept(this));
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }

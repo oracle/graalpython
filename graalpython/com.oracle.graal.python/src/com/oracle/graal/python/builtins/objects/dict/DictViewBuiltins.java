@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -183,7 +183,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Child GetIteratorNode iter = GetIteratorNode.create();
         @Child GetNextNode next;
         @Child LookupAndCallBinaryNode contains;
-        @Child CastToBooleanNode cast;
+        @Child CoerceToBooleanNode cast;
         @CompilationFinal IsBuiltinClassProfile stopProfile;
 
         private GetNextNode getNext() {
@@ -202,10 +202,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return contains;
         }
 
-        private CastToBooleanNode getCast() {
+        private CoerceToBooleanNode getCast() {
             if (cast == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                cast = insert(CastToBooleanNode.createIfTrueNode());
+                cast = insert(CoerceToBooleanNode.createIfTrueNode());
             }
             return cast;
         }

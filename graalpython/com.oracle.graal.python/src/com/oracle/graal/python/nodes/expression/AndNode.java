@@ -49,7 +49,7 @@ public final class AndNode extends ExpressionNode {
 
     @Child private ExpressionNode leftNode;
     @Child private ExpressionNode rightNode;
-    @Child private CastToBooleanNode booleanCast = CastToBooleanNode.createIfTrueNode();
+    @Child private CoerceToBooleanNode booleanCast = CoerceToBooleanNode.createIfTrueNode();
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 

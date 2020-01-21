@@ -38,7 +38,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
@@ -61,7 +61,7 @@ public class WithNode extends StatementNode {
     @Child private LookupInheritedAttributeNode exitGetter = LookupInheritedAttributeNode.create(__EXIT__);
     @Child private CallNode enterDispatch = CallNode.create();
     @Child private CallNode exitDispatch = CallNode.create();
-    @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
+    @Child private CoerceToBooleanNode toBooleanNode = CoerceToBooleanNode.createIfTrueNode();
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
     @Child private PythonObjectFactory factory;

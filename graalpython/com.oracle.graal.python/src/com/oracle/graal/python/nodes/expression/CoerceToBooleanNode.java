@@ -27,8 +27,8 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.NotNodeGen;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.YesNodeGen;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -37,27 +37,27 @@ import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateWrapper
-public abstract class CastToBooleanNode extends UnaryOpNode {
+public abstract class CoerceToBooleanNode extends UnaryOpNode {
     protected final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
-        return new CastToBooleanNodeWrapper(this, probe);
+        return new CoerceToBooleanNodeWrapper(this, probe);
     }
 
-    public static CastToBooleanNode createIfTrueNode() {
+    public static CoerceToBooleanNode createIfTrueNode() {
         return YesNodeGen.create(null);
     }
 
-    public static CastToBooleanNode createIfTrueNode(ExpressionNode operand) {
+    public static CoerceToBooleanNode createIfTrueNode(ExpressionNode operand) {
         return YesNodeGen.create(operand);
     }
 
-    public static CastToBooleanNode createIfFalseNode() {
+    public static CoerceToBooleanNode createIfFalseNode() {
         return NotNodeGen.create(null);
     }
 
-    public static CastToBooleanNode createIfFalseNode(ExpressionNode operand) {
+    public static CoerceToBooleanNode createIfFalseNode(ExpressionNode operand) {
         return NotNodeGen.create(operand);
     }
 
@@ -66,7 +66,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
-    public abstract static class YesNode extends CastToBooleanNode {
+    public abstract static class YesNode extends CoerceToBooleanNode {
         @Specialization
         boolean doBoolean(boolean operand) {
             return operand;
@@ -99,7 +99,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         }
     }
 
-    public abstract static class NotNode extends CastToBooleanNode {
+    public abstract static class NotNode extends CoerceToBooleanNode {
         @Specialization
         boolean doBool(boolean operand) {
             return !operand;

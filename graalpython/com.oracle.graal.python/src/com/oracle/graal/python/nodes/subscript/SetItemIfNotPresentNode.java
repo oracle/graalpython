@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.subscript;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,7 +62,7 @@ public abstract class SetItemIfNotPresentNode extends Node {
 
     @Specialization
     Object doDictLike(VirtualFrame frame, Object namespace, Object attribute, Object value,
-                    @Cached("createIfFalseNode()") CastToBooleanNode notNode,
+                    @Cached("createIfFalseNode()") CoerceToBooleanNode notNode,
                     @Cached("create(__CONTAINS__)") LookupAndCallBinaryNode containsNode) {
         if (value != null && notNode.executeBoolean(frame, containsNode.executeObject(frame, namespace, value))) {
             setItemNode.executeWith(frame, namespace, attribute, value);

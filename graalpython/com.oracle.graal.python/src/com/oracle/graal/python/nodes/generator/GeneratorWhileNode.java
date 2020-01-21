@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.control.LoopNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.BreakException;
@@ -42,7 +42,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class GeneratorWhileNode extends LoopNode implements GeneratorControlNode {
 
     @Child private StatementNode body;
-    @Child private CastToBooleanNode condition;
+    @Child private CoerceToBooleanNode condition;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
     @CompilationFinal private ContextReference<PythonContext> contextRef;
@@ -51,7 +51,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
     private final BranchProfile seenBreak = BranchProfile.create();
     private final int flagSlot;
 
-    public GeneratorWhileNode(CastToBooleanNode condition, StatementNode body, int flagSlot) {
+    public GeneratorWhileNode(CoerceToBooleanNode condition, StatementNode body, int flagSlot) {
         this.body = body;
         this.condition = condition;
         this.flagSlot = flagSlot;
