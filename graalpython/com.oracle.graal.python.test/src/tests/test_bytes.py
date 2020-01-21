@@ -559,6 +559,10 @@ def test_find():
     else:
         assert False, "should not reach here"
 
+    class SubInt(int):
+        pass
+    assert ba.find(i, SubInt(6)) == 7
+
 
 def test_same_id():
     empty_ids = set([id(bytes()) for i in range(100)])
