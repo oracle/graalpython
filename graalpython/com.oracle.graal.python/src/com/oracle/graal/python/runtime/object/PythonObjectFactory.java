@@ -453,10 +453,6 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PList(cls, SequenceStorageFactory.createStorage(array)));
     }
 
-    public PSet createSet() {
-        return trace(new PSet(PythonBuiltinClassType.PSet));
-    }
-
     public PSet createSet(LazyPythonClass cls) {
         return trace(new PSet(cls));
     }
