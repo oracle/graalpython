@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -77,15 +78,19 @@ public class AsyncHandler {
      * An action to be run triggered by an asynchronous event.
      */
     public interface AsyncAction {
+        void execute(VirtualFrame frame, Node location, RootCallTarget callTarget);
+    }
+
+    public abstract static class AsyncPythonAction implements AsyncAction {
         /**
          * The object to call via a standard Python call
          */
-        public Object callable();
+        protected abstract Object callable();
 
         /**
          * The arguments to pass to the call
          */
-        public Object[] arguments();
+        protected abstract Object[] arguments();
 
         /**
          * If the arguments need to include an element for the currently executing frame upon which
@@ -93,12 +98,36 @@ public class AsyncHandler {
          * returned by {@link #arguments()} should have a space for the frame already, as it will be
          * filled in without growing the arguments array.
          */
-        default int frameIndex() {
+        protected int frameIndex() {
             return -1;
+        }
+
+        @Override
+        public final void execute(VirtualFrame frame, Node location, RootCallTarget callTarget) {
+            Object callable = callable();
+            if (callable != null) {
+                Object[] arguments = arguments();
+                Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARGS);
+                System.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARGS, arguments.length);
+                PArguments.setArgument(args, 0, callable);
+                PArguments.setArgument(args, 1, frameIndex());
+                PArguments.setArgument(args, 2, location);
+                PArguments.setArgument(args, 3, frame);
+
+                try {
+                    GenericInvokeNode.getUncached().execute(frame, callTarget, args);
+                } catch (RuntimeException e) {
+                    // we cannot raise the exception here (well, we could, but CPython
+                    // doesn't), so we do what they do and just print it
+
+                    // Just print a Python-like stack trace; CPython does the same (see 'weakrefobject.c: handle_callback')
+                    ExceptionUtils.printPythonLikeStackTrace(e);
+                }
+            }
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2, new ThreadFactory() {
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3, new ThreadFactory() {
         public Thread newThread(Runnable r) {
             Thread t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
@@ -137,7 +166,6 @@ public class AsyncHandler {
         static final int ASYNC_ARGS = 4;
 
         @Child private CallNode callNode = CallNode.create();
-        @Child private MaterializeFrameNode materializeNode = MaterializeFrameNodeGen.create();
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
@@ -182,7 +210,6 @@ public class AsyncHandler {
     }
 
     private final RootCallTarget callTarget;
-    CallNode callNode = CallNode.create();
 
     AsyncHandler(PythonLanguage language) {
         callTarget = Truffle.getRuntime().createCallTarget(new CallRootNode(language));
@@ -240,26 +267,7 @@ public class AsyncHandler {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 AsyncAction action;
                 while ((action = actions.poll()) != null) {
-                    Object callable = action.callable();
-                    if (callable != null) {
-                        Object[] arguments = action.arguments();
-                        Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARGS);
-                        System.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARGS, arguments.length);
-                        PArguments.setArgument(args, 0, callable);
-                        PArguments.setArgument(args, 1, action.frameIndex());
-                        PArguments.setArgument(args, 2, location);
-                        PArguments.setArgument(args, 3, frame);
-
-                        try {
-                            GenericInvokeNode.getUncached().execute(frame, callTarget, args);
-                        } catch (RuntimeException e) {
-                            // we cannot raise the exception here (well, we could, but CPython
-                            // doesn't), so we do what they do and just print it
-
-                            // TODO: print a nice Python stacktrace
-                            e.printStackTrace();
-                        }
-                    }
+                    action.execute(frame, location, callTarget);
                 }
             } finally {
                 executingScheduledActions.unlock();

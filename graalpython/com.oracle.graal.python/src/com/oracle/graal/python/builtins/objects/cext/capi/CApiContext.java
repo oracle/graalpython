@@ -40,21 +40,30 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.WeakrefCallbackAction;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.util.LinkedList;
+import java.util.Stack;
+
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class CApiContext extends CExtContext {
 
-    private final ReferenceQueue<PythonAbstractNativeObject> nativeObjectsQueue;
+    private final ReferenceQueue<Object> nativeObjectsQueue;
+    private final LinkedList<Object> stack = new LinkedList<>();
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -67,32 +76,45 @@ public final class CApiContext extends CExtContext {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            //if (reference instanceof PythonAbstractNativeObject) {
-                return new CApiReferenceCleanerAction((PReferenceType.WeakRefStorage) reference);
-            //} else {
-                //return null;
-            //}
+            if (reference instanceof NativeObjectReference) {
+                return new CApiReferenceCleanerAction(((NativeObjectReference) reference).getObject());
+            }
+            return null;
         });
     }
 
-    public ReferenceQueue<PythonAbstractNativeObject> getNativeObjectsQueue() {
+    public static class NativeObjectReference extends PhantomReference<PythonAbstractNativeObject> {
+        private final TruffleObject object;
+
+        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q) {
+            super(referent, q);
+            this.object = referent.getPtr();
+        }
+
+        public TruffleObject getObject() {
+            return object;
+        }
+    }
+
+    public ReferenceQueue<Object> getNativeObjectsQueue() {
         return nativeObjectsQueue;
     }
 
     private static class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
-        private final WeakRefStorage reference;
+        private final Object nativeObject;
 
-        public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
-            this.reference = reference;
+        public CApiReferenceCleanerAction(Object nativeObject) {
+            this.nativeObject = nativeObject;
         }
 
-        public Object callable() {
-            return reference.getCallback();
+        @Override
+        public void execute(VirtualFrame frame, Node location, RootCallTarget callTarget) {
+            PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_DECREF, nativeObject);
         }
+    }
 
-        public Object[] arguments() {
-            return new Object[]{reference.getRef()};
-        }
+    public void createNativeReference(PythonAbstractNativeObject nativeObject) {
+        stack.push(new NativeObjectReference(nativeObject, nativeObjectsQueue));
     }
 
 }

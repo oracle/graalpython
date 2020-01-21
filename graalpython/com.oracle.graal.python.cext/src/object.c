@@ -520,6 +520,7 @@ void PyObject_GC_Track(void *tp) {
 }
 
 void PyObject_GC_Del(void *tp) {
+	PyTruffle_Object_Free(tp);
 }
 
 
@@ -543,6 +544,14 @@ _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     if (op == NULL)
         return (PyVarObject *)PyErr_NoMemory();
     return PyObject_INIT_VAR(op, tp, nitems);
+}
+
+void Py_IncRef(PyObject *o) {
+    Py_XINCREF(o);
+}
+
+void Py_DecRef(PyObject *o) {
+    Py_XDECREF(o);
 }
 
 PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {

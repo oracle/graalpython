@@ -360,6 +360,16 @@ polyglot_typeid get_newfunc_typeid() {
     return polyglot_newfunc_typeid();
 }
 
+/** to be used from Java code only; calls INCREF */
+void PyTruffle_INCREF(PyObject* obj) {
+	Py_INCREF(obj);
+}
+
+/** to be used from Java code only; calls DECREF */
+void PyTruffle_DECREF(PyObject* obj) {
+	Py_DECREF(obj);
+}
+
 typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;

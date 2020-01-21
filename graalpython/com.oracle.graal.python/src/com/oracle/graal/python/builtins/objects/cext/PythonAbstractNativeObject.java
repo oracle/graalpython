@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -97,8 +98,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     public final TruffleObject object;
 
-    public PythonAbstractNativeObject(TruffleObject object) {
+    public PythonAbstractNativeObject(TruffleObject object, CApiContext nativeContext) {
         this.object = object;
+        // during initialization of the C API, we do not yet have a C API context
+        if(nativeContext != null) {
+            nativeContext.createNativeReference(this);
+        }
     }
 
     public int compareTo(Object o) {

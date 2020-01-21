@@ -86,7 +86,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         return WeakRefModuleBuiltinsFactory.getFactories();
     }
 
-    private static class WeakrefCallbackAction implements AsyncHandler.AsyncAction {
+    private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
         private final WeakRefStorage reference;
 
         public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
@@ -147,8 +147,8 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @Cached("create()") GetLazyClassNode getClassNode,
-                        @Cached("create()") IsBuiltinClassProfile profile) {
+                        @Cached GetLazyClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile profile) {
             Object actualCallback = callback instanceof PNone ? null : callback;
             LazyPythonClass clazz = getClassNode.execute(pythonObject);
 

@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFir
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -503,10 +504,12 @@ public abstract class CExtNodes {
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            PythonAbstractNativeObject obj = new PythonAbstractNativeObject(object);
-            new WeakReference<>(obj, context.getCApiContext().getNativeObjectsQueue());
-            return obj;
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                                     @Cached PCallCapiFunction callIncrefNode) {
+            CApiContext cApiContext = context.getCApiContext();
+            // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
+            callIncrefNode.call(NativeCAPISymbols.FUN_INCREF, object);
+            return new PythonAbstractNativeObject(object, cApiContext);
         }
 
         @Specialization

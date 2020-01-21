@@ -195,8 +195,8 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
 
 
-__attribute__((always_inline))
-inline void* native_to_java(void* obj) {
+MUST_INLINE
+void* native_to_java(PyObject* obj) {
     if (obj == NULL) {
         return Py_NoValue;
     } else if (obj == Py_None) {
@@ -212,24 +212,34 @@ inline void* native_to_java(void* obj) {
 
 extern void* native_to_java_exported(PyObject* obj);
 
-__attribute__((always_inline))
-inline void* native_to_java_slim(PyObject* obj) {
+MUST_INLINE
+void* native_to_java_slim(PyObject* obj) {
     if (!truffle_cannot_be_handle(obj)) {
         return truffle_managed_from_handle(obj);
     }
     return obj;
 }
 
-__attribute__((always_inline))
-inline PyTypeObject* native_type_to_java(PyTypeObject* type) {
+MUST_INLINE
+PyTypeObject* native_type_to_java(PyTypeObject* type) {
 	if (!truffle_cannot_be_handle(type)) {
         return (PyTypeObject *)truffle_managed_from_handle(type);
     }
     return type;
 }
 
-__attribute__((always_inline))
-inline int PyTruffle_Report_Allocation(PyObject* obj, Py_ssize_t size) {
+/* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
+MUST_INLINE
+void PyTruffle_Object_Free(void* ptr) {
+	// (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GC_Untrack", ptr);
+	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
+		(void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_Free", native_to_java(ptr));
+	} else {
+		free(ptr);
+	}
+}
+
+MUST_INLINE int PyTruffle_Report_Allocation(PyObject* obj, Py_ssize_t size) {
     return PyObject_AllocationReporter(obj, size);
 }
 
