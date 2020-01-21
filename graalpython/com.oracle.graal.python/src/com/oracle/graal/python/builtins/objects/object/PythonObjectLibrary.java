@@ -368,6 +368,9 @@ public abstract class PythonObjectLibrary extends Library {
             getDefaultNodes().getSubtypeProfile().enter();
             checkedReverseOp = true;
             result = otherLibrary.equalsInternal(other, receiver, threadState);
+            if (result != -1) {
+                return result == 1;
+            }
         }
 
         result = equalsInternal(receiver, other, threadState);
