@@ -57,7 +57,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
       WriteNameNodeGen SourceSection: [226,339]`__all__ = [↵        ...`
         Identifier: __all__
         ListLiteralNode SourceSection: [236,339]`[↵        'EnumMeta'...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [246,256]`'EnumMeta'`
           StringLiteralNode SourceSection: [266,272]`'Enum'`
           StringLiteralNode SourceSection: [274,283]`'IntEnum'`
@@ -65,6 +64,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           StringLiteralNode SourceSection: [293,302]`'IntFlag'`
           StringLiteralNode SourceSection: [312,318]`'auto'`
           StringLiteralNode SourceSection: [320,328]`'unique'`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [342,564]`def _is_descriptor(o...`
         Identifier: _is_descriptor
         FunctionDefinitionNode Name: _is_descriptor SourceSection: None
@@ -749,12 +749,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [2099,2249]`(↵                  ...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [2121,2130]`'_order_'`
                                                     StringLiteralNode SourceSection: [2132,2156]`'_create_pseudo_memb...`
                                                     StringLiteralNode SourceSection: [2178,2201]`'_generate_next_valu...`
                                                     StringLiteralNode SourceSection: [2203,2214]`'_missing_'`
                                                     StringLiteralNode SourceSection: [2216,2226]`'_ignore_'`
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [2088,2091]`key`
                                                     Frame: [1,key,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -888,10 +888,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             Op: __mod__
                                                           StringLiteralNode SourceSection: [2801,2848]`'_ignore_ cannot spe...`
                                                           TupleLiteralNode SourceSection: [2851,2862]`(already, )`
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [2852,2859]`already`
                                                               Frame: [3,already,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2790,2800]`ValueError`
                                                           Identifier: ValueError
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1004,7 +1004,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               Op: __mod__
                                                             StringLiteralNode SourceSection: [3311,3338]`'%r already defined ...`
                                                             TupleLiteralNode SourceSection: [3341,3357]`(key, self[key])`
-                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [3342,3345]`key`
                                                                 Frame: [1,key,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1015,6 +1014,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 ReadLocalVariableNode SourceSection: [3352,3355]`key`
                                                                   Frame: [1,key,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3301,3310]`TypeError`
                                                             Identifier: TypeError
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1586,7 +1586,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         YieldNode SourceSection: None
                                                           flagSlot: 0
                                                           TupleLiteralNode SourceSection: None
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadGeneratorFrameVariableNode SourceSection: [5304,5305]`k`
                                                               Frame: [0,k,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1599,6 +1598,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               ReadGeneratorFrameVariableNode SourceSection: [5317,5318]`k`
                                                                 Frame: [0,k,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: k
@@ -1913,11 +1913,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [17,methods,Illegal]
                                                 TupleLiteralNode SourceSection: [7289,7383]`('__getnewargs_ex__'...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   StringLiteralNode SourceSection: [7290,7309]`'__getnewargs_ex__'`
                                                   StringLiteralNode SourceSection: [7311,7327]`'__getnewargs__'`
                                                   StringLiteralNode SourceSection: [7353,7368]`'__reduce_ex__'`
                                                   StringLiteralNode SourceSection: [7370,7382]`'__reduce__'`
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                               IfNode SourceSection: [7400,7769]`if not any(m in memb...`
                                                 NotNodeGen SourceSection: [7403,7454]`not any(m in member_...`
                                                   PythonCallNodeGen SourceSection: [7407,7454]`any(m in member_type...`
@@ -2042,10 +2042,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [19,args,Illegal]
                                                     TupleLiteralNode SourceSection: [7927,7936]`(value, )`
-                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [7928,7933]`value`
                                                         Frame: [18,value,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [7971,7983]`args = value`
                                                     Identifier: args
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2069,10 +2069,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [19,args,Illegal]
                                                     TupleLiteralNode SourceSection: [8077,8085]`(args, )`
-                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [8078,8082]`args`
                                                         Frame: [19,args,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                 IfNode SourceSection: [8126,8629]`if not use_args:↵   ...`
                                                   NotNodeGen SourceSection: [8129,8141]`not use_args`
@@ -2479,11 +2479,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetIteratorExpressionNodeGen SourceSection: [10084,10138]`('__repr__', '__str_...`
                                               GetIteratorNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [10084,10138]`('__repr__', '__str_...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [10085,10095]`'__repr__'`
                                                 StringLiteralNode SourceSection: [10097,10106]`'__str__'`
                                                 StringLiteralNode SourceSection: [10108,10120]`'__format__'`
                                                 StringLiteralNode SourceSection: [10122,10137]`'__reduce_ex__'`
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         IfNode SourceSection: [10576,10934]`if Enum is not None:...`
                                           NotNodeGen SourceSection: [10579,10595]`Enum is not None`
@@ -3055,11 +3055,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
                                               ListLiteralNode SourceSection: [13460,13513]`['__class__', '__doc...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [13461,13472]`'__class__'`
                                                 StringLiteralNode SourceSection: [13474,13483]`'__doc__'`
                                                 StringLiteralNode SourceSection: [13485,13498]`'__members__'`
                                                 StringLiteralNode SourceSection: [13500,13512]`'__module__'`
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [13532,13551]`self._member_names_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names_
@@ -3872,18 +3872,18 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ObjectLiteralNode SourceSection: [15875,15879]`None`
                                             TupleLiteralNode SourceSection: [15856,15863]`(cls, )`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [15857,15860]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                            TupleLiteralNode SourceSection: [15885,15896]`(type, cls)`
                                               PythonObjectFactoryNodeGen SourceSection: None
+                                            TupleLiteralNode SourceSection: [15885,15896]`(type, cls)`
                                               ReadLocalVariableNode SourceSection: [15886,15890]`type`
                                                 Frame: [6,type,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [15892,15895]`cls`
                                                 Frame: [0,cls,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                         DestructuringAssignmentNodeGen SourceSection: [15905,15944]`_, first_enum = cls....`
                                           PythonCallNodeGen SourceSection: [15921,15944]`cls._get_mixins_(bas...`
                                             CallNodeGen SourceSection: None
@@ -3971,13 +3971,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Frame: [2,names,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [16168,16181]`(tuple, list)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [16169,16174]`tuple`
                                                       Identifier: tuple
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [16176,16180]`list`
                                                       Identifier: list
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [16150,16160]`isinstance`
                                                     Identifier: isinstance
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4003,12 +4003,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           BlockNode SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: [16236,16269]`original_names, name...`
                                               TupleLiteralNode SourceSection: [16260,16269]`names, []`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [16260,16265]`names`
                                                   Frame: [2,names,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ListLiteralNode SourceSection: [16267,16269]`[]`
                                                   PythonObjectFactoryNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp26
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4107,13 +4107,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       PythonCallNodeGen SourceSection: [16508,16535]`names.append((name, ...`
                                                         CallNodeGen SourceSection: None
                                                         TupleLiteralNode SourceSection: [16521,16534]`(name, value)`
-                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [16522,16526]`name`
                                                             Frame: [17,name,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [16528,16533]`value`
                                                             Frame: [15,value,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [16508,16513]`names`
                                                             Frame: [2,names,Illegal]
@@ -4154,7 +4154,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   DestructuringAssignmentNodeGen SourceSection: [16693,16738]`member_name, member_...`
                                                     TupleLiteralNode SourceSection: [16721,16738]`item, names[item]`
-                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [16721,16725]`item`
                                                         Frame: [20,item,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -4165,6 +4164,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadLocalVariableNode SourceSection: [16733,16737]`item`
                                                           Frame: [20,item,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <>temp30
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4287,13 +4287,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [22,exc,Illegal]
                                                 TupleLiteralNode SourceSection: [17171,17199]`(AttributeError, Val...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17172,17186]`AttributeError`
                                                     Identifier: AttributeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17188,17198]`ValueError`
                                                     Identifier: ValueError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                               SaveExceptionStateNodeGen SourceSection: None
                                           BlockNode SourceSection: None
@@ -4396,13 +4396,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [5,<return_val>,Illegal]
                                                 TupleLiteralNode SourceSection: [17730,17742]`object, Enum`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17730,17736]`object`
                                                     Identifier: object
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17738,17742]`Enum`
                                                     Identifier: Enum
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                           BlockNode SourceSection: [17964,17995]`member_type = first_...`
                                             WriteLocalVariableNodeGen SourceSection: None
@@ -4610,13 +4610,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [5,<return_val>,Illegal]
                                               TupleLiteralNode SourceSection: [19243,19266]`member_type, first_e...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [19243,19254]`member_type`
                                                   Frame: [1,member_type,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [19256,19266]`first_enum`
                                                   Frame: [2,first_enum,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [5,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -4791,13 +4791,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetIteratorExpressionNodeGen SourceSection: [20176,20201]`(member_type, first_...`
                                                           GetIteratorNodeGen SourceSection: None
                                                           TupleLiteralNode SourceSection: [20176,20201]`(member_type, first_...`
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [20177,20188]`member_type`
                                                               Frame: [1,member_type,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [20190,20200]`first_enum`
                                                               Frame: [2,first_enum,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
                                                     IfNode SourceSection: [20583,20645]`if __new__ is not No...`
                                                       NotNodeGen SourceSection: [20586,20605]`__new__ is not None`
@@ -4811,9 +4811,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetIteratorExpressionNodeGen SourceSection: [20113,20142]`('__new_member__', '...`
                                                   GetIteratorNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [20113,20142]`('__new_member__', '...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [20114,20130]`'__new_member__'`
                                                     StringLiteralNode SourceSection: [20132,20141]`'__new__'`
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [20667,20691]`__new__ = object.__n...`
                                                 Identifier: __new__
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4857,7 +4857,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [10,<return_val>,Illegal]
                                               TupleLiteralNode SourceSection: [21007,21034]`__new__, save_new, u...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [21007,21014]`__new__`
                                                   Frame: [3,__new__,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4867,6 +4866,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadLocalVariableNode SourceSection: [21026,21034]`use_args`
                                                   Frame: [8,use_args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [10,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -5274,7 +5274,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [22370,22392]`"%r is not a valid %...`
                                                 TupleLiteralNode SourceSection: [22395,22416]`(value, cls.__name__...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [22396,22401]`value`
                                                     Frame: [1,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5286,6 +5285,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [22403,22406]`cls`
                                                       Frame: [0,cls,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [22359,22369]`ValueError`
                                                 Identifier: ValueError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5347,7 +5347,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [22458,22471]`"<%s.%s: %r>"`
                                               TupleLiteralNode SourceSection: [22474,22543]`(↵                se...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [22492,22515]`self.__class__.__nam...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
@@ -5377,6 +5376,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [22530,22534]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -5425,7 +5425,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [22583,22590]`"%s.%s"`
                                               TupleLiteralNode SourceSection: [22593,22631]`(self.__class__.__na...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [22594,22617]`self.__class__.__nam...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
@@ -5447,6 +5446,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [22619,22623]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -5620,10 +5620,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __add__
                                               ListLiteralNode SourceSection: [22883,22921]`['__class__', '__doc...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [22884,22895]`'__class__'`
                                                 StringLiteralNode SourceSection: [22897,22906]`'__doc__'`
                                                 StringLiteralNode SourceSection: [22908,22920]`'__module__'`
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [22924,22938]`added_behavior`
                                                 Frame: [1,added_behavior,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -5857,7 +5857,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [23539,23571]`self.__class__, (sel...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [23539,23553]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
@@ -5867,7 +5866,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [23555,23571]`(self._value_, )`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [23556,23568]`self._value_`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _value_
@@ -5876,6 +5874,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [23556,23560]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6169,7 +6169,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             YieldNode SourceSection: [25215,25235]`(name, source[name])...`
                                                               flagSlot: 0
                                                               TupleLiteralNode SourceSection: [25215,25235]`(name, source[name])...`
-                                                                PythonObjectFactoryNodeGen SourceSection: None
                                                                 ReadGeneratorFrameVariableNode SourceSection: [25216,25220]`name`
                                                                   Frame: [0,name,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6182,6 +6181,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   ReadGeneratorFrameVariableNode SourceSection: [25229,25233]`name`
                                                                     Frame: [0,name,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                                PythonObjectFactoryNodeGen SourceSection: None
                                                               GeneratorAccessNode SourceSection: None
                                                           BlockNode SourceSection: None
                                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -6258,7 +6258,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                                         Frame: [1,<return_val>,Illegal]
                                                                       TupleLiteralNode SourceSection: [25391,25403]`(t[1], t[0])`
-                                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                                         GetItemNodeGen SourceSection: [25392,25396]`t[1]`
                                                                           ReadLocalVariableNode SourceSection: None
                                                                             Frame: [0,t,Illegal]
@@ -6271,6 +6270,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           IntegerLiteralNode SourceSection: [25400,25401]`0`
                                                                             Value: 0
+                                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                                 Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -7004,7 +7004,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Op: __mod__
                                                       StringLiteralNode SourceSection: [27330,27352]`"%r is not a valid %...`
                                                       TupleLiteralNode SourceSection: [27355,27376]`(value, cls.__name__...`
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [27356,27361]`value`
                                                           Frame: [1,value,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -7016,6 +7015,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           ReadLocalVariableNode SourceSection: [27363,27366]`cls`
                                                             Frame: [0,cls,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [27319,27329]`ValueError`
                                                       Identifier: ValueError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7286,7 +7286,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [28284,28297]`'<%s.%s: %r>'`
                                                 TupleLiteralNode SourceSection: [28300,28341]`(cls.__name__, self....`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [28301,28313]`cls.__name__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
@@ -7311,6 +7310,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [28328,28332]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         DestructuringAssignmentNodeGen SourceSection: [28350,28400]`members, uncovered =...`
                                           PythonCallNodeGen SourceSection: [28371,28400]`_decompose(cls, self...`
@@ -7361,7 +7361,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [28416,28429]`'<%s.%s: %r>'`
                                               TupleLiteralNode SourceSection: [28432,28584]`(↵                cl...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [28450,28462]`cls.__name__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
@@ -7460,6 +7459,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadLocalVariableNode SourceSection: [28553,28557]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7532,7 +7532,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [28693,28700]`'%s.%s'`
                                                 TupleLiteralNode SourceSection: [28703,28730]`(cls.__name__, self....`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [28704,28716]`cls.__name__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
@@ -7549,6 +7548,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNode SourceSection: [28718,28722]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         DestructuringAssignmentNodeGen SourceSection: [28739,28789]`members, uncovered =...`
                                           PythonCallNodeGen SourceSection: [28760,28789]`_decompose(cls, self...`
@@ -7629,7 +7629,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [28869,28876]`'%s.%r'`
                                                 TupleLiteralNode SourceSection: [28879,28913]`(cls.__name__, membe...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [28880,28892]`cls.__name__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
@@ -7649,6 +7648,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [28902,28903]`0`
                                                         Value: 0
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [28940,29091]`return '%s.%s' % (↵ ...`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -7659,7 +7659,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [28947,28954]`'%s.%s'`
                                                 TupleLiteralNode SourceSection: [28957,29091]`(↵                  ...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [28979,28991]`cls.__name__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
@@ -7750,6 +7749,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [29013,29016]`'|'`
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [5,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -8420,7 +8420,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     Op: __mod__
                                                   StringLiteralNode SourceSection: [30177,30199]`"%r is not a valid %...`
                                                   TupleLiteralNode SourceSection: [30202,30223]`(value, cls.__name__...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [30203,30208]`value`
                                                       Frame: [1,value,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -8432,6 +8431,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadLocalVariableNode SourceSection: [30210,30213]`cls`
                                                         Frame: [0,cls,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [30166,30176]`ValueError`
                                                   Identifier: ValueError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8547,10 +8547,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [3,need_to_create,Illegal]
                                                 ListLiteralNode SourceSection: [30495,30502]`[value]`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [30496,30501]`value`
                                                     Frame: [1,value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                               DestructuringAssignmentNodeGen SourceSection: [30554,30593]`_, extra_flags = _de...`
                                                 PythonCallNodeGen SourceSection: [30571,30593]`_decompose(cls, valu...`
                                                   CallNodeGen SourceSection: None
@@ -8834,7 +8834,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [31664,31685]`(self.__class__, int...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [31665,31679]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
@@ -8846,6 +8845,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31681,31684]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [31646,31656]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8955,7 +8955,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [31886,31907]`(self.__class__, int...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [31887,31901]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
@@ -8967,6 +8966,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31903,31906]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [31868,31878]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9069,7 +9069,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [32084,32105]`(self.__class__, int...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [32085,32099]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
@@ -9081,6 +9080,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [32101,32104]`int`
                                                   Identifier: int
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [32066,32076]`isinstance`
                                                 Identifier: isinstance
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9392,7 +9392,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               PythonCallNodeGen SourceSection: [32736,32774]`duplicates.append((n...`
                                 CallNodeGen SourceSection: None
                                 TupleLiteralNode SourceSection: [32754,32773]`(name, member.name)`
-                                  PythonObjectFactoryNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [32755,32759]`name`
                                     Frame: [2,name,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -9404,6 +9403,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ReadLocalVariableNode SourceSection: [32761,32767]`member`
                                       Frame: [3,member,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                  PythonObjectFactoryNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [32736,32746]`duplicates`
                                     Frame: [1,duplicates,Illegal]
@@ -9468,13 +9468,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [32846,32856]`"%s -> %s"`
                                               TupleLiteralNode SourceSection: [32859,32872]`(alias, name)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [32860,32865]`alias`
                                                   Frame: [0,alias,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [32867,32871]`name`
                                                   Frame: [1,name,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                         DestructuringAssignmentNodeGen SourceSection: None
                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -9531,13 +9531,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 Op: __mod__
                               StringLiteralNode SourceSection: [32932,32966]`'duplicate values fo...`
                               TupleLiteralNode SourceSection: [32985,33013]`(enumeration, alias_...`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [32986,32997]`enumeration`
                                   Frame: [0,enumeration,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [32999,33012]`alias_details`
                                   Frame: [4,alias_details,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [32921,32931]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9665,13 +9665,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         YieldNode SourceSection: [33513,33519]`(m, v)`
                                           flagSlot: 0
                                           TupleLiteralNode SourceSection: [33513,33519]`(m, v)`
-                                            PythonObjectFactoryNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [33514,33515]`m`
                                               Frame: [1,m,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [33517,33518]`v`
                                               Frame: [0,v,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                            PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: None
@@ -9789,13 +9789,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         YieldNode SourceSection: [33751,33757]`(m, v)`
                                           flagSlot: 0
                                           TupleLiteralNode SourceSection: [33751,33757]`(m, v)`
-                                            PythonObjectFactoryNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [33752,33753]`m`
                                               Frame: [1,m,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [33755,33756]`v`
                                               Frame: [0,v,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                            PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: None
@@ -10096,13 +10096,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [10,<return_val>,Illegal]
                         TupleLiteralNode SourceSection: [34432,34452]`members, not_covered...`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [34432,34439]`members`
                             Frame: [5,members,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [34441,34452]`not_covered`
                             Frame: [2,not_covered,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None

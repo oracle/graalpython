@@ -188,13 +188,13 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [1135,1154]`'%s at position %d'`
                                                 TupleLiteralNode SourceSection: [1157,1167]`(msg, pos)`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [1158,1161]`msg`
                                                     Frame: [1,msg,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [1163,1166]`pos`
                                                     Frame: [3,pos,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                             IfNode SourceSection: [1180,1302]`if isinstance(patter...`
                                               YesNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [1183,1207]`isinstance(pattern, ...`
@@ -289,7 +289,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                     Op: __mod__
                                                   StringLiteralNode SourceSection: [1470,1495]`'%s (line %d, column...`
                                                   TupleLiteralNode SourceSection: [1498,1528]`(msg, self.lineno, s...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [1499,1502]`msg`
                                                       Frame: [1,msg,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -309,6 +308,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                       ReadLocalVariableNode SourceSection: [1517,1521]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                           BlockNode SourceSection: [1555,1586]`self.lineno = self.c...`
                                             WriteLocalVariableNodeGen SourceSection: None
@@ -752,7 +752,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       YieldNode SourceSection: None
                                         flagSlot: 0
                                         TupleLiteralNode SourceSection: None
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [2075,2084]`item.name`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: name
@@ -764,6 +763,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           ReadGeneratorFrameVariableNode SourceSection: [2086,2090]`item`
                                             Frame: [0,item,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                          PythonObjectFactoryNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: item
@@ -1118,7 +1118,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           Op: __mod__
                                         StringLiteralNode SourceSection: [5709,5729]`"#define %s_%s %d\n"...`
                                         TupleLiteralNode SourceSection: [5732,5752]`(prefix, item, item)...`
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [5733,5739]`prefix`
                                             Frame: [2,prefix,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1128,6 +1127,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           ReadLocalVariableNode SourceSection: [5747,5751]`item`
                                             Frame: [4,item,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                          PythonObjectFactoryNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [5701,5702]`f`
                                           Frame: [0,f,Illegal]

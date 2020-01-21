@@ -6,7 +6,6 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,9]`[1,2,3,4]`
   Documentation: None
   InnerRootNode SourceSection: [0,9]`[1,2,3,4]`
     ListLiteralNode SourceSection: [0,9]`[1,2,3,4]`
-      PythonObjectFactoryNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [1,2]`1`
         Value: 1
       IntegerLiteralNode SourceSection: [3,4]`2`
@@ -15,3 +14,4 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,9]`[1,2,3,4]`
         Value: 3
       IntegerLiteralNode SourceSection: [7,8]`4`
         Value: 4
+      PythonObjectFactoryNodeGen SourceSection: None

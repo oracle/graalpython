@@ -1183,7 +1183,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [5,<return_val>,Illegal]
                         TupleLiteralNode SourceSection: [3739,3753]`meta, ns, kwds`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3739,3743]`meta`
                             Frame: [3,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1193,6 +1192,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           ReadLocalVariableNode SourceSection: [3749,3753]`kwds`
                             Frame: [2,kwds,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None

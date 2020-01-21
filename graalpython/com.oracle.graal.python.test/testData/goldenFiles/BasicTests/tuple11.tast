@@ -15,10 +15,10 @@ ModuleRootNode Name: <module 'tuple11'> SourceSection: [0,10]`a += 1,2,3`
             ReadNameNodeGen SourceSection: [0,1]`a`
               Identifier: a
             TupleLiteralNode SourceSection: [5,10]`1,2,3`
-              PythonObjectFactoryNodeGen SourceSection: None
               IntegerLiteralNode SourceSection: [5,6]`1`
                 Value: 1
               IntegerLiteralNode SourceSection: [7,8]`2`
                 Value: 2
               IntegerLiteralNode SourceSection: [9,10]`3`
                 Value: 3
+              PythonObjectFactoryNodeGen SourceSection: None

@@ -11,7 +11,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
       WriteNameNodeGen SourceSection: [379,961]`__all__ = ['abs', 'a...`
         Identifier: __all__
         ListLiteralNode SourceSection: [389,961]`['abs', 'add', 'and_...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [390,395]`'abs'`
           StringLiteralNode SourceSection: [397,402]`'add'`
           StringLiteralNode SourceSection: [404,410]`'and_'`
@@ -66,6 +65,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
           StringLiteralNode SourceSection: [935,944]`'truediv'`
           StringLiteralNode SourceSection: [946,953]`'truth'`
           StringLiteralNode SourceSection: [955,960]`'xor'`
+          PythonObjectFactoryNodeGen SourceSection: None
       ImportFromNode SourceSection: [963,995]`from builtins import...`
         Importee: builtins
         Level: 0
@@ -2450,9 +2450,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [5324,5343]`('_attrs', '_call')`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [5325,5333]`'_attrs'`
                               StringLiteralNode SourceSection: [5335,5342]`'_call'`
+                              PythonObjectFactoryNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [5349,5988]`def __init__(self, a...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -2537,10 +2537,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [5540,5547]`(attr,)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [5541,5545]`attr`
                                                   Frame: [1,attr,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             WriteLocalCellNodeGen SourceSection: [5560,5583]`names = attr.split('...`
                                               Identifier: names
                                               ReadLocalVariableNode SourceSection: None
@@ -2647,10 +2647,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __add__
                                                 TupleLiteralNode SourceSection: [5788,5795]`(attr,)`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [5789,5793]`attr`
                                                     Frame: [1,attr,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [5798,5803]`attrs`
                                                   Frame: [2,attrs,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2906,7 +2906,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [6084,6095]`'%s.%s(%s)'`
                                               TupleLiteralNode SourceSection: [6098,6249]`(self.__class__.__mo...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [6099,6124]`self.__class__.__mod...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __module__
@@ -2953,6 +2952,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [6215,6219]`', '`
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -2997,7 +2997,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [6292,6319]`self.__class__, self...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [6292,6306]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
@@ -3014,6 +3013,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [6308,6312]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3081,9 +3081,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [6582,6601]`('_items', '_call')`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [6583,6591]`'_items'`
                               StringLiteralNode SourceSection: [6593,6600]`'_call'`
+                              PythonObjectFactoryNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [6607,6965]`def __init__(self, i...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -3150,12 +3150,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [6689,6696]`(item,)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [6690,6694]`item`
                                                   ReadLocalVariableNode SourceSection: None
                                                     Frame: [1,item,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadFromCellNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [6709,6769]`def func(obj):↵     ...`
                                               Identifier: func
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3225,12 +3225,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
                                                   TupleLiteralNode SourceSection: [6835,6842]`(item,)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalCellNodeGen SourceSection: [6836,6840]`item`
                                                       ReadLocalVariableNode SourceSection: None
                                                         Frame: [1,item,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       ReadFromCellNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [6845,6850]`items`
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [2,items,Illegal]
@@ -3477,7 +3477,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [7061,7072]`'%s.%s(%s)'`
                                               TupleLiteralNode SourceSection: [7075,7222]`(self.__class__.__mo...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [7076,7101]`self.__class__.__mod...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __module__
@@ -3524,6 +3523,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [7188,7192]`', '`
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3568,7 +3568,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [7265,7292]`self.__class__, self...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [7265,7279]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
@@ -3585,6 +3584,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadLocalVariableNode SourceSection: [7281,7285]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3652,10 +3652,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [7587,7616]`('_name', '_args', '...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [7588,7595]`'_name'`
                               StringLiteralNode SourceSection: [7597,7604]`'_args'`
                               StringLiteralNode SourceSection: [7606,7615]`'_kwargs'`
+                              PythonObjectFactoryNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [7622,8011]`def __init__(*args, ...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -3935,7 +3935,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [1,args,Illegal]
                                           ListLiteralNode SourceSection: [8145,8163]`[repr(self._name)]`
-                                            PythonObjectFactoryNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [8146,8162]`repr(self._name)`
                                               CallNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [8151,8161]`self._name`
@@ -3949,6 +3948,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [8146,8150]`repr`
                                                 Identifier: repr
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            PythonObjectFactoryNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [8172,8206]`args.extend(map(repr...`
                                           PythonCallNodeGen SourceSection: [8172,8206]`args.extend(map(repr...`
                                             CallNodeGen SourceSection: None
@@ -4006,13 +4006,13 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               Op: __mod__
                                                             StringLiteralNode SourceSection: [8227,8234]`'%s=%r'`
                                                             TupleLiteralNode SourceSection: [8237,8243]`(k, v)`
-                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadGeneratorFrameVariableNode SourceSection: [8238,8239]`k`
                                                                 Frame: [0,k,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadGeneratorFrameVariableNode SourceSection: [8241,8242]`v`
                                                                 Frame: [1,v,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                           GeneratorAccessNode SourceSection: None
                                                       DestructuringAssignmentNodeGen SourceSection: None
                                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -4078,7 +4078,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [8293,8304]`'%s.%s(%s)'`
                                               TupleLiteralNode SourceSection: [8307,8436]`(self.__class__.__mo...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [8308,8333]`self.__class__.__mod...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __module__
@@ -4112,6 +4111,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [8420,8424]`', '`
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -4166,7 +4166,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,<return_val>,Illegal]
                                               TupleLiteralNode SourceSection: [8512,8554]`self.__class__, (sel...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [8512,8526]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
@@ -4179,7 +4178,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
                                                   TupleLiteralNode SourceSection: [8528,8541]`(self._name,)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [8529,8539]`self._name`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _name
@@ -4188,6 +4186,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       ReadLocalVariableNode SourceSection: [8529,8533]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [8544,8554]`self._args`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _args
@@ -4196,6 +4195,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     ReadLocalVariableNode SourceSection: [8544,8548]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                             ImportFromNode SourceSection: [8581,8610]`from functools impor...`
                                               Importee: functools
@@ -4216,7 +4216,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [3,<return_val>,Illegal]
                                                 TupleLiteralNode SourceSection: [8630,8693]`partial(self.__class...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [8630,8681]`partial(self.__class...`
                                                     CallNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [8638,8652]`self.__class__`
@@ -4257,6 +4256,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     ReadLocalVariableNode SourceSection: [8683,8687]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None

@@ -39,11 +39,11 @@ ModuleRootNode Name: <module 'try06'> SourceSection: [0,124]`for cls in (B, C, D
             GetIteratorExpressionNodeGen SourceSection: [11,20]`(B, C, D)`
               GetIteratorNodeGen SourceSection: None
               TupleLiteralNode SourceSection: [11,20]`(B, C, D)`
-                PythonObjectFactoryNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [12,13]`B`
                   Identifier: B
                 ReadNameNodeGen SourceSection: [15,16]`C`
                   Identifier: C
                 ReadNameNodeGen SourceSection: [18,19]`D`
                   Identifier: D
+                PythonObjectFactoryNodeGen SourceSection: None
           BlockNode SourceSection: None

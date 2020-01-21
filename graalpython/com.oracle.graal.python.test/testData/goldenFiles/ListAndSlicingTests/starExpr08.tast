@@ -42,17 +42,15 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
             GetIteratorExpressionNodeGen SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
               GetIteratorNodeGen SourceSection: None
               ListLiteralNode SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
-                PythonObjectFactoryNodeGen SourceSection: None
                 TupleLiteralNode SourceSection: [14,23]`(1, 2, 3)`
-                  PythonObjectFactoryNodeGen SourceSection: None
                   IntegerLiteralNode SourceSection: [15,16]`1`
                     Value: 1
                   IntegerLiteralNode SourceSection: [18,19]`2`
                     Value: 2
                   IntegerLiteralNode SourceSection: [21,22]`3`
                     Value: 3
-                TupleLiteralNode SourceSection: [25,37]`(4, 5, 6, 7)`
                   PythonObjectFactoryNodeGen SourceSection: None
+                TupleLiteralNode SourceSection: [25,37]`(4, 5, 6, 7)`
                   IntegerLiteralNode SourceSection: [26,27]`4`
                     Value: 4
                   IntegerLiteralNode SourceSection: [29,30]`5`
@@ -61,4 +59,6 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                     Value: 6
                   IntegerLiteralNode SourceSection: [35,36]`7`
                     Value: 7
+                  PythonObjectFactoryNodeGen SourceSection: None
+                PythonObjectFactoryNodeGen SourceSection: None
           BlockNode SourceSection: None

@@ -6,7 +6,6 @@ ModuleRootNode Name: <module 'list05'> SourceSection: [0,15]`[*{2}, 3, *[4]]`
   Documentation: None
   InnerRootNode SourceSection: [0,15]`[*{2}, 3, *[4]]`
     ListLiteralNode SourceSection: [0,15]`[*{2}, 3, *[4]]`
-      PythonObjectFactoryNodeGen SourceSection: None
       StarredExpressionNode SourceSection: None
         CastToListExpressionNodeGen SourceSection: None
           SetLiteralNode SourceSection: [2,5]`{2}`
@@ -18,6 +17,7 @@ ModuleRootNode Name: <module 'list05'> SourceSection: [0,15]`[*{2}, 3, *[4]]`
       StarredExpressionNode SourceSection: None
         CastToListExpressionNodeGen SourceSection: None
           ListLiteralNode SourceSection: [11,14]`[4]`
-            PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [12,13]`4`
               Value: 4
+            PythonObjectFactoryNodeGen SourceSection: None
+      PythonObjectFactoryNodeGen SourceSection: None

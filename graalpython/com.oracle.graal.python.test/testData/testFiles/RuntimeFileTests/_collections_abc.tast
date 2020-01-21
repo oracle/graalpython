@@ -30,7 +30,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
       WriteNameNodeGen SourceSection: [267,716]`__all__ = ["Awaitabl...`
         Identifier: __all__
         ListLiteralNode SourceSection: [277,716]`["Awaitable", "Corou...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [278,289]`"Awaitable"`
           StringLiteralNode SourceSection: [291,302]`"Coroutine"`
           StringLiteralNode SourceSection: [315,330]`"AsyncIterable"`
@@ -56,6 +55,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           StringLiteralNode SourceSection: [648,658]`"Sequence"`
           StringLiteralNode SourceSection: [660,677]`"MutableSequence"`
           StringLiteralNode SourceSection: [690,702]`"ByteString"`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [961,989]`__name__ = "collecti...`
         Identifier: __name__
         StringLiteralNode SourceSection: [972,989]`"collections.abc"`
@@ -1300,13 +1300,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExpressionStatementNode SourceSection: [4005,4009]`pass`
                                                 EmptyNode SourceSection: [4005,4009]`pass`
                                               TupleLiteralNode SourceSection: [3961,3991]`(GeneratorExit, Stop...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3962,3975]`GeneratorExit`
                                                   Identifier: GeneratorExit
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3977,3990]`StopIteration`
                                                   Identifier: StopIteration
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [4036,4089]`raise RuntimeError("...`
                                               PythonCallNodeGen SourceSection: [4042,4089]`RuntimeError("corout...`
                                                 CallNodeGen SourceSection: None
@@ -2238,13 +2238,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExpressionStatementNode SourceSection: [6143,6147]`pass`
                                                 EmptyNode SourceSection: [6143,6147]`pass`
                                               TupleLiteralNode SourceSection: [6094,6129]`(GeneratorExit, Stop...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6095,6108]`GeneratorExit`
                                                   Identifier: GeneratorExit
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6110,6128]`StopAsyncIteration`
                                                   Identifier: StopAsyncIteration
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [6174,6240]`raise RuntimeError("...`
                                               PythonCallNodeGen SourceSection: [6180,6240]`RuntimeError("asynch...`
                                                 CallNodeGen SourceSection: None
@@ -3505,13 +3505,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExpressionStatementNode SourceSection: [9039,9043]`pass`
                                                 EmptyNode SourceSection: [9039,9043]`pass`
                                               TupleLiteralNode SourceSection: [8995,9025]`(GeneratorExit, Stop...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [8996,9009]`GeneratorExit`
                                                   Identifier: GeneratorExit
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9011,9024]`StopIteration`
                                                   Identifier: StopIteration
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             RaiseNodeGen SourceSection: [9070,9123]`raise RuntimeError("...`
                                               PythonCallNodeGen SourceSection: [9076,9123]`RuntimeError("genera...`
                                                 CallNodeGen SourceSection: None
@@ -5535,13 +5535,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             GetIteratorExpressionNodeGen SourceSection: [12784,12797]`(self, other)`
                                               GetIteratorNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [12784,12797]`(self, other)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12785,12789]`self`
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12791,12796]`other`
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [12818,12851]`return self._from_it...`
                                           WriteLocalVariableNodeGen SourceSection: None
@@ -7780,8 +7780,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [18312,18323]`'_mapping',`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [18312,18322]`'_mapping'`
+                              PythonObjectFactoryNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [18329,18395]`def __init__(self, m...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -8501,7 +8501,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             YieldNode SourceSection: [19251,19282]`yield (key, self._ma...`
                                               flagSlot: 0
                                               TupleLiteralNode SourceSection: [19257,19282]`(key, self._mapping[...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [19258,19261]`key`
                                                   Frame: [1,key,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8517,6 +8516,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   ReadGeneratorFrameVariableNode SourceSection: [19277,19280]`key`
                                                     Frame: [1,key,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               GeneratorAccessNode SourceSection: None
                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
                                             Identifier: key
@@ -9248,13 +9248,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [20988,20998]`key, value`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [20988,20991]`key`
                                                 Frame: [1,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [20993,20998]`value`
                                                 Frame: [2,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -11072,7 +11072,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Frame: [2,i,Illegal]
                                               DestructuringAssignmentNodeGen SourceSection: [25579,25622]`self[i], self[n-i-1]...`
                                                 TupleLiteralNode SourceSection: [25602,25622]`self[n-i-1], self[i]...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetItemNodeGen SourceSection: [25602,25613]`self[n-i-1]`
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [0,self,Illegal]
@@ -11098,6 +11097,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ReadLocalVariableNode SourceSection: [25620,25621]`i`
                                                       Frame: [2,i,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <>temp4
                                                   WriteLocalFrameSlotNodeGen SourceSection: None

@@ -34,13 +34,13 @@ ModuleRootNode Name: <module 'dictComprehensions01'> SourceSection: [0,18]`{x:x 
                   YieldNode SourceSection: None
                     flagSlot: 0
                     TupleLiteralNode SourceSection: None
-                      PythonObjectFactoryNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [3,4]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonObjectFactoryNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x

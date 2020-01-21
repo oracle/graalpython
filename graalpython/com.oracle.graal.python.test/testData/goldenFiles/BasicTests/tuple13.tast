@@ -12,10 +12,10 @@ ModuleRootNode Name: <module 'tuple13'> SourceSection: [0,29]`b = (↵  (0x69, 0
         WriteNameNodeGen SourceSection: [0,29]`b = (↵  (0x69, 0x131...`
           Identifier: b
           TupleLiteralNode SourceSection: [4,29]`(↵  (0x69, 0x131), #...`
-            PythonObjectFactoryNodeGen SourceSection: None
             TupleLiteralNode SourceSection: [8,21]`(0x69, 0x131)`
-              PythonObjectFactoryNodeGen SourceSection: None
               IntegerLiteralNode SourceSection: [9,13]`0x69`
                 Value: 105
               IntegerLiteralNode SourceSection: [15,20]`0x131`
                 Value: 305
+              PythonObjectFactoryNodeGen SourceSection: None
+            PythonObjectFactoryNodeGen SourceSection: None

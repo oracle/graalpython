@@ -300,13 +300,13 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                                           Frame: [1,sb,Illegal]
                                                         ListLiteralNode SourceSection: [2344,2355]`[name, "("]`
-                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [2345,2349]`name`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [3,name,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [2351,2354]`"("`
+                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                       ElseNode SourceSection: [2368,2539]`for f in fields:↵   ...`
                                                         ForNode SourceSection: None
                                                           ForRepeatingNode SourceSection: None
@@ -1040,13 +1040,13 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                           Op: __mod__
                                                         StringLiteralNode SourceSection: [3535,3544]`"%s='%s'"`
                                                         TupleLiteralNode SourceSection: [3547,3552]`(k,v)`
-                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [3548,3549]`k`
                                                             Frame: [3,k,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [3550,3551]`v`
                                                             Frame: [4,v,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [3525,3527]`sb`
                                                           Frame: [1,sb,Illegal]
