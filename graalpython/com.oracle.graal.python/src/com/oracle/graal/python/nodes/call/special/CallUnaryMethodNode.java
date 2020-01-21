@@ -177,7 +177,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
             return builtinNode.execute(frame, receiver);
         }
 
-        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
+                        "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
         Object callMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                         @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                         @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -186,7 +187,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
             return builtinNode.execute(frame, receiver);
         }
 
-        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
+                        "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
         Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                         @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                         @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,

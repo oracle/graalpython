@@ -73,12 +73,13 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
     }
 
-    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
-                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
     }
 
@@ -87,7 +88,7 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
-                        @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
     }
 

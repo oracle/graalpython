@@ -91,7 +91,8 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
             return builtinNode.varArgExecute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
-        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
+                        "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
         Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                         @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,

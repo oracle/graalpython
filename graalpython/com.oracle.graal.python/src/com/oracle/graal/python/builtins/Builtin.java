@@ -64,9 +64,9 @@ public @interface Builtin {
     boolean isStaticmethod() default false;
 
     /**
-     * Most built-ins don't ever need the frame or they should be able to deal
-     * with receiving a {@code null} frame. This should be set to {@code true}
-     * for those builtins that do need a full frame.
+     * Most built-ins don't ever need the frame or they should be able to deal with receiving a
+     * {@code null} frame. This should be set to {@code true} for those builtins that do need a full
+     * frame.
      */
     boolean needsFrame() default false;
 
