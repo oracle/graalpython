@@ -183,6 +183,18 @@ public class JavaInteropTest {
         }
 
         @Test
+        public void javaArrayBytes() {
+            String source = "import java\n" +
+                            "array = java.type(\"short[]\")(4)\n" +
+                            "array[0] = 1\n" +
+                            "array[1] = 2\n" +
+                            "array[2] = 3\n" +
+                            "array[3] = 4\n" +
+                            "print(bytes(array))\n\n";
+            assertPrints("b'\\x01\\x02\\x03\\x04'\n", source);
+        }
+
+        @Test
         public void testPassingFloats() throws UnsupportedEncodingException {
             String source = "import polyglot\n" +
                             "@polyglot.export_value\n" +
