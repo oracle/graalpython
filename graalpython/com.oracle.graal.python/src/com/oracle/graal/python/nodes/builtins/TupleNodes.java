@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import java.util.ArrayList;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -49,14 +47,11 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.builtins.ListNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -107,41 +102,16 @@ public abstract class TupleNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
         PTuple tuple(VirtualFrame frame, LazyPythonClass cls, Object iterable,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
-
-            Object iterator = getIterator.executeWith(frame, iterable);
-            ArrayList<Object> internalStorage = makeList();
-            while (true) {
-                try {
-                    addToList(internalStorage, next.execute(frame, iterator));
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    return factory.createTuple(cls, listToArray(internalStorage));
-                }
-            }
-        }
-
-        @TruffleBoundary
-        private static ArrayList<Object> makeList() {
-            return new ArrayList<>();
-        }
-
-        @TruffleBoundary
-        private static void addToList(ArrayList<Object> list, Object obj) {
-            list.add(obj);
-        }
-
-        @TruffleBoundary
-        private static Object[] listToArray(ArrayList<Object> list) {
-            return list.toArray();
+                        @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached("create()") CreateStorageFromIteratorNode storageNode) {
+            Object iterObj = getIteratorNode.executeWith(frame, iterable);
+            return factory.createTuple(cls, storageNode.execute(frame, iterObj));
         }
 
         @Fallback
         public PTuple tuple(@SuppressWarnings("unused") LazyPythonClass cls, Object value) {
             CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("list does not support iterable object " + value);
+            throw new RuntimeException("tuple does not support iterable object " + value);
         }
 
         protected boolean createNewTuple(LazyPythonClass cls, Object iterable) {
