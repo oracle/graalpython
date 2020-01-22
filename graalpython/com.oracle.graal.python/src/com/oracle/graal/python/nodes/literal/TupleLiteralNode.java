@@ -27,13 +27,20 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -71,18 +78,51 @@ public final class TupleLiteralNode extends SequenceLiteralNode {
 
     @ExplodeLoop
     private PTuple expandingTuple(VirtualFrame frame) {
+        SequenceStorage storage;
         // we will usually have more than 'values.length' elements
-        SequenceStorage storage = new ObjectSequenceStorage(values.length);
+        switch (type) {
+            case Uninitialized:
+            case Empty:
+                storage = EmptySequenceStorage.INSTANCE;
+                break;
+            case Boolean:
+                storage = new BoolSequenceStorage(values.length);
+                break;
+            case Byte:
+                storage = new ByteSequenceStorage(values.length);
+                break;
+            case Double:
+                storage = new DoubleSequenceStorage(values.length);
+                break;
+            case List:
+                storage = new ListSequenceStorage(values.length);
+                break;
+            case Tuple:
+                storage = new TupleSequenceStorage(values.length);
+                break;
+            case Int:
+                storage = new IntSequenceStorage(values.length);
+                break;
+            case Long:
+                storage = new LongSequenceStorage(values.length);
+                break;
+            default:
+                storage = new ObjectSequenceStorage(values.length);
+                break;
+        }
         for (ExpressionNode n : values) {
             if (n instanceof StarredExpressionNode) {
                 SequenceStorage addElements = ((StarredExpressionNode) n).getStorage(frame);
                 storage = ensureConcatStoragesNode().execute(storage, addElements);
             } else {
                 Object element = n.execute(frame);
-                storage = ensureAppendNode().execute(storage, element, NoGeneralizationNode.DEFAULT);
+                storage = ensureAppendNode().execute(storage, element, ListGeneralizationNode.SUPPLIER);
             }
         }
-        type = storage.getElementType();
+        if (type != storage.getElementType()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            type = storage.getElementType();
+        }
         return factory.createTuple(storage);
     }
 
