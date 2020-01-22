@@ -275,7 +275,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
-        static int doObRefcnt(@SuppressWarnings("unused") Object o, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static long doObRefcnt(@SuppressWarnings("unused") Object o, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return nativeWrapper.getRefCount();
         }
 
@@ -955,7 +955,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
-        static int doObRefcnt(@SuppressWarnings("unused") Object o, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, int value) {
+        static long doObRefcnt(@SuppressWarnings("unused") Object o, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long value) {
             nativeWrapper.setRefCount(value);
             return value;
         }

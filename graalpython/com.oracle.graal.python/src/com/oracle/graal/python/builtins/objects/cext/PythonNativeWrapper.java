@@ -57,8 +57,14 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     private Object delegate;
     private Object nativePointer;
 
-    /** equivalent to {@code ob_refcnt}; needed to deallocate handles */
-    private int refCount;
+    /**
+     * Equivalent to {@code ob_refcnt}. We also need to maintain the reference count for native
+     * wrappers because otherwise we can never free the handles. The initial value is set to
+     * {@code 1} because each object has just one wrapper and when the wrapper is created, the
+     * object already exists which means in CPython the {@code PyObject_Init} would already have
+     * been called. The object init function sets the reference count to one.
+     */
+    private long refCount = 1;
 
     public PythonNativeWrapper() {
     }
@@ -71,15 +77,15 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         refCount++;
     }
 
-    public final int decreaseRefCount() {
+    public final long decreaseRefCount() {
         return --refCount;
     }
 
-    public final int getRefCount() {
+    public final long getRefCount() {
         return refCount;
     }
 
-    public final void setRefCount(int refCount) {
+    public final void setRefCount(long refCount) {
         this.refCount = refCount;
     }
 
