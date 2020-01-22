@@ -381,7 +381,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile notMemoryview,
                         @Cached BranchProfile notBuffer,
                         @Cached BranchProfile notMmap,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
@@ -408,28 +409,30 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
             notMmap.enter();
             // NULL pointer
-            return getNativeNullNode.execute();
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
         static Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (getAttrNode.execute(object, __LEN__) != PNone.NO_VALUE) {
                 return new PySequenceMethodsWrapper(object);
             } else {
-                return toSulongNode.execute(PNone.NO_VALUE);
+                return toSulongNode.execute(getNativeNullNode.execute());
             }
         }
 
         @Specialization(guards = "eq(TP_AS_MAPPING, key)", limit = "1")
         static Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @CachedLibrary("object") PythonObjectLibrary pythonTypeLibrary,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (pythonTypeLibrary.isSequenceType(object)) {
                 return new PyMappingMethodsWrapper(object);
             } else {
-                return toSulongNode.execute(PNone.NO_VALUE);
+                return toSulongNode.execute(getNativeNullNode.execute());
             }
         }
 
@@ -483,12 +486,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
         static Object doTpWeaklistoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object val = getAttrNode.execute(object, __WEAKLISTOFFSET__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
             if (val == PNone.NO_VALUE) {
-                return getNativeNullNode.execute();
+                return toSulongNode.execute(getNativeNullNode.execute());
             }
             return val;
         }
@@ -511,16 +515,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_GETATTR, key)")
         static Object doTpGetattr(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             // we do not provide 'tp_getattr'; code will usually then use 'tp_getattro'
-            return toSulongNode.execute(PNone.NO_VALUE);
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
 
         @Specialization(guards = "eq(TP_SETATTR, key)")
         static Object doTpSetattr(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             // we do not provide 'tp_setattr'; code will usually then use 'tp_setattro'
-            return toSulongNode.execute(PNone.NO_VALUE);
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
