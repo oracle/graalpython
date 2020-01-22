@@ -126,6 +126,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -287,7 +288,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTuple createEmptyTuple(LazyPythonClass cls) {
-        return trace(new PTuple(cls, new Object[0]));
+        return trace(new PTuple(cls, EmptySequenceStorage.INSTANCE));
     }
 
     public final PTuple createTuple(Object[] objects) {
