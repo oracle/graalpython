@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
@@ -94,7 +95,7 @@ public final class TupleLiteralNode extends SequenceLiteralNode {
     private SequenceStorageNodes.ConcatNode ensureConcatStoragesNode() {
         if (concatStoragesNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            concatStoragesNode = insert(SequenceStorageNodes.ConcatNode.create());
+            concatStoragesNode = insert(SequenceStorageNodes.ConcatNode.create(ListGeneralizationNode::create));
         }
         return concatStoragesNode;
     }

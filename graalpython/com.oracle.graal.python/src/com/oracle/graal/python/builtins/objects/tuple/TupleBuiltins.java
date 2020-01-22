@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -507,9 +507,13 @@ public class TupleBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization
         PTuple doPTuple(PTuple left, PTuple right,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
             return factory().createTuple(concatenated);
+        }
+
+        protected static SequenceStorageNodes.ConcatNode createConcat() {
+            return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
         }
 
         @Fallback
