@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -160,12 +160,6 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         public boolean doInt(long value1, long value2) {
             return value1 == value2;
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public boolean doPInt(PInt value1, PInt value2) {
-            return value1.getValue().equals(value2.getValue());
         }
 
         @Specialization

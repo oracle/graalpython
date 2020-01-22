@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,23 +25,23 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class IfNode extends StatementNode {
 
-    @Child private CastToBooleanNode condition;
+    @Child private CoerceToBooleanNode condition;
     @Child private StatementNode then;
     @Child private StatementNode orelse;
 
-    public IfNode(CastToBooleanNode condition, StatementNode then, StatementNode orelse) {
+    public IfNode(CoerceToBooleanNode condition, StatementNode then, StatementNode orelse) {
         this.condition = condition;
         this.then = then;
         this.orelse = orelse;
     }
 
-    public CastToBooleanNode getCondition() {
+    public CoerceToBooleanNode getCondition() {
         return condition;
     }
 

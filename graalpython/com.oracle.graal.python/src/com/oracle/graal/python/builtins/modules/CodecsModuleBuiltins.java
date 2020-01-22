@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -506,7 +506,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CodecsDecodeNode extends EncodeBaseNode {
         @Child private GetInternalByteArrayNode toByteArrayNode;
         @Child private CastToJavaStringNode castEncodingToStringNode;
-        @Child private CastToBooleanNode castToBooleanNode;
+        @Child private CoerceToBooleanNode castToBooleanNode;
 
         @Specialization
         Object decode(VirtualFrame frame, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
@@ -583,7 +583,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
             if (castToBooleanNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
             }
             return castToBooleanNode.executeBoolean(frame, object);
         }

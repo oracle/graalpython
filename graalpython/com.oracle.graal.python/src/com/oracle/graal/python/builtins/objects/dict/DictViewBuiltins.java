@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
@@ -77,8 +79,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -93,6 +94,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView})
@@ -150,8 +152,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization
         boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getDictItemNode,
-                        @Cached("createCmpNode()") BinaryComparisonNode callEqNode,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castToBoolean,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
@@ -161,11 +163,15 @@ public final class DictViewBuiltins extends PythonBuiltins {
             }
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = getDictItemNode.execute(frame, dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0));
-            return value != null && castToBoolean.executeBoolean(frame, callEqNode.executeWith(frame, value, getTupleItemNode.execute(frame, tupleStorage, 1)));
-        }
-
-        protected static BinaryComparisonNode createCmpNode() {
-            return BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
+            if (value != null) {
+                if (hasFrame.profile(frame != null)) {
+                    return lib.equalsWithState(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, PArguments.getThreadState(frame));
+                } else {
+                    return lib.equals(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib);
+                }
+            } else {
+                return false;
+            }
         }
     }
 
@@ -177,7 +183,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Child GetIteratorNode iter = GetIteratorNode.create();
         @Child GetNextNode next;
         @Child LookupAndCallBinaryNode contains;
-        @Child CastToBooleanNode cast;
+        @Child CoerceToBooleanNode cast;
         @CompilationFinal IsBuiltinClassProfile stopProfile;
 
         private GetNextNode getNext() {
@@ -196,10 +202,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return contains;
         }
 
-        private CastToBooleanNode getCast() {
+        private CoerceToBooleanNode getCast() {
             if (cast == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                cast = insert(CastToBooleanNode.createIfTrueNode());
+                cast = insert(CoerceToBooleanNode.createIfTrueNode());
             }
             return cast;
         }

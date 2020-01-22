@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -201,5 +202,16 @@ final class DefaultPythonObjectExports {
                         @CachedLibrary("receiver") InteropLibrary lib) {
             return !lib.isNull(receiver);
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    static int equalsInternal(Object receiver, Object other, ThreadState threadState) {
+        return receiver == other ? 1 : -1;
+    }
+
+    @ExportMessage
+    static boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary oLib, ThreadState state) {
+        return receiver == other || oLib.equalsInternal(receiver, other, state) == 1;
     }
 }

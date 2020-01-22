@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -92,6 +92,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
+        CompilerAsserts.neverPartOfCompilation();
         RootNode functionRootNode = getFunctionRootNode();
         if (functionRootNode instanceof BuiltinFunctionRootNode) {
             return ((BuiltinFunctionRootNode) functionRootNode).getFactory();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -62,6 +62,13 @@ public @interface Builtin {
     boolean isClassmethod() default false;
 
     boolean isStaticmethod() default false;
+
+    /**
+     * Most built-ins don't ever need the frame or they should be able to deal with receiving a
+     * {@code null} frame. This should be set to {@code true} for those builtins that do need a full
+     * frame.
+     */
+    boolean needsFrame() default false;
 
     /**
      * By default the caller frame bit is set on-demand, but for some builtins it might be useful to

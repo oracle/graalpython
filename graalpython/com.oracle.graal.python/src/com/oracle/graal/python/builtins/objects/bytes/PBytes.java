@@ -40,6 +40,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
@@ -82,6 +83,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         }
     }
 
+    @Ignore
     @Override
     public final boolean equals(Object other) {
         // TODO(fa) really required ?
@@ -92,6 +94,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         }
     }
 
+    @Ignore
     public final boolean equals(PSequence other) {
         PSequence otherSeq = other;
         SequenceStorage otherStore = otherSeq.getSequenceStorage();

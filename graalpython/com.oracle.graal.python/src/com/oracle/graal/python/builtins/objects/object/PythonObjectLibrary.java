@@ -45,11 +45,17 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -59,6 +65,8 @@ import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 /**
  * The standard Python object library. This implements a general-purpose Python object interface.
@@ -218,6 +226,194 @@ public abstract class PythonObjectLibrary extends Library {
     public long hash(Object receiver) {
         return hashWithState(receiver, null);
     }
+
+    @SuppressWarnings("static-method")
+    public final long hash(boolean receiver) {
+        return DefaultPythonBooleanExports.hash(receiver);
+    }
+
+    @SuppressWarnings("static-method")
+    public final long hash(int receiver) {
+        return DefaultPythonIntegerExports.hash(receiver);
+    }
+
+    @SuppressWarnings("static-method")
+    public final long hash(long receiver) {
+        return DefaultPythonLongExports.hash(receiver);
+    }
+
+    @SuppressWarnings("static-method")
+    public final long hash(double receiver) {
+        return DefaultPythonDoubleExports.hash(receiver);
+    }
+
+    private static class DefaultNodes extends Node {
+        private static final byte REVERSE_COMP = 0b001;
+        private static final byte LEFT_COMPARE = 0b010;
+        private static final byte SUBT_COMPARE = 0b100;
+
+        @Child private IsSubtypeNode isSubtype;
+        @Child private IsSameTypeNode isSameType;
+        @CompilationFinal byte state = 0;
+
+        protected IsSubtypeNode getIsSubtypeNode() {
+            if (isSubtype == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                isSubtype = insert(IsSubtypeNode.create());
+            }
+            return isSubtype;
+        }
+
+        protected IsSameTypeNode getIsSameTypeNode() {
+            if (isSameType == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameType = insert(IsSameTypeNodeGen.create());
+            }
+            return isSameType;
+        }
+
+        protected void enterReverseCompare() {
+            if ((state & REVERSE_COMP) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                state |= REVERSE_COMP;
+            }
+        }
+
+        protected void enterLeftCompare() {
+            if ((state & LEFT_COMPARE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                state |= LEFT_COMPARE;
+            }
+        }
+
+        protected void enterSubtypeCompare() {
+            if ((state & SUBT_COMPARE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                state |= SUBT_COMPARE;
+            }
+        }
+
+        private static final class Disabled extends DefaultNodes {
+            private static final Disabled INSTANCE = new Disabled();
+
+            @Override
+            protected IsSubtypeNode getIsSubtypeNode() {
+                return IsSubtypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected IsSameTypeNode getIsSameTypeNode() {
+                return IsSameTypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected void enterReverseCompare() {
+            }
+
+            @Override
+            protected void enterLeftCompare() {
+            }
+
+            @Override
+            protected void enterSubtypeCompare() {
+            }
+        }
+
+        private static DefaultNodes create() {
+            return new DefaultNodes();
+        }
+
+        private static DefaultNodes getUncached() {
+            return Disabled.INSTANCE;
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+    }
+
+    // to conserve memory, any default nodes are children of this field, so we
+    // only have one additional word per PythonObjectLibrary if these are not
+    // used.
+    @Child private DefaultNodes defaultNodes;
+
+    private final DefaultNodes getDefaultNodes() {
+        if (isAdoptable()) {
+            if (defaultNodes == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                defaultNodes = insert(DefaultNodes.create());
+            }
+            return defaultNodes;
+        } else {
+            return DefaultNodes.getUncached();
+        }
+    }
+
+    /**
+     * Compare {@code receiver} to {@code other}. If the receiver does not know how to compare
+     * itself to the argument, the comparison is tried in reverse. This implements
+     * {@code PyObject_RichCompareBool} (which calls {@code do_richcompare}) for the {@code __eq__}
+     * operator.
+     *
+     * Exporters of this library can override this message for performance.
+     *
+     * @param receiver - the lhs, tried first
+     * @param other - the rhs, tried only if lhs does not know how to compare itself here
+     * @param otherLibrary - a PythonObjectLibrary that accepts {@code other}. Used for the reverse
+     *            dispatch.
+     */
+    public boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary otherLibrary, ThreadState threadState) {
+        if (receiver == other) {
+            return true; // guarantee
+        }
+        boolean checkedReverseOp = false;
+
+        LazyPythonClass leftClass = getLazyPythonClass(receiver);
+        LazyPythonClass rightClass = otherLibrary.getLazyPythonClass(other);
+        int result;
+        boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
+        if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
+            getDefaultNodes().enterSubtypeCompare();
+            checkedReverseOp = true;
+            result = otherLibrary.equalsInternal(other, receiver, threadState);
+            if (result != -1) {
+                return result == 1;
+            }
+        }
+        getDefaultNodes().enterLeftCompare();
+        result = equalsInternal(receiver, other, threadState);
+        if (result != -1) {
+            return result == 1;
+        }
+        if (!isSameType && !checkedReverseOp) {
+            getDefaultNodes().enterReverseCompare();
+            result = otherLibrary.equalsInternal(other, receiver, threadState);
+        }
+
+        // we already checked for identity equality above, so if neither side
+        // knows what to do, they are not equal
+        return result == 1;
+    }
+
+    /**
+     * @see #equalsWithState
+     */
+    public boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
+        return equalsWithState(receiver, other, otherLibrary, null);
+    }
+
+    /**
+     * Compare {@code receiver} to {@code other} using {@code __eq__}.
+     *
+     * @param threadState may be {@code null}
+     * @return 0 if not equal, 1 if equal, -1 if {@code __eq__} returns {@code NotImplemented}
+     */
+    public abstract int equalsInternal(Object receiver, Object other, ThreadState threadState);
 
     /**
      * Checks whether the receiver is a Python an indexable object. As described in the

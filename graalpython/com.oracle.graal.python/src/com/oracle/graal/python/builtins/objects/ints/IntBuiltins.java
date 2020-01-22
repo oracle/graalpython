@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1416,7 +1416,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqPiPi(PInt a, PInt b) {
-            return a.equals(b);
+            return a.compareTo(b) == 0;
         }
 
         @Specialization
@@ -1521,7 +1521,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqPiPi(PInt a, PInt b) {
-            return !a.equals(b);
+            return a.compareTo(b) != 0;
         }
 
         @SuppressWarnings("unused")
@@ -1564,9 +1564,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) < 0;
+            return left.compareTo(right) < 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
@@ -1645,9 +1644,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) <= 0;
+            return left.compareTo(right) <= 0;
         }
 
         @SuppressWarnings("unused")
@@ -1691,9 +1689,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) > 0;
+            return left.compareTo(right) > 0;
         }
 
         @SuppressWarnings("unused")
@@ -1737,9 +1734,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
-            return left.getValue().compareTo(right.getValue()) >= 0;
+            return left.compareTo(right) >= 0;
         }
 
         @SuppressWarnings("unused")

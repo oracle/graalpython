@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
@@ -100,10 +101,13 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -599,7 +603,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
-                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object lenFunc = getLenNode.execute(this, __LEN__);
@@ -607,10 +611,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             Object lenResult;
             int len;
             if (gotState.profile(state == null)) {
-                lenResult = callNode.execute(lenFunc, this);
+                lenResult = callNode.executeObject(lenFunc, this);
                 len = lib.asSize(lenResult);
             } else {
-                lenResult = callNode.execute(PArguments.frameForCall(state), lenFunc, this);
+                lenResult = callNode.executeObject(PArguments.frameForCall(state), lenFunc, this);
                 len = lib.asSizeWithState(lenResult, state);
             }
             if (ltZero.profile(len < 0)) {
@@ -706,7 +710,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Exclusive @Cached CallNode callNode) {
+                    @Exclusive @Cached CallUnaryMethodNode callNode) {
         // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
         // in the message impls in PNone and PInt
         Object boolAttr = lookupAttrs.execute(this, __BOOL__);
@@ -716,9 +720,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             // calling __len__
             Object result;
             if (gotState.profile(state == null)) {
-                result = callNode.execute(boolAttr, this);
+                result = callNode.executeObject(boolAttr, this);
             } else {
-                result = callNode.execute(PArguments.frameForCall(state), boolAttr, this);
+                result = callNode.executeObject(PArguments.frameForCall(state), boolAttr, this);
             }
             try {
                 return castToBoolean.execute(result);
@@ -752,16 +756,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public long hashWithState(ThreadState state,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupHashAttributeNode,
-                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached CastToJavaLongNode castToLong,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         Object hashAttr = getHashAttr(lookupHashAttributeNode, raise, lib);
         Object result;
         if (gotState.profile(state == null)) {
-            result = callNode.execute(hashAttr, this);
+            result = callNode.executeObject(hashAttr, this);
         } else {
-            result = callNode.execute(PArguments.frameForCall(state), hashAttr, this);
+            result = callNode.executeObject(PArguments.frameForCall(state), hashAttr, this);
         }
         // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
         // hash call is always a plain long, forcibly and lossy read from memory.
@@ -769,6 +773,37 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             return castToLong.execute(result);
         } catch (CastToJavaLongNode.CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, "__hash__ method should return an integer");
+        }
+    }
+
+    @ExportMessage
+    public int equalsInternal(Object other, ThreadState state,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Cached IsExpressionNode.IsNode isNode,
+                    @Exclusive @Cached CallBinaryMethodNode callNode,
+                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupEqAttrNode) {
+        Object eqAttr = lookupEqAttrNode.execute(this, __EQ__);
+        if (eqAttr == PNone.NO_VALUE) {
+            // isNode specialization represents the branch profile
+            // c.f.: Python always falls back to identity comparison in this case
+            return isNode.execute(this, other) ? 1 : -1;
+        } else {
+            Object result;
+            if (gotState.profile(state == null)) {
+                result = callNode.executeObject(eqAttr, this, other);
+            } else {
+                result = callNode.executeObject(PArguments.frameForCall(state), eqAttr, this, other);
+            }
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return -1;
+            } else {
+                if (gotState.profile(state == null)) {
+                    return lib.isTrue(result) ? 1 : 0;
+                } else {
+                    return lib.isTrueWithState(result, state) ? 1 : 0;
+                }
+            }
         }
     }
 
@@ -789,7 +824,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public Object asIndexWithState(ThreadState state,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
@@ -805,9 +840,9 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
         Object result;
         if (gotState.profile(state == null)) {
-            result = callNode.execute(indexAttr, this);
+            result = callNode.executeObject(indexAttr, this);
         } else {
-            result = callNode.execute(PArguments.frameForCall(state), indexAttr, this);
+            result = callNode.executeObject(PArguments.frameForCall(state), indexAttr, this);
         }
 
         if (resultProfile.profile(!isSubtype.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {

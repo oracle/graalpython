@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -955,7 +955,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.split
-    @Builtin(name = "split", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "split", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class SplitNode extends PythonTernaryBuiltinNode {
 
@@ -1079,7 +1079,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.split
-    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
+    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"}, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class RSplitNode extends PythonTernaryBuiltinNode {
 
@@ -1390,7 +1390,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, needsFrame = true)
     @GenerateNodeFactory
     public abstract static class IndexNode extends PythonQuaternaryBuiltinNode {
 
@@ -1526,10 +1526,17 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         String doStringObject(VirtualFrame frame, String left, Object right,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             try {
-                return doStringInt(left, lib.asSizeWithState(right, PArguments.getThreadState(frame)));
+                int repeat;
+                if (hasFrame.profile(frame != null)) {
+                    repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
+                } else {
+                    repeat = lib.asSize(right);
+                }
+                return doStringInt(left, repeat);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
                 throw raise(MemoryError);
@@ -1538,11 +1545,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object times,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            return doStringObject(frame, selfStr, times, lib, typeErrorProfile);
+            return doStringObject(frame, selfStr, times, hasFrame, lib, typeErrorProfile);
         }
 
         @TruffleBoundary
@@ -1866,7 +1874,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zfill", minNumOfPositionalArgs = 2)
+    @Builtin(name = "zfill", minNumOfPositionalArgs = 2, needsFrame = true)
     @GenerateNodeFactory
     abstract static class ZFillNode extends PythonBinaryBuiltinNode {
 
@@ -2112,8 +2120,14 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public String doString(VirtualFrame frame, String primary, Object idx,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("idx") PythonObjectLibrary lib) {
-            int index = lib.asSizeWithState(idx, PArguments.getThreadState(frame));
+            int index;
+            if (hasFrame.profile(frame != null)) {
+                index = lib.asSizeWithState(idx, PArguments.getThreadState(frame));
+            } else {
+                index = lib.asSize(idx);
+            }
             try {
                 if (index < 0) {
                     index += primary.length();

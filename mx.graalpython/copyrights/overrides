@@ -407,7 +407,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/St
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/WhileNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/BinaryComparisonNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/BinaryOpNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/CastToBooleanNode.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/CoerceToBooleanNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/UnaryOpNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/DestructuringAssignmentNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/frame/FrameSlotIDs.java,zippy.copyright

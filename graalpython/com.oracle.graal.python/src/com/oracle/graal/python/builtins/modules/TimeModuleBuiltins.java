@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -193,7 +194,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         /**
          * The maximum date, which are systems able to handle is 2262 04 11. This corresponds to the
          * 64 bit long.
-         * 
+         *
          * @return
          */
         @Specialization
@@ -712,15 +713,24 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         double mktime(VirtualFrame frame, PTuple tuple,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] items = getObjectArrayNode.execute(tuple);
             if (items.length != 9) {
                 throw raise(PythonBuiltinClassType.TypeError, "function takes exactly 9 arguments (%d given)", items.length);
             }
+            ThreadState threadState = null;
+            if (hasFrame.profile(frame != null)) {
+                threadState = PArguments.getThreadState(frame);
+            }
             int[] integers = new int[9];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                integers[i] = lib.asSizeWithState(items[i], PArguments.getThreadState(frame));
+                if (hasFrame.profile(frame != null)) {
+                    integers[i] = lib.asSizeWithState(items[i], threadState);
+                } else {
+                    integers[i] = lib.asSize(items[i]);
+                }
             }
             return op(integers);
         }

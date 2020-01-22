@@ -116,7 +116,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -1833,7 +1833,7 @@ public abstract class SequenceStorageNodes {
         @Child private GetItemScalarNode getRightItemNode;
         @Child private BinaryComparisonNode eqNode;
         @Child private BinaryComparisonNode comparisonNode;
-        @Child private CastToBooleanNode castToBooleanNode;
+        @Child private CoerceToBooleanNode castToBooleanNode;
 
         private final BinCmpOp cmpOp;
 
@@ -1981,7 +1981,7 @@ public abstract class SequenceStorageNodes {
         private boolean castToBoolean(VirtualFrame frame, Object value) {
             if (castToBooleanNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
             }
             return castToBooleanNode.executeBoolean(frame, value);
         }
@@ -2620,7 +2620,7 @@ public abstract class SequenceStorageNodes {
     public abstract static class ContainsNode extends SequenceStorageBaseNode {
         @Child private GetItemScalarNode getItemNode;
         @Child private BinaryComparisonNode equalsNode;
-        @Child private CastToBooleanNode castToBooleanNode;
+        @Child private CoerceToBooleanNode castToBooleanNode;
 
         public abstract boolean execute(VirtualFrame frame, SequenceStorage left, Object item);
 
@@ -2680,7 +2680,7 @@ public abstract class SequenceStorageNodes {
         private boolean castToBoolean(VirtualFrame frame, Object value) {
             if (castToBooleanNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
             }
             return castToBooleanNode.executeBoolean(frame, value);
         }
@@ -3423,7 +3423,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         int doGeneric(VirtualFrame frame, SequenceStorage s, Object item, int start, int end,
-                        @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
             for (int i = start; i < getLength(s, end); i++) {
                 Object object = getItemScalarNode().execute(s, i);

@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -65,6 +66,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         return isNode.execute(left, right);
     }
 
+    @GenerateUncached
     public abstract static class IsNode extends Node {
 
         public abstract boolean execute(Object left, Object right);

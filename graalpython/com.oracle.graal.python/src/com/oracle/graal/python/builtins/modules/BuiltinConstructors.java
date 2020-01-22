@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -1454,43 +1454,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
+    @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        public boolean boolB(Object cls, boolean arg) {
-            return arg;
-        }
-
-        @Specialization
-        public boolean boolI(Object cls, int arg) {
-            return arg != 0;
-        }
-
-        @Specialization
-        public boolean boolD(Object cls, double arg) {
-            return arg != 0.0;
-        }
-
-        @Specialization
-        public boolean boolS(Object cls, String arg) {
-            return !arg.isEmpty();
-        }
-
-        @Specialization
-        public boolean boolN(Object cls, PNone arg) {
-            return false;
-        }
-
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public boolean bool(VirtualFrame frame, Object cls, Object obj,
-                        @Cached("create(__BOOL__)") LookupAndCallUnaryNode callNode) {
-            try {
-                return callNode.executeBoolean(frame, obj);
-            } catch (UnexpectedResultException ex) {
-                throw raise(PythonErrorType.TypeError, "__bool__ should return bool, returned %p", ex.getResult());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.isTrueWithState(obj, PArguments.getThreadState(frame));
+            } else {
+                return lib.isTrue(obj);
             }
         }
-
     }
 
     // list([iterable])

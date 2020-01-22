@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.Assumption;
@@ -80,6 +80,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -123,6 +124,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         return Objects.hashCode(object);
     }
 
+    @Ignore
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -171,7 +173,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     // arguments for super-implementation call
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CallNode callNode,
+                    @Exclusive @Cached CallUnaryMethodNode callNode,
                     @Exclusive @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,

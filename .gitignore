@@ -66,3 +66,5 @@ Python3.g4.stamp
 /graalpython/include/*
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/As_FileDescriptor_Testfile
 /.*.csv*
+/graal_dumps
+*.jfr

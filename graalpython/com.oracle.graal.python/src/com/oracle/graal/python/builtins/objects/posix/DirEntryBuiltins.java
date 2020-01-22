@@ -117,7 +117,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, keywordOnlyNames = {"follow_symlinks"})
+    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, keywordOnlyNames = {"follow_symlinks"}, needsFrame = true)
     @GenerateNodeFactory
     abstract static class IsDirNode extends PythonBinaryBuiltinNode {
         @Specialization

@@ -41,8 +41,14 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -88,5 +94,36 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static int length(String self) {
         return self.length();
+    }
+
+    @ExportMessage
+    static boolean isTrue(String self) {
+        return self.length() > 0;
+    }
+
+    @ExportMessage
+    static class EqualsInternal {
+        @Specialization
+        static int ss(String receiver, String other, @SuppressWarnings("unused") ThreadState threadState) {
+            return PString.equals(receiver, other) ? 1 : 0;
+        }
+
+        @Specialization
+        static int sP(String receiver, PString other, @SuppressWarnings("unused") ThreadState threadState,
+                        @Cached CastToJavaStringNode castNode) {
+            // n.b.: subclassing is ignored in this direction in CPython
+            String otherString = castNode.execute(other);
+            if (otherString == null) {
+                return -1;
+            } else {
+                return ss(receiver, otherString, threadState);
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static int iO(String receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
+            return -1;
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,7 +33,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -47,7 +47,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class AssertNode extends StatementNode {
     @Child private PRaiseNode raise;
-    @Child private CastToBooleanNode condition;
+    @Child private CoerceToBooleanNode condition;
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
@@ -56,7 +56,7 @@ public class AssertNode extends StatementNode {
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
-    public AssertNode(CastToBooleanNode condition, ExpressionNode message) {
+    public AssertNode(CoerceToBooleanNode condition, ExpressionNode message) {
         this.condition = condition;
         this.message = message;
     }
@@ -116,7 +116,7 @@ public class AssertNode extends StatementNode {
         return raise.raise(AssertionError, assertionMessage);
     }
 
-    public CastToBooleanNode getCondition() {
+    public CoerceToBooleanNode getCondition() {
         return condition;
     }
 

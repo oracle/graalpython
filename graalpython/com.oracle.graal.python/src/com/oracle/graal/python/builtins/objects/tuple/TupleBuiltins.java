@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -89,6 +89,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -585,7 +586,8 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getHash() == HASH_UNSET"})
         public long computeHash(VirtualFrame frame, PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode getLen,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
@@ -595,7 +597,12 @@ public class TupleBuiltins extends PythonBuiltins {
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, tupleStore, i);
-                long tmp = lib.hashWithState(item, PArguments.getThreadState(frame));
+                long tmp;
+                if (hasFrame.profile(frame != null)) {
+                    tmp = lib.hashWithState(item, PArguments.getThreadState(frame));
+                } else {
+                    tmp = lib.hash(item);
+                }
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }

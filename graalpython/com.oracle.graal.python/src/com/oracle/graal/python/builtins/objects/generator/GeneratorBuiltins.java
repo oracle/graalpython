@@ -62,6 +62,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -95,6 +96,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Child private GetCaughtExceptionNode getCaughtExceptionNode;

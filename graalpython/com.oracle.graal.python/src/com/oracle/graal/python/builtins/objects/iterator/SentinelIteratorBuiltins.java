@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
@@ -36,16 +35,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSentinelIterator)
 public class SentinelIteratorBuiltins extends PythonBuiltins {
@@ -58,15 +61,12 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        // TODO: see also the TODO in BinaryComparisonNode about factoring out comparison nodes that
-        // we need to convert to booleans
-        @Child private BinaryComparisonNode equalNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
-        @Child private CallNode callNode = CallNode.create();
-
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
-
         @Specialization
-        protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator) {
+        protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
+                        @Cached CallNode callNode,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             if (iterator.sentinelReached()) {
                 throw raise(StopIteration);
             }
@@ -78,7 +78,13 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
                 iterator.markSentinelReached();
                 throw e;
             }
-            if (equalNode.executeBool(frame, nextValue, iterator.getSentinel())) {
+            boolean iteratorDone;
+            if (hasFrame.profile(frame != null)) {
+                iteratorDone = lib.equalsWithState(nextValue, iterator.getSentinel(), lib, PArguments.getThreadState(frame));
+            } else {
+                iteratorDone = lib.equals(nextValue, iterator.getSentinel(), lib);
+            }
+            if (iteratorDone) {
                 iterator.markSentinelReached();
                 throw raise(StopIteration);
             }

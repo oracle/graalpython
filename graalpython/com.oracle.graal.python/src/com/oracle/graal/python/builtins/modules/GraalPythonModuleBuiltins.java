@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GlobalsNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -74,7 +74,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         protected Object get(VirtualFrame frame, PCode code,
                         @Cached GlobalsNode globalsNode,
-                        @Cached("createIfTrueNode()") CastToBooleanNode isTrue,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode isTrue,
                         @Cached("create(__CONTAINS__)") LookupAndCallBinaryNode containsNode) {
             Object[] varNames = code.getGlobalAndBuiltinVarNames();
             if (varNames != null) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,12 +113,18 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         long computeHash(VirtualFrame frame, PReferenceType self,
                         @Cached("createBinaryProfile()") ConditionProfile referentProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile frameProfile,
                         // n.b.: we cannot directly specialize on lib.getObject() here, because it
                         // might go away in the meantime!
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             Object referent = self.getObject();
             if (referentProfile.profile(referent != null)) {
-                long hash = lib.hashWithState(referent, PArguments.getThreadState(frame));
+                long hash;
+                if (frameProfile.profile(frame != null)) {
+                    hash = lib.hashWithState(referent, PArguments.getThreadState(frame));
+                } else {
+                    hash = lib.hash(referent);
+                }
                 self.setHash(hash);
                 return hash;
             } else {

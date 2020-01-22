@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -63,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
@@ -477,16 +477,26 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone remove(VirtualFrame frame, PList list, Object value,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             SequenceStorage listStore = list.getSequenceStorage();
             int len = lenNode.execute(listStore);
+            ThreadState threadState = null;
+            if (hasFrame.profile(frame != null)) {
+                threadState = PArguments.getThreadState(frame);
+            }
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(frame, listStore, i);
-                if (lib.isTrueWithState(eqNode.executeWith(frame, object, value), PArguments.getThreadState(frame))) {
+                final boolean hasItem;
+                if (hasFrame.profile(frame != null)) {
+                    hasItem = lib.equalsWithState(object, value, lib, threadState);
+                } else {
+                    hasItem = lib.equals(object, value, lib);
+                }
+                if (hasItem) {
                     deleteNode.execute(frame, listStore, i);
                     return PNone.NONE;
                 }
@@ -955,22 +965,6 @@ public class ListBuiltins extends PythonBuiltins {
         boolean contains(VirtualFrame frame, PSequence self, Object other,
                         @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, self.getSequenceStorage(), other);
-        }
-    }
-
-    @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        boolean doPList(PList operand,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(operand.getSequenceStorage()) != 0;
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

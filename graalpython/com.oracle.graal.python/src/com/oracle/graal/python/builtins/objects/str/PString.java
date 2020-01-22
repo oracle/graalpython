@@ -36,7 +36,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -49,6 +49,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
@@ -161,7 +162,7 @@ public final class PString extends PImmutableSequence {
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
-                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached CallUnaryMethodNode callNode,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // call the generic implementation in the superclass
@@ -187,6 +188,7 @@ public final class PString extends PImmutableSequence {
         return value.hashCode();
     }
 
+    @Ignore
     @Override
     public boolean equals(Object obj) {
         return obj != null && obj.equals(value);
@@ -254,4 +256,9 @@ public final class PString extends PImmutableSequence {
         return Character.isWhitespace(codePoint);
     }
 
+    @Ignore
+    @TruffleBoundary
+    public static boolean equals(String left, String other) {
+        return left.equals(other);
+    }
 }

@@ -39,6 +39,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PByteArray extends PSequence implements PIBytesLike {
@@ -82,6 +83,7 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         }
     }
 
+    @Ignore
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof PByteArray)) {

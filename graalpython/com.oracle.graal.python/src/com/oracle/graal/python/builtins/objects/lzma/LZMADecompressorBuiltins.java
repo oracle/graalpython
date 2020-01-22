@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -84,7 +84,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         return LZMADecompressorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"self", "data", "max_length"})
+    @Builtin(name = "decompress", minNumOfPositionalArgs = 2, parameterNames = {"self", "data", "max_length"}, needsFrame = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DecompressNode extends PythonTernaryBuiltinNode {

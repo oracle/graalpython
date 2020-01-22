@@ -255,5 +255,4 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return value instanceof PMemoryView;
         }
     }
-
 }

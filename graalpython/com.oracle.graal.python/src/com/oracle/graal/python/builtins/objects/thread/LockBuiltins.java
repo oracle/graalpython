@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.DEFAULT_BLOCKING;
-import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.UNSET_TIMEOUT;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
+import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.UNSET_TIMEOUT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -85,7 +85,7 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
         private @Child CastToDoubleNode castToDoubleNode;
-        private @Child CastToBooleanNode castToBooleanNode;
+        private @Child CoerceToBooleanNode castToBooleanNode;
         private @CompilationFinal ConditionProfile isBlockingProfile = ConditionProfile.createBinaryProfile();
         private @CompilationFinal ConditionProfile defaultTimeoutProfile = ConditionProfile.createBinaryProfile();
 
@@ -97,10 +97,10 @@ public class LockBuiltins extends PythonBuiltins {
             return castToDoubleNode;
         }
 
-        private CastToBooleanNode getCastToBooleanNode() {
+        private CoerceToBooleanNode getCastToBooleanNode() {
             if (castToBooleanNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
             }
             return castToBooleanNode;
         }

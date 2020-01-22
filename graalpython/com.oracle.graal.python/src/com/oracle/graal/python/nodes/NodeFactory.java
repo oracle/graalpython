@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -53,7 +53,7 @@ import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
@@ -163,15 +163,15 @@ public class NodeFactory {
         return new ImportStarNode(fromModuleName, level);
     }
 
-    public LoopNode createWhile(CastToBooleanNode condition, StatementNode body) {
+    public LoopNode createWhile(CoerceToBooleanNode condition, StatementNode body) {
         return new WhileNode(condition, body);
     }
 
-    public StatementNode createIf(CastToBooleanNode condition, StatementNode thenPart, StatementNode elsePart) {
+    public StatementNode createIf(CoerceToBooleanNode condition, StatementNode thenPart, StatementNode elsePart) {
         return new IfNode(condition, thenPart, elsePart);
     }
 
-    public ExpressionNode createTernaryIf(CastToBooleanNode condition, ExpressionNode thenPart, ExpressionNode elsePart) {
+    public ExpressionNode createTernaryIf(CoerceToBooleanNode condition, ExpressionNode thenPart, ExpressionNode elsePart) {
         return new TernaryIfNode(condition, thenPart, elsePart);
     }
 
@@ -300,7 +300,7 @@ public class NodeFactory {
             case "~":
                 return UnaryArithmetic.Invert.create(operand);
             case "not":
-                return CastToBooleanNode.createIfFalseNode(operand);
+                return CoerceToBooleanNode.createIfFalseNode(operand);
             default:
                 throw new RuntimeException("unexpected operation: " + string);
         }
@@ -394,11 +394,11 @@ public class NodeFactory {
             case "in":
                 return ContainsNode.create(right, left);
             case "notin":
-                return CastToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
+                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
             case "is":
                 return IsExpressionNode.create(left, right);
             case "isnot":
-                return CastToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
+                return CoerceToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
             default:
                 throw new RuntimeException("unexpected operation: " + operator);
         }
@@ -504,23 +504,23 @@ public class NodeFactory {
         return createReadGlobalOrBuiltinScope(id);
     }
 
-    public CastToBooleanNode toBooleanCastNode(PNode node) {
-        if (node instanceof CastToBooleanNode) {
-            return (CastToBooleanNode) node;
+    public CoerceToBooleanNode toBooleanCastNode(PNode node) {
+        if (node instanceof CoerceToBooleanNode) {
+            return (CoerceToBooleanNode) node;
         } else {
             return createYesNode((ExpressionNode) node);
         }
     }
 
-    public CastToBooleanNode createYesNode(ExpressionNode operand) {
-        return CastToBooleanNode.createIfTrueNode(operand);
+    public CoerceToBooleanNode createYesNode(ExpressionNode operand) {
+        return CoerceToBooleanNode.createIfTrueNode(operand);
     }
 
     public StatementNode createTryExceptElseFinallyNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode elseNode, StatementNode finalbody) {
         return new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseNode), finalbody);
     }
 
-    public StatementNode createAssert(CastToBooleanNode condition, ExpressionNode message) {
+    public StatementNode createAssert(CoerceToBooleanNode condition, ExpressionNode message) {
         return new AssertNode(condition, message);
     }
 
