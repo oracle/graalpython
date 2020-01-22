@@ -2181,7 +2181,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction("anonymous", getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
