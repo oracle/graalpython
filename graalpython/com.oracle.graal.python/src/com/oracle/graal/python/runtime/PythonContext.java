@@ -51,15 +51,12 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionValues;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemInteropNode;
@@ -94,6 +91,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionValues;
 
 public final class PythonContext {
 
@@ -528,15 +528,25 @@ public final class PythonContext {
             if (capiHome.isEmpty()) {
                 capiHome = coreHome;
             }
-
-            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
-                            "\n\tLanguage home: {0}" +
-                            "\n\tSysPrefix: {1}" +
-                            "\n\tSysBasePrefix: {2}" +
-                            "\n\tCoreHome: {3}" +
-                            "\n\tStdLibHome: {4}" +
-                            "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
         }
+
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // use relative paths at buildtime to avoid freezing buildsystem paths
+            TruffleFile base = newEnv.getCurrentWorkingDirectory();
+            sysPrefix = base.relativize(newEnv.getInternalTruffleFile(sysPrefix)).getPath();
+            basePrefix = base.relativize(newEnv.getInternalTruffleFile(basePrefix)).getPath();
+            coreHome = base.relativize(newEnv.getInternalTruffleFile(coreHome)).getPath();
+            stdLibHome = base.relativize(newEnv.getInternalTruffleFile(stdLibHome)).getPath();
+            capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
+        }
+
+        PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
+                        "\n\tLanguage home: {0}" +
+                        "\n\tSysPrefix: {1}" +
+                        "\n\tSysBasePrefix: {2}" +
+                        "\n\tCoreHome: {3}" +
+                        "\n\tStdLibHome: {4}" +
+                        "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
     }
 
     @TruffleBoundary
