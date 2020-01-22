@@ -274,7 +274,6 @@ public final class Python3Core implements PythonCore {
                         new BytesBuiltins(),
                         new ComplexBuiltins(),
                         new ByteArrayBuiltins(),
-                        new BytesBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
