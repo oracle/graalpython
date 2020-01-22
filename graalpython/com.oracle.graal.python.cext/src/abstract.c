@@ -327,6 +327,7 @@ PyObject* PySequence_List(PyObject *v) {
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
+    PyObject *res;
     if (v == NULL) {
         return null_error();
     }
@@ -336,7 +337,9 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
         return v;
     }
 
-	return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
+    res = UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
+    Py_INCREF(res);
+    return res;
 }
 
 UPCALL_ID(PyObject_GetItem);
