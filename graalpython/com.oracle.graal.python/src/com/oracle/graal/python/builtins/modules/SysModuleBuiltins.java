@@ -97,6 +97,8 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.api.Toolchain;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
     public static final String LLVM_LANGUAGE = "llvm";
@@ -190,7 +192,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String stdlibHome = context.getStdlibHome();
         String capiHome = context.getCAPIHome();
 
-        sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+        }
         sys.setAttribute("graal_python_jython_emulation_enabled", PythonOptions.getOption(context, PythonOptions.EmulateJython));
         sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
         sys.setAttribute("graal_python_home", context.getLanguage().getHome());
