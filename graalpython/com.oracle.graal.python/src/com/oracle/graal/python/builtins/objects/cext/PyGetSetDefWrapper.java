@@ -43,11 +43,13 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -120,12 +122,13 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(object, __NAME__);
-            if (doc == PNone.NONE) {
-                return toSulongNode.execute(PNone.NO_VALUE);
+                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+            Object name = getAttrNode.execute(object, __NAME__);
+            if (PGuards.isPNone(name)) {
+                return toSulongNode.execute(getNativeNullNode.execute());
             } else {
-                return asCharPointerNode.execute(doc);
+                return asCharPointerNode.execute(name);
             }
         }
 
@@ -134,10 +137,11 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
                         @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
+                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             Object doc = getAttrNode.execute(object, __DOC__);
-            if (doc == PNone.NONE) {
-                return toSulongNode.execute(PNone.NO_VALUE);
+            if (PGuards.isPNone(doc)) {
+                return toSulongNode.execute(getNativeNullNode.execute());
             } else {
                 return asCharPointerNode.execute(doc);
             }
@@ -157,13 +161,20 @@ public class PyGetSetDefWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
+                    @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
                     @Exclusive @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
         if (!DOC.equals(member)) {
-            CompilerDirectives.transferToInterpreter();
             throw UnsupportedMessageException.create();
         }
-        setAttrNode.execute(lib.getDelegate(this), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
+        Object delegate = lib.getDelegate(this);
+        if (delegate instanceof PythonObject) {
+            // Since CPython does directly write to `tp_doc`, writing the __doc__ attribute
+            // circumvents any checks if the attribute may be written according to the common Python
+            // rules. So, directly write to the Python object's storage.
+            writeAttrToDynamicObjectNode.execute(((PythonObject) delegate).getStorage(), SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
+        } else {
+            throw UnsupportedMessageException.create();
+        }
     }
 
     @ExportMessage

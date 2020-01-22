@@ -107,6 +107,72 @@ static PyObject* native_int_to_bool(int res) {
     return res ? Py_True : Py_False;
 }
 
+/*
+ * finds the beginning of the docstring's introspection signature.
+ * if present, returns a pointer pointing to the first '('.
+ * otherwise returns NULL.
+ *
+ * doesn't guarantee that the signature is valid, only that it
+ * has a valid prefix.  (the signature must also pass skip_signature.)
+ */
+static const char *
+find_signature(const char *name, const char *doc)
+{
+    const char *dot;
+    size_t length;
+
+    if (!doc)
+        return NULL;
+
+    assert(name != NULL);
+
+    /* for dotted names like classes, only use the last component */
+    dot = strrchr(name, '.');
+    if (dot)
+        name = dot + 1;
+
+    length = strlen(name);
+    if (strncmp(doc, name, length))
+        return NULL;
+    doc += length;
+    if (*doc != '(')
+        return NULL;
+    return doc;
+}
+
+#define SIGNATURE_END_MARKER         ")\n--\n\n"
+#define SIGNATURE_END_MARKER_LENGTH  6
+/*
+ * skips past the end of the docstring's instrospection signature.
+ * (assumes doc starts with a valid signature prefix.)
+ */
+static const char *
+skip_signature(const char *doc)
+{
+    while (*doc) {
+        if ((*doc == *SIGNATURE_END_MARKER) &&
+            !strncmp(doc, SIGNATURE_END_MARKER, SIGNATURE_END_MARKER_LENGTH))
+            return doc + SIGNATURE_END_MARKER_LENGTH;
+        if ((*doc == '\n') && (doc[1] == '\n'))
+            return NULL;
+        doc++;
+    }
+    return NULL;
+}
+
+static const char *
+_PyType_DocWithoutSignature(const char *name, const char *internal_doc)
+{
+    const char *doc = find_signature(name, internal_doc);
+
+    if (doc) {
+        doc = skip_signature(doc);
+        if (doc)
+            return doc;
+        }
+    return internal_doc;
+}
+
 UPCALL_ID(PyTruffle_Type_Modified);
 void PyType_Modified(PyTypeObject* type) {
 	UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, native_type_to_java(type), polyglot_from_string(type->tp_name, SRC_CS), native_to_java(type->tp_mro));
@@ -219,7 +285,7 @@ static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, 
 		    mtype,
 		    moffset,
 		    native_to_java(((mflags & READONLY) == 0) ? Py_True : Py_False),
-		    polyglot_from_string(mdoc ? mdoc : "", SRC_CS)
+		    mdoc ? polyglot_from_string(mdoc, SRC_CS) : native_to_java(Py_None)
 	);
 }
 
@@ -231,7 +297,7 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
                        polyglot_from_string(name, SRC_CS),
                        native_to_java(result_conversion != NULL ? pytruffle_decorate_function(native_to_java(meth), result_conversion) : meth),
                        (signature != NULL ? signature : get_method_flags_wrapper(flags)),
-                       polyglot_from_string(doc, SRC_CS),
+                       doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
                        (flags) > 0 && ((flags) & METH_CLASS) != 0,
                        (flags) > 0 && ((flags) & METH_STATIC) != 0);
 }
@@ -291,10 +357,6 @@ int PyType_Ready(PyTypeObject* cls) {
         }
     }
 
-    if (!(cls->tp_doc)) {
-        cls->tp_doc = "";
-    }
-
     /* Initialize tp_bases */
     PyObject* bases = cls->tp_bases;
     if (bases == NULL) {
@@ -327,9 +389,6 @@ int PyType_Ready(PyTypeObject* cls) {
         int idx = 0;
         PyMethodDef def = methods[idx];
         while (def.ml_name != NULL) {
-            if (!(def.ml_doc)) {
-                def.ml_doc = "";
-            }
             ADD_METHOD(def);
             def = methods[++idx];
         }
@@ -358,7 +417,7 @@ int PyType_Ready(PyTypeObject* cls) {
                             polyglot_from_string(getset.name, SRC_CS),
                             getter_fun != NULL ? pytruffle_decorate_function(native_to_java((getter)getter_fun), native_to_java_exported) : to_java(Py_None),
                             setter_fun != NULL ? (setter)setter_fun : to_java(Py_None),
-                            getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
+                            getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : native_to_java(Py_None),
                             // do not convert the closure, it is handed to the
                             // getter and setter as-is
                             getset.closure);
@@ -519,6 +578,27 @@ int PyType_Ready(PyTypeObject* cls) {
 
     /* Initialize this classes' tp_subclasses dict. This is necessary because our managed classes won't do. */
     cls->tp_subclasses = PyDict_New();
+
+    /* if the type dictionary doesn't contain a __doc__, set it from
+       the tp_doc slot.
+     */
+    PyObject* doc_id = (PyObject *)polyglot_from_string("__doc__", SRC_CS);
+    if (PyDict_GetItem(cls->tp_dict, doc_id) == NULL) {
+        if (cls->tp_doc != NULL) {
+            const char *old_doc = _PyType_DocWithoutSignature(cls->tp_name, cls->tp_doc);
+            PyObject *doc = PyUnicode_FromString(old_doc);
+            if (doc == NULL) {
+                RETURN_ERROR(cls);
+            }
+            if (PyDict_SetItem(cls->tp_dict, doc_id, doc) < 0) {
+                Py_DECREF(doc);
+                RETURN_ERROR(cls);
+            }
+            Py_DECREF(doc);
+        } else if (PyDict_SetItem(cls->tp_dict, doc_id, Py_None) < 0) {
+            RETURN_ERROR(cls);
+        }
+    }
 
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;

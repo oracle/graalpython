@@ -52,5 +52,5 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
                                                get_method_flags_wrapper(ml->ml_flags),
                                                self,
                                                native_to_java(module),
-                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
+                                               ml->ml_doc ? polyglot_from_string(ml->ml_doc, SRC_CS) : Py_None));
 }

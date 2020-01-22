@@ -40,9 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -113,26 +114,30 @@ public class PyMemberDefWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(NAME, key)"})
-        Object getName(PythonObject object, @SuppressWarnings("unused") String key,
+        static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
-                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(object, NAME);
-            if (doc == PNone.NONE) {
-                return toSulongNode.execute(PNone.NO_VALUE);
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+            Object name = getAttrNode.execute(object, NAME);
+            if (PGuards.isPNone(name)) {
+                return toSulongNode.execute(getNativeNullNode.execute());
             } else {
-                return asCharPointerNode.execute(doc);
+                return asCharPointerNode.execute(name);
             }
         }
 
         @Specialization(guards = {"eq(DOC, key)"})
-        Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
+        static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("getAttrNode") @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
-                        @Cached.Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached.Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             Object doc = getAttrNode.execute(object, DOC);
-            if (doc == PNone.NONE) {
-                return toSulongNode.execute(PNone.NO_VALUE);
+            if (PGuards.isPNone(doc)) {
+                // CPython just returns the pointer of the original member def (i.e.
+                // ((PyMemberDef*)obj)->doc )
+                return toSulongNode.execute(getNativeNullNode.execute());
             } else {
                 return asCharPointerNode.execute(doc);
             }
