@@ -175,3 +175,11 @@ def test_get_globals():
     if sys.implementation.name == 'graalpython':
         from __graalpython__ import current_global_code_variables
         assert set(current_global_code_variables(code)) == {'a_global'}
+
+
+def test_codestring():
+    def foo():
+        pass
+
+    ct = type(foo.__code__)
+    ct(2, 0, 0, 128, 0, b"lambda a,b: a+b", tuple(), ("a", "b"), tuple(), "hello.py", "<lambda>", 0, b"", tuple(), tuple())
