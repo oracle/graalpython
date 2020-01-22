@@ -194,10 +194,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         if (!ImageInfo.inImageBuildtimeCode()) {
             sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+            sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         }
         sys.setAttribute("graal_python_jython_emulation_enabled", PythonOptions.getOption(context, PythonOptions.EmulateJython));
         sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
-        sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         sys.setAttribute("graal_python_core_home", coreHome);
         sys.setAttribute("graal_python_stdlib_home", stdlibHome);
         sys.setAttribute("graal_python_capi_home", capiHome);
