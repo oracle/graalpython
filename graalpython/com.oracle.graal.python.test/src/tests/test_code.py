@@ -182,4 +182,5 @@ def test_codestring():
         pass
 
     ct = type(foo.__code__)
+    del foo
     ct(2, 0, 0, 128, 0, b"lambda a,b: a+b", tuple(), ("a", "b"), tuple(), "hello.py", "<lambda>", 0, b"", tuple(), tuple())

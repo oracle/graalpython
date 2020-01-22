@@ -137,8 +137,10 @@ public abstract class CodeNodes {
                     Object[] args = PArguments.create();
                     PDict globals = factory.createDict();
                     PArguments.setGlobals(args, globals);
-                    InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
-                    Object function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
+                    Object function = InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
+                    if (function == PNone.NONE) {
+                        function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
+                    }
                     if (function instanceof PFunction) {
                         rootNode = ((PFunction) function).getFunctionRootNode();
                     } else {
