@@ -44,6 +44,7 @@ import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -66,6 +67,13 @@ public abstract class PythonNativeWrapper implements TruffleObject {
      */
     private long refCount = 1;
 
+    /**
+     * An assumption that can be used by caches to assume that the associated {@link #nativePointer}
+     * is still valid. This assumption will be invalidated when {@link #refCount} becomes zero and
+     * the object is deallocated on the native side.
+     */
+    private Assumption handleValidAssumption;
+
     public PythonNativeWrapper() {
     }
 
@@ -87,6 +95,10 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     public final void setRefCount(long refCount) {
         this.refCount = refCount;
+    }
+
+    public final Assumption getHandleValidAssumption() {
+        return handleValidAssumption;
     }
 
     protected static Assumption singleContextAssumption() {
@@ -151,6 +163,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         // we must not set the pointer for one of the context-insensitive singletons
         assert PythonLanguage.getSingletonNativePtrIdx(delegate) == -1;
 
+        if(this.nativePointer == null) {
+            this.handleValidAssumption = Truffle.getRuntime().createAssumption();
+        } else if(nativePointer == null) {
+            this.handleValidAssumption = null;
+        }
         this.nativePointer = nativePointer;
     }
 
