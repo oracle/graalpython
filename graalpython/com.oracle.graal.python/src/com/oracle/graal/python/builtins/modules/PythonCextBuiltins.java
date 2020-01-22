@@ -3004,7 +3004,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // clear native wrapper
                 Object delegate = lib.getDelegate(nativeWrapper);
                 if (delegate instanceof PythonAbstractObject) {
-                    nativeWrapper.getHandleValidAssumption().invalidate();
                     ((PythonAbstractObject) delegate).clearNativeWrapper();
                 }
                 // We do not call 'truffle_release_handle' directly because we still want to support

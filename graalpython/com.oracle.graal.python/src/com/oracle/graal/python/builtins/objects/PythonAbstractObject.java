@@ -164,7 +164,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     public final void clearNativeWrapper() {
-        this.nativeWrapper = DynamicObjectNativeWrapper.INVALID_NATIVE_WRAPPER;
+        this.nativeWrapper.getHandleValidAssumption().invalidate("releasing handle for native wrapper");
+        this.nativeWrapper = null;
     }
 
     @ExportMessage

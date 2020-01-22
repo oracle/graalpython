@@ -176,7 +176,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     static final String GP_OBJECT = "gp_object";
     private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
     private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
-    public static final DynamicObjectNativeWrapper INVALID_NATIVE_WRAPPER = new PythonInvalidNativeWrapper();
 
     private DynamicObjectStorage nativeMemberStore;
 
@@ -1671,16 +1670,4 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    static class PythonInvalidNativeWrapper extends DynamicObjectNativeWrapper {
-
-        private PythonInvalidNativeWrapper() {
-        }
-
-        // TODO(fa): prohibit any access to this native wrapper
-
-        @Override
-        public String toString() {
-            return "<INVALID REFERENCE>";
-        }
-    }
 }
