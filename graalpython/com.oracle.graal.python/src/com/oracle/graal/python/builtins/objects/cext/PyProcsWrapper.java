@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IncRefNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
@@ -134,19 +136,18 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
                         @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached IncRefNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
-            Object result;
             try {
-                result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]));
+                return incRefNode.execute(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
             } catch (PException e) {
                 e.expectAttributeError(errProfile);
                 transformExceptionToNativeNode.execute(null, e);
-                result = getNativeNullNode.execute();
+                return toSulongNode.execute(getNativeNullNode.execute());
             }
-            return toSulongNode.execute(result);
         }
     }
 

@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.lang.ref.WeakReference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -2376,6 +2375,29 @@ public abstract class CExtNodes {
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(frame, p);
             }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class IncRefNode extends Node {
+
+        public abstract Object execute(Object object);
+
+        @Specialization
+        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper) {
+            nativeWrapper.increaseRefCount();
+            return nativeWrapper;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)")
+        static Object doNativeObject(Object object,
+                        @Cached PCallCapiFunction callIncRefNode) {
+            callIncRefNode.call(NativeCAPISymbols.FUN_INCREF, object);
+            return object;
+        }
+
+        static boolean isNativeWrapper(Object object) {
+            return object instanceof PythonNativeWrapper;
         }
     }
 }
