@@ -3004,12 +3004,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // clear native wrapper
                 Object delegate = lib.getDelegate(nativeWrapper);
                 if (delegate instanceof PythonAbstractObject) {
+                    nativeWrapper.getHandleValidAssumption().invalidate();
                     ((PythonAbstractObject) delegate).clearNativeWrapper();
                 }
                 // We do not call 'truffle_release_handle' directly because we still want to support
                 // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
                 // necessary distinction.
-                callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, lib.getNativePointer(nativeWrapper));
+                Object nativePointer = lib.getNativePointer(nativeWrapper);
+                PythonLanguage.getLogger().fine(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, delegate));
+                callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
             }
             return 0;
         }
