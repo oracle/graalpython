@@ -67,7 +67,6 @@ import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * The standard Python object library. This implements a general-purpose Python object interface.
@@ -249,14 +248,18 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     private static class DefaultNodes extends Node {
+        private static final byte REVERSE_COMP = 0b001;
+        private static final byte LEFT_COMPARE = 0b010;
+        private static final byte SUBT_COMPARE = 0b100;
+
         @Child private IsSubtypeNode isSubtype;
         @Child private IsSameTypeNode isSameType;
-        @CompilationFinal private BranchProfile reverseEquals;
-        @CompilationFinal private BranchProfile subtypeEquals;
+        @CompilationFinal byte state = 0;
 
         protected IsSubtypeNode getIsSubtypeNode() {
             if (isSubtype == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
                 isSubtype = insert(IsSubtypeNode.create());
             }
             return isSubtype;
@@ -270,20 +273,28 @@ public abstract class PythonObjectLibrary extends Library {
             return isSameType;
         }
 
-        protected BranchProfile getReverseProfile() {
-            if (reverseEquals == null) {
+        protected void enterReverseCompare() {
+            if ((state & REVERSE_COMP) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                reverseEquals = BranchProfile.create();
+                reportPolymorphicSpecialize();
+                state |= REVERSE_COMP;
             }
-            return reverseEquals;
         }
 
-        protected BranchProfile getSubtypeProfile() {
-            if (subtypeEquals == null) {
+        protected void enterLeftCompare() {
+            if ((state & LEFT_COMPARE) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                subtypeEquals = BranchProfile.create();
+                reportPolymorphicSpecialize();
+                state |= LEFT_COMPARE;
             }
-            return subtypeEquals;
+        }
+
+        protected void enterSubtypeCompare() {
+            if ((state & SUBT_COMPARE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                state |= SUBT_COMPARE;
+            }
         }
 
         private static final class Disabled extends DefaultNodes {
@@ -300,13 +311,15 @@ public abstract class PythonObjectLibrary extends Library {
             }
 
             @Override
-            protected BranchProfile getReverseProfile() {
-                return BranchProfile.getUncached();
+            protected void enterReverseCompare() {
             }
 
             @Override
-            protected BranchProfile getSubtypeProfile() {
-                return BranchProfile.getUncached();
+            protected void enterLeftCompare() {
+            }
+
+            @Override
+            protected void enterSubtypeCompare() {
             }
         }
 
@@ -365,20 +378,20 @@ public abstract class PythonObjectLibrary extends Library {
         int result;
         boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
         if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
-            getDefaultNodes().getSubtypeProfile().enter();
+            getDefaultNodes().enterSubtypeCompare();
             checkedReverseOp = true;
             result = otherLibrary.equalsInternal(other, receiver, threadState);
             if (result != -1) {
                 return result == 1;
             }
         }
-
+        getDefaultNodes().enterLeftCompare();
         result = equalsInternal(receiver, other, threadState);
         if (result != -1) {
             return result == 1;
         }
         if (!isSameType && !checkedReverseOp) {
-            getDefaultNodes().getReverseProfile().enter();
+            getDefaultNodes().enterReverseCompare();
             result = otherLibrary.equalsInternal(other, receiver, threadState);
         }
 

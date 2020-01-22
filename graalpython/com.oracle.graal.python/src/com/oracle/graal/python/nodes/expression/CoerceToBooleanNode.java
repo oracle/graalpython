@@ -30,6 +30,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
@@ -66,6 +67,7 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
     @Override
     public abstract boolean executeBoolean(VirtualFrame frame);
 
+    @ReportPolymorphism
     public abstract static class YesNode extends CoerceToBooleanNode {
         @Specialization
         boolean doBoolean(boolean operand) {
@@ -99,6 +101,7 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
         }
     }
 
+    @ReportPolymorphism
     public abstract static class NotNode extends CoerceToBooleanNode {
         @Specialization
         boolean doBool(boolean operand) {
