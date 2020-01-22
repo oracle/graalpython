@@ -504,10 +504,13 @@ public abstract class CExtNodes {
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                                     @Cached PCallCapiFunction callIncrefNode) {
+                        @Cached PCallCapiFunction callIncrefNode) {
             CApiContext cApiContext = context.getCApiContext();
-            // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
-            callIncrefNode.call(NativeCAPISymbols.FUN_INCREF, object);
+            if (cApiContext != null) {
+                // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
+                IncRefNode.doNativeObject(object, callIncrefNode);
+                return new PythonAbstractNativeObject(object, null);
+            }
             return new PythonAbstractNativeObject(object, cApiContext);
         }
 
