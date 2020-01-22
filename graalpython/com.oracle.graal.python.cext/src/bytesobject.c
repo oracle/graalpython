@@ -48,18 +48,20 @@
 
 PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE);
 
+typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
+
 UPCALL_ID(PyBytes_FromStringAndSize);
 UPCALL_ID(PyTruffle_Bytes_EmptyWithCapacity);
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
 	if (str != NULL) {
-		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, sz), sz);
+		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
 	}
 	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	if (str != NULL) {
-		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, strlen(str)), strlen(str));
+		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, strlen(str)), strlen(str));
 	}
 	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, 0);
 }

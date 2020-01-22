@@ -94,12 +94,12 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
@@ -2274,25 +2274,34 @@ public class PythonCextBuiltins extends PythonBuiltins {
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PIBytesLike object, long size,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            byte[] ary = getByteArrayNode.execute(frame, object);
+        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
+            PBytes result;
             if (size < Integer.MAX_VALUE && size >= 0 && size < ary.length) {
-                return factory().createBytes(Arrays.copyOf(ary, (int) size));
+                result = factory().createBytes(Arrays.copyOf(ary, (int) size));
             } else {
-                return factory().createBytes(ary);
+                result = factory().createBytes(ary);
             }
+            return toSulongNode.execute(result);
         }
 
-        @Specialization
-        Object doGeneric(VirtualFrame frame, Object module, PythonNativeObject object, long size,
+        @Specialization(guards = "!isNativeWrapper(nativePointer)")
+        Object doNativePointer(VirtualFrame frame, Object module, Object nativePointer, long size,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode) {
+                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             try {
-                return factory().createBytes(getByteArrayNode.execute(frame, object.getPtr(), size));
+                return toSulongNode.execute(factory().createBytes(getByteArrayNode.execute(frame, nativePointer, size)));
             } catch (InteropException e) {
                 return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
+        }
+
+        static boolean isNativeWrapper(Object object) {
+            return object instanceof PythonNativeWrapper;
         }
     }
 
