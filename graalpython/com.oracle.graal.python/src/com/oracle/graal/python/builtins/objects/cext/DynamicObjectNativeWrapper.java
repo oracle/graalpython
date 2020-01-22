@@ -1112,7 +1112,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
-        @Specialization(limit = "1")
+        @Specialization(guards = "isGenericCase(object, key)", limit = "1")
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key, Object value,
                         @CachedLibrary("nativeWrapper.createNativeMemberStore()") HashingStorageLibrary lib) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
@@ -1133,6 +1133,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
+        }
+
+        protected static boolean isGenericCase(Object object, String key) {
+            if (object instanceof PMemoryView) {
+                return false;
+            }
+
+            switch (key) {
+                case OB_TYPE:
+                case OB_REFCNT:
+                case TP_FLAGS:
+                case TP_BASICSIZE:
+                case TP_ALLOC:
+                case TP_DEALLOC:
+                case TP_FREE:
+                case TP_SUBCLASSES:
+                case MD_DEF:
+                case TP_DICT:
+                    return false;
+            }
+            return true;
         }
     }
 
