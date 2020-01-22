@@ -273,6 +273,29 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         type->tp_setattr = base->tp_setattr;
         type->tp_setattro = base->tp_setattro;
     }
+
+    if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
+        (base->tp_flags & Py_TPFLAGS_HAVE_FINALIZE)) {
+        COPYSLOT(tp_finalize);
+    }
+    if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) ==
+        (base->tp_flags & Py_TPFLAGS_HAVE_GC)) {
+        /* They agree about gc. */
+        COPYSLOT(tp_free);
+    }
+    else if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+             type->tp_free == NULL &&
+             base->tp_free == PyObject_Free) {
+        /* A bit of magic to plug in the correct default
+         * tp_free function when a derived class adds gc,
+         * didn't define tp_free, and the base uses the
+         * default non-gc tp_free.
+         */
+        type->tp_free = PyObject_GC_Del;
+    }
+    /* else they didn't agree about gc, and there isn't something
+     * obvious to be done -- the type is on its own.
+     */
 }
 
 // TODO support member flags other than READONLY
