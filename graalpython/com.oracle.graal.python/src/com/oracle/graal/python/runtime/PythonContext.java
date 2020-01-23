@@ -464,28 +464,34 @@ public final class PythonContext {
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
         capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
-        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
+        PythonCore.writeInfo(() -> MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
-                        "\n\tCAPI: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome)));
+                        "\n\tCAPI: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome));
 
-        TruffleFile home = null;
-        if (languageHome != null) {
-            home = newEnv.getInternalTruffleFile(languageHome);
+        String envHome = null;
+        try {
+            envHome = System.getenv("GRAAL_PYTHONHOME");
+        } catch (SecurityException e) {
         }
 
-        try {
-            String envHome = System.getenv("GRAAL_PYTHONHOME");
-            if (envHome != null) {
-                TruffleFile envHomeFile = newEnv.getInternalTruffleFile(envHome);
-                if (envHomeFile.isDirectory()) {
-                    home = envHomeFile;
-                }
+        final TruffleFile home;
+        if (languageHome != null && envHome == null) {
+            home = newEnv.getInternalTruffleFile(languageHome);
+        } else if (envHome != null) {
+            boolean envHomeIsDirectory = false;
+            TruffleFile envHomeFile = null;
+            try {
+                envHomeFile = newEnv.getInternalTruffleFile(envHome);
+                envHomeIsDirectory = envHomeFile.isDirectory();
+            } catch (SecurityException e) {
             }
-        } catch (SecurityException e) {
+            home = envHomeIsDirectory ? envHomeFile : null;
+        } else {
+            home = null;
         }
 
         if (home != null) {
@@ -540,13 +546,14 @@ public final class PythonContext {
             capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
         }
 
-        PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
+        PythonCore.writeInfo(() -> MessageFormat.format("Updated locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
-                        "\n\tSysBasePrefix: {2}" +
+                        "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
-                        "\n\tExecutable: {6}", home.getPath(), sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable))));
+                        "\n\tExecutable: {5}" +
+                        "\n\tCAPI: {6}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome));
     }
 
     @TruffleBoundary

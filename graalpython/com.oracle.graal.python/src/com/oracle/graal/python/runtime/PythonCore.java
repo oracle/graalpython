@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.util.function.Supplier;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -90,4 +92,7 @@ public interface PythonCore extends ParserErrorCallback {
         PythonLanguage.getLogger().fine(message);
     }
 
+    static void writeInfo(Supplier<String> messageSupplier) {
+        PythonLanguage.getLogger().fine(messageSupplier);
+    }
 }
