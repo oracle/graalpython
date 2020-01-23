@@ -632,4 +632,13 @@ public class ComplexBuiltins extends PythonBuiltins {
             return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
         }
     }
+    
+    @GenerateNodeFactory
+    @Builtin(name = "conjugate", minNumOfPositionalArgs = 1)
+    abstract static class ConjugateNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PComplex hash(PComplex self) {
+            return factory().createComplex(self.getReal(), -self.getImag());
+        }
+    }
 }

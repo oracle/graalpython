@@ -1,5 +1,6 @@
 *ComplexTest.test_abs
 *ComplexTest.test_boolcontext
+*ComplexTest.test_conjugate
 *ComplexTest.test_divmod
 *ComplexTest.test_file
 *ComplexTest.test_getnewargs
