@@ -100,6 +100,8 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     type->tp_doc = newType->tp_doc;
     type->tp_dict = newType->tp_dict;
 
+    Py_DECREF(newType);
+
     // now initialize the type
     if (PyType_Ready(type) < 0)
         return -1;

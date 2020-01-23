@@ -335,6 +335,7 @@ int PyType_Ready(PyTypeObject* cls) {
 #define RETURN_ERROR(__type__) \
 	do { \
       	(__type__)->tp_flags &= ~Py_TPFLAGS_READYING; \
+      	Py_DECREF((__type__)); \
         return -1; \
 	} while(0)
 
@@ -357,6 +358,11 @@ int PyType_Ready(PyTypeObject* cls) {
     }
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READYING;
 
+    /* IMPORTANT: This is a Truffle-specific statement. Since the refcnt for the type is currently 0 and
+       we will create several references to this object that will be collected during the execution of
+       this method, we need to keep it alive. */
+    Py_INCREF(cls);
+
     // https://docs.python.org/3/c-api/typeobj.html#c.PyObject.ob_type
     PyTypeObject* base = cls->tp_base;
     PyTypeObject* metaclass = Py_TYPE(cls);
@@ -371,6 +377,11 @@ int PyType_Ready(PyTypeObject* cls) {
         metaclass = &PyType_Type;
     }
     cls->tp_base = base;
+    if (base == NULL && cls != &PyBaseObject_Type) {
+        base = cls->tp_base = &PyBaseObject_Type;
+        Py_INCREF(base);
+    }
+
     Py_TYPE(cls) = metaclass;
 
     /* Initialize the base class */
@@ -640,6 +651,9 @@ int PyType_Ready(PyTypeObject* cls) {
 
     // it may be that the type was used uninitialized
     UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, cls, polyglot_from_string(cls->tp_name, SRC_CS), Py_NoValue);
+
+	// Truffle-specific decref (for reason, see first call to Py_INCREF in this function)
+	Py_DECREF(cls);
 
     return 0;
 
