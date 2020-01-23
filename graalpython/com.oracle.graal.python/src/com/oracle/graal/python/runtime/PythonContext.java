@@ -538,7 +538,7 @@ public final class PythonContext {
 
         if (ImageInfo.inImageBuildtimeCode()) {
             // use relative paths at buildtime to avoid freezing buildsystem paths
-            TruffleFile base = newEnv.getCurrentWorkingDirectory();
+            TruffleFile base = newEnv.getInternalTruffleFile("").getAbsoluteFile();
             sysPrefix = base.relativize(newEnv.getInternalTruffleFile(sysPrefix)).getPath();
             basePrefix = base.relativize(newEnv.getInternalTruffleFile(basePrefix)).getPath();
             coreHome = base.relativize(newEnv.getInternalTruffleFile(coreHome)).getPath();
