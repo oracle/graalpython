@@ -738,16 +738,25 @@ def delete_self_if_testdownstream(args):
         shutil.rmtree(SUITE.dir, ignore_errors=True)
 
 
-def update_import(name, rev="origin/master", callback=None):
-    primary = mx.primary_suite()
-    dep_dir = mx.suite(name).vc_dir
+def update_import(name, suite_py, rev="origin/master"):
+    mx_name = "mx." + name
+    parent = os.path.join(SUITE.dir, "..")
+    for dirpath,dirnames,filenames in os.walk(parent):
+        if os.path.sep in os.path.relpath(dirpath, parent):
+            dirnames.clear() # we're looking for siblings or sibling-subdirs
+        elif name in dirnames:
+            dep_dir = os.path.join(os.path.join(dirpath))
+            break
+    if not dep_dir:
+        mx.warn("could not find suite %s to update" % name)
+        return
     vc = mx.VC.get_vc(dep_dir)
-    vc.pull(dep_dir, update=False)
+    if rev != "HEAD":
+        vc.pull(dep_dir, update=False)
     vc.update(dep_dir, rev=rev)
     tip = str(vc.tip(dep_dir)).strip()
     contents = None
-    suitefile = os.path.join(primary.dir, "mx." + primary.name, "suite.py")
-    with open(suitefile, 'r') as f:
+    with open(suite_py, 'r') as f:
         contents = f.read()
     dep_re = re.compile(r"['\"]name['\"]:\s+['\"]%s['\"],\s+['\"]version['\"]:\s+['\"]([a-z0-9]+)['\"]" % name, re.MULTILINE)
     dep_match = dep_re.search(contents)
@@ -755,60 +764,123 @@ def update_import(name, rev="origin/master", callback=None):
         start = dep_match.start(1)
         end = dep_match.end(1)
         assert end - start == len(tip)
-        mx.update_file(suitefile, "".join([contents[:start], tip, contents[end:]]), showDiff=True)
-        if callback:
-            callback()
-    else:
-        mx.abort("%s not found in %s" % (name, suitefile))
+        mx.update_file(suite_py, "".join([contents[:start], tip, contents[end:]]), showDiff=True)
 
 
 def update_import_cmd(args):
-    """Update our mx or overlay imports"""
-    try:
-        args.remove("--no-pull")
-    except ValueError:
-        rev = "origin/master"
+    """Update our imports"""
+    join = os.path.join
+    vc = SUITE.vc
+
+    current_branch = vc.active_branch(SUITE.dir)
+    if current_branch == "master":
+        mx.abort("updating imports should be done on a branch")
+    if vc.isDirty(SUITE.dir):
+        mx.abort("updating imports should be done on a clean branch")
+
+    suite_py_files = []
+    local_names = []
+    repos = []
+
+    # find all relevant other repos that may need updating
+    for sibling in os.listdir(os.path.join(SUITE.dir, "..")):
+        if sibling.startswith("graalpython"):
+            dd = os.path.join(SUITE.dir, "..", sibling)
+            jsonnetfile = os.path.join(dd, "ci.jsonnet")
+            if os.path.exists(jsonnetfile):
+                local_names.append(sibling)
+                repos.append(dd)
+                for dirpath,dirnames,filenames in os.walk(dd):
+                    mx_dirs = list(filter(lambda x: x.startswith("mx."), dirnames))
+                    if mx_dirs:
+                        dirnames[:] = mx_dirs # don't go deeper once we found some mx dirs
+                    dirnames[:] = list(filter(lambda x: not (x.startswith(".") or x.startswith("__")), dirnames))
+                    if "suite.py" in filenames:
+                        suite_py_files.append(join(dirpath, "suite.py"))
+
+    # make sure all other repos are clean and on the same branch
+    for d in repos:
+        if vc.isDirty(d):
+            mx.abort("repo %s is not clean" % d)
+        d_branch = vc.active_branch(d)
+        if d_branch == current_branch:
+            pass
+        elif d_branch == "master":
+            vc.set_branch(d, current_branch, with_remote=False)
+            vc.git_command(d, ["checkout", current_branch], abortOnError=True)
+        else:
+            mx.abort("repo %s is not on master or on %s" % (d, current_branch))
+
+    # make sure we can update the overlays
+    overlaydir = join(SUITE.dir, "..", "ci-overlays")
+    if not os.path.exists(overlaydir):
+        mx.abort("Overlays repo must be next to graalpython repo")
+        vc = mx.VC.get_vc(overlaydir)
+    if vc.isDirty(overlaydir):
+        mx.abort("overlays repo must be clean")
+    overlaybranch = vc.active_branch(overlaydir)
+    if overlaybranch == "master":
+        vc.pull(overlaydir)
+        vc.set_branch(overlaydir, current_branch, with_remote=False)
+        vc.git_command(overlaydir, ["checkout", current_branch], abortOnError=True)
+    elif overlaybranch == current_branch:
+        pass
     else:
-        rev = "HEAD"
-    if not args:
-        args = ["truffle"]
-    if "overlay" in args:
-        mx.log("Updating overlays")
-        dirs = os.listdir(os.path.join(SUITE.dir, ".."))
-        for d in dirs:
-            if d.startswith("graalpython"):
-                d = os.path.join(SUITE.dir, "..", d)
-                jsonnetfile = os.path.join(d, "ci.jsonnet")
-                if not os.path.exists(jsonnetfile):
-                    continue
-                overlaydir = os.path.join(d, "..", "ci-overlays")
-                if not os.path.exists(overlaydir):
-                    mx.abort("Overlays must be next to repo")
-                vc = mx.VC.get_vc(overlaydir)
-                tip = str(vc.tip(overlaydir)).strip()
-                with open(jsonnetfile, "w") as f:
-                    f.write('{ overlay: "%s" }\n' % tip)
-        args.remove("overlay")
-    if "sulong" in args:
-        args.append("regex")
-    if "regex" in args:
-        args.append("sulong")
-    if "truffle" in args:
-        args.remove("truffle")
-        args += ["sulong", "regex"]
-    if "sulong" in args:
-        join = os.path.join
-        callback = lambda: shutil.copy(
-            join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
-            join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
-        ) and shutil.copy(
-            join(mx.dependency("SULONG_HOME").output, "include", "polyglot.h"),
-            join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
-        )
-    else:
-        callback = None
-    for name in set(args):
-        update_import(name, rev=rev, callback=callback)
+        mx.abort("overlays repo must be on master or branch %s" % current_branch)
+
+    # find all imports we might update
+    imports_to_update = set()
+    for suite_py in suite_py_files:
+        dict = {}
+        with open(suite_py) as f:
+            exec(f.read(), dict, dict)
+        for suite in dict["suite"].get("imports", {}).get("suites", []):
+            import_name = suite["name"]
+            if suite.get("version") and import_name not in local_names:
+                imports_to_update.add(import_name)
+
+    # now update all imports
+    for name in imports_to_update:
+        for idx, suite_py in enumerate(suite_py_files):
+            update_import(name, suite_py, rev=("HEAD" if idx else "origin/master"))
+
+    # copy files we inline from our imports
+    shutil.copy(
+        join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
+        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h"))
+    shutil.copy(
+        join(mx.dependency("SULONG_HOME").output, "include", "polyglot.h"),
+        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h"))
+    shutil.copy(
+        join(mx.suite("truffle").dir, "..", "common.json"),
+        join(overlaydir, "python", "graal-common.json"))
+
+    repos_updated = []
+
+    # commit ci if dirty
+    overlaytip = str(vc.tip(overlaydir)).strip()
+    if vc.isDirty(overlaydir):
+        vc.commit(overlaydir, "Update Python imports")
+        overlaytip = str(vc.tip(overlaydir)).strip()
+        repos_updated.append(overlaydir)
+
+    # update ci import in all our repos, commit the full update, and push verbosely
+    prev_verbosity = mx._opts.very_verbose
+    for repo in repos:
+        jsonnetfile = os.path.join(repo, "ci.jsonnet")
+        with open(jsonnetfile, "w") as f:
+            f.write('{ "overlay": "%s" }\n' % overlaytip)
+        if vc.isDirty(repo):
+            vc.commit(repo, "Update imports")
+            try:
+                mx._opts.very_verbose = True
+                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+            finally:
+                mx._opts.very_verbose = prev_verbosity
+            repos_updated.append(repo)
+
+    if repos_updated:
+        mx.log("These repos were updated: " + ", ".join(repos_updated))
 
 
 def python_style_checks(args):
