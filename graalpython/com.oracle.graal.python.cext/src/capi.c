@@ -55,6 +55,8 @@ void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
+uint32_t Py_Truffle_Options;
+
 alloc_reporter_fun_t PyObject_AllocationReporter;
 
 
@@ -75,6 +77,8 @@ static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT_LANDING_L = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_D = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_PTR = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
+
+    Py_Truffle_Options = (uint32_t) polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Native_Options"));
 
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
 

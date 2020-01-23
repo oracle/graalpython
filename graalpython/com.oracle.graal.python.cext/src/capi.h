@@ -51,6 +51,10 @@
 
 #define SRC_CS "utf-8"
 
+/* Flags definitions representing global (debug) options. */
+#define PY_TRUFFLE_TRACE_MEM 0x1
+
+
 /* Private types are defined here because we need to declare the type cast. */
 typedef struct {
     PyObject_HEAD
@@ -86,6 +90,7 @@ extern void *PY_BUILTIN;
 extern void *Py_NoValue;
 extern init_upcall upcalls[];
 extern unsigned init_upcall_n;
+extern uint32_t Py_Truffle_Options;
 
 /* upcall helpers */
 MUST_INLINE
@@ -106,6 +111,11 @@ int64_t polyglot_ensure_i64(void *obj) {
 MUST_INLINE
 double polyglot_ensure_double(void *obj) {
 	return polyglot_fits_in_double(obj) ? polyglot_as_double(obj) : (double) ((int64_t)obj);
+}
+
+MUST_INLINE
+int PyTruffle_Trace_Memory() {
+	return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
 }
 
 /* upcall functions for calling into Python */
@@ -231,10 +241,12 @@ PyTypeObject* native_type_to_java(PyTypeObject* type) {
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE
 void PyTruffle_Object_Free(void* ptr) {
-	// (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GC_Untrack", ptr);
 	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
 		(void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_Free", native_to_java(ptr));
 	} else {
+	    if(PyTruffle_Trace_Memory()) {
+	        (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Trace_Free", (int64_t)ptr);
+	    }
 		free(ptr);
 	}
 }

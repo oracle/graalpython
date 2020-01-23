@@ -43,27 +43,34 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Stack;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
+import org.graalvm.collections.Pair;
 
 public final class CApiContext extends CExtContext {
 
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private final LinkedList<Object> stack = new LinkedList<>();
+    private Map<Object, Pair<PFrame.Reference, String>> allocatedNativeMemory;
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -77,6 +84,7 @@ public final class CApiContext extends CExtContext {
                 Thread.currentThread().interrupt();
             }
             if (reference instanceof NativeObjectReference) {
+                stack.remove(reference);
                 return new CApiReferenceCleanerAction(((NativeObjectReference) reference).getObject());
             }
             return null;
@@ -115,6 +123,31 @@ public final class CApiContext extends CExtContext {
 
     public void createNativeReference(PythonAbstractNativeObject nativeObject) {
         stack.push(new NativeObjectReference(nativeObject, nativeObjectsQueue));
+    }
+
+    @TruffleBoundary
+    public void traceFree(Object ptr) {
+        traceFree(ptr, null, null);
+    }
+
+    @TruffleBoundary
+    public void traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
+        if(allocatedNativeMemory == null) {
+            allocatedNativeMemory = new HashMap<>();
+        }
+        Object value = allocatedNativeMemory.remove(ptr);
+        if (value == null) {
+            PythonLanguage.getLogger().severe(String.format("freeing non-allocated memory 0x%X (maybe a double-free?)", ptr));
+        }
+    }
+
+    @TruffleBoundary
+    public void traceAlloc(Object ptr, PFrame.Reference curFrame, String clazzName) {
+        if(allocatedNativeMemory == null) {
+            allocatedNativeMemory = new HashMap<>();
+        }
+        Object value = allocatedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+        assert value == null : "native memory allocator reserved same memory twice";
     }
 
 }

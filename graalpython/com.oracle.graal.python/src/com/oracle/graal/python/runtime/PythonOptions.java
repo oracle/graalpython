@@ -33,19 +33,19 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Option;
-import com.oracle.truffle.api.TruffleLanguage.Env;
-
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionStability;
 import org.graalvm.options.OptionValues;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Option;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 /**
  * The options for Python. Note that some options have an effect on the AST structure, and thus must
@@ -187,6 +187,12 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "Enable tracing of native memory (ATTENTION: this will have significant impact on CExt execution performance).") //
+    public static final OptionKey<Boolean> TraceNativeMemory = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.EXPERT, help = "If native memory tracing is enabled, also capture stack.") //
+    public static final OptionKey<Boolean> TraceNativeMemoryCalls = new OptionKey<>(false);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 

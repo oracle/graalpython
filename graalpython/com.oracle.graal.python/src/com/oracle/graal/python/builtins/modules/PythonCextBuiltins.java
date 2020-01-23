@@ -60,10 +60,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import com.oracle.graal.python.util.Supplier;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -98,8 +95,8 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWr
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
@@ -156,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -197,6 +195,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -213,6 +212,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -222,6 +222,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -3017,18 +3018,106 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    abstract static class PyTruffleGcTracingNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = {"!traceCalls(context)", "traceMem(context)"})
+        int doNativeWrapper(VirtualFrame frame, Object ptr,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
+            trace(context, asPointer(ptr, lib), null, null);
+            return 0;
+        }
+
+        @Specialization(guards = {"traceCalls(context)", "traceMem(context)"})
+        int doNativeWrapperTraceCall(VirtualFrame frame, Object ptr,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
+
+            PFrame.Reference ref = getCurrentFrameRef.execute(frame);
+            trace(context, asPointer(ptr, lib), ref, null);
+            return 0;
+        }
+
+        @Specialization(guards = "!traceMem(context)")
+        static int doNothing(VirtualFrame frame, Object ptr,
+                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context) {
+            // do nothing
+            return 0;
+        }
+
+        static boolean traceMem(PythonContext context) {
+            return PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
+        }
+
+        static boolean traceCalls(PythonContext context) {
+            return PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
+        }
+
+        static Object asPointer(Object ptr, InteropLibrary lib) {
+            // The first branch should avoid materialization of pointer objects.
+            if (lib.isPointer(ptr)) {
+                try {
+                    return lib.asPointer(ptr);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException();
+                }
+            }
+            return ptr;
+        }
+
+        protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("should not reach");
+        }
+    }
+
     @Builtin(name = "PyTruffle_GC_Untrack", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffleGcUntrack extends PythonUnaryBuiltinNode {
-        private static final Set<Object> freed = new HashSet<>();
+    abstract static class PyTruffleGcUntrack extends PyTruffleGcTracingNode {
+
+        @Override
+        protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
+            context.getCApiContext().traceFree(ptr, ref, className);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_GC_Track", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleGcTrack extends PyTruffleGcTracingNode {
+
+        @Override
+        protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
+            context.getCApiContext().traceAlloc(ptr, ref, className);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Native_Options", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class PyTruffleNativeOptions extends PythonBuiltinNode {
+        private static final int TRACE_MEM = 0x1;
 
         @Specialization
-        @TruffleBoundary
-        static int doNativeWrapper(Object ptr) {
-            if (freed.contains(ptr)) {
-                throw new IllegalStateException("double free of " + ptr);
+        static int getNativeOptions(
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            int options = 0;
+            if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory)) {
+                options |= TRACE_MEM;
             }
-            freed.add(ptr);
+            return options;
+        }
+    }
+
+    /**
+     * This will be called right before the call to stdlib's {@code free} function.
+     */
+    @Builtin(name = "PyTruffle_Trace_Free", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleTraceFree extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int doNativeWrapper(long ptr) {
+            PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: 0x%X", ptr));
             return 0;
         }
     }
