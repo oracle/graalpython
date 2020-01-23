@@ -792,6 +792,8 @@ public abstract class CExtNodes {
     public abstract static class FromCharPointerNode extends CExtBaseNode {
         public abstract Object execute(Object charPtr);
 
+        // TODO(fa): add a specialization that handles 'PySequenceArrayWrapper' instances
+
         @Specialization
         PString execute(Object charPtr,
                         @Cached PythonObjectFactory factory) {
