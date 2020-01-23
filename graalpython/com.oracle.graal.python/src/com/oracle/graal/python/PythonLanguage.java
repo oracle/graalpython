@@ -584,6 +584,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (singleThreaded) {
             return super.isThreadAccessAllowed(thread, singleThreaded);
         }
+        if (isWithThread == null) {
+            isWithThread = false;
+        }
         return isWithThread;
     }
 
