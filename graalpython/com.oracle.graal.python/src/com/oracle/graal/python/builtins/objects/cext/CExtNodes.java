@@ -114,6 +114,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -2282,55 +2283,12 @@ public abstract class CExtNodes {
 
         public abstract void execute(Frame frame, PException e);
 
-        @Specialization(guards = "frame != null")
-        void doWithFrame(Frame frame, PException e,
+        @Specialization
+        static void doWithFrame(Frame frame, PException e,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            transformToNative(context, PArguments.getCurrentFrameInfo(frame), e);
-        }
-
-        protected static ConditionProfile[] getFlag() {
-            ConditionProfile[] flag = new ConditionProfile[1];
-            return flag;
-        }
-
-        @Specialization(guards = "frame == null")
-        void doWithoutFrame(@SuppressWarnings("unused") Frame frame, PException e,
-                        @Cached(value = "getFlag()", dimensions = 1) ConditionProfile[] flag,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PFrame.Reference ref = context.peekTopFrameInfo();
-            if (flag[0] == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // executed the first time, don't pollute the profile, we'll mark the caller to pass
-                // the info on the next call
-                flag[0] = ConditionProfile.createBinaryProfile();
-                if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
-                }
-            }
-            if (flag[0].profile(ref == null)) {
-                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
-            }
-            transformToNative(context, ref, e);
-        }
-
-        @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
-        void doGeneric(Frame frame, PException e,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PFrame.Reference ref;
-            if (frame == null) {
-                ref = context.peekTopFrameInfo();
-                if (ref == null) {
-                    ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
-                }
-            } else {
-                ref = PArguments.getCurrentFrameInfo(frame);
-            }
-            transformToNative(context, ref, e);
-        }
-
-        public static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p) {
-            p.getExceptionObject().reifyException(frameInfo);
-            context.setCurrentException(p);
+            e.getExceptionObject().reifyException(getCurrentFrameRef.execute(frame));
+            context.setCurrentException(e);
         }
     }
 
