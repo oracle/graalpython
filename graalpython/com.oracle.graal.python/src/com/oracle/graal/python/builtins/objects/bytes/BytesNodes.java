@@ -216,6 +216,40 @@ public abstract class BytesNodes {
 
         public abstract int execute(VirtualFrame frame, PIBytesLike bytes, Object sub, Object starting, Object ending);
 
+        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, int sub, Object starting, Object ending);
+
+        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, int sub, int starting, Object ending);
+
+        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, int sub, int starting, int ending);
+
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, int starting, int ending) {
+            SequenceStorage haystack = primary.getSequenceStorage();
+            int len1 = haystack.length();
+
+            SequenceStorage needle = sub.getSequenceStorage();
+            int len2 = needle.length();
+
+            int start = getNormalizeIndexNode().execute(starting, len1);
+            int end = getNormalizeIndexNode().execute(ending, len1);
+
+            return findSubSequence(frame, haystack, len1, needle, len2, start, end);
+        }
+
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, int starting, Object ending) {
+            SequenceStorage haystack = primary.getSequenceStorage();
+            int len1 = haystack.length();
+
+            SequenceStorage needle = sub.getSequenceStorage();
+            int len2 = needle.length();
+
+            int start = getNormalizeIndexNode().execute(starting, len1);
+            int end = getNormalizeIndexNode().execute(ending, len1);
+
+            return findSubSequence(frame, haystack, len1, needle, len2, start, end);
+        }
+
         @Specialization
         int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, Object starting, Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
@@ -227,6 +261,11 @@ public abstract class BytesNodes {
             int start = getNormalizeIndexNode().execute(starting, len1);
             int end = getNormalizeIndexNode().execute(ending, len1);
 
+            return findSubSequence(frame, haystack, len1, needle, len2, start, end);
+        }
+
+        private int findSubSequence(VirtualFrame frame, SequenceStorage haystack, int len1, SequenceStorage needle, int len2, int start, int endInput) {
+            int end = endInput;
             if (start >= len1 || len1 < len2) {
                 return -1;
             } else if (end > len1) {
@@ -253,16 +292,47 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, int sub, Object starting, @SuppressWarnings("unused") Object ending) {
+        int find(VirtualFrame frame, PIBytesLike primary, int sub, int starting, int ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
             int start = getNormalizeIndexNode().execute(starting, len1);
+            int end = getNormalizeIndexNode().execute(ending, len1);
+
+            return findElement(frame, sub, haystack, len1, start, end);
+        }
+
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike primary, int sub, int starting, Object ending) {
+            SequenceStorage haystack = primary.getSequenceStorage();
+            int len1 = haystack.length();
+
+            int start = getNormalizeIndexNode().execute(starting, len1);
+            int end = getNormalizeIndexNode().execute(ending, len1);
+
+            return findElement(frame, sub, haystack, len1, start, end);
+        }
+
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike primary, int sub, Object starting, Object ending) {
+            SequenceStorage haystack = primary.getSequenceStorage();
+            int len1 = haystack.length();
+
+            int start = getNormalizeIndexNode().execute(starting, len1);
+            int end = getNormalizeIndexNode().execute(ending, len1);
+
+            return findElement(frame, sub, haystack, len1, start, end);
+        }
+
+        private int findElement(VirtualFrame frame, int sub, SequenceStorage haystack, int len1, int start, int endInput) {
+            int end = endInput;
             if (start >= len1) {
                 return -1;
+            } else if (end > len1) {
+                end = len1;
             }
 
-            for (int i = start; i < len1; i++) {
+            for (int i = start; i < end; i++) {
                 int hb = getGetLeftItemNode().executeInt(frame, haystack, i);
                 if (hb == sub) {
                     return i;

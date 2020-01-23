@@ -98,6 +98,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -691,38 +692,37 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class FindNode extends PythonBuiltinNode {
-        @Child private BytesNodes.FindNode findNode;
-        @Child private SequenceStorageNodes.LenNode lenNode;
-
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(frame, self, sub, 0, getLength(self.getSequenceStorage()));
-        }
-
-        @Specialization
-        int find(VirtualFrame frame, PIBytesLike self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
-            return find(frame, self, sub, start, getLength(self.getSequenceStorage()));
+        int find(VirtualFrame frame, PIBytesLike self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
+            return find(frame, self, sub, 0, lenNode.execute(self.getSequenceStorage()), findNode);
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike self, Object sub, int start, int ending) {
-            return getFindNode().execute(frame, self, sub, start, ending);
+        int find(VirtualFrame frame, PIBytesLike self, Object sub, int start, @SuppressWarnings("unused") PNone end,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
+            return find(frame, self, sub, start, lenNode.execute(self.getSequenceStorage()), findNode);
         }
 
-        private BytesNodes.FindNode getFindNode() {
-            if (findNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                findNode = insert(BytesNodes.FindNode.create());
-            }
-            return findNode;
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike self, Object sub, Object start, @SuppressWarnings("unused") PNone end,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
+            return find(frame, self, sub, start, lenNode.execute(self.getSequenceStorage()), findNode);
         }
 
-        private int getLength(SequenceStorage s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(s);
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike self, Object sub, int start, int ending,
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
+            return findNode.execute(frame, self, sub, start, ending);
+        }
+
+        @Specialization
+        int find(VirtualFrame frame, PIBytesLike self, Object sub, Object start, Object ending,
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
+            return findNode.execute(frame, self, sub, start, ending);
         }
     }
 
