@@ -80,11 +80,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PComplex)
 public class ComplexBuiltins extends PythonBuiltins {
@@ -289,11 +291,31 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplex(PComplex left, PComplex right) {
-            double opNormSq = right.getReal() * right.getReal() + right.getImag() * right.getImag();
-            double realPart = left.getReal() * right.getReal() - left.getImag() * -right.getImag();
-            double imagPart = left.getReal() * -right.getImag() + left.getImag() * right.getReal();
-            return factory().createComplex(realPart / opNormSq, imagPart / opNormSq);
+        PComplex doComplex(PComplex left, PComplex right,
+                        @Cached("createBinaryProfile()") ConditionProfile topConditionProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile zeroDivisionProfile) {
+            double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
+            double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
+            double real;
+            double imag;
+            if (topConditionProfile.profile(absRightReal >= absRightImag)) {
+                /* divide tops and bottom by right.real */
+                if (zeroDivisionProfile.profile(absRightReal == 0.0)) {
+                    throw raise(PythonErrorType.ZeroDivisionError, "complex division by zero");
+                } else {
+                    double ratio = right.getImag() / right.getReal();
+                    double denom = right.getReal() + right.getImag() * ratio;
+                    real = (left.getReal() + left.getImag() * ratio) / denom;
+                    imag = (left.getImag() - left.getReal() * ratio) / denom;
+                }
+            } else {
+                /* divide tops and bottom by right.imag */
+                double ratio = right.getReal() / right.getImag();
+                double denom = right.getReal() * ratio + right.getImag();
+                real = (left.getReal() * ratio + left.getImag()) / denom;
+                imag = (left.getImag() * ratio - left.getReal()) / denom;
+            }
+            return factory().createComplex(real, imag);
         }
 
         @SuppressWarnings("unused")
@@ -533,11 +555,17 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.notEqual(right);
+        }
+
+        @Specialization
+        boolean doComplex(PComplex left, long right) {
+            return left.getImag() != 0 || left.getReal() != right;
         }
 
         @SuppressWarnings("unused")
@@ -632,7 +660,7 @@ public class ComplexBuiltins extends PythonBuiltins {
             return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
         }
     }
-    
+
     @GenerateNodeFactory
     @Builtin(name = "conjugate", minNumOfPositionalArgs = 1)
     abstract static class ConjugateNode extends PythonUnaryBuiltinNode {
