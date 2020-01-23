@@ -2,5 +2,9 @@
 *ComplexTest.test_boolcontext
 *ComplexTest.test_divmod
 *ComplexTest.test_file
+*ComplexTest.test_getnewargs
+*ComplexTest.test_neg
 *ComplexTest.test_negated_imaginary_literal
+*ComplexTest.test_overflow
 *ComplexTest.test_plus_minus_0j
+*ComplexTest.test_repr_str

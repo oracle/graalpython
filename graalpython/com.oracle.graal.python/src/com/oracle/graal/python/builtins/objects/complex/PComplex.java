@@ -111,6 +111,14 @@ public final class PComplex extends PythonBuiltinObject {
         if (value == Math.floor(value) && value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
             return Long.toString((long) value);
         } else {
+            if (Double.isInfinite(value)) {
+                if (Double.NEGATIVE_INFINITY == value) {
+                    return "-inf";
+                }
+                return "inf";
+            } else if (Double.isNaN(value)) {
+                return "nan";
+            }
             return Double.toString(value);
         }
     }

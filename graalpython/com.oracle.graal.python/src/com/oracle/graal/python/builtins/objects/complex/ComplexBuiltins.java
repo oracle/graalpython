@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import java.util.List;
@@ -275,6 +276,19 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        PComplex doComplexInt(PComplex left, long right) {
+            double opNormSq = right * right;
+            double realPart = left.getReal() * right;
+            double imagPart = left.getImag() * right;
+            return factory().createComplex(realPart / opNormSq, imagPart / opNormSq);
+        }
+
+        @Specialization
+        PComplex doComplexPInt(PComplex right, PInt left) {
+            return doComplexDouble(right, left.doubleValue());
+        }
+
+        @Specialization
         PComplex doComplex(PComplex left, PComplex right) {
             double opNormSq = right.getReal() * right.getReal() + right.getImag() * right.getImag();
             double realPart = left.getReal() * right.getReal() - left.getImag() * -right.getImag();
@@ -295,10 +309,27 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class RDivNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex right, double left) {
-            double opNormSq = left * left;
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
+            double twice = 2 * right.getImag() * right.getReal();
             double realPart = right.getReal() * left;
             double imagPart = right.getImag() * left;
-            return factory().createComplex(opNormSq / realPart, opNormSq / imagPart);
+            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
+        }
+
+        @Specialization
+        PComplex doComplexInt(PComplex right, long left) {
+            double oprealSq = right.getReal() * right.getReal();
+            double opimagSq = right.getImag() * right.getImag();
+            double twice = 2 * right.getImag() * right.getReal();
+            double realPart = right.getReal() * left;
+            double imagPart = right.getImag() * left;
+            return factory().createComplex(realPart / (oprealSq + opimagSq), -imagPart / twice);
+        }
+
+        @Specialization
+        PComplex doComplexPInt(PComplex right, PInt left) {
+            return doComplexDouble(right, left.doubleValue());
         }
 
         @SuppressWarnings("unused")
@@ -371,10 +402,29 @@ public class ComplexBuiltins extends PythonBuiltins {
             return factory().createComplex(left.getReal() - right.getReal(), left.getImag() - right.getImag());
         }
 
+        @Specialization
+        PComplex doComplex(PComplex left, long right) {
+            return factory().createComplex(left.getReal() - right, left.getImag());
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
+    abstract static class RSubNode extends SubNode {
+        @Specialization
+        PComplex doComplexDouble(PComplex left, double right) {
+            return factory().createComplex(right - left.getReal(), -left.getImag());
+        }
+
+        @Specialization
+        PComplex doComplex(PComplex left, long right) {
+            return factory().createComplex(right - left.getReal(), -left.getImag());
         }
     }
 
