@@ -91,8 +91,8 @@ public final class PComplex extends PythonBuiltinObject {
     @Override
     @TruffleBoundary
     public String toString() {
-        if (Double.compare(real, 0.0) == 0) {
-            return toString(imag) + "j";
+        if (Double.compare(real, 0.0) == 0) {     
+            return Double.compare(imag, 0.0) >= 0 ?  toString(imag) + "j" : String.format("-%sj", toString(-imag));
         } else {
             String realString = toString(real);
             if (real == 0.0) {
