@@ -509,9 +509,9 @@ public abstract class CExtNodes {
             if (cApiContext != null) {
                 // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
                 IncRefNode.doNativeObject(object, callIncrefNode);
-                return new PythonAbstractNativeObject(object, null);
+                return new PythonAbstractNativeObject(object, cApiContext);
             }
-            return new PythonAbstractNativeObject(object, cApiContext);
+            return new PythonAbstractNativeObject(object, null);
         }
 
         @Specialization
