@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -85,6 +85,20 @@ public abstract class CastToByteNode extends Node {
     @Specialization
     protected byte doByte(byte value) {
         return value;
+    }
+
+    @Specialization(rewriteOn = ArithmeticException.class)
+    protected byte doShort(short value) {
+        return PInt.byteValueExact(value);
+    }
+
+    @Specialization(replaces = "doShort")
+    protected byte doShortOvf(short value) {
+        try {
+            return PInt.byteValueExact(value);
+        } catch (ArithmeticException e) {
+            return handleRangeError(value);
+        }
     }
 
     @Specialization(rewriteOn = ArithmeticException.class)
