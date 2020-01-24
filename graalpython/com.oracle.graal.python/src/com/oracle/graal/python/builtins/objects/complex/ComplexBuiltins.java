@@ -567,12 +567,12 @@ public class ComplexBuiltins extends PythonBuiltins {
         boolean doComplex(PComplex left, long right) {
             return left.getImag() != 0 || left.getReal() != right;
         }
-        
+
         @Specialization
         boolean doComplex(PComplex left, PInt right) {
             return left.getImag() != 0 || left.getReal() != right.doubleValue();
         }
-        
+
         @Specialization
         boolean doComplex(PComplex left, double right) {
             return left.getImag() != 0 || left.getReal() != right;
