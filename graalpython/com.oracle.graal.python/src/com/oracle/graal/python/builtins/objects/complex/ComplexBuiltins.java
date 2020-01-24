@@ -498,8 +498,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.greaterEqual(right);
+        PNotImplemented doComplex(PComplex left, PComplex right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @SuppressWarnings("unused")
@@ -513,8 +513,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.greaterThan(right);
+        PNotImplemented doComplex(PComplex left, PComplex right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @SuppressWarnings("unused")
@@ -528,8 +528,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.lessThan(right);
+        PNotImplemented doComplex(PComplex left, PComplex right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @SuppressWarnings("unused")
@@ -543,8 +543,8 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
-            return left.lessEqual(right);
+        PNotImplemented doComplex(PComplex left, PComplex right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @SuppressWarnings("unused")
@@ -565,6 +565,16 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doComplex(PComplex left, long right) {
+            return left.getImag() != 0 || left.getReal() != right;
+        }
+        
+        @Specialization
+        boolean doComplex(PComplex left, PInt right) {
+            return left.getImag() != 0 || left.getReal() != right.doubleValue();
+        }
+        
+        @Specialization
+        boolean doComplex(PComplex left, double right) {
             return left.getImag() != 0 || left.getReal() != right;
         }
 
