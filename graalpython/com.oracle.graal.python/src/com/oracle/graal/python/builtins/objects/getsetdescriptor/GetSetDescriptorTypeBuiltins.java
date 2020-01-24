@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,19 +101,22 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Child private GetMroNode getMroNode;
         @Child private GetNameNode getNameNode;
         @Child private IsSameTypeNode isSameTypeNode;
+        @Child private GetClassNode getClassNode;
 
-        private final IsBuiltinClassProfile isNoneBuiltinClassProfile = IsBuiltinClassProfile.create();
+        private final IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
         private final IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
         private final BranchProfile errorBranch = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj, LazyPythonClass type) {
+        protected boolean descr_check(LazyPythonClass descrType, String name, Object obj) {
             if (PGuards.isNone(obj)) {
-                if (!isNoneBuiltinClassProfile.profileClass(type, PythonBuiltinClassType.PNone)) {
+                // object's descriptors (__class__,...) need to work on every object including None
+                if (!isBuiltinPythonClassObject.profileClass(descrType, PythonBuiltinClassType.PythonObject)) {
                     return true;
                 }
             }
+            PythonAbstractClass type = getClass(obj);
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
                 for (PythonAbstractClass o : getMro(type)) {
@@ -130,6 +133,14 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             }
             errorBranch.enter();
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
+        }
+
+        private PythonAbstractClass getClass(Object obj) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(obj);
         }
 
         private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
@@ -157,16 +168,16 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, minNumOfPositionalArgs = 3)
+    @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends GetSetNode {
         private final BranchProfile branchProfile = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
-        Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj, LazyPythonClass type,
+        Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached("create()") CallUnaryMethodNode callNode) {
-            if (descr_check(descr.getType(), descr.getName(), obj, type)) {
+            if (descr_check(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -178,10 +189,10 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getSlot(HiddenKeyDescriptor descr, Object obj, LazyPythonClass type,
+        Object getSlot(HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached("create()") ReadAttributeFromObjectNode readNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
-            if (descr_check(descr.getType(), descr.getKey().getName(), obj, type)) {
+            if (descr_check(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
             Object val = readNode.execute(obj, descr.getKey());
@@ -195,14 +206,12 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends GetSetNode {
-        @Child GetClassNode getClassNode = GetClassNode.create();
         private final BranchProfile branchProfile = BranchProfile.create();
 
         @Specialization
         Object set(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Cached("create()") CallBinaryMethodNode callNode) {
-            // the noneType is not important here - there are no setters on None
-            if (descr_check(descr.getType(), descr.getName(), obj, getClassNode.execute(obj))) {
+            if (descr_check(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
             if (descr.getSet() != null) {
@@ -216,8 +225,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object setSlot(HiddenKeyDescriptor descr, Object obj, Object value,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            // the noneType is not important here - there are no setters on None
-            if (descr_check(descr.getType(), descr.getKey().getName(), obj, getClassNode.execute(obj))) {
+            if (descr_check(descr.getType(), descr.getKey().getName(), obj)) {
                 return descr;
             }
             return writeNode.execute(obj, descr.getKey(), value);
