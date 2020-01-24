@@ -131,33 +131,20 @@ public abstract class CodeNodes {
                 PythonCore core = PythonLanguage.getCore();
                 if ((flags & PCode.FLAG_MODULE) == 0) {
                     // we're looking for the function, not the module
-                    String funcdef;
-                    funcdef = createFuncdef(codestring, freevars, name);
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), null);
+                    String funcdef = createFuncdef(codestring, freevars, name);
+                    MaterializedFrame frame = getFrameForFreeVars(freevars, argcount);
+                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), frame);
                     Object[] args = PArguments.create();
                     PDict globals = factory.createDict();
                     PArguments.setGlobals(args, globals);
                     Object function = InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
-                    if (function == PNone.NONE) {
-                        function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
-                    }
                     if (function instanceof PFunction) {
                         rootNode = ((PFunction) function).getFunctionRootNode();
                     } else {
                         throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
                     }
                 } else {
-                    MaterializedFrame frame = null;
-                    if (freevars.length > 0) {
-                        FrameDescriptor frameDescriptor = new FrameDescriptor();
-                        frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
-                        for (int i = 0; i < freevars.length; i++) {
-                            Object ident = freevars[i];
-                            FrameSlot slot = frameDescriptor.addFrameSlot(ident);
-                            frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-                            frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
-                        }
-                    }
+                    MaterializedFrame frame = getFrameForFreeVars(freevars, argcount);
                     rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);
                     assert rootNode instanceof ModuleRootNode;
                 }
@@ -186,30 +173,40 @@ public abstract class CodeNodes {
             return factory.createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
 
+        private MaterializedFrame getFrameForFreeVars(Object[] freevars, int argcount) {
+            MaterializedFrame frame = null;
+            if (freevars.length > 0) {
+                FrameDescriptor frameDescriptor = new FrameDescriptor();
+                frame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(argcount), frameDescriptor);
+                for (int i = 0; i < freevars.length; i++) {
+                    Object ident = freevars[i];
+                    FrameSlot slot = frameDescriptor.addFrameSlot(ident);
+                    frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
+                    frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
+                }
+            }
+            return frame;
+        }
+
         private static String createFuncdef(byte[] codestring, Object[] freevars, String name) {
             CompilerAsserts.neverPartOfCompilation();
+            String codeStr = new String(codestring);
+            boolean isLambda = codeStr.trim().startsWith("lambda");
             if (freevars.length > 0) {
                 // we build an outer function to provide the initial scoping
                 String outernme = "_____" + System.nanoTime();
                 StringBuilder sb = new StringBuilder();
                 sb.append("def ").append(outernme).append("():\n");
-                for (Object freevar : freevars) {
-                    String v;
-                    if (freevar instanceof PString) {
-                        v = ((PString) freevar).getValue();
-                    } else if (freevar instanceof String) {
-                        v = (String) freevar;
-                    } else {
-                        continue;
-                    }
-                    sb.append(" ").append(v).append(" = None\n");
+                if (isLambda) {
+                    sb.append(" ").append("return ").append(codeStr);
+                } else {
+                    sb.append(" ").append(codeStr).append("\n");
+                    sb.append(" ").append("return ").append(name);
                 }
-                sb.append(" global ").append(name).append("\n");
-                sb.append(" ").append(new String(codestring));
                 sb.append("\n\n").append(outernme).append("()");
                 return sb.toString();
             } else {
-                return new String(codestring);
+                return codeStr;
             }
         }
 
