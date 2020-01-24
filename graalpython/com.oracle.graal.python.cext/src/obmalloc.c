@@ -62,27 +62,26 @@ void PyObject_Free(void* ptr) {
 }
 
 void* PyMem_Malloc(size_t size) {
+    void* ptr;
     if (size > (size_t)PY_SSIZE_T_MAX) {
         return NULL;
     }
-    if(size == 0) {
-        return malloc(1);
-    }
-    return malloc(size);
+    ptr = malloc(size == 0 ? 1 : size);
+    PyTruffle_Report_Allocation(ptr, size);
+    return ptr;
 }
 
 void* PyMem_RawMalloc(size_t size) {
-    if(size == 0) {
-        return malloc(1);
-    }
-    return malloc(size);
+    void* ptr = malloc(size == 0 ? 1 : size);
+    PyTruffle_Report_Allocation(ptr, size);
+    return ptr;
 }
 
 void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
-    if(nelem == 0 || elsize == 0) {
-        return calloc(1, elsize);
-    }
-    return calloc(nelem, elsize);
+    size_t n = nelem == 0 || elsize == 0 ? 1 : nelem;
+    void* ptr = calloc(n, elsize);
+    PyTruffle_Report_Allocation(ptr, n * elsize);
+    return ptr;
 }
 
 void* PyMem_RawRealloc(void *ptr, size_t new_size) {
@@ -90,7 +89,7 @@ void* PyMem_RawRealloc(void *ptr, size_t new_size) {
 }
 
 void PyMem_RawFree(void *ptr) {
-    free(ptr);
+	PyTruffle_Object_Free(ptr);
 }
 
 void * PyMem_Realloc(void *ptr, size_t new_size) {
@@ -98,7 +97,7 @@ void * PyMem_Realloc(void *ptr, size_t new_size) {
 }
 
 void PyMem_Free(void *ptr) {
-    free(ptr);
+	PyTruffle_Object_Free(ptr);
 }
 
 int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size) {
