@@ -157,10 +157,7 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
     if(cls->tp_dictoffset) {
     	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
     }
-    Py_TYPE(newObj) = cls;
-    if (nitems > 0) {
-        ((PyVarObject*)newObj)->ob_size = nitems;
-    }
+    PyObject_INIT_VAR(newObj, cls, nitems);
     return newObj;
 }
 
