@@ -178,6 +178,13 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
        _jls_ ## name = polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string(#name, SRC_CS)); \
     }
 
+#define UPCALL_TYPED_ID(name, fun_t)                                                                     \
+    static fun_t _jls_ ## name;                                                                          \
+    __attribute__((constructor))                                                                         \
+    static void init_upcall_ ## name(void) {                                                             \
+       _jls_ ## name = (fun_t)polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string(#name, SRC_CS)); \
+    }
+
 #define as_char_pointer(obj) ((const char*)UPCALL_CEXT_PTR(polyglot_from_string("to_char_pointer", "ascii"), native_to_java(obj)))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
 #define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long))))

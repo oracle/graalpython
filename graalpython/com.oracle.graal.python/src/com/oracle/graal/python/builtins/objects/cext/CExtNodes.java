@@ -62,8 +62,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallArgsToSulongNodeGen;
@@ -85,8 +85,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -115,7 +113,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -135,6 +132,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -147,7 +145,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -440,7 +437,7 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
-    public abstract static class AsPythonObjectNode extends CExtAsPythonObjectNode {
+    public abstract static class AsPythonObjectBaseNode extends CExtAsPythonObjectNode {
 
         @Specialization(guards = "object.isBool()")
         static boolean doBoolNativeWrapper(@SuppressWarnings("unused") CExtContext cextContext, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
@@ -484,21 +481,6 @@ public abstract class CExtNodes {
             return lib.getDelegate(object);
         }
 
-        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
-                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PCallCapiFunction callIncrefNode) {
-            CApiContext cApiContext = context.getCApiContext();
-            if (cApiContext != null) {
-                // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
-                IncRefNode.doNativeObject(object, callIncrefNode);
-                return new PythonAbstractNativeObject(object, cApiContext);
-            }
-            return new PythonAbstractNativeObject(object, null);
-        }
-
         @Specialization
         static PythonNativeNull doNativeNull(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonNativeNull object) {
             return object;
@@ -539,10 +521,31 @@ public abstract class CExtNodes {
             return d;
         }
 
-        @Specialization
+        @Specialization(guards = "isFallback(obj, getClassNode, isForeignClassProfile)")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj,
+                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonErrorType.SystemError, "invalid object from native: %s", obj);
+        }
+
+        protected static boolean isFallback(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+            if (CApiGuards.isNativeWrapper(obj)) {
+                return false;
+            }
+            if (CApiGuards.isNativeNull(obj)) {
+                return false;
+            }
+            if (PGuards.isAnyPythonObject(obj)) {
+                return false;
+            }
+            if (isForeignObject(obj, getClassNode, isForeignClassProfile)) {
+                return false;
+            }
+            if (PGuards.isString(obj)) {
+                return false;
+            }
+            return !(obj instanceof Boolean || obj instanceof Byte || obj instanceof Integer || obj instanceof Long || obj instanceof Double);
         }
 
         protected static boolean isNative(IsPointerNode isPointerNode, PythonNativeWrapper object) {
@@ -553,8 +556,45 @@ public abstract class CExtNodes {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
 
-        protected static boolean isForeignObject(TruffleObject obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
+        protected static boolean isForeignObject(Object obj, GetLazyClassNode getClassNode, IsBuiltinClassProfile isForeignClassProfile) {
             return isForeignClassProfile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.ForeignObject);
+        }
+    }
+
+    /**
+     * Unwraps objects contained in {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
+     * instances or wraps objects allocated in native code for consumption in Java.
+     */
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
+
+        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callIncrefNode) {
+            CApiContext cApiContext = context.getCApiContext();
+            if (cApiContext != null) {
+                // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
+                IncRefNode.doNativeObject(object, callIncrefNode);
+                return new PythonAbstractNativeObject(object, cApiContext);
+            }
+            return new PythonAbstractNativeObject(object, null);
+        }
+
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
+
+        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
+            return new PythonAbstractNativeObject(object, null);
         }
     }
 

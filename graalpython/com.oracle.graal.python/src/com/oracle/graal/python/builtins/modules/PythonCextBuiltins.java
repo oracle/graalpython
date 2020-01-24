@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapp
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
@@ -385,22 +386,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTuple_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
     abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
         @Specialization
-        int doManaged(VirtualFrame frame, PTuple tuple, Object position, Object element,
+        static int doManaged(VirtualFrame frame, PythonNativeWrapper tupleWrapper, Object position, Object elementWrapper,
+                        @Cached AsPythonObjectNode tupleAsPythonObjectNode,
+                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            PTuple tuple = (PTuple) tupleAsPythonObjectNode.execute(tupleWrapper);
+            Object element = elementAsPythonObjectNode.execute(elementWrapper);
             setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
             return 0;
         }
 
-        @Specialization
-        int doNative(PythonNativeObject tuple, long position, Object element,
-                        @Cached PCallCapiFunction callSetItem,
-                        @Cached CExtNodes.ToSulongNode receiverToSulongNode,
-                        @Cached CExtNodes.ToSulongNode elementToSulongNode) {
+        @Specialization(guards = "!isNativeWrapper(tuple)")
+        static int doNative(Object tuple, long position, Object element,
+                        @Cached PCallCapiFunction callSetItem) {
             // TODO(fa): This path should be avoided since this is called from native code to do a
             // native operation.
-            callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, receiverToSulongNode.execute(tuple), position, elementToSulongNode.execute(element));
+            callSetItem.call(NativeCAPISymbols.FUN_PY_TRUFFLE_TUPLE_SET_ITEM, tuple, position, element);
             return 0;
         }
 
