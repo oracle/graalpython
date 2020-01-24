@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -436,7 +436,7 @@ public class StringFormatter {
                     break;
 
                 default:
-                    throw core.raise(ValueError, "unsupported format character '%c' (0x%x) at index %d", spec.type, spec.type, index - 1);
+                    throw core.raise(ValueError, "unsupported format character '%c' (0x%x) at index %d", spec.type, (int) spec.type, index - 1);
             }
 
             // Pad the result as specified (in-place, in the buffer).
