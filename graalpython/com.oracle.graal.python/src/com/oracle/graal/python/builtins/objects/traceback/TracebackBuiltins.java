@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -108,8 +109,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 // frames may have not been requested
                 if (frame != null) {
                     Node location = element.getLocation();
-                    // only include frames of non-builtin functions
-                    if (location != null && !location.getRootNode().isInternal()) {
+                    // only include frames of non-builtin python functions
+                    if (PArguments.isPythonFrame(frame) && location != null && !location.getRootNode().isInternal()) {
                         // create the PFrame and refresh frame values
                         PFrame escapedFrame = materializeNode.execute(null, location, false, true, frame);
                         cur = factory.createTraceback(escapedFrame, exception);
