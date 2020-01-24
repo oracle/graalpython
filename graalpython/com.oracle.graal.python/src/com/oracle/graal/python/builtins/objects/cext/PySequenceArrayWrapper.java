@@ -411,7 +411,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    abstract static class ToNativeArrayNode extends CExtNodes.CExtBaseNode {
+    abstract static class ToNativeArrayNode extends Node {
         public abstract Object execute(PySequenceArrayWrapper object);
 
         @Specialization(guards = "isPSequence(lib.getDelegate(object))", limit = "1")

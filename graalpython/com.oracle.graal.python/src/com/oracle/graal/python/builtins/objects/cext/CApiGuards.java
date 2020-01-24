@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,25 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.nodes.Node;
+public abstract class CApiGuards {
 
-public abstract class PNodeWithContext extends Node {
-
-    protected static Assumption singleContextAssumption() {
-        CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
-        PythonLanguage language = PythonLanguage.getCurrent();
-        return language.singleContextAssumption;
+    public static boolean isNativeWrapper(Object object) {
+        return object instanceof PythonNativeWrapper;
     }
 
-    /**
-     * @return {@code true} if this node can be shared statically.
-     */
-    protected boolean isUncached() {
-        return !isAdoptable();
+    public static boolean isNativeNull(Object object) {
+        return object instanceof PythonNativeNull;
     }
+
 }

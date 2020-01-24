@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -2267,6 +2268,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyBytes_FromStringAndSize", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
     @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
     abstract static class PyBytes_FromStringAndSize extends NativeBuiltin {
         // n.b.: the specializations for PIBytesLike are quite common on
         // managed, when the PySequenceArrayWrapper that we used never went
@@ -2299,10 +2301,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (InteropException e) {
                 return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
             }
-        }
-
-        static boolean isNativeWrapper(Object object) {
-            return object instanceof PythonNativeWrapper;
         }
     }
 

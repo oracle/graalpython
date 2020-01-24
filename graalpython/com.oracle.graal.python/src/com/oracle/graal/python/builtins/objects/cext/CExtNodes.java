@@ -165,22 +165,6 @@ import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class CExtNodes {
 
-    // -----------------------------------------------------------------------------------------------------------------
-    @com.oracle.truffle.api.dsl.ImportStatic(PGuards.class)
-    abstract static class CExtBaseNode extends com.oracle.graal.python.nodes.PNodeWithContext {
-        public static boolean isNativeWrapper(Object obj) {
-            return obj instanceof PythonNativeWrapper;
-        }
-
-        public static boolean isNativeNull(Object object) {
-            return object instanceof PythonNativeNull;
-        }
-
-        public static boolean isMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper wrapper, PythonNativeWrapperLibrary lib) {
-            return wrapper.getMaterializedObject(lib) != null;
-        }
-    }
-
     @GenerateUncached
     abstract static class ImportCAPISymbolNode extends PNodeWithContext {
 
@@ -202,7 +186,7 @@ public abstract class CExtNodes {
      * will call that subtype C function with two arguments, the C type object and an object
      * argument to fill in from.
      */
-    public abstract static class SubtypeNew extends CExtBaseNode {
+    public abstract static class SubtypeNew extends Node {
         /**
          * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
          */
@@ -292,7 +276,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    public abstract static class FromNativeSubclassNode extends CExtBaseNode {
+    public abstract static class FromNativeSubclassNode extends Node {
 
         public abstract Double execute(VirtualFrame frame, PythonNativeObject object);
 
@@ -327,7 +311,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    @ImportStatic({PGuards.class, CExtBaseNode.class})
+    @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
         @Specialization
@@ -455,7 +439,7 @@ public abstract class CExtNodes {
      * instances or wraps objects allocated in native code for consumption in Java.
      */
     @GenerateUncached
-    @ImportStatic({PGuards.class, CExtBaseNode.class})
+    @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectNode extends CExtAsPythonObjectNode {
 
         @Specialization(guards = "object.isBool()")
@@ -579,12 +563,13 @@ public abstract class CExtNodes {
      * Materializes a primitive value of a primitive native wrapper to ensure pointer equality.
      */
     @GenerateUncached
-    public abstract static class MaterializeDelegateNode extends CExtBaseNode {
+    @ImportStatic(CApiGuards.class)
+    public abstract static class MaterializeDelegateNode extends Node {
 
         public abstract Object execute(PythonNativeWrapper object);
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isBool()"}, limit = "1")
-        PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             // Special case for True and False: use singletons
@@ -603,7 +588,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isByte()"}, limit = "1")
-        PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getByte());
@@ -613,7 +598,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isInt()"}, limit = "1")
-        PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PInt doIntNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getInt());
@@ -623,7 +608,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isLong()"}, limit = "1")
-        PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PInt doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getLong());
@@ -633,7 +618,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isDouble()", "!isNaN(object)"}, limit = "1")
-        PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PFloat doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PFloat materializedInt = factory.createFloat(object.getDouble());
@@ -643,7 +628,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isDouble()", "isNaN(object)"}, limit = "1")
-        PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             // Special case for double NaN: use singleton
@@ -661,21 +646,21 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"object.getClass() == cachedClass", "isMaterialized(object, lib)"}, limit = "1")
-        Object doMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static Object doMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends DynamicObjectNativeWrapper.PrimitiveNativeWrapper> cachedClass) {
             return lib.getDelegate(CompilerDirectives.castExact(object, cachedClass));
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(object)", "object.getClass() == cachedClass"}, limit = "3")
-        Object doNativeWrapper(PythonNativeWrapper object,
+        static Object doNativeWrapper(PythonNativeWrapper object,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends PythonNativeWrapper> cachedClass) {
             return lib.getDelegate(CompilerDirectives.castExact(object, cachedClass));
         }
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(object)", replaces = "doNativeWrapper", limit = "1")
-        Object doNativeWrapperGeneric(PythonNativeWrapper object,
+        static Object doNativeWrapperGeneric(PythonNativeWrapper object,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
             return lib.getDelegate(object);
         }
@@ -687,6 +672,10 @@ public abstract class CExtNodes {
         protected static boolean isNaN(PrimitiveNativeWrapper object) {
             assert object.isDouble();
             return Double.isNaN(object.getDouble());
+        }
+
+        static boolean isMaterialized(DynamicObjectNativeWrapper.PrimitiveNativeWrapper wrapper, PythonNativeWrapperLibrary lib) {
+            return wrapper.getMaterializedObject(lib) != null;
         }
     }
 
@@ -754,7 +743,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class AsCharPointerNode extends CExtBaseNode {
+    public abstract static class AsCharPointerNode extends Node {
         public abstract Object execute(Object obj);
 
         @Specialization
@@ -790,7 +779,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class FromCharPointerNode extends CExtBaseNode {
+    public abstract static class FromCharPointerNode extends Node {
         public abstract Object execute(Object charPtr);
 
         // TODO(fa): add a specialization that handles 'PySequenceArrayWrapper' instances
@@ -804,7 +793,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class SizeofWCharNode extends CExtBaseNode {
+    public abstract static class SizeofWCharNode extends Node {
 
         public abstract long execute();
 
@@ -827,7 +816,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class PointerCompareNode extends CExtBaseNode {
+    public abstract static class PointerCompareNode extends Node {
         public abstract boolean execute(String opName, Object a, Object b);
 
         private static boolean executeCFunction(int op, Object a, Object b, InteropLibrary interopLibrary, ImportCAPISymbolNode importCAPISymbolNode) {
@@ -1617,10 +1606,6 @@ public abstract class CExtNodes {
             // TODO(fa) this specialization should eventually go away
             return recursive.execute(lib.getDelegate(value));
         }
-
-        static boolean isNativeWrapper(Object object) {
-            return object instanceof PythonNativeWrapper;
-        }
     }
 
     /**
@@ -1788,7 +1773,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class PCallCapiFunction extends CExtBaseNode {
+    public abstract static class PCallCapiFunction extends Node {
 
         public final Object call(String name, Object... args) {
             return execute(name, args);
@@ -2130,7 +2115,7 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
-    public abstract static class GetTypeMemberNode extends CExtBaseNode {
+    public abstract static class GetTypeMemberNode extends PNodeWithContext {
         public abstract Object execute(Object obj, String getterFuncName);
 
         /*
@@ -2342,6 +2327,7 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(CApiGuards.class)
     public abstract static class IncRefNode extends Node {
 
         public abstract Object execute(Object object);
@@ -2357,10 +2343,6 @@ public abstract class CExtNodes {
                         @Cached PCallCapiFunction callIncRefNode) {
             callIncRefNode.call(NativeCAPISymbols.FUN_INCREF, object);
             return object;
-        }
-
-        static boolean isNativeWrapper(Object object) {
-            return object instanceof PythonNativeWrapper;
         }
     }
 }

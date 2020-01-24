@@ -1340,7 +1340,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    abstract static class ToPyObjectNode extends CExtNodes.CExtBaseNode {
+    abstract static class ToPyObjectNode extends Node {
         public abstract Object execute(PythonNativeWrapper wrapper);
 
         @Specialization

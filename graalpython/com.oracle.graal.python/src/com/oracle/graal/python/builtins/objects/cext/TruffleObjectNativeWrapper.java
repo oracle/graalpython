@@ -63,7 +63,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     }
 
     public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
-        assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
+        assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
         return new TruffleObjectNativeWrapper(foreignObject);
     }
 
