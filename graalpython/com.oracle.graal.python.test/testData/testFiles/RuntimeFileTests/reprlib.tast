@@ -11,10 +11,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
       WriteNameNodeGen SourceSection: [79,123]`__all__ = ["Repr", "...`
         Identifier: __all__
         ListLiteralNode SourceSection: [89,123]`["Repr", "repr", "re...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [90,96]`"Repr"`
           StringLiteralNode SourceSection: [98,104]`"repr"`
           StringLiteralNode SourceSection: [106,122]`"recursive_repr"`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [132,140]`builtins`
         Identifier: builtins
         ImportExpression SourceSection: None
@@ -160,7 +160,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [1,key,Illegal]
                                                   TupleLiteralNode SourceSection: [436,457]`id(self), get_ident(...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     PythonCallNodeGen SourceSection: [436,444]`id(self)`
                                                       CallNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [439,443]`self`
@@ -174,6 +173,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [446,455]`get_ident`
                                                         Identifier: get_ident
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                 IfNode SourceSection: [470,539]`if key in repr_runni...`
                                                   YesNodeGen SourceSection: None
                                                     ContainsNodeGen SourceSection: [473,492]`key in repr_running`
@@ -1035,7 +1035,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [2367,2375]`'%s%s%s'`
                                               TupleLiteralNode SourceSection: [2378,2394]`(left, s, right)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [2379,2383]`left`
                                                   Frame: [3,left,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1045,6 +1044,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ReadLocalVariableNode SourceSection: [2388,2393]`right`
                                                   Frame: [4,right,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [13,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -1795,13 +1795,13 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         Op: __mod__
                                                       StringLiteralNode SourceSection: [3748,3756]`'%s: %s'`
                                                       TupleLiteralNode SourceSection: [3759,3777]`(keyrepr, valrepr)`
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [3760,3767]`keyrepr`
                                                           Frame: [7,keyrepr,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [3769,3776]`valrepr`
                                                           Frame: [8,valrepr,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [3734,3740]`pieces`
                                                         Frame: [6,pieces,Illegal]
@@ -1876,10 +1876,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [3874,3880]`'{%s}'`
                                               TupleLiteralNode SourceSection: [3883,3887]`(s,)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3884,3885]`s`
                                                   Frame: [10,s,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [12,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -2418,7 +2418,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       Op: __mod__
                                                     StringLiteralNode SourceSection: [4724,4746]`'<%s instance at %#x...`
                                                     TupleLiteralNode SourceSection: [4749,4778]`(x.__class__.__name_...`
-                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [4750,4770]`x.__class__.__name__...`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __name__
@@ -2440,6 +2439,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4772,4774]`id`
                                                           Identifier: id
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                      PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4694,4703]`Exception`
                                                 Identifier: Exception
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -645,7 +645,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                           WriteLocalFrameSlotNodeGen SourceSection: None
                                             Frame: [4,iterators,Illegal]
                                           ListLiteralNode SourceSection: [3120,3136]`[iter(iterable)]`
-                                            PythonObjectFactoryNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [3121,3135]`iter(iterable)`
                                               CallNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [3126,3134]`iterable`
@@ -654,6 +653,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3121,3125]`iter`
                                                 Identifier: iter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                            PythonObjectFactoryNodeGen SourceSection: None
                                         ElseNode SourceSection: [3145,3206]`for i in args:↵     ...`
                                           ForNode SourceSection: None
                                             ForRepeatingNode SourceSection: None

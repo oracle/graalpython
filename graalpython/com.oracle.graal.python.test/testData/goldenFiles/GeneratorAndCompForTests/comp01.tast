@@ -41,7 +41,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                           YieldNode SourceSection: None
                             flagSlot: 0
                             TupleLiteralNode SourceSection: None
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [10,11]`i`
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [0,i,Illegal]
@@ -120,6 +119,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
                                   Identifier: tuple
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteLocalCellNodeGen SourceSection: None
                           Identifier: i

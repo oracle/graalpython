@@ -56,9 +56,9 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
         GetIteratorExpressionNodeGen SourceSection: [30,47]`['Pepa', 'Pavel']`
           GetIteratorNodeGen SourceSection: None
           ListLiteralNode SourceSection: [30,47]`['Pepa', 'Pavel']`
-            PythonObjectFactoryNodeGen SourceSection: None
             StringLiteralNode SourceSection: [31,37]`'Pepa'`
             StringLiteralNode SourceSection: [39,46]`'Pavel'`
+            PythonObjectFactoryNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
       GetCallAttributeNodeGen SourceSection: None
         StringLiteralNode SourceSection: [0,2]`''`

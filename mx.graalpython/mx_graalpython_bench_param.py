@@ -69,6 +69,8 @@ MICRO_BENCHMARKS = {
     'genexp-builtin-call': ITER_10 + ['1000'],
     'list-comp': ITER_10 + ['5000'],
     'list-indexing': ITER_10 + ['1000000'],
+    'list-indexing-from-constructor': ITER_10 + ['10000000'],
+    'list-indexing-from-literal': ITER_10 + ['10000000'],
     'list-iterating-explicit': ITER_10 + ['1000000'],
     'list-iterating': ITER_10 + ['1000000'],
     'list-iterating-obj': ITER_10 + ['50000000'],
@@ -90,6 +92,8 @@ MICRO_BENCHMARKS = {
     'generate-functions': ITER_15 + ['10000000'],
     'try-except': ITER_10 + ['1000000'],
     'try-except-store': ITER_10 + ['1000000'],
+    'tuple-indexing-from-constructor': ITER_10 + ['10000000'],
+    'tuple-indexing-from-literal': ITER_10 + ['10000000'],
 }
 
 

@@ -81,7 +81,6 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                               Frame: [0,_cls,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [79,83]`hits`
                                 Frame: [1,hits,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -94,6 +93,7 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                               ReadLocalVariableNode SourceSection: [102,110]`currsize`
                                 Frame: [4,currsize,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
                               Identifier: _tuple_new
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -111,9 +111,9 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: list
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ListLiteralNode SourceSection: [886,890]`[{}]`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               DictLiteralNode SourceSection: [887,889]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
@@ -5476,7 +5476,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                 TupleLiteralNode SourceSection: [9868,9883]`(self.data[:],)`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetItemNodeGen SourceSection: [9869,9881]`self.data[:]`
                                                     GetAttributeNodeGen SourceSection: None
                                                       GetFixedAttributeNodeGen SourceSection: None
@@ -5491,6 +5490,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None

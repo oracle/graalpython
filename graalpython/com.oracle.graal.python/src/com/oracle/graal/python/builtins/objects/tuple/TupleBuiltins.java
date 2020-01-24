@@ -508,9 +508,13 @@ public class TupleBuiltins extends PythonBuiltins {
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization
         PTuple doPTuple(PTuple left, PTuple right,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage concatenated = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
             return factory().createTuple(concatenated);
+        }
+
+        protected static SequenceStorageNodes.ConcatNode createConcat() {
+            return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
         }
 
         @Fallback

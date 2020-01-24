@@ -112,9 +112,9 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                                         Frame: [1,<return_val>,Illegal]
                                                       ListLiteralNode SourceSection: [129,132]`[1]`
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [130,131]`1`
                                                           Value: 1
+                                                        PythonObjectFactoryNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                 Frame: [1,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -183,11 +183,11 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                           Frame: [3,Y,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         ListLiteralNode SourceSection: [216,222]`[1, 2]`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [217,218]`1`
                             Value: 1
                           IntegerLiteralNode SourceSection: [220,221]`2`
                             Value: 2
+                          PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [225,234]`list(gen)`
                         PythonCallNodeGen SourceSection: [225,234]`list(gen)`
                           CallNodeGen SourceSection: None

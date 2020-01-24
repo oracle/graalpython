@@ -12,10 +12,10 @@ ModuleRootNode Name: <module 'tuple10'> SourceSection: [0,14]`t = 1, call1()`
         WriteNameNodeGen SourceSection: [0,14]`t = 1, call1()`
           Identifier: t
           TupleLiteralNode SourceSection: [4,14]`1, call1()`
-            PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [4,5]`1`
               Value: 1
             PythonCallNodeGen SourceSection: [7,14]`call1()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [7,12]`call1`
                 Identifier: call1
+            PythonObjectFactoryNodeGen SourceSection: None

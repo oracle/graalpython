@@ -11,7 +11,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
       WriteNameNodeGen SourceSection: [839,975]`__all__ = ['deque', ...`
         Identifier: __all__
         ListLiteralNode SourceSection: [849,975]`['deque', 'defaultdi...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [850,857]`'deque'`
           StringLiteralNode SourceSection: [859,872]`'defaultdict'`
           StringLiteralNode SourceSection: [874,886]`'namedtuple'`
@@ -21,6 +20,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           StringLiteralNode SourceSection: [938,947]`'Counter'`
           StringLiteralNode SourceSection: [949,962]`'OrderedDict'`
           StringLiteralNode SourceSection: [964,974]`'ChainMap'`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [984,1000]`_collections_abc`
         Identifier: _collections_abc
         ImportExpression SourceSection: None
@@ -476,7 +476,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             YieldNode SourceSection: [2689,2720]`yield (key, self._ma...`
                                               flagSlot: 0
                                               TupleLiteralNode SourceSection: [2695,2720]`(key, self._mapping[...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNode SourceSection: [2696,2699]`key`
                                                   Frame: [1,key,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -492,6 +491,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadGeneratorFrameVariableNode SourceSection: [2715,2718]`key`
                                                     Frame: [1,key,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               GeneratorAccessNode SourceSection: None
                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
                                             Identifier: key
@@ -739,11 +739,11 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [2929,2965]`'prev', 'next', 'key...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [2929,2935]`'prev'`
                               StringLiteralNode SourceSection: [2937,2943]`'next'`
                               StringLiteralNode SourceSection: [2945,2950]`'key'`
                               StringLiteralNode SourceSection: [2952,2965]`'__weakref__'`
+                              PythonObjectFactoryNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2904,2910]`object`
@@ -1209,7 +1209,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             DestructuringAssignmentNodeGen SourceSection: [5037,5085]`link.prev, link.next...`
                                               TupleLiteralNode SourceSection: [5070,5085]`last, root, key`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [5070,5074]`last`
                                                   Frame: [8,last,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1219,6 +1218,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadLocalVariableNode SourceSection: [5082,5085]`key`
                                                   Frame: [1,key,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: None
                                                 Identifier: <>temp11
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1959,13 +1959,13 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [9,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [7107,7117]`key, value`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [7107,7110]`key`
                                                 Frame: [6,key,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [7112,7117]`value`
                                                 Frame: [7,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [9,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -2887,7 +2887,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     Op: __mod__
                                                   StringLiteralNode SourceSection: [9727,9733]`'%s()'`
                                                   TupleLiteralNode SourceSection: [9736,9762]`(self.__class__.__na...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [9737,9760]`self.__class__.__nam...`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __name__
@@ -2901,6 +2900,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                         ReadLocalVariableNode SourceSection: [9737,9741]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                           FrameReturnNode SourceSection: [9771,9834]`return '%s(%r)' % (s...`
                                             WriteLocalVariableNodeGen SourceSection: None
@@ -2912,7 +2912,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   Op: __mod__
                                                 StringLiteralNode SourceSection: [9778,9786]`'%s(%r)'`
                                                 TupleLiteralNode SourceSection: [9789,9834]`(self.__class__.__na...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [9790,9813]`self.__class__.__nam...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
@@ -2937,6 +2936,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [9815,9819]`list`
                                                       Identifier: list
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                                         Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -3039,7 +3039,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [10036,10099]`self.__class__, (), ...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [10036,10050]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
@@ -3068,6 +3067,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10081,10085]`iter`
                                                   Identifier: iter
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -3720,10 +3720,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
                             ListLiteralNode SourceSection: [12743,12753]`[typename]`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12744,12752]`typename`
                                 Frame: [0,typename,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [12756,12767]`field_names`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,field_names,Illegal]
@@ -4566,7 +4566,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         GetIteratorExpressionNodeGen SourceSection: [15918,16007]`(__new__, _make.__fu...`
                           GetIteratorNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [15918,16007]`(__new__, _make.__fu...`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [15919,15926]`__new__`
                               Frame: [17,__new__,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -4590,6 +4589,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             ReadLocalVariableNode SourceSection: [15992,16006]`__getnewargs__`
                               Frame: [22,__getnewargs__,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [16169,16523]`class_namespace = {↵...`
                       Identifier: class_namespace
@@ -4730,13 +4730,13 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Frame: [7,index,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       TupleLiteralNode SourceSection: [16817,16839]`itemgetter_object, d...`
-                                        PythonObjectFactoryNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [16817,16834]`itemgetter_object`
                                           Frame: [26,itemgetter_object,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [16836,16839]`doc`
                                           Frame: [27,doc,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                        PythonObjectFactoryNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [16677,16685]`KeyError`
                                     Identifier: KeyError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4788,10 +4788,10 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           Frame: [0,typename,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         TupleLiteralNode SourceSection: [16938,16946]`(tuple,)`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [16939,16944]`tuple`
                             Identifier: tuple
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [16948,16963]`class_namespace`
                           Frame: [24,class_namespace,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -4833,13 +4833,13 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             ExpressionStatementNode SourceSection: [17493,17497]`pass`
                               EmptyNode SourceSection: [17493,17497]`pass`
                             TupleLiteralNode SourceSection: [17451,17479]`(AttributeError, Val...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [17452,17466]`AttributeError`
                                 Identifier: AttributeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [17468,17478]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
                           SaveExceptionStateNodeGen SourceSection: None
                       BlockNode SourceSection: None
@@ -6154,7 +6154,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [26298,26327]`self.__class__, (dic...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [26298,26312]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
@@ -6164,7 +6163,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [26314,26327]`(dict(self),)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [26315,26325]`dict(self)`
                                                   CallNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [26320,26324]`self`
@@ -6173,6 +6171,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [26315,26319]`dict`
                                                     Identifier: dict
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6348,7 +6348,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       Op: __mod__
                                                     StringLiteralNode SourceSection: [26710,26720]`'%s({%s})'`
                                                     TupleLiteralNode SourceSection: [26723,26755]`(self.__class__.__na...`
-                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [26724,26747]`self.__class__.__nam...`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __name__
@@ -6365,6 +6364,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       ReadLocalVariableNode SourceSection: [26749,26754]`items`
                                                         Frame: [1,items,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                      PythonObjectFactoryNodeGen SourceSection: None
                                             ExceptNode SourceSection: None
                                               FrameReturnNode SourceSection: [26851,26914]`return '{0}({1!r})'....`
                                                 WriteLocalVariableNodeGen SourceSection: None
@@ -8276,9 +8276,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Identifier: list
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ListLiteralNode SourceSection: [32916,32920]`[{}]`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               DictLiteralNode SourceSection: [32917,32919]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                             YesNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [3,<return_val>,Illegal]
@@ -13641,7 +13641,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                 TupleLiteralNode SourceSection: [41898,41913]`(self.data[:],)`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetItemNodeGen SourceSection: [41899,41911]`self.data[:]`
                                                     GetAttributeNodeGen SourceSection: None
                                                       GetFixedAttributeNodeGen SourceSection: None
@@ -13656,6 +13655,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
                                                       EmptyNode SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                         Return Expresssion: ReadLocalVariableNode SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None

@@ -34,7 +34,6 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                   YieldNode SourceSection: None
                     flagSlot: 0
                     TupleLiteralNode SourceSection: None
-                      PythonObjectFactoryNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNode SourceSection: [1,2]`x`
                         Frame: [0,x,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -47,6 +46,7 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,26]`{x:x*x for x in ran
                         ReadGeneratorFrameVariableNode SourceSection: [5,6]`x`
                           Frame: [0,x,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                      PythonObjectFactoryNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x

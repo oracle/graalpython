@@ -73,19 +73,19 @@ ModuleRootNode Name: <module 'for12'> SourceSection: [0,52]`def fn():↵  for a,
                           GetIteratorExpressionNodeGen SourceSection: [24,38]`((1,2), (3,4))`
                             GetIteratorNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [24,38]`((1,2), (3,4))`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               TupleLiteralNode SourceSection: [25,30]`(1,2)`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [26,27]`1`
                                   Value: 1
                                 IntegerLiteralNode SourceSection: [28,29]`2`
                                   Value: 2
-                              TupleLiteralNode SourceSection: [32,37]`(3,4)`
                                 PythonObjectFactoryNodeGen SourceSection: None
+                              TupleLiteralNode SourceSection: [32,37]`(3,4)`
                                 IntegerLiteralNode SourceSection: [33,34]`3`
                                   Value: 3
                                 IntegerLiteralNode SourceSection: [35,36]`4`
                                   Value: 4
+                                PythonObjectFactoryNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [4,<return_val>,Illegal]

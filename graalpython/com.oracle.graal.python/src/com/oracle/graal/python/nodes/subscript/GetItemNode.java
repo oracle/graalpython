@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,6 +33,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -69,16 +70,27 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     @Specialization(guards = "isBuiltinList.profileIsAnyBuiltinObject(primary)")
     Object doBuiltinList(VirtualFrame frame, PList primary, Object index,
-                    @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
+                    @Cached("createGetItemNodeForList()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
         return getItemNode.execute(frame, primary.getSequenceStorage(), index);
     }
 
-    protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
+    @Specialization(guards = "isBuiltinTuple.profileIsAnyBuiltinObject(primary)")
+    Object doBuiltinTuple(VirtualFrame frame, PTuple primary, Object index,
+                    @Cached("createGetItemNodeForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
+                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinTuple) {
+        return getItemNode.execute(frame, primary.getSequenceStorage(), index);
+    }
+
+    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForList() {
         return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
     }
 
-    @Specialization(replaces = "doBuiltinList")
+    protected static SequenceStorageNodes.GetItemNode createGetItemNodeForTuple() {
+        return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), (s, f) -> f.createTuple(s));
+    }
+
+    @Specialization(replaces = {"doBuiltinList", "doBuiltinTuple"})
     Object doAnyObject(VirtualFrame frame, Object primary, Object index) {
         if (callGetitemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

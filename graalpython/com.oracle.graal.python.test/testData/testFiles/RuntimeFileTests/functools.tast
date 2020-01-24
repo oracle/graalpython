@@ -11,7 +11,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
       WriteNameNodeGen SourceSection: [445,647]`__all__ = ['update_w...`
         Identifier: __all__
         ListLiteralNode SourceSection: [455,647]`['update_wrapper', '...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [456,472]`'update_wrapper'`
           StringLiteralNode SourceSection: [474,481]`'wraps'`
           StringLiteralNode SourceSection: [483,504]`'WRAPPER_ASSIGNMENTS...`
@@ -23,6 +22,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           StringLiteralNode SourceSection: [591,600]`'partial'`
           StringLiteralNode SourceSection: [613,628]`'partialmethod'`
           StringLiteralNode SourceSection: [630,646]`'singledispatch'`
+          PythonObjectFactoryNodeGen SourceSection: None
       TryFinallyNode SourceSection: [649,717]`try:↵    from _funct...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [658,687]`from _functools impo...`
@@ -90,17 +90,17 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
       WriteNameNodeGen SourceSection: [1222,1339]`WRAPPER_ASSIGNMENTS ...`
         Identifier: WRAPPER_ASSIGNMENTS
         TupleLiteralNode SourceSection: [1244,1339]`('__module__', '__na...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [1245,1257]`'__module__'`
           StringLiteralNode SourceSection: [1259,1269]`'__name__'`
           StringLiteralNode SourceSection: [1271,1285]`'__qualname__'`
           StringLiteralNode SourceSection: [1287,1296]`'__doc__'`
           StringLiteralNode SourceSection: [1321,1338]`'__annotations__'`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1340,1371]`WRAPPER_UPDATES = ('...`
         Identifier: WRAPPER_UPDATES
         TupleLiteralNode SourceSection: [1358,1371]`('__dict__',)`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [1359,1369]`'__dict__'`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1372,2590]`def update_wrapper(w...`
         Identifier: update_wrapper
         FunctionDefinitionNode Name: update_wrapper SourceSection: None
@@ -1517,73 +1517,73 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           StringLiteralNode SourceSection: [7043,7051]`'__gt__'`
           StringLiteralNode SourceSection: [7164,7172]`'__ge__'`
           ListLiteralNode SourceSection: [6811,6916]`[('__gt__', _gt_from...`
-            PythonObjectFactoryNodeGen SourceSection: None
             TupleLiteralNode SourceSection: [6812,6835]`('__gt__', _gt_from_...`
-              PythonObjectFactoryNodeGen SourceSection: None
               StringLiteralNode SourceSection: [6813,6821]`'__gt__'`
               ReadNameNodeGen SourceSection: [6823,6834]`_gt_from_lt`
                 Identifier: _gt_from_lt
-            TupleLiteralNode SourceSection: [6852,6875]`('__le__', _le_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [6852,6875]`('__le__', _le_from_...`
               StringLiteralNode SourceSection: [6853,6861]`'__le__'`
               ReadNameNodeGen SourceSection: [6863,6874]`_le_from_lt`
                 Identifier: _le_from_lt
-            TupleLiteralNode SourceSection: [6892,6915]`('__ge__', _ge_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [6892,6915]`('__ge__', _ge_from_...`
               StringLiteralNode SourceSection: [6893,6901]`'__ge__'`
               ReadNameNodeGen SourceSection: [6903,6914]`_ge_from_lt`
                 Identifier: _ge_from_lt
-          ListLiteralNode SourceSection: [6932,7037]`[('__ge__', _ge_from...`
-            PythonObjectFactoryNodeGen SourceSection: None
-            TupleLiteralNode SourceSection: [6933,6956]`('__ge__', _ge_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            PythonObjectFactoryNodeGen SourceSection: None
+          ListLiteralNode SourceSection: [6932,7037]`[('__ge__', _ge_from...`
+            TupleLiteralNode SourceSection: [6933,6956]`('__ge__', _ge_from_...`
               StringLiteralNode SourceSection: [6934,6942]`'__ge__'`
               ReadNameNodeGen SourceSection: [6944,6955]`_ge_from_le`
                 Identifier: _ge_from_le
-            TupleLiteralNode SourceSection: [6973,6996]`('__lt__', _lt_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [6973,6996]`('__lt__', _lt_from_...`
               StringLiteralNode SourceSection: [6974,6982]`'__lt__'`
               ReadNameNodeGen SourceSection: [6984,6995]`_lt_from_le`
                 Identifier: _lt_from_le
-            TupleLiteralNode SourceSection: [7013,7036]`('__gt__', _gt_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [7013,7036]`('__gt__', _gt_from_...`
               StringLiteralNode SourceSection: [7014,7022]`'__gt__'`
               ReadNameNodeGen SourceSection: [7024,7035]`_gt_from_le`
                 Identifier: _gt_from_le
-          ListLiteralNode SourceSection: [7053,7158]`[('__lt__', _lt_from...`
-            PythonObjectFactoryNodeGen SourceSection: None
-            TupleLiteralNode SourceSection: [7054,7077]`('__lt__', _lt_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            PythonObjectFactoryNodeGen SourceSection: None
+          ListLiteralNode SourceSection: [7053,7158]`[('__lt__', _lt_from...`
+            TupleLiteralNode SourceSection: [7054,7077]`('__lt__', _lt_from_...`
               StringLiteralNode SourceSection: [7055,7063]`'__lt__'`
               ReadNameNodeGen SourceSection: [7065,7076]`_lt_from_gt`
                 Identifier: _lt_from_gt
-            TupleLiteralNode SourceSection: [7094,7117]`('__ge__', _ge_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [7094,7117]`('__ge__', _ge_from_...`
               StringLiteralNode SourceSection: [7095,7103]`'__ge__'`
               ReadNameNodeGen SourceSection: [7105,7116]`_ge_from_gt`
                 Identifier: _ge_from_gt
-            TupleLiteralNode SourceSection: [7134,7157]`('__le__', _le_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [7134,7157]`('__le__', _le_from_...`
               StringLiteralNode SourceSection: [7135,7143]`'__le__'`
               ReadNameNodeGen SourceSection: [7145,7156]`_le_from_gt`
                 Identifier: _le_from_gt
-          ListLiteralNode SourceSection: [7174,7279]`[('__le__', _le_from...`
-            PythonObjectFactoryNodeGen SourceSection: None
-            TupleLiteralNode SourceSection: [7175,7198]`('__le__', _le_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            PythonObjectFactoryNodeGen SourceSection: None
+          ListLiteralNode SourceSection: [7174,7279]`[('__le__', _le_from...`
+            TupleLiteralNode SourceSection: [7175,7198]`('__le__', _le_from_...`
               StringLiteralNode SourceSection: [7176,7184]`'__le__'`
               ReadNameNodeGen SourceSection: [7186,7197]`_le_from_ge`
                 Identifier: _le_from_ge
-            TupleLiteralNode SourceSection: [7215,7238]`('__gt__', _gt_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [7215,7238]`('__gt__', _gt_from_...`
               StringLiteralNode SourceSection: [7216,7224]`'__gt__'`
               ReadNameNodeGen SourceSection: [7226,7237]`_gt_from_ge`
                 Identifier: _gt_from_ge
-            TupleLiteralNode SourceSection: [7255,7278]`('__lt__', _lt_from_...`
               PythonObjectFactoryNodeGen SourceSection: None
+            TupleLiteralNode SourceSection: [7255,7278]`('__lt__', _lt_from_...`
               StringLiteralNode SourceSection: [7256,7264]`'__lt__'`
               ReadNameNodeGen SourceSection: [7266,7277]`_lt_from_ge`
                 Identifier: _lt_from_ge
+              PythonObjectFactoryNodeGen SourceSection: None
+            PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [7283,8082]`def total_ordering(c...`
         Identifier: total_ordering
         FunctionDefinitionNode Name: total_ordering SourceSection: None
@@ -1908,8 +1908,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Index: 0
                                           StringLiteralNode SourceSection: None
                                           ListLiteralNode SourceSection: [8201,8208]`['obj']`
-                                            PythonObjectFactoryNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [8202,8207]`'obj'`
+                                            PythonObjectFactoryNodeGen SourceSection: None
                                         SetItemNodeGen SourceSection: [8217,8277]`def __init__(self, o...`
                                           ArgumentExpressionNode SourceSection: None
                                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -2463,12 +2463,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [9168,9221]`"func", "args", "key...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [9168,9174]`"func"`
                               StringLiteralNode SourceSection: [9176,9182]`"args"`
                               StringLiteralNode SourceSection: [9184,9194]`"keywords"`
                               StringLiteralNode SourceSection: [9196,9206]`"__dict__"`
                               StringLiteralNode SourceSection: [9208,9221]`"__weakref__"`
+                              PythonObjectFactoryNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [9227,10003]`def __new__(*args, *...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -2962,7 +2962,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,args,Illegal]
                                             ListLiteralNode SourceSection: [10410,10427]`[repr(self.func)]`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [10411,10426]`repr(self.func)`
                                                 CallNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [10416,10425]`self.func`
@@ -2976,6 +2975,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10411,10415]`repr`
                                                   Identifier: repr
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                           ExpressionStatementNode SourceSection: [10436,10475]`args.extend(repr(x) ...`
                                             PythonCallNodeGen SourceSection: [10436,10475]`args.extend(repr(x) ...`
                                               CallNodeGen SourceSection: None
@@ -3218,7 +3218,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [2,<return_val>,Illegal]
                                             TupleLiteralNode SourceSection: [10747,10856]`type(self), (self.fu...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [10747,10757]`type(self)`
                                                 CallNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [10752,10756]`self`
@@ -3228,7 +3227,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   Identifier: type
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [10759,10771]`(self.func,)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [10760,10769]`self.func`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: func
@@ -3237,8 +3235,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadLocalVariableNode SourceSection: [10760,10764]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                              TupleLiteralNode SourceSection: [10773,10856]`(self.func, self.arg...`
                                                 PythonObjectFactoryNodeGen SourceSection: None
+                                              TupleLiteralNode SourceSection: [10773,10856]`(self.func, self.arg...`
                                                 GetAttributeNodeGen SourceSection: [10774,10783]`self.func`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: func
@@ -3277,6 +3275,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   ObjectLiteralNode SourceSection: [10851,10855]`None`
                                                   YesNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -4239,10 +4239,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __add__
                                                             TupleLiteralNode SourceSection: [13789,13803]`(cls_or_self,)`
-                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [13790,13801]`cls_or_self`
                                                                 Frame: [3,cls_or_self,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                             GetAttributeNodeGen SourceSection: [13806,13815]`self.args`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: args
@@ -4620,11 +4620,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
           CallNodeGen SourceSection: None
           StringLiteralNode SourceSection: [15131,15142]`"CacheInfo"`
           ListLiteralNode SourceSection: [15144,15185]`["hits", "misses", "...`
-            PythonObjectFactoryNodeGen SourceSection: None
             StringLiteralNode SourceSection: [15145,15151]`"hits"`
             StringLiteralNode SourceSection: [15153,15161]`"misses"`
             StringLiteralNode SourceSection: [15163,15172]`"maxsize"`
             StringLiteralNode SourceSection: [15174,15184]`"currsize"`
+            PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [15120,15130]`namedtuple`
             Identifier: namedtuple
       WriteNameNodeGen SourceSection: [15188,15601]`class _HashedSeq(lis...`
@@ -4836,11 +4836,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
         FunctionDefinitionNode Name: _make_key SourceSection: None
           Arguments:
             TupleLiteralNode SourceSection: [15658,15669]`(object(),)`
-              PythonObjectFactoryNodeGen SourceSection: None
               PythonCallNodeGen SourceSection: [15659,15667]`object()`
                 CallNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [15659,15665]`object`
                   Identifier: object
+              PythonObjectFactoryNodeGen SourceSection: None
             SetLiteralNode SourceSection: [15696,15729]`{int, str, frozenset...`
               PythonObjectFactoryNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [15697,15700]`int`
@@ -5465,7 +5465,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [18628,18664]`PREV, NEXT, KEY, RES...`
                       TupleLiteralNode SourceSection: [18654,18664]`0, 1, 2, 3`
-                        PythonObjectFactoryNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [18654,18655]`0`
                           Value: 0
                         IntegerLiteralNode SourceSection: [18657,18658]`1`
@@ -5474,6 +5473,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           Value: 2
                         IntegerLiteralNode SourceSection: [18663,18664]`3`
                           Value: 3
+                        PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <>temp21
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -5617,7 +5617,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                         EmptyNode SourceSection: None
                         EmptyNode SourceSection: None
                       ListLiteralNode SourceSection: [19056,19080]`[root, root, None, N...`
-                        PythonObjectFactoryNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [19057,19061]`root`
                           ReadLocalVariableNode SourceSection: None
                             Frame: [17,root,Illegal]
@@ -5630,6 +5629,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           ReadFromCellNodeGen SourceSection: None
                         ObjectLiteralNode SourceSection: [19069,19073]`None`
                         ObjectLiteralNode SourceSection: [19075,19079]`None`
+                        PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [19123,22710]`if maxsize == 0:↵↵  ...`
                       YesNodeGen SourceSection: None
                         BinaryComparisonNodeGen SourceSection: [19126,19138]`maxsize == 0`
@@ -6396,7 +6396,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   WriteLocalFrameSlotNodeGen SourceSection: None
                                                     Frame: [3,link,Illegal]
                                                   ListLiteralNode SourceSection: [22345,22370]`[last, root, key, re...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [22346,22350]`last`
                                                       Frame: [8,last,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6411,6 +6410,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     ReadLocalVariableNode SourceSection: [22363,22369]`result`
                                                       Frame: [7,result,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                 BlockNode SourceSection: [22391,22434]`last[NEXT] = root[PR...`
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp35
@@ -6654,7 +6654,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           EmptyNode SourceSection: None
                                           EmptyNode SourceSection: None
                                         ListLiteralNode SourceSection: [23029,23053]`[root, root, None, N...`
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [23030,23034]`root`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [5,root,Illegal]
@@ -6667,6 +6666,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                             ReadFromCellNodeGen SourceSection: None
                                           ObjectLiteralNode SourceSection: [23042,23046]`None`
                                           ObjectLiteralNode SourceSection: [23048,23052]`None`
+                                          PythonObjectFactoryNodeGen SourceSection: None
                                       BlockNode SourceSection: [23066,23083]`hits = misses = 0`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <>temp6
@@ -7644,12 +7644,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __add__
                                       ListLiteralNode SourceSection: [26416,26423]`[[cls]]`
-                                        PythonObjectFactoryNodeGen SourceSection: None
                                         ListLiteralNode SourceSection: [26417,26422]`[cls]`
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [26418,26421]`cls`
                                             Frame: [0,cls,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                          PythonObjectFactoryNodeGen SourceSection: None
+                                        PythonObjectFactoryNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [26434,26450]`explicit_c3_mros`
                                         Frame: [8,explicit_c3_mros,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -7660,20 +7660,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     Frame: [10,other_c3_mros,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 ListLiteralNode SourceSection: [26496,26512]`[explicit_bases]`
-                                  PythonObjectFactoryNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [26497,26511]`explicit_bases`
                                     Frame: [5,explicit_bases,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                  PythonObjectFactoryNodeGen SourceSection: None
                               ListLiteralNode SourceSection: [26515,26531]`[abstract_bases]`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [26516,26530]`abstract_bases`
                                   Frame: [6,abstract_bases,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
                             ListLiteralNode SourceSection: [26534,26547]`[other_bases]`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [26535,26546]`other_bases`
                                 Frame: [7,other_bases,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [26397,26406]`_c3_merge`
                             Identifier: _c3_merge
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

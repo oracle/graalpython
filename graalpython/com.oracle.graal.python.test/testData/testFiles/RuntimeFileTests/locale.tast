@@ -52,7 +52,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
       WriteNameNodeGen SourceSection: [813,1160]`__all__ = ["getlocal...`
         Identifier: __all__
         ListLiteralNode SourceSection: [823,1160]`["getlocale", "getde...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [824,835]`"getlocale"`
           StringLiteralNode SourceSection: [837,855]`"getdefaultlocale"`
           StringLiteralNode SourceSection: [857,879]`"getpreferredencodin...`
@@ -76,6 +75,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
           StringLiteralNode SourceSection: [1125,1137]`"LC_NUMERIC"`
           StringLiteralNode SourceSection: [1139,1147]`"LC_ALL"`
           StringLiteralNode SourceSection: [1149,1159]`"CHAR_MAX"`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1162,1312]`def _strcoll(a,b):↵ ...`
         Identifier: _strcoll
         FunctionDefinitionNode Name: _strcoll SourceSection: None
@@ -280,9 +280,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   StringLiteralNode SourceSection: [2483,2502]`'mon_decimal_point'`
                                   StringLiteralNode SourceSection: [2524,2541]`'int_frac_digits'`
                                   ListLiteralNode SourceSection: [1894,1899]`[127]`
-                                    PythonObjectFactoryNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [1895,1898]`127`
                                       Value: 127
+                                    PythonObjectFactoryNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [1936,1938]`''`
                                   IntegerLiteralNode SourceSection: [1971,1974]`127`
                                     Value: 127
@@ -360,10 +360,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
                                   TupleLiteralNode SourceSection: [2729,2744]`(None, '', 'C')`
-                                    PythonObjectFactoryNodeGen SourceSection: None
                                     ObjectLiteralNode SourceSection: [2730,2734]`None`
                                     StringLiteralNode SourceSection: [2736,2738]`''`
                                     StringLiteralNode SourceSection: [2740,2743]`'C'`
+                                    PythonObjectFactoryNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [2716,2721]`value`
                                     Frame: [1,value,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -730,12 +730,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [10,<return_val>,Illegal]
                           TupleLiteralNode SourceSection: [4184,4190]`(s, 0)`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [4185,4186]`s`
                               Frame: [0,s,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [4188,4189]`0`
                               Value: 0
+                            PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4195,4344]`if s[-1] == ' ':↵   ...`
                       YesNodeGen SourceSection: None
@@ -926,7 +926,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [10,<return_val>,Illegal]
                         TupleLiteralNode SourceSection: [4732,4851]`(↵        left_space...`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           BinaryArithmeticExpression SourceSection: [4742,4797]`left_spaces + thousa...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
@@ -972,6 +971,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4843,4844]`1`
                                 Value: 1
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [10,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1238,10 +1238,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
                             TupleLiteralNode SourceSection: [5414,5422]`(value,)`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [5415,5420]`value`
                                 Frame: [1,value,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [5425,5435]`additional`
                               Frame: [4,additional,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1686,10 +1686,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [1,val,Illegal]
                             TupleLiteralNode SourceSection: [6964,6970]`(val,)`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [6965,6968]`val`
                                 Frame: [1,val,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [6979,6991]`new_val = []`
                           Identifier: new_val
@@ -3240,9 +3240,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Op: __contains__
                               YesNodeGen SourceSection: None
                               TupleLiteralNode SourceSection: [12099,12122]`('ISO8859-15', 'UTF-...`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [12100,12112]`'ISO8859-15'`
                                 StringLiteralNode SourceSection: [12114,12121]`'UTF-8'`
+                                PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12087,12095]`encoding`
                                 Frame: [3,encoding,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4086,11 +4086,11 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [5,<return_val>,Illegal]
                               TupleLiteralNode SourceSection: [16057,16076]`code, 'iso-8859-15'`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [16057,16061]`code`
                                   Frame: [1,code,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [16063,16076]`'iso-8859-15'`
+                                PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [16082,16192]`if '.' in code:↵    ...`
@@ -4142,9 +4142,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [5,<return_val>,Illegal]
                             TupleLiteralNode SourceSection: [16177,16187]`None, None`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ObjectLiteralNode SourceSection: [16177,16181]`None`
                               ObjectLiteralNode SourceSection: [16183,16187]`None`
+                              PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     RaiseNodeGen SourceSection: [16192,16243]`raise ValueError('un...`
                       PythonCallNodeGen SourceSection: [16198,16243]`ValueError('unknown ...`
@@ -4280,13 +4280,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ObjectLiteralNode SourceSection: [16832,16836]`None`
                           TupleLiteralNode SourceSection: [16659,16682]`(TypeError, ValueErr...`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16660,16669]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16671,16681]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -4297,11 +4297,11 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
         FunctionDefinitionNode Name: getdefaultlocale SourceSection: None
           Arguments:
             TupleLiteralNode SourceSection: [16867,16909]`('LC_ALL', 'LC_CTYPE...`
-              PythonObjectFactoryNodeGen SourceSection: None
               StringLiteralNode SourceSection: [16868,16876]`'LC_ALL'`
               StringLiteralNode SourceSection: [16878,16888]`'LC_CTYPE'`
               StringLiteralNode SourceSection: [16890,16896]`'LANG'`
               StringLiteralNode SourceSection: [16898,16908]`'LANGUAGE'`
+              PythonObjectFactoryNodeGen SourceSection: None
           KwArguments: None
           Documentation: StringLiteralNode: ` Tries to determine ...`
           FreeVarSlots: None
@@ -4373,13 +4373,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ExpressionStatementNode SourceSection: [18098,18102]`pass`
                             EmptyNode SourceSection: [18098,18102]`pass`
                           TupleLiteralNode SourceSection: [18059,18088]`(ImportError, Attrib...`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [18060,18071]`ImportError`
                               Identifier: ImportError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [18073,18087]`AttributeError`
                               Identifier: AttributeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None
                           IfNode SourceSection: [18176,18441]`if sys.platform == "...`
                             YesNodeGen SourceSection: None
@@ -4443,13 +4443,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [10,<return_val>,Illegal]
                               TupleLiteralNode SourceSection: [18448,18462]`code, encoding`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [18448,18452]`code`
                                   Frame: [2,code,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [18454,18462]`encoding`
                                   Frame: [3,encoding,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
                         SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [18510,18512]`os`
                       Identifier: os

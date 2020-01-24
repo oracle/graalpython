@@ -168,7 +168,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [474,498]`'Use %s() or %s to e...`
                                               TupleLiteralNode SourceSection: [501,522]`(self.name, self.eof...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [502,511]`self.name`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: name
@@ -185,6 +184,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   ReadLocalVariableNode SourceSection: [513,517]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
                                       Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -797,7 +797,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __mul__
                                                   TupleLiteralNode SourceSection: [1892,1906]`(self.__name,)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     GetAttributeNodeGen SourceSection: [1893,1904]`self.__name`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __name
@@ -806,6 +805,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       ReadLocalVariableNode SourceSection: [1893,1897]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [1907,1908]`2`
                                                     Value: 2
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -979,9 +979,9 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                     Op: __contains__
                                                                   YesNodeGen SourceSection: None
                                                                   TupleLiteralNode SourceSection: [2433,2442]`('', 'q')`
-                                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                                     StringLiteralNode SourceSection: [2434,2436]`''`
                                                                     StringLiteralNode SourceSection: [2438,2441]`'q'`
+                                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                                   ReadLocalVariableNode SourceSection: [2422,2425]`key`
                                                                     Frame: [4,key,Illegal]
                                                                     ReadVariableFromFrameNodeGen SourceSection: None

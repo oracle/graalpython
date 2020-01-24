@@ -6,10 +6,10 @@ ModuleRootNode Name: <module 'tuple07'> SourceSection: [0,5]`1,2,3`
   Documentation: None
   InnerRootNode SourceSection: [0,5]`1,2,3`
     TupleLiteralNode SourceSection: [0,5]`1,2,3`
-      PythonObjectFactoryNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [0,1]`1`
         Value: 1
       IntegerLiteralNode SourceSection: [2,3]`2`
         Value: 2
       IntegerLiteralNode SourceSection: [4,5]`3`
         Value: 3
+      PythonObjectFactoryNodeGen SourceSection: None

@@ -84,105 +84,105 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
       WriteNameNodeGen SourceSection: [641,2085]`_equivalences = (↵  ...`
         Identifier: _equivalences
         TupleLiteralNode SourceSection: [657,2085]`(↵    # LATIN SMALL ...`
-          PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [720,733]`(0x69, 0x131)`
-            PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [721,725]`0x69`
               Value: 105
             IntegerLiteralNode SourceSection: [727,732]`0x131`
               Value: 305
-          TupleLiteralNode SourceSection: [798,811]`(0x73, 0x17f)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [798,811]`(0x73, 0x17f)`
             IntegerLiteralNode SourceSection: [799,803]`0x73`
               Value: 115
             IntegerLiteralNode SourceSection: [805,810]`0x17f`
               Value: 383
-          TupleLiteralNode SourceSection: [862,875]`(0xb5, 0x3bc)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [862,875]`(0xb5, 0x3bc)`
             IntegerLiteralNode SourceSection: [863,867]`0xb5`
               Value: 181
             IntegerLiteralNode SourceSection: [869,874]`0x3bc`
               Value: 956
-          TupleLiteralNode SourceSection: [969,991]`(0x345, 0x3b9, 0x1fb...`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [969,991]`(0x345, 0x3b9, 0x1fb...`
             IntegerLiteralNode SourceSection: [970,975]`0x345`
               Value: 837
             IntegerLiteralNode SourceSection: [977,982]`0x3b9`
               Value: 953
             IntegerLiteralNode SourceSection: [984,990]`0x1fbe`
               Value: 8126
-          TupleLiteralNode SourceSection: [1112,1127]`(0x390, 0x1fd3)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1112,1127]`(0x390, 0x1fd3)`
             IntegerLiteralNode SourceSection: [1113,1118]`0x390`
               Value: 912
             IntegerLiteralNode SourceSection: [1120,1126]`0x1fd3`
               Value: 8147
-          TupleLiteralNode SourceSection: [1248,1263]`(0x3b0, 0x1fe3)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1248,1263]`(0x3b0, 0x1fe3)`
             IntegerLiteralNode SourceSection: [1249,1254]`0x3b0`
               Value: 944
             IntegerLiteralNode SourceSection: [1256,1262]`0x1fe3`
               Value: 8163
-          TupleLiteralNode SourceSection: [1323,1337]`(0x3b2, 0x3d0)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1323,1337]`(0x3b2, 0x3d0)`
             IntegerLiteralNode SourceSection: [1324,1329]`0x3b2`
               Value: 946
             IntegerLiteralNode SourceSection: [1331,1336]`0x3d0`
               Value: 976
-          TupleLiteralNode SourceSection: [1410,1424]`(0x3b5, 0x3f5)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1410,1424]`(0x3b5, 0x3f5)`
             IntegerLiteralNode SourceSection: [1411,1416]`0x3b5`
               Value: 949
             IntegerLiteralNode SourceSection: [1418,1423]`0x3f5`
               Value: 1013
-          TupleLiteralNode SourceSection: [1486,1500]`(0x3b8, 0x3d1)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1486,1500]`(0x3b8, 0x3d1)`
             IntegerLiteralNode SourceSection: [1487,1492]`0x3b8`
               Value: 952
             IntegerLiteralNode SourceSection: [1494,1499]`0x3d1`
               Value: 977
-          TupleLiteralNode SourceSection: [1562,1576]`(0x3ba, 0x3f0)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1562,1576]`(0x3ba, 0x3f0)`
             IntegerLiteralNode SourceSection: [1563,1568]`0x3ba`
               Value: 954
             IntegerLiteralNode SourceSection: [1570,1575]`0x3f0`
               Value: 1008
-          TupleLiteralNode SourceSection: [1632,1646]`(0x3c0, 0x3d6)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1632,1646]`(0x3c0, 0x3d6)`
             IntegerLiteralNode SourceSection: [1633,1638]`0x3c0`
               Value: 960
             IntegerLiteralNode SourceSection: [1640,1645]`0x3d6`
               Value: 982
-          TupleLiteralNode SourceSection: [1704,1718]`(0x3c1, 0x3f1)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1704,1718]`(0x3c1, 0x3f1)`
             IntegerLiteralNode SourceSection: [1705,1710]`0x3c1`
               Value: 961
             IntegerLiteralNode SourceSection: [1712,1717]`0x3f1`
               Value: 1009
-          TupleLiteralNode SourceSection: [1792,1806]`(0x3c2, 0x3c3)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1792,1806]`(0x3c2, 0x3c3)`
             IntegerLiteralNode SourceSection: [1793,1798]`0x3c2`
               Value: 962
             IntegerLiteralNode SourceSection: [1800,1805]`0x3c3`
               Value: 963
-          TupleLiteralNode SourceSection: [1864,1878]`(0x3c6, 0x3d5)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1864,1878]`(0x3c6, 0x3d5)`
             IntegerLiteralNode SourceSection: [1865,1870]`0x3c6`
               Value: 966
             IntegerLiteralNode SourceSection: [1872,1877]`0x3d5`
               Value: 981
-          TupleLiteralNode SourceSection: [1973,1989]`(0x1e61, 0x1e9b)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [1973,1989]`(0x1e61, 0x1e9b)`
             IntegerLiteralNode SourceSection: [1974,1980]`0x1e61`
               Value: 7777
             IntegerLiteralNode SourceSection: [1982,1988]`0x1e9b`
               Value: 7835
-          TupleLiteralNode SourceSection: [2061,2077]`(0xfb05, 0xfb06)`
             PythonObjectFactoryNodeGen SourceSection: None
+          TupleLiteralNode SourceSection: [2061,2077]`(0xfb05, 0xfb06)`
             IntegerLiteralNode SourceSection: [2062,2068]`0xfb05`
               Value: 64261
             IntegerLiteralNode SourceSection: [2070,2076]`0xfb06`
               Value: 64262
+            PythonObjectFactoryNodeGen SourceSection: None
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2163,2272]`_ignorecase_fixes = ...`
         Identifier: _ignorecase_fixes
         PythonCallNodeGen SourceSection: [2184,2271]`i: tuple(j for j in ...`
@@ -215,7 +215,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         YieldNode SourceSection: None
                           flagSlot: 0
                           TupleLiteralNode SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [2184,2185]`i`
                               ReadGeneratorFrameVariableNode SourceSection: None
                                 Frame: [0,i,Illegal]
@@ -294,6 +293,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2187,2192]`tuple`
                                 Identifier: tuple
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                           GeneratorAccessNode SourceSection: None
                       WriteLocalCellNodeGen SourceSection: None
                         Identifier: i
@@ -950,10 +950,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
                                                   TupleLiteralNode SourceSection: [3988,3993]`(lo,)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [3989,3991]`lo`
                                                       Frame: [12,lo,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   GetItemNodeGen SourceSection: [3996,4005]`fixes[lo]`
                                                     ReadLocalVariableNode SourceSection: None
                                                       Frame: [11,fixes,Illegal]
@@ -1236,10 +1236,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               Op: __mod__
                                             StringLiteralNode SourceSection: [4928,4972]`"internal: unsupport...`
                                             TupleLiteralNode SourceSection: [4975,4980]`(op,)`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [4976,4978]`op`
                                                 Frame: [27,op,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4922,4927]`error`
                                             Identifier: error
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2627,10 +2627,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Op: __mod__
                                                           StringLiteralNode SourceSection: [8862,8901]`"internal: unsupport...`
                                                           TupleLiteralNode SourceSection: [8904,8909]`(op,)`
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [8905,8907]`op`
                                                               Frame: [27,op,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [8856,8861]`error`
                                                           Identifier: error
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2936,10 +2936,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 Op: __mod__
                                               StringLiteralNode SourceSection: [9663,9702]`"internal: unsupport...`
                                               TupleLiteralNode SourceSection: [9705,9710]`(op,)`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [9706,9708]`op`
                                                   Frame: [4,op,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9657,9662]`error`
                                               Identifier: error
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3407,13 +3407,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 PythonCallNodeGen SourceSection: [11226,11246]`out.append((op, av))...`
                                                   CallNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [11237,11245]`(op, av)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11238,11240]`op`
                                                       Frame: [12,op,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11242,11244]`av`
                                                       Frame: [13,av,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11226,11229]`out`
                                                       Frame: [4,out,Illegal]
@@ -3422,13 +3422,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 PythonCallNodeGen SourceSection: [11289,11310]`tail.append((op, av)...`
                                                   CallNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [11301,11309]`(op, av)`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11302,11304]`op`
                                                       Frame: [12,op,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11306,11308]`av`
                                                       Frame: [13,av,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [11289,11293]`tail`
                                                       Frame: [5,tail,Illegal]
@@ -3501,13 +3501,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               PythonCallNodeGen SourceSection: [11971,11992]`tail.append((op, av)...`
                                                 CallNodeGen SourceSection: None
                                                 TupleLiteralNode SourceSection: [11983,11991]`(op, av)`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [11984,11986]`op`
                                                     Frame: [12,op,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [11988,11990]`av`
                                                     Frame: [13,av,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [11971,11975]`tail`
                                                     Frame: [5,tail,Illegal]
@@ -3623,7 +3623,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   PythonCallNodeGen SourceSection: [12278,12308]`runs.append((p, len(...`
                                     CallNodeGen SourceSection: None
                                     TupleLiteralNode SourceSection: [12290,12307]`(p, len(charmap))`
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [12291,12292]`p`
                                         Frame: [16,p,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -3635,6 +3634,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [12294,12297]`len`
                                           Identifier: len
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonObjectFactoryNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [12278,12282]`runs`
                                         Frame: [14,runs,Illegal]
@@ -3645,13 +3645,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               PythonCallNodeGen SourceSection: [12335,12354]`runs.append((p, q))`
                                 CallNodeGen SourceSection: None
                                 TupleLiteralNode SourceSection: [12347,12353]`(p, q)`
-                                  PythonObjectFactoryNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [12348,12349]`p`
                                     Frame: [16,p,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [12351,12352]`q`
                                     Frame: [15,q,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                  PythonObjectFactoryNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [12335,12339]`runs`
                                     Frame: [14,runs,Illegal]
@@ -3712,13 +3712,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   PythonCallNodeGen SourceSection: [12477,12501]`out.append((LITERAL,...`
                                     CallNodeGen SourceSection: None
                                     TupleLiteralNode SourceSection: [12488,12500]`(LITERAL, p)`
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [12489,12496]`LITERAL`
                                         Identifier: LITERAL
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [12498,12499]`p`
                                         Frame: [16,p,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                      PythonObjectFactoryNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [12477,12480]`out`
                                         Frame: [4,out,Illegal]
@@ -3727,12 +3727,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   PythonCallNodeGen SourceSection: [12536,12567]`out.append((RANGE, (...`
                                     CallNodeGen SourceSection: None
                                     TupleLiteralNode SourceSection: [12547,12566]`(RANGE, (p, q - 1))`
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [12548,12553]`RANGE`
                                         Identifier: RANGE
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       TupleLiteralNode SourceSection: [12555,12565]`(p, q - 1)`
-                                        PythonObjectFactoryNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [12556,12557]`p`
                                           Frame: [16,p,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -3744,6 +3742,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [12563,12564]`1`
                                             Value: 1
+                                        PythonObjectFactoryNodeGen SourceSection: None
+                                      PythonObjectFactoryNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [12536,12539]`out`
                                         Frame: [4,out,Illegal]
@@ -3797,13 +3797,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               WriteLocalFrameSlotNodeGen SourceSection: None
                                 Frame: [26,<return_val>,Illegal]
                               TupleLiteralNode SourceSection: [12727,12740]`out, hascased`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [12727,12730]`out`
                                   Frame: [4,out,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [12732,12740]`hascased`
                                   Frame: [7,hascased,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         FrameReturnNode SourceSection: [12802,12826]`return charset, hasc...`
                           WriteLocalVariableNodeGen SourceSection: None
@@ -3811,13 +3811,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [26,<return_val>,Illegal]
                             TupleLiteralNode SourceSection: [12809,12826]`charset, hascased`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12809,12816]`charset`
                                 Frame: [0,charset,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12818,12826]`hascased`
                                 Frame: [7,hascased,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [12849,14122]`if len(charmap) == 2...`
                       YesNodeGen SourceSection: None
@@ -3851,13 +3851,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           PythonCallNodeGen SourceSection: [12916,12943]`out.append((CHARSET,...`
                             CallNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [12927,12942]`(CHARSET, data)`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12928,12935]`CHARSET`
                                 Identifier: CHARSET
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12937,12941]`data`
                                 Frame: [17,data,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12916,12919]`out`
                                 Frame: [4,out,Illegal]
@@ -3879,13 +3879,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [26,<return_val>,Illegal]
                             TupleLiteralNode SourceSection: [12979,12992]`out, hascased`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12979,12982]`out`
                                 Frame: [4,out,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12984,12992]`hascased`
                                 Frame: [7,hascased,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14122,14146]`charmap = bytes(char...`
                       Identifier: charmap
@@ -4089,10 +4089,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __add__
                         ListLiteralNode SourceSection: [14552,14559]`[block]`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14553,14558]`block`
                             Frame: [20,block,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [14562,14586]`_bytes_to_codes(mapp...`
                           CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14578,14585]`mapping`
@@ -4105,13 +4105,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       PythonCallNodeGen SourceSection: [14591,14621]`out.append((BIGCHARS...`
                         CallNodeGen SourceSection: None
                         TupleLiteralNode SourceSection: [14602,14620]`(BIGCHARSET, data)`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [14603,14613]`BIGCHARSET`
                             Identifier: BIGCHARSET
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14615,14619]`data`
                             Frame: [17,data,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14591,14594]`out`
                             Frame: [4,out,Illegal]
@@ -4133,13 +4133,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [26,<return_val>,Illegal]
                         TupleLiteralNode SourceSection: [14649,14662]`out, hascased`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14649,14652]`out`
                             Frame: [4,out,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14654,14662]`hascased`
                             Frame: [7,hascased,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [26,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4668,9 +4668,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mul__
                         ListLiteralNode SourceSection: [15801,15804]`[0]`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [15802,15803]`0`
                             Value: 0
+                          PythonObjectFactoryNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [15807,15818]`len(prefix)`
                           CallNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [15811,15817]`prefix`
@@ -5279,7 +5279,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [25,<return_val>,Illegal]
                           TupleLiteralNode SourceSection: [17338,17363]`prefix, prefix_skip,...`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [17338,17344]`prefix`
                               Frame: [2,prefix,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -5287,13 +5286,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Frame: [4,prefix_skip,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             BooleanLiteralNode SourceSection: [17359,17363]`True`
+                            PythonObjectFactoryNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [17368,17401]`return prefix, prefi...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [25,<return_val>,Illegal]
                         TupleLiteralNode SourceSection: [17375,17401]`prefix, prefix_skip,...`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [17375,17381]`prefix`
                             Frame: [2,prefix,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5301,6 +5300,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Frame: [4,prefix_skip,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           BooleanLiteralNode SourceSection: [17396,17401]`False`
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [25,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5558,15 +5558,15 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             WriteLocalFrameSlotNodeGen SourceSection: None
                               Frame: [11,<return_val>,Illegal]
                             ListLiteralNode SourceSection: [17931,17941]`[(op, av)]`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               TupleLiteralNode SourceSection: [17932,17940]`(op, av)`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [17933,17935]`op`
                                   Frame: [2,op,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [17937,17939]`av`
                                   Frame: [3,av,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                       IfNode SourceSection: None
                         YesNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [17951,17963]`op is BRANCH`
@@ -5674,13 +5674,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       PythonCallNodeGen SourceSection: [18205,18228]`charsetappend((op, a...`
                                         CallNodeGen SourceSection: None
                                         TupleLiteralNode SourceSection: [18219,18227]`(op, av)`
-                                          PythonObjectFactoryNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [18220,18222]`op`
                                             Frame: [2,op,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [18224,18226]`av`
                                             Frame: [3,av,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                          PythonObjectFactoryNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [18205,18218]`charsetappend`
                                           Frame: [9,charsetappend,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -5992,7 +5992,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           PythonCallNodeGen SourceSection: [19051,19084]`code.extend([INFO, 4...`
                             CallNodeGen SourceSection: None
                             ListLiteralNode SourceSection: [19063,19083]`[INFO, 4, 0, lo, hi]...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [19064,19068]`INFO`
                                 Identifier: INFO
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6006,6 +6005,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadLocalVariableNode SourceSection: [19080,19082]`hi`
                                 Frame: [4,hi,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [19051,19055]`code`
                                 Frame: [0,code,Illegal]
@@ -6495,13 +6495,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Frame: [0,obj,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [20637,20649]`(str, bytes)`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20638,20641]`str`
                               Identifier: str
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20643,20648]`bytes`
                               Identifier: bytes
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [20621,20631]`isinstance`
                             Identifier: isinstance
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -6707,7 +6707,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               Op: __mod__
                                             StringLiteralNode SourceSection: [20940,20947]`'%#0*x'`
                                             TupleLiteralNode SourceSection: [20950,20972]`(_sre.CODESIZE*2+2, ...`
-                                              PythonObjectFactoryNodeGen SourceSection: None
                                               BinaryArithmeticExpression SourceSection: [20951,20968]`_sre.CODESIZE*2+2`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __add__
@@ -6729,6 +6728,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadGeneratorFrameVariableNode SourceSection: [20970,20971]`x`
                                                 Frame: [0,x,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: x
@@ -6965,16 +6965,16 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           Frame: [0,args,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         TupleLiteralNode SourceSection: [21245,21265]`('(to %d)' % (to,),)...`
-                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                           BinaryArithmeticExpression SourceSection: [21246,21263]`'(to %d)' % (to,)`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __mod__
                                                             StringLiteralNode SourceSection: [21246,21255]`'(to %d)'`
                                                             TupleLiteralNode SourceSection: [21258,21263]`(to,)`
-                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [21259,21261]`to`
                                                                 Frame: [1,to,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                              PythonObjectFactoryNodeGen SourceSection: None
+                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [21278,21388]`print('%*d%s ' % (of...`
                                                   PythonCallNodeGen SourceSection: [21278,21388]`print('%*d%s ' % (of...`
@@ -6984,7 +6984,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Op: __mod__
                                                       StringLiteralNode SourceSection: [21284,21292]`'%*d%s '`
                                                       TupleLiteralNode SourceSection: [21295,21349]`(offset_width, start...`
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [21296,21308]`offset_width`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [6,offset_width,Illegal]
@@ -7013,6 +7012,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 ReadFromCellNodeGen SourceSection: None
                                                           StringLiteralNode SourceSection: [21317,21320]`':'`
                                                           StringLiteralNode SourceSection: [21345,21348]`'.'`
+                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                     KeywordArgumentsNodeGen SourceSection: None
                                                       KeywordLiteralNode SourceSection: None
                                                         BinaryArithmeticExpression SourceSection: [21373,21387]`'  '*(level-1)`
@@ -7240,7 +7240,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 TupleLiteralNode SourceSection: [21766,21850]`(SUCCESS, FAILURE, A...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21767,21774]`SUCCESS`
                                                     Identifier: SUCCESS
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7262,6 +7261,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21843,21849]`NEGATE`
                                                     Identifier: NEGATE
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [21760,21762]`op`
                                                   Frame: [5,op,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7281,7 +7281,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [21902,22120]`(LITERAL, NOT_LITERA...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21903,21910]`LITERAL`
                                                       Identifier: LITERAL
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7306,6 +7305,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [22097,22119]`NOT_LITERAL_LOC_IGNO...`
                                                       Identifier: NOT_LITERAL_LOC_IGNORE
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [21896,21898]`op`
                                                     Frame: [5,op,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -7344,7 +7344,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Op: __mod__
                                                       StringLiteralNode SourceSection: [22202,22214]`'%#02x (%r)'`
                                                       TupleLiteralNode SourceSection: [22217,22232]`(arg, chr(arg))`
-                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [22218,22221]`arg`
                                                           Frame: [6,arg,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -7356,6 +7355,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22223,22226]`chr`
                                                             Identifier: chr
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [22191,22197]`print_`
                                                       Frame: [2,print_,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7534,7 +7534,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           Op: __contains__
                                                         YesNodeGen SourceSection: None
                                                         TupleLiteralNode SourceSection: [22661,22706]`(IN, IN_IGNORE, IN_U...`
-                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22662,22664]`IN`
                                                             Identifier: IN
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7547,6 +7546,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22692,22705]`IN_LOC_IGNORE`
                                                             Identifier: IN_LOC_IGNORE
                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                          PythonObjectFactoryNodeGen SourceSection: None
                                                         ReadLocalVariableNode SourceSection: [22655,22657]`op`
                                                           Frame: [5,op,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -7633,13 +7633,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Op: __contains__
                                                           YesNodeGen SourceSection: None
                                                           TupleLiteralNode SourceSection: [22866,22891]`(RANGE, RANGE_UNI_IG...`
-                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [22867,22872]`RANGE`
                                                               Identifier: RANGE
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [22874,22890]`RANGE_UNI_IGNORE`
                                                               Identifier: RANGE_UNI_IGNORE
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [22860,22862]`op`
                                                             Frame: [5,op,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -7708,7 +7708,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 Op: __mod__
                                                               StringLiteralNode SourceSection: [22981,23002]`'%#02x %#02x (%r-%r)...`
                                                               TupleLiteralNode SourceSection: [23005,23031]`(lo, hi, chr(lo), ch...`
-                                                                PythonObjectFactoryNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [23006,23008]`lo`
                                                                   Frame: [8,lo,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7731,6 +7730,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [23023,23026]`chr`
                                                                     Identifier: chr
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                PythonObjectFactoryNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [22970,22976]`print_`
                                                               Frame: [2,print_,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8091,7 +8091,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   Op: __contains__
                                                                 YesNodeGen SourceSection: None
                                                                 TupleLiteralNode SourceSection: [23723,23822]`(MARK, GROUPREF, GRO...`
-                                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [23724,23728]`MARK`
                                                                     Identifier: MARK
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8107,6 +8106,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [23802,23821]`GROUPREF_LOC_IGNORE`
                                                                     Identifier: GROUPREF_LOC_IGNORE
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [23717,23719]`op`
                                                                   Frame: [5,op,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8375,7 +8375,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         Op: __contains__
                                                                       YesNodeGen SourceSection: None
                                                                       TupleLiteralNode SourceSection: [24502,24538]`(REPEAT, REPEAT_ONE,...`
-                                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24503,24509]`REPEAT`
                                                                           Identifier: REPEAT
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8385,6 +8384,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24523,24537]`MIN_REPEAT_ONE`
                                                                           Identifier: MIN_REPEAT_ONE
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                        PythonObjectFactoryNodeGen SourceSection: None
                                                                       ReadLocalVariableNode SourceSection: [24496,24498]`op`
                                                                         Frame: [5,op,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -8627,13 +8627,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             Op: __contains__
                                                                           YesNodeGen SourceSection: None
                                                                           TupleLiteralNode SourceSection: [24951,24971]`(ASSERT, ASSERT_NOT)...`
-                                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [24952,24958]`ASSERT`
                                                                               Identifier: ASSERT
                                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [24960,24970]`ASSERT_NOT`
                                                                               Identifier: ASSERT_NOT
                                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                            PythonObjectFactoryNodeGen SourceSection: None
                                                                           ReadLocalVariableNode SourceSection: [24945,24947]`op`
                                                                             Frame: [5,op,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -9433,8 +9433,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __mul__
                         ListLiteralNode SourceSection: [26643,26649]`[None]`
-                          PythonObjectFactoryNodeGen SourceSection: None
                           ObjectLiteralNode SourceSection: [26644,26648]`None`
+                          PythonObjectFactoryNodeGen SourceSection: None
                         GetAttributeNodeGen SourceSection: [26652,26668]`p.pattern.groups`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: groups

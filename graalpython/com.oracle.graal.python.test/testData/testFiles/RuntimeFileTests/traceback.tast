@@ -31,7 +31,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
       WriteNameNodeGen SourceSection: [137,504]`__all__ = ['extract_...`
         Identifier: __all__
         ListLiteralNode SourceSection: [147,504]`['extract_stack', 'e...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [148,163]`'extract_stack'`
           StringLiteralNode SourceSection: [165,177]`'extract_tb'`
           StringLiteralNode SourceSection: [179,197]`'format_exception'`
@@ -51,6 +50,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
           StringLiteralNode SourceSection: [447,467]`'TracebackException'...`
           StringLiteralNode SourceSection: [480,492]`'walk_stack'`
           StringLiteralNode SourceSection: [494,503]`'walk_tb'`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [563,890]`def print_list(extra...`
         Identifier: print_list
         FunctionDefinitionNode Name: print_list SourceSection: None
@@ -865,13 +865,13 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             Op: __mod__
                           StringLiteralNode SourceSection: [5559,5569]`"%s: %s\n"`
                           TupleLiteralNode SourceSection: [5572,5589]`(etype, valuestr)`
-                            PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [5573,5578]`etype`
                               Frame: [0,etype,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [5580,5588]`valuestr`
                               Frame: [2,valuestr,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [5594,5605]`return line`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -1674,12 +1674,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Index: 0
                             StringLiteralNode SourceSection: None
                             TupleLiteralNode SourceSection: [8644,8693]`('filename', 'lineno...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [8645,8655]`'filename'`
                               StringLiteralNode SourceSection: [8657,8665]`'lineno'`
                               StringLiteralNode SourceSection: [8667,8673]`'name'`
                               StringLiteralNode SourceSection: [8675,8682]`'_line'`
                               StringLiteralNode SourceSection: [8684,8692]`'locals'`
+                              PythonObjectFactoryNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [8699,9472]`def __init__(self, f...`
                             ArgumentExpressionNode SourceSection: None
                               ReadIndexedArgumentNodeGen SourceSection: None
@@ -1854,7 +1854,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           YieldNode SourceSection: None
                                                             flagSlot: 0
                                                             TupleLiteralNode SourceSection: None
-                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadGeneratorFrameVariableNode SourceSection: [9408,9409]`k`
                                                                 Frame: [0,k,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1866,6 +1865,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9411,9415]`repr`
                                                                   Identifier: repr
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                              PythonObjectFactoryNodeGen SourceSection: None
                                                             GeneratorAccessNode SourceSection: None
                                                         DestructuringAssignmentNodeGen SourceSection: None
                                                           WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -2085,7 +2085,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __eq__
                                                 TupleLiteralNode SourceSection: [9802,9852]`(self.filename, self...`
-                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [9803,9816]`self.filename`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: filename
@@ -2118,6 +2117,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadLocalVariableNode SourceSection: [9842,9846]`self`
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                                  PythonObjectFactoryNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [9856,9861]`other`
                                                   Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2183,7 +2183,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Frame: [3,<return_val>,Illegal]
                                             GetItemNodeGen SourceSection: [9940,9995]`(self.filename, self...`
                                               TupleLiteralNode SourceSection: [9940,9990]`(self.filename, self...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [9941,9954]`self.filename`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: filename
@@ -2216,6 +2215,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [9980,9984]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [9991,9994]`pos`
                                                 Frame: [1,pos,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2265,7 +2265,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             PythonCallNodeGen SourceSection: [10036,10092]`iter([self.filename,...`
                                               CallNodeGen SourceSection: None
                                               ListLiteralNode SourceSection: [10041,10091]`[self.filename, self...`
-                                                PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [10042,10055]`self.filename`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: filename
@@ -2298,6 +2297,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   ReadLocalVariableNode SourceSection: [10081,10085]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [10036,10040]`iter`
                                                 Identifier: iter
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2563,7 +2563,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             YieldNode SourceSection: [10781,10800]`yield f, f.f_lineno`
                               flagSlot: 0
                               TupleLiteralNode SourceSection: [10787,10800]`f, f.f_lineno`
-                                PythonObjectFactoryNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: [10787,10788]`f`
                                   Frame: [0,f,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2575,6 +2574,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   ReadGeneratorFrameVariableNode SourceSection: [10790,10791]`f`
                                     Frame: [0,f,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                PythonObjectFactoryNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           WriteGeneratorFrameVariableNodeGen SourceSection: [10809,10821]`f = f.f_back`
                             Identifier: f
@@ -2646,7 +2646,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           YieldNode SourceSection: [11086,11117]`yield tb.tb_frame, t...`
                             flagSlot: 0
                             TupleLiteralNode SourceSection: [11092,11117]`tb.tb_frame, tb.tb_l...`
-                              PythonObjectFactoryNodeGen SourceSection: None
                               GetAttributeNodeGen SourceSection: [11092,11103]`tb.tb_frame`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: tb_frame
@@ -2663,6 +2662,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadGeneratorFrameVariableNode SourceSection: [11105,11107]`tb`
                                   Frame: [0,tb,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                              PythonObjectFactoryNodeGen SourceSection: None
                             GeneratorAccessNode SourceSection: None
                         WriteGeneratorFrameVariableNodeGen SourceSection: [11126,11141]`tb = tb.tb_next`
                           Identifier: tb
@@ -4856,9 +4856,9 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Op: __contains__
                                                   YesNodeGen SourceSection: None
                                                   TupleLiteralNode SourceSection: [20966,20990]`("__main__", "builti...`
-                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [20967,20977]`"__main__"`
                                                     StringLiteralNode SourceSection: [20979,20989]`"builtins"`
+                                                    PythonObjectFactoryNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNode SourceSection: [20954,20958]`smod`
                                                     Frame: [2,smod,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None

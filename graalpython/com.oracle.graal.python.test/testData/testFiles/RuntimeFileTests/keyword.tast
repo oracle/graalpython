@@ -11,13 +11,12 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
       WriteNameNodeGen SourceSection: [284,317]`__all__ = ["iskeywor...`
         Identifier: __all__
         ListLiteralNode SourceSection: [294,317]`["iskeyword", "kwlis...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [295,306]`"iskeyword"`
           StringLiteralNode SourceSection: [308,316]`"kwlist"`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [319,952]`kwlist = [↵#--start ...`
         Identifier: kwlist
         ListLiteralNode SourceSection: [328,952]`[↵#--start keywords-...`
-          PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [358,365]`'False'`
           StringLiteralNode SourceSection: [375,381]`'None'`
           StringLiteralNode SourceSection: [391,397]`'True'`
@@ -53,6 +52,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
           StringLiteralNode SourceSection: [883,890]`'while'`
           StringLiteralNode SourceSection: [900,906]`'with'`
           StringLiteralNode SourceSection: [916,923]`'yield'`
+          PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [954,996]`iskeyword = frozense...`
         Identifier: iskeyword
         GetAttributeNodeGen SourceSection: [966,996]`frozenset(kwlist).__...`
