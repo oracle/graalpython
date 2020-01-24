@@ -1061,9 +1061,14 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
+    standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
     dependencies=['pynl', 'Truffle', 'Sulong', 'LLVM.org toolchain', 'TRegex'],
+    standalone_dependencies={
+        'Sulong': ('lib/sulong', ['bin/<exe:lli>']),
+        'LLVM.org toolchain': ('lib/llvm-toolchain', []),
+    },
     truffle_jars=[
         'graalpython:GRAALPYTHON',
     ],
