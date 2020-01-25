@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -85,7 +86,8 @@ public final class PString extends PImmutableSequence {
 
     @ExportMessage
     static class LengthWithState {
-        static boolean isString(CharSequence seq) {
+
+        static boolean isSeqString(CharSequence seq) {
             return seq instanceof String;
         }
 
@@ -101,16 +103,16 @@ public final class PString extends PImmutableSequence {
             return ((NativeCharSequence) seq).isMaterialized();
         }
 
-        static boolean hasBuiltinLen(PString self, LookupInheritedAttributeNode.Dynamic lookupSelf, LookupAttributeInMRONode.Dynamic lookupString) {
-            return lookupSelf.execute(self, __LEN__) == lookupString.execute(PythonBuiltinClassType.PString, __LEN__);
-        }
-
         static boolean isBuiltin(PString self, IsBuiltinClassProfile p) {
             return p.profileIsAnyBuiltinObject(self);
         }
 
+        static boolean hasBuiltinLen(PString self, LookupInheritedAttributeNode.Dynamic lookupSelf, LookupAttributeInMRONode.Dynamic lookupString) {
+            return lookupSelf.execute(self, __LEN__) == lookupString.execute(PythonBuiltinClassType.PString, __LEN__);
+        }
+
         @Specialization(guards = {
-                        "isString(self.getCharSequence())",
+                        "isSeqString(self.getCharSequence())",
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, limit = "1")
         static int string(PString self, @SuppressWarnings("unused") ThreadState state,
@@ -198,6 +200,7 @@ public final class PString extends PImmutableSequence {
         return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
+    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public boolean isString() {
@@ -205,8 +208,8 @@ public final class PString extends PImmutableSequence {
     }
 
     @ExportMessage
-    String asString() {
-        return getValue();
+    String asString(@Cached StringMaterializeNode stringMaterializeNode) {
+        return stringMaterializeNode.execute(this);
     }
 
     @ExportMessage
