@@ -592,7 +592,12 @@ public abstract class CExtNodes {
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            CApiContext cApiContext = context.getCApiContext();
+            if (cApiContext != null) {
+                return new PythonAbstractNativeObject(object, cApiContext);
+            }
             return new PythonAbstractNativeObject(object, null);
         }
     }
