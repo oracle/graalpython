@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,9 +52,11 @@ PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
     return UPCALL_CEXT_O(_jls_PyList_GetItem, native_to_java(op), i);
 }
 
-UPCALL_ID(PyList_SetItem);
-int PyList_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem) {
-    return UPCALL_CEXT_I(_jls_PyList_SetItem, native_to_java(op), i, native_to_java(newitem));
+UPCALL_TYPED_ID(PyList_SetItem, setitem_fun_t);
+int PyList_SetItem(PyObject* op, Py_ssize_t i, PyObject* newitem) {
+    /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
+       But this function steals the references, so we call without a landing function. */
+    return _jls_PyList_SetItem(native_to_java(op), i, native_to_java(newitem));
 }
 
 UPCALL_ID(PyList_Append);

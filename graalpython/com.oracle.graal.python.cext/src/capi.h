@@ -425,4 +425,6 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
+typedef int (*setitem_fun_t)(PyObject*, Py_ssize_t, PyObject*);
+
 #endif

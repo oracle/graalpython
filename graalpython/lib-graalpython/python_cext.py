@@ -350,16 +350,6 @@ def PyList_GetItem(listObj, pos):
 
 
 @may_raise(-1)
-def PyList_SetItem(listObj, pos, newitem):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    if pos < 0:
-        raise IndexError("list assignment index out of range")
-    listObj[pos] = newitem
-    return 0
-
-
-@may_raise(-1)
 def PyList_Append(listObj, newitem):
     if not isinstance(listObj, list):
         __bad_internal_call(None, None, listObj)

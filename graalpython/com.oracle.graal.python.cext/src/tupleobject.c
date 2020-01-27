@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,6 @@ PyObject* PyTuple_New(Py_ssize_t size) {
 }
 
 
-typedef int (*setitem_fun_t)(PyObject*, Py_ssize_t, PyObject*);
 UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
     /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
@@ -125,17 +124,18 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
         return NULL;
     }
     newobj->ob_item = (PyObject **) ((char *)newobj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
+
+    // This polyglot type cast is important such that we can directly read and
+    // write members of the pointer from Java code.
+    // Note: the return type is 'PyObject*' to be compatible with CPython
     newobj = polyglot_from_PyTupleObject(newobj);
+
     for (i = 0; i < n; i++) {
         item = PyTuple_GetItem(tmp, i);
         Py_INCREF(item);
         PyTuple_SetItem((PyObject*)newobj, i, item);
     }
     Py_DECREF(tmp);
-
-    // This polyglot type cast is important such that we can directly read and
-    // write members of the pointer from Java code.
-    // Note: the return type is 'PyObject*' to be compatible with CPython
     return (PyObject*) newobj;
 }
 

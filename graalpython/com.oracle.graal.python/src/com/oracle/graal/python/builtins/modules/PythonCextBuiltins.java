@@ -3124,4 +3124,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+
+    @Builtin(name = "PyList_SetItem", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
+    abstract static class PyListSetItem extends PythonTernaryBuiltinNode {
+        @Specialization
+        int doManaged(VirtualFrame frame, PythonNativeWrapper listWrapper, Object position, Object elementWrapper,
+                      @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
+                      @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
+                      @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
+            if(!PGuards.isList(delegate)) {
+                throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", delegate, delegate);
+            }
+            PList list = (PList) delegate;
+            Object element = elementAsPythonObjectNode.execute(elementWrapper);
+            setItemNode.execute(frame, list.getSequenceStorage(), position, element);
+            return -2;
+        }
+
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), "invalid item for assignment");
+        }
+    }
 }
