@@ -17,17 +17,20 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.util.BiFunction;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -165,7 +168,11 @@ public class StringFormatter {
         Object mapping = null;
         this.args = args1;
 
-        if (args1 instanceof PTuple) {
+        // We need to do a full subtype-check because native objects may inherit from tuple but have
+        // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
+        boolean tupleArgs = IsSubtypeNodeGen.getUncached().execute(GetLazyClassNode.getUncached().execute(args1), PythonBuiltinClassType.PTuple);
+        assert tupleArgs || !PGuards.isPTuple(args1);
+        if (tupleArgs) {
             // We will simply work through the tuple elements
             argIndex = 0;
         } else {
@@ -450,7 +457,7 @@ public class StringFormatter {
          * of range; if a special value, it would be wrong if it were -1, indicating a single item
          * that has not yet been used.
          */
-        if (argIndex == -1 || (argIndex >= 0 && ((PSequence) args1).getSequenceStorage().length() > argIndex + 1)) {
+        if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) > argIndex + 1)) {
             throw core.raise(TypeError, "not all arguments converted during string formatting");
         }
 
