@@ -118,9 +118,11 @@ PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
     return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 0);
 }
 
+typedef PyObject* (*fromVoidPtr_fun_t)(void*);
+UPCALL_TYPED_ID(PyLong_FromVoidPtr, fromVoidPtr_fun_t);
 PyObject * PyLong_FromVoidPtr(void *p) {
-	// directly do the upcall to avoid a cast to primitive
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, p, 0);
+	// directly do the upcall to avoid a cast to primitive and reference counting
+    return _jls_PyLong_FromVoidPtr(p);
 }
 
 UPCALL_ID(PyLong_AsVoidPtr);

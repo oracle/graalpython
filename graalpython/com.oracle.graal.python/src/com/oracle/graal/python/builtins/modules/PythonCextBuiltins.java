@@ -2107,14 +2107,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyLong_FromLongLong extends PythonBinaryBuiltinNode {
         @Specialization(guards = "signed != 0")
-        Object doSignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+        static Object doSignedInt(int n, @SuppressWarnings("unused") int signed,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(n);
         }
 
         @Specialization(guards = "signed == 0")
-        Object doUnsignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+        static Object doUnsignedInt(int n, @SuppressWarnings("unused") int signed,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
             if (n < 0) {
                 return toSulongNode.execute(n & 0xFFFFFFFFL);
             }
@@ -2122,20 +2122,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "signed != 0")
-        Object doSignedLong(long n, @SuppressWarnings("unused") int signed,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+        static Object doSignedLong(long n, @SuppressWarnings("unused") int signed,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(n);
         }
 
         @Specialization(guards = {"signed == 0", "n >= 0"})
-        Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") int signed,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+        static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") int signed,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(n);
         }
 
         @Specialization(guards = {"signed == 0", "n < 0"})
         Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") int signed,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(factory().createInt(convertToBigInteger(n)));
         }
 
@@ -2143,11 +2143,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static BigInteger convertToBigInteger(long n) {
             return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
         }
+    }
 
+    @Builtin(name = "PyLong_FromVoidPtr", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") int signed,
-                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(factory().createNativeVoidPtr(n.getPtr()));
+        Object doPointer(TruffleObject pointer,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
         }
     }
 
@@ -3150,11 +3154,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyListSetItem extends PythonTernaryBuiltinNode {
         @Specialization
         int doManaged(VirtualFrame frame, PythonNativeWrapper listWrapper, Object position, Object elementWrapper,
-                      @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
-                      @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                      @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
+                        @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-            if(!PGuards.isList(delegate)) {
+            if (!PGuards.isList(delegate)) {
                 throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", delegate, delegate);
             }
             PList list = (PList) delegate;
