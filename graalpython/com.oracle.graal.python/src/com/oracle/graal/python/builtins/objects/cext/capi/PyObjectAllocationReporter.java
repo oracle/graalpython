@@ -40,11 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
@@ -56,7 +61,8 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 /**
- * This is a simple allocation reported that is used in the C API function {@code _PyObject_New} to report an object allocation.
+ * This is a simple allocation reported that is used in the C API function {@code _PyObject_New} to
+ * report an object allocation.
  */
 @ExportLibrary(InteropLibrary.class)
 public class PyObjectAllocationReporter implements TruffleObject {
@@ -70,26 +76,48 @@ public class PyObjectAllocationReporter implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @Cached CastToJavaLongNode castToJavaLongNode,
-                    @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") ContextReference<PythonContext> contextRef,
-                    @Cached(value = "getAllocationReporter(contextRef)", allowUncached = true) AllocationReporter reporter) throws ArityException, UnsupportedTypeException {
-        if (reporter.isActive()) {
+                    @Cached GetCurrentFrameRef getCurrentFrameRef,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached(value = "getAllocationReporter(context)", allowUncached = true) AllocationReporter reporter) throws ArityException, UnsupportedTypeException {
+        TruffleLogger logger = PythonLanguage.getLogger();
+        boolean isLoggable = logger.isLoggable(Level.FINE);
+        boolean traceNativeMemory = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
+        boolean reportAllocation = reporter.isActive();
+        if (isLoggable || traceNativeMemory || reportAllocation) {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
+            Object allocatedObject = arguments[0];
+            long objectSize;
             try {
-                Object allocatedObject = arguments[0];
-                long objectSize = castToJavaLongNode.execute(arguments[1]);
-                reporter.onEnter(null, 0, objectSize);
-                reporter.onReturnValue(allocatedObject, 0, objectSize);
-                return 0;
+                objectSize = castToJavaLongNode.execute(arguments[1]);
             } catch (CannotCastException e) {
                 throw UnsupportedTypeException.create(arguments, "invalid type for second argument 'objectSize'");
             }
+            if (isLoggable) {
+                logger.fine(() -> String.format("Allocated memory at 0x%X (size: %d bytes)", arguments[0], objectSize));
+            }
+            if (traceNativeMemory) {
+                PFrame.Reference ref = null;
+                if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
+                    ref = getCurrentFrameRef.execute(null);
+                }
+                context.getCApiContext().traceAlloc(arguments[0], ref, null);
+            }
+            if (reportAllocation) {
+                try {
+                    reporter.onEnter(null, 0, objectSize);
+                    reporter.onReturnValue(allocatedObject, 0, objectSize);
+                } catch (CannotCastException e) {
+                    throw UnsupportedTypeException.create(arguments, "invalid type for second argument 'objectSize'");
+                }
+            }
+            return 0;
         }
         return -2;
     }
 
-    protected static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getEnv().lookup(AllocationReporter.class);
+    protected static AllocationReporter getAllocationReporter(PythonContext context) {
+        return context.getEnv().lookup(AllocationReporter.class);
     }
 }

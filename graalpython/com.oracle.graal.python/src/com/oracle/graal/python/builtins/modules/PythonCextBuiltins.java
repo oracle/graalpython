@@ -61,6 +61,7 @@ import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -230,6 +231,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -2453,6 +2455,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(PythonNativeObject self, String className) {
+            PythonLanguage.getLogger().fine(() -> String.format("Computing MRO for native type %s (ptr = %s)", className, self.getPtr()));
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
             return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
@@ -3118,12 +3121,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleTraceFree extends PythonUnaryBuiltinNode {
         @Specialization
-        static int doNativeWrapper(long ptr) {
-            PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: 0x%X", ptr));
+        static int doNativeWrapper(long ptr,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            TruffleLogger logger = PythonLanguage.getLogger();
+            boolean isLoggable = logger.isLoggable(Level.FINE);
+            boolean traceNativeMemory = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
+            if (isLoggable || traceNativeMemory) {
+                if (isLoggable) {
+                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: 0x%X", ptr));
+                }
+                if (traceNativeMemory && ptr != 0) {
+                    PFrame.Reference ref = null;
+                    if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
+                        ref = getCurrentFrameRef.execute(null);
+                    }
+                    context.getCApiContext().traceFree(ptr, ref, null);
+                }
+            }
             return 0;
         }
     }
-
 
     @Builtin(name = "PyList_SetItem", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory

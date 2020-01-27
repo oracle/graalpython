@@ -196,7 +196,7 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
-typedef int (*alloc_reporter_fun_t)(PyObject* object, Py_ssize_t size);
+typedef int (*alloc_reporter_fun_t)(int64_t, Py_ssize_t size);
 extern alloc_reporter_fun_t PyObject_AllocationReporter;
 
 typedef void* (*cache_t)(uint64_t);
