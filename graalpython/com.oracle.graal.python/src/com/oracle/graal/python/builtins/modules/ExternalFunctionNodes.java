@@ -126,7 +126,7 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         Object doIt(VirtualFrame frame,
                         @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached CExtNodes.AsPythonObjectStealingNode asPythonObjectNode,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
             CalleeContext.enter(frame, customLocalsProfile);
