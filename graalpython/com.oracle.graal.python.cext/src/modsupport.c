@@ -395,6 +395,9 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
                 converter = NULL;
                 format_idx++;
             } else {
+                if (c != 'N') {
+                    Py_INCREF((PyObject*)void_arg);
+                }
                 PyList_Append(list, (PyObject*)void_arg);
             }
             break;
