@@ -132,7 +132,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -721,21 +720,19 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     /**
-     * Does the same conversion as the native function {@code to_java}. The node tries to avoid
-     * calling the native function for resolving native handles.
+     * use subclasses {@link ToJavaNode} and {@link ToJavaStealingNode}
      */
-    @GenerateUncached
-    public abstract static class ToJavaNode extends CExtToJavaNode {
+    abstract static class ToJavaBaseNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doWrapper(@SuppressWarnings("unused") CExtContext nativeContext, PythonNativeWrapper value,
+                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
+            return toJavaNode.execute(value);
+        }
 
         @Specialization
         static PythonAbstractObject doPythonObject(@SuppressWarnings("unused") CExtContext nativeContext, PythonAbstractObject value) {
             return value;
-        }
-
-        @Specialization
-        static Object doWrapper(@SuppressWarnings("unused") CExtContext nativeContext, PythonNativeWrapper value,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
-            return toJavaNode.execute(value);
         }
 
         @Specialization
@@ -755,6 +752,24 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        static byte doByte(@SuppressWarnings("unused") CExtContext nativeContext, byte b) {
+            return b;
+        }
+
+        protected static boolean isForeignObject(Object obj) {
+            return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
+                            obj instanceof Long || obj instanceof Byte);
+        }
+    }
+
+    /**
+     * Does the same conversion as the native function {@code to_java}. The node tries to avoid
+     * calling the native function for resolving native handles.
+     */
+    @GenerateUncached
+    public abstract static class ToJavaNode extends ToJavaBaseNode {
+
+        @Specialization
         static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long l,
                         @Exclusive @Cached PCallCapiFunction callNativeNode,
                         @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
@@ -763,21 +778,35 @@ public abstract class CExtNodes {
             return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
         }
 
-        @Specialization
-        static byte doByte(@SuppressWarnings("unused") CExtContext nativeContext, byte b) {
-            return b;
-        }
-
         @Specialization(guards = "isForeignObject(value)")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
                         @Exclusive @Cached PCallCapiFunction callNativeNode,
                         @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
             return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
         }
+    }
 
-        protected static boolean isForeignObject(Object obj) {
-            return !(obj instanceof PythonAbstractObject || obj instanceof PythonNativeWrapper || obj instanceof String || obj instanceof Boolean || obj instanceof Integer ||
-                            obj instanceof Long || obj instanceof Byte);
+    /**
+     * Does the same conversion as the native function {@code to_java}. The node tries to avoid
+     * calling the native function for resolving native handles.
+     */
+    @GenerateUncached
+    public abstract static class ToJavaStealingNode extends ToJavaBaseNode {
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long l,
+                        @Exclusive @Cached PCallCapiFunction callNativeNode,
+                        @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode) {
+            // Unfortunately, a long could be a native pointer and therefore a handle. So, we
+            // must try resolving it. At least we know that it's not a native type.
+            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
+        }
+
+        @Specialization(guards = "isForeignObject(value)")
+        static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
+                        @Exclusive @Cached PCallCapiFunction callNativeNode,
+                        @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode) {
+            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
         }
     }
 

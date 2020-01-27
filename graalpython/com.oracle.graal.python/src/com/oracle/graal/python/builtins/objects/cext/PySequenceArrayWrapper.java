@@ -366,7 +366,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization
         void doList(PList s, long idx, Object value,
-                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaStealingNode toJavaNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
             SequenceStorage storage = s.getSequenceStorage();
@@ -378,14 +378,14 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization
         void doTuple(PTuple s, long idx, Object value,
-                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaStealingNode toJavaNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode) {
             setListItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, toJavaNode.execute(value));
         }
 
         @Specialization
         void doGeneric(PythonAbstractObject sequence, Object idx, Object value,
-                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaNode toJavaNode,
+                        @Shared("toJavaNode") @Cached CExtNodes.ToJavaStealingNode toJavaNode,
                         @Cached PInteropSubscriptAssignNode setItemNode) throws UnsupportedMessageException {
             setItemNode.execute(sequence, idx, toJavaNode.execute(value));
         }
