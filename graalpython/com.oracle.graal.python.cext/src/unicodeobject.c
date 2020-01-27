@@ -183,15 +183,15 @@ PyUnicodeObject* unicode_subtype_new(PyTypeObject *type, PyObject *unicode) {
     /* Ensure we won't overflow the length. */
     if (length > (PY_SSIZE_T_MAX / char_size - 1)) {
         PyErr_NoMemory();
-//        Py_DECREF(unicode);
-//        Py_DECREF(self);
+        Py_DECREF(unicode);
+        Py_DECREF(self);
         return NULL;
     }
-    data = malloc((length + 1) * char_size);
+    data = PyObject_MALLOC((length + 1) * char_size);
     if (data == NULL) {
         PyErr_NoMemory();
-//        Py_DECREF(unicode);
-//        Py_DECREF(self);
+        Py_DECREF(unicode);
+        Py_DECREF(self);
         return NULL;
     }
 
