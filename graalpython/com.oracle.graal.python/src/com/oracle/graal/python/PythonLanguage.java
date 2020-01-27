@@ -32,6 +32,9 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionValues;
+
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -93,9 +96,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
-
-import org.graalvm.options.OptionDescriptors;
-import org.graalvm.options.OptionValues;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -334,6 +334,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return object instanceof PythonAbstractObject;
     }
 
+    private boolean isForeignPrimitive(Object value) {
+        return value instanceof Float || value instanceof Short || value instanceof Character || value instanceof Byte;
+    }
+
     @Override
     protected Object findMetaObject(PythonContext context, Object value) {
         if (value != null) {
@@ -341,6 +345,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return ((PythonObject) value).asPythonClass();
             } else if (PGuards.isNativeObject(value)) {
                 // TODO(fa): we could also use 'GetClassNode.getItSlowPath(value)' here
+                return null;
+            } else if (isForeignPrimitive(value)) {
+                // these only appear when inspecting foreign data structures
                 return null;
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
@@ -454,6 +461,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected String toString(PythonContext context, Object value) {
+        if (isForeignPrimitive(value)) {
+            // these only appear when inspecting foreign data structures, so they shouldn't get
+            // processed by python code
+            return value.toString();
+        }
         if (PythonOptions.getFlag(context, PythonOptions.UseReprForPrintString)) {
             final PythonModule builtins = context.getBuiltins();
             if (builtins != null) {

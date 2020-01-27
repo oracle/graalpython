@@ -64,6 +64,7 @@ import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.debug.Breakpoint;
+import com.oracle.truffle.api.debug.DebugScope;
 import com.oracle.truffle.api.debug.DebugStackFrame;
 import com.oracle.truffle.api.debug.DebugValue;
 import com.oracle.truffle.api.debug.DebuggerSession;
@@ -400,6 +401,51 @@ public class PythonDebugTest {
                 assertEquals(0, ny.as(Number.class).intValue());
                 y.set(24);
                 assertEquals("24", y.as(String.class));
+            });
+        }
+    }
+
+    @Test
+    public void testInspectJavaArray() throws Throwable {
+        final Source source = Source.newBuilder("python", "" +
+                        "import java\n" +
+                        "a_int = java.type('int[]')(3)\n" +
+                        "a_long = java.type('long[]')(3)\n" +
+                        "a_short = java.type('short[]')(3)\n" +
+                        "a_byte = java.type('byte[]')(3)\n" +
+                        "a_float = java.type('float[]')(3)\n" +
+                        "a_double = java.type('double[]')(3)\n" +
+                        "a_char = java.type('char[]')(3)\n" +
+                        "print()\n" +
+                        "\n", "testInspectJavaArray.py").buildLiteral();
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(9).build());
+            tester.startEval(source);
+            expectSuspended((SuspendedEvent event) -> {
+                DebugScope globalScope = session.getTopScope("python");
+                DebugValue intValue = globalScope.getDeclaredValue("a_int").getArray().get(0);
+                // It's up to Truffle to decide which language it uses for inspection of primitives,
+                // we should be fine as long as this doesn't throw an exception
+                intValue.getMetaObject();
+                assertEquals("0", intValue.as(String.class));
+                DebugValue longValue = globalScope.getDeclaredValue("a_long").getArray().get(0);
+                longValue.getMetaObject();
+                assertEquals("0", longValue.as(String.class));
+                DebugValue shortValue = globalScope.getDeclaredValue("a_short").getArray().get(0);
+                shortValue.getMetaObject();
+                assertEquals("0", shortValue.as(String.class));
+                DebugValue byteValue = globalScope.getDeclaredValue("a_byte").getArray().get(0);
+                byteValue.getMetaObject();
+                assertEquals("0", byteValue.as(String.class));
+                DebugValue floatValue = globalScope.getDeclaredValue("a_float").getArray().get(0);
+                floatValue.getMetaObject();
+                assertEquals("0.0", floatValue.as(String.class));
+                DebugValue doubleValue = globalScope.getDeclaredValue("a_double").getArray().get(0);
+                doubleValue.getMetaObject();
+                assertEquals("0.0", doubleValue.as(String.class));
+                DebugValue charValue = globalScope.getDeclaredValue("a_char").getArray().get(0);
+                charValue.getMetaObject();
+                assertEquals("\0", charValue.as(String.class));
             });
         }
     }
