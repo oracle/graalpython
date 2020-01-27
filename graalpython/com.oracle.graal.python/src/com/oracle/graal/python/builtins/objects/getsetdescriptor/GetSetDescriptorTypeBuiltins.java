@@ -67,7 +67,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -101,7 +101,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Child private GetMroNode getMroNode;
         @Child private GetNameNode getNameNode;
         @Child private IsSameTypeNode isSameTypeNode;
-        @Child private GetClassNode getClassNode;
+        @Child private GetLazyClassNode getLazyClassNode;
 
         private final IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
         private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
@@ -116,7 +116,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                     return true;
                 }
             }
-            PythonAbstractClass type = getClass(obj);
+            LazyPythonClass type = getLazyClass(obj);
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
                 for (PythonAbstractClass o : getMro(type)) {
@@ -135,12 +135,12 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
             throw raise(TypeError, "descriptor '%s' for '%s' objects doesn't apply to '%s' object", name, getTypeName(descrType), getTypeName(type));
         }
 
-        private PythonAbstractClass getClass(Object obj) {
-            if (getClassNode == null) {
+        private LazyPythonClass getLazyClass(Object obj) {
+            if (getLazyClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
+                getLazyClassNode = insert(GetLazyClassNode.create());
             }
-            return getClassNode.execute(obj);
+            return getLazyClassNode.execute(obj);
         }
 
         private PythonAbstractClass[] getMro(LazyPythonClass clazz) {
