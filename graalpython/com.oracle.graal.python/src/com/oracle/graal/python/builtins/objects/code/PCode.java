@@ -249,7 +249,8 @@ public final class PCode extends PythonBuiltinObject {
                 } else if (node instanceof FunctionDefinitionNode) {
                     constants.add(new PCode(PythonBuiltinClassType.PCode, ((FunctionDefinitionNode) node).getCallTarget()));
                 } else if (node instanceof GeneratorExpressionNode) {
-                    constants.add(new PCode(PythonBuiltinClassType.PCode, ((GeneratorExpressionNode) node).getCallTarget()));
+                    // TODO: we do it this way here since we cannot deserialize generator expressions right now
+                    constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
                 }
                 return true;
             }
@@ -259,7 +260,19 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static Object[] extractNames(RootNode rootNode) {
-        return NodeUtil.findAllNodeInstances(rootNodeForExtraction(rootNode), GlobalNode.class).stream().map((n) -> n.getAttributeId()).distinct().toArray();
+        List<Object> names = new ArrayList<>();
+        rootNode.accept(new NodeVisitor() {
+            public boolean visit(Node node) {
+                if (node instanceof GlobalNode) {
+                    names.add(((GlobalNode) node).getAttributeId());
+                } else if (node instanceof GeneratorExpressionNode) {
+                    // TODO: since we do *not* add GeneratorExpressionNodes in #extractConstants, we need to find the names referenced in them here
+                    names.addAll(Arrays.asList(extractNames(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
+                }
+                return true;
+            }
+        });
+        return names.toArray();
     }
 
     private static RootNode rootNodeForExtraction(RootNode rootNode) {
