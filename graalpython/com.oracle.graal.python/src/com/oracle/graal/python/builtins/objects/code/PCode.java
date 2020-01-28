@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -245,13 +246,12 @@ public final class PCode extends PythonBuiltinObject {
             public boolean visit(Node node) {
                 if (node instanceof SimpleLiteralNode) {
                     constants.add(((SimpleLiteralNode) node).getValue());
-                    return false;
                 } else if (node instanceof FunctionDefinitionNode) {
                     constants.add(new PCode(PythonBuiltinClassType.PCode, ((FunctionDefinitionNode) node).getCallTarget()));
-                    return false;
-                } else {
-                    return true;
+                } else if (node instanceof GeneratorExpressionNode) {
+                    constants.add(new PCode(PythonBuiltinClassType.PCode, ((GeneratorExpressionNode) node).getCallTarget()));
                 }
+                return true;
             }
         });
         return constants.toArray();
