@@ -243,7 +243,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static Object[] extractConstants(RootNode rootNode) {
         List<Object> constants = new ArrayList<>();
-        rootNode.accept(new NodeVisitor() {
+        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
             public boolean visit(Node node) {
                 if (node instanceof SimpleLiteralNode) {
                     constants.add(((SimpleLiteralNode) node).getValue());
@@ -262,7 +262,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static Object[] extractNames(RootNode rootNode) {
         List<Object> names = new ArrayList<>();
-        rootNode.accept(new NodeVisitor() {
+        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
             public boolean visit(Node node) {
                 if (node instanceof GlobalNode) {
                     names.add(((GlobalNode) node).getAttributeId());
