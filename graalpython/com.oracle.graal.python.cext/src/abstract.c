@@ -301,9 +301,9 @@ Py_ssize_t PySequence_Length(PyObject *s) {
 }
 #define PySequence_Length PySequence_Size
 
-UPCALL_ID(PySequence_GetItem);
+UPCALL_TYPED_ID(PySequence_GetItem, ssizeargfunc);
 PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
-    return UPCALL_CEXT_O(_jls_PySequence_GetItem, native_to_java(s), i);
+    return _jls_PySequence_GetItem(native_to_java(s), i);
 }
 
 UPCALL_ID(PySequence_SetItem);

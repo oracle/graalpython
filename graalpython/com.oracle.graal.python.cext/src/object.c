@@ -279,8 +279,10 @@ PyObject* PyObject_Type(PyObject* obj) {
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("type", SRC_CS), native_to_java(obj));
 }
 
+typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
+UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject* PyObject_GetItem(PyObject* obj, PyObject* key) {
-    return UPCALL_O(native_to_java(obj), polyglot_from_string("__getitem__", SRC_CS), native_to_java(key));
+    return _jls_PyObject_GetItem(native_to_java(obj), native_to_java(key));
 }
 
 UPCALL_ID(PyObject_SetItem);

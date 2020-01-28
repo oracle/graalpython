@@ -637,15 +637,6 @@ def PySequence_List(obj):
     return list(obj)
 
 
-@may_raise
-def PySequence_GetItem(obj, key):
-    if not hasattr(obj, '__getitem__'):
-        raise TypeError("'%s' object does not support indexing)" % repr(obj))
-    if len(obj) < 0:
-        return native_null
-    return obj[key]
-
-
 @may_raise(-1)
 def PySequence_SetItem(obj, key, value):
     if not hasattr(obj, '__setitem__'):
@@ -1064,11 +1055,6 @@ def PyObject_CallMethod(rcvr, method, args):
     elif args is not None:
         return getattr(rcvr, method)(args)
     return getattr(rcvr, method)()
-
-
-@may_raise
-def PyObject_GetItem(obj, key):
-    return obj[key]
 
 
 @may_raise(-1)

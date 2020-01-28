@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IncRefNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
@@ -183,31 +183,36 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     @ExportLibrary(InteropLibrary.class)
     static class SsizeargfuncWrapper extends PyProcsWrapper {
-        public SsizeargfuncWrapper(Object delegate) {
+
+        private final boolean newRef;
+
+        public SsizeargfuncWrapper(Object delegate, boolean newRef) {
             super(delegate);
+            this.newRef = newRef;
         }
 
         @ExportMessage
-        @Specialization
         protected Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToSulongNode toSulongNode,
+                        @Cached NewRefNode newRefNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached ToSulongNode nullToSulongNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
             assert arguments[1] instanceof Number;
-            Object result;
             try {
-                result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]);
+                Object result = toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]));
+
+                return newRef ? newRefNode.execute(result) : result;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
-                result = getNativeNullNode.execute();
+                return nullToSulongNode.execute(getNativeNullNode.execute());
             }
-            return toSulongNode.execute(result);
         }
     }
 
@@ -219,7 +224,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         return new SetAttrWrapper(setAttrMethod);
     }
 
-    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod) {
-        return new SsizeargfuncWrapper(ssizeArgMethod);
+    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {
+        return new SsizeargfuncWrapper(ssizeArgMethod, newRef);
     }
 }

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -111,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
@@ -189,11 +191,13 @@ import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNod
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -394,11 +398,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static int doManaged(VirtualFrame frame, PythonNativeWrapper tupleWrapper, Object position, Object elementWrapper,
                         @Cached AsPythonObjectNode tupleAsPythonObjectNode,
                         @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            PTuple tuple = (PTuple) tupleAsPythonObjectNode.execute(tupleWrapper);
-            Object element = elementAsPythonObjectNode.execute(elementWrapper);
-            setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
-            return 0;
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                PTuple tuple = (PTuple) tupleAsPythonObjectNode.execute(tupleWrapper);
+                Object element = elementAsPythonObjectNode.execute(elementWrapper);
+                setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
         }
 
         @Specialization(guards = "!isNativeWrapper(tuple)")
@@ -3088,6 +3098,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
+            PythonLanguage.getLogger().fine(() -> String.format("Deallocated object at 0x%X", ptr));
             context.getCApiContext().traceFree(ptr, ref, className);
         }
     }
@@ -3098,6 +3109,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
+            PythonLanguage.getLogger().fine(() -> String.format("Allocated object at 0x%X", ptr));
             context.getCApiContext().traceAlloc(ptr, ref, className);
         }
     }
@@ -3148,7 +3160,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyList_SetItem", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyList_SetItem", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
     abstract static class PyListSetItem extends PythonTernaryBuiltinNode {
@@ -3156,19 +3168,82 @@ public class PythonCextBuiltins extends PythonBuiltins {
         int doManaged(VirtualFrame frame, PythonNativeWrapper listWrapper, Object position, Object elementWrapper,
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-            if (!PGuards.isList(delegate)) {
-                throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", delegate, delegate);
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
+                if (!PGuards.isList(delegate)) {
+                    throw raise(SystemError, "bad argument to internal function, was '%s' (type '%p')", delegate, delegate);
+                }
+                PList list = (PList) delegate;
+                Object element = elementAsPythonObjectNode.execute(elementWrapper);
+                setItemNode.execute(frame, list.getSequenceStorage(), position, element);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
             }
-            PList list = (PList) delegate;
-            Object element = elementAsPythonObjectNode.execute(elementWrapper);
-            setItemNode.execute(frame, list.getSequenceStorage(), position, element);
-            return -2;
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
             return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), "invalid item for assignment");
+        }
+    }
+
+    @Builtin(name = "PySequence_GetItem", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PySequenceGetItem extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        Object doManaged(VirtualFrame frame, Object module, Object listWrapper, Object position,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+                        @Cached CallBinaryMethodNode callGetItemNode,
+                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
+                        @Cached AsPythonObjectNode positionAsPythonObjectNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached NewRefNode newRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
+                Object attrGetItem = lookupGetItemNode.execute(delegate, __GETITEM__);
+                if (attrGetItem == PNone.NO_VALUE) {
+                    throw raise(TypeError, "'%s' object does not support indexing", delegate);
+                }
+                Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
+                return newRefNode.execute(toSulongNode.execute(item));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return toSulongNode.execute(getNativeNullNode.execute(module));
+            }
+        }
+    }
+
+    @Builtin(name = "PyObject_GetItem", minNumOfPositionalArgs = 3, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class PyObjectGetItem extends PythonTernaryBuiltinNode {
+        @Specialization
+        Object doManaged(VirtualFrame frame, Object module, Object listWrapper, Object position,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+                        @Cached CallBinaryMethodNode callGetItemNode,
+                        @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
+                        @Cached AsPythonObjectNode positionAsPythonObjectNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached NewRefNode newRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
+                Object attrGetItem = lookupGetItemNode.execute(delegate, __GETITEM__);
+                if (attrGetItem == PNone.NO_VALUE) {
+                    throw raise(TypeError, "'%s' object is not subscriptable", delegate);
+                }
+                Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
+                return newRefNode.execute(toSulongNode.execute(item));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return toSulongNode.execute(getNativeNullNode.execute(module));
+            }
         }
     }
 }

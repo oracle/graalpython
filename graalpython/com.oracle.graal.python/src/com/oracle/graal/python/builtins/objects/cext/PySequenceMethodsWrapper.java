@@ -113,7 +113,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
                     break;
                 case NativeMemberNames.SQ_ITEM:
-                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__));
+                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
                 default:
                     // TODO extend list
                     throw UnknownIdentifierException.create(member);

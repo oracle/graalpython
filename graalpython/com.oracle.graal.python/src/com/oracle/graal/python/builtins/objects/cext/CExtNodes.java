@@ -2419,4 +2419,23 @@ public abstract class CExtNodes {
             return object;
         }
     }
+
+    @GenerateUncached
+    @ImportStatic(CApiGuards.class)
+    public abstract static class NewRefNode extends Node {
+
+        public abstract Object execute(Object object);
+
+        @Specialization
+        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper) {
+            // just do nothing
+            return nativeWrapper;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)")
+        static Object doNativeObject(Object object,
+                        @Cached PCallCapiFunction callIncRefNode) {
+            return IncRefNode.doNativeObject(object, callIncRefNode);
+        }
+    }
 }
