@@ -43,9 +43,11 @@ package com.oracle.graal.python.builtins.objects.code;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -57,6 +59,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -64,7 +67,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -235,7 +240,21 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static Object[] extractConstants(RootNode rootNode) {
-        return NodeUtil.findAllNodeInstances(rootNodeForExtraction(rootNode), SimpleLiteralNode.class).stream().map((n) -> n.getValue()).toArray();
+        List<Object> constants = new ArrayList<>();
+        rootNode.accept(new NodeVisitor() {
+            public boolean visit(Node node) {
+                if (node instanceof SimpleLiteralNode) {
+                    constants.add(((SimpleLiteralNode) node).getValue());
+                    return false;
+                } else if (node instanceof FunctionDefinitionNode) {
+                    constants.add(new PCode(PythonBuiltinClassType.PCode, ((FunctionDefinitionNode) node).getCallTarget()));
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        });
+        return constants.toArray();
     }
 
     @TruffleBoundary

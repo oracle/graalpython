@@ -220,6 +220,10 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         return functionName;
     }
 
+    public RootCallTarget getCallTarget() {
+        return callTarget;
+    }
+
     public RootNode getFunctionRoot() {
         return callTarget.getRootNode();
     }
