@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
@@ -57,6 +56,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -197,6 +197,12 @@ public abstract class CodeNodes {
                 String outernme = "_____" + System.nanoTime();
                 StringBuilder sb = new StringBuilder();
                 sb.append("def ").append(outernme).append("():\n");
+                for (Object f : freevars) {
+                    String freevar = CastToJavaStringNode.getUncached().execute(f);
+                    if (freevar != null) {
+                        sb.append(" ").append(freevar).append(" = None\n");
+                    }
+                }
                 if (isLambda) {
                     sb.append(" ").append("return ").append(codeStr);
                 } else {

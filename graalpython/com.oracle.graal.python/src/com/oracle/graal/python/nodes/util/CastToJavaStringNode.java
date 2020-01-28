@@ -108,4 +108,8 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
     static boolean isMaterialized(PString x) {
         return x.getCharSequence() instanceof String;
     }
+
+    public static CastToJavaStringNode getUncached() {
+        return CastToJavaStringNodeGen.getUncached();
+    }
 }
