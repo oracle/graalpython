@@ -25,28 +25,6 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.truffle.api.frame.VirtualFrame;
-
-public final class DoubleLiteralNode extends SimpleLiteralNode {
-
-    private final double value;
-
-    public DoubleLiteralNode(double value) {
-        this.value = value;
-    }
-
-    @Override
-    public double executeDouble(VirtualFrame frame) {
-        return value;
-    }
-
-    @Override
-    public Object execute(VirtualFrame frame) {
-        return value;
-    }
-
-    @Override
-    public Object getValue() {
-        return value;
-    }
+public abstract class SimpleLiteralNode extends LiteralNode {
+    public abstract Object getValue();
 }

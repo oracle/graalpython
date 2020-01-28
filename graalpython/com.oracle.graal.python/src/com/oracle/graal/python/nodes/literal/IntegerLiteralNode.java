@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class IntegerLiteralNode extends LiteralNode {
+public final class IntegerLiteralNode extends SimpleLiteralNode {
 
     private final int value;
 
@@ -45,8 +45,8 @@ public final class IntegerLiteralNode extends LiteralNode {
         return value;
     }
 
-    public int getValue() {
+    @Override
+    public Integer getValue() {
         return value;
     }
-
 }

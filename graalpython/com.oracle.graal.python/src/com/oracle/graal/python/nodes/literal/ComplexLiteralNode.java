@@ -28,13 +28,14 @@ package com.oracle.graal.python.nodes.literal;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class ComplexLiteralNode extends LiteralNode {
+public final class ComplexLiteralNode extends SimpleLiteralNode {
     private final PComplex value;
 
     public ComplexLiteralNode(PComplex value) {
         this.value = value;
     }
 
+    @Override
     public PComplex getValue() {
         return value;
     }

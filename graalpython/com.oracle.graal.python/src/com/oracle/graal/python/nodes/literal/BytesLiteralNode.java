@@ -31,7 +31,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class BytesLiteralNode extends LiteralNode {
+public final class BytesLiteralNode extends SimpleLiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @CompilationFinal(dimensions = 1) private final byte[] value;
 
@@ -41,6 +41,11 @@ public final class BytesLiteralNode extends LiteralNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        return getValue();
+    }
+
+    @Override
+    public Object getValue() {
         return factory.createBytes(Arrays.copyOf(value, value.length));
     }
 }

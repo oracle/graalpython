@@ -31,13 +31,14 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class PIntLiteralNode extends LiteralNode {
+public final class PIntLiteralNode extends SimpleLiteralNode {
     private final PInt value;
 
     public PIntLiteralNode(BigInteger value) {
         this.value = PythonObjectFactory.getUncached().createInt(value);
     }
 
+    @Override
     public PInt getValue() {
         return value;
     }

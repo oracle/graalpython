@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -252,6 +253,11 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    private static Object[] extractConstants(RootNode rootNode) {
+        return NodeUtil.findAllNodeInstances(rootNode, SimpleLiteralNode.class).stream().map((n) -> n.getValue()).toArray();
+    }
+
+    @TruffleBoundary
     private static Object[] extractGlobalAndBuiltinVarnames(RootNode rootNode) {
         RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
         Set<Object> varNameList = new HashSet<>();
@@ -407,6 +413,9 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Object[] getConstants() {
+        if (constants == null) {
+            constants = extractConstants(getRootNode());
+        }
         return constants;
     }
 
