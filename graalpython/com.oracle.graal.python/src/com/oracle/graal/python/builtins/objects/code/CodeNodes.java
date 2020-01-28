@@ -192,28 +192,24 @@ public abstract class CodeNodes {
             CompilerAsserts.neverPartOfCompilation();
             String codeStr = new String(codestring);
             boolean isLambda = codeStr.trim().startsWith("lambda");
-            if (freevars.length > 0) {
-                // we build an outer function to provide the initial scoping
-                String outernme = "_____" + System.nanoTime();
-                StringBuilder sb = new StringBuilder();
-                sb.append("def ").append(outernme).append("():\n");
-                for (Object f : freevars) {
-                    String freevar = CastToJavaStringNode.getUncached().execute(f);
-                    if (freevar != null) {
-                        sb.append(" ").append(freevar).append(" = None\n");
-                    }
+            // we build an outer function to provide the initial scoping
+            String outernme = "_____" + System.nanoTime();
+            StringBuilder sb = new StringBuilder();
+            sb.append("def ").append(outernme).append("():\n");
+            for (Object f : freevars) {
+                String freevar = CastToJavaStringNode.getUncached().execute(f);
+                if (freevar != null) {
+                    sb.append(" ").append(freevar).append(" = None\n");
                 }
-                if (isLambda) {
-                    sb.append(" ").append("return ").append(codeStr);
-                } else {
-                    sb.append(" ").append(codeStr).append("\n");
-                    sb.append(" ").append("return ").append(name);
-                }
-                sb.append("\n\n").append(outernme).append("()");
-                return sb.toString();
-            } else {
-                return codeStr;
             }
+            if (isLambda) {
+                sb.append(" ").append("return ").append(codeStr);
+            } else {
+                sb.append(" ").append(codeStr).append("\n");
+                sb.append(" ").append("return ").append(name);
+            }
+            sb.append("\n\n").append(outernme).append("()");
+            return sb.toString();
         }
 
         private static Signature createSignature(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
