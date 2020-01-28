@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
@@ -76,11 +77,11 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
     static final String[] EMPTY_STRINGS = new String[0];
-    static final long FLAG_GENERATOR = 32;
-    static final long FLAG_VAR_ARGS = 0x0004;
-    static final long FLAG_VAR_KW_ARGS = 0x0008;
-    static final long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
-                                            // modules
+    static final long FLAG_VAR_ARGS = 0x4;
+    static final long FLAG_VAR_KW_ARGS = 0x8;
+    static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
+    static final long FLAG_GENERATOR = 0x20;
+    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's redundant anyway
 
     private final RootCallTarget callTarget;
     private final Signature signature;
@@ -300,6 +301,10 @@ public final class PCode extends PythonBuiltinObject {
             if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
                 flags |= FLAG_VAR_KW_ARGS;
             }
+            // 0x10 - lambda, not on CPython
+            if (funcRootNode instanceof FunctionRootNode && ((FunctionRootNode) funcRootNode).isLambda()) {
+                flags |= FLAG_LAMBDA;
+            }
         }
         return flags;
     }
@@ -310,10 +315,15 @@ public final class PCode extends PythonBuiltinObject {
         if (rootNode instanceof GeneratorFunctionRootNode) {
             funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
         }
-        SourceSection sourceSection = funcRootNode.getSourceSection();
-        if (sourceSection != null) {
-            return sourceSection.getCharacters().toString().getBytes();
+        if (funcRootNode instanceof PClosureRootNode) {
+            SourceSection sourceSection = funcRootNode.getSourceSection();
+            if (sourceSection != null) {
+                String src = sourceSection.getCharacters().toString();
+                // strip the header, we're only interested in the actual source
+                return src.replaceFirst("[^:]+:[ \\t]*", "").getBytes();
+            }
         }
+        // no code for non-user functions
         return new byte[0];
     }
 

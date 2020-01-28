@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class BuiltinNames {
+    // special strings
+    public static final String LAMBDA_NAME = "<lambda>";
+
     // special arg names
     public static final String SELF = "self";
 

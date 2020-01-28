@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.code;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -70,10 +69,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -115,13 +110,12 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
+        private static PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codestring, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
-
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             RootCallTarget callTarget = null;
 
@@ -130,22 +124,11 @@ public abstract class CodeNodes {
             if (codestring.length > 0) {
                 PythonCore core = PythonLanguage.getCore();
                 if ((flags & PCode.FLAG_MODULE) == 0) {
-                    // we're looking for the function, not the module
-                    String funcdef = createFuncdef(codestring, freevars, name);
-                    MaterializedFrame frame = getFrameForFreeVars(freevars, argcount);
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), frame);
-                    Object[] args = PArguments.create();
-                    PDict globals = factory.createDict();
-                    PArguments.setGlobals(args, globals);
-                    Object function = InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
-                    if (function instanceof PFunction) {
-                        rootNode = ((PFunction) function).getFunctionRootNode();
-                    } else {
-                        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
-                    }
+                    String funcdef = createFuncdef(argcount, kwonlyargcount, flags, codestring, varnames, freevars, name);
+                    rootNode = getFunctionFromCode(core, factory, name, funcdef).getFunctionRootNode();
+                    rootNode = patchConstantsAndGlobalNames(rootNode, constants, names);
                 } else {
-                    MaterializedFrame frame = getFrameForFreeVars(freevars, argcount);
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);
+                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), null);
                     assert rootNode instanceof ModuleRootNode;
                 }
                 callTarget = Truffle.getRuntime().createCallTarget(rootNode);
@@ -173,43 +156,95 @@ public abstract class CodeNodes {
             return factory.createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
 
-        private MaterializedFrame getFrameForFreeVars(Object[] freevars, int argcount) {
-            MaterializedFrame frame = null;
-            if (freevars.length > 0) {
-                FrameDescriptor frameDescriptor = new FrameDescriptor();
-                frame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(argcount), frameDescriptor);
-                for (int i = 0; i < freevars.length; i++) {
-                    Object ident = freevars[i];
-                    FrameSlot slot = frameDescriptor.addFrameSlot(ident);
-                    frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-                    frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
-                }
+        private static RootNode patchConstantsAndGlobalNames(RootNode rootNode, Object[] constants, Object[] names) {
+            // TODO: fill in updated constants, names, filename, and firstlineno
+            for (int i = 0; i < constants.length; i++) {
+                // TODO: replace constants if they changed with the new ones
             }
-            return frame;
+            for (int i = 0; i < names.length; i++) {
+                // TODO: replace global names if they changed
+            }
+            return rootNode;
         }
 
-        private static String createFuncdef(byte[] codestring, Object[] freevars, String name) {
-            CompilerAsserts.neverPartOfCompilation();
-            String codeStr = new String(codestring);
-            boolean isLambda = codeStr.trim().startsWith("lambda");
-            // we build an outer function to provide the initial scoping
-            String outernme = "_____" + System.nanoTime();
-            StringBuilder sb = new StringBuilder();
-            sb.append("def ").append(outernme).append("():\n");
-            for (Object f : freevars) {
-                String freevar = CastToJavaStringNode.getUncached().execute(f);
-                if (freevar != null) {
-                    sb.append(" ").append(freevar).append(" = None\n");
-                }
+        private static PFunction getFunctionFromCode(PythonCore core, PythonObjectFactory factory, String name, String funcdef) {
+            RootNode rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), null);
+            Object[] args = PArguments.create();
+            PDict globals = factory.createDict();
+            PArguments.setGlobals(args, globals);
+            Object returnValue = InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
+            if (!(returnValue instanceof PFunction)) {
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
             }
+            return (PFunction) returnValue;
+        }
+
+        private static String createFuncdef(int argcount, int kwonlyargcount, int flags, byte[] codestring, Object[] varnames, Object[] freevars, String name) {
+            String indent = " ";
+            StringBuilder funcdef = new StringBuilder();
+            long outerName = System.nanoTime();
+            funcdef.append("def outer").append(outerName).append("():\n");
+            for (Object freevar : freevars) {
+                funcdef.append(indent).append(CastToJavaStringNode.getUncached().execute(freevar)).append(" = None\n");
+            }
+
+            boolean isLambda = (flags & PCode.FLAG_LAMBDA) != 0;
             if (isLambda) {
-                sb.append(" ").append("return ").append(codeStr);
+                funcdef.append(indent).append("return lambda ");
             } else {
-                sb.append(" ").append(codeStr).append("\n");
-                sb.append(" ").append("return ").append(name);
+                funcdef.append(indent).append("def ").append(name).append("(");
             }
-            sb.append("\n\n").append(outernme).append("()");
-            return sb.toString();
+            int varnameIdx = 0;
+            for (; varnameIdx < argcount; varnameIdx++) {
+                funcdef.append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx])).append(",");
+            }
+            if ((flags & PCode.FLAG_VAR_ARGS) != 0) {
+                // vararg name is after kwargs names
+                funcdef.append("*").append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx + kwonlyargcount])).append(",");
+            }
+            for (; varnameIdx < kwonlyargcount; varnameIdx++) {
+                funcdef.append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx])).append("=None,");
+            }
+            if ((flags & PCode.FLAG_VAR_KW_ARGS) != 0) {
+                if ((flags & PCode.FLAG_VAR_ARGS) != 0) {
+                    varnameIdx++;
+                }
+                funcdef.append("**").append(CastToJavaStringNode.getUncached().execute(varnames[varnameIdx])).append(",");
+            }
+
+            if (isLambda) {
+                funcdef.append(": ").append(new String(codestring)).append("\n");
+            } else {
+                funcdef.append("):\n");
+
+                String[] lines = new String(codestring).split("\n");
+                String functionIndent = " ";
+                String firstLineIndent = "";
+
+                // find indent inside the function to correctly insert nonlocal declarations
+                for (String line : lines) {
+                    if (!line.trim().isEmpty()) {
+                        StringBuilder sb = new StringBuilder();
+                        int i = 0;
+                        char ch;
+                        while (Character.isWhitespace(ch = line.charAt(i++))) {
+                            sb.append(ch);
+                        }
+                        firstLineIndent = sb.toString();
+                        break;
+                    }
+                }
+                for (Object freevar : freevars) {
+                    funcdef.append(indent).append(functionIndent).append(firstLineIndent).append("nonlocal ").append(CastToJavaStringNode.getUncached().execute(freevar)).append("\n");
+                }
+                for (String line : lines) {
+                    funcdef.append(indent).append(functionIndent).append(line).append("\n");
+                }
+                funcdef.append(indent).append("return ").append(name).append("\n");
+            }
+
+            funcdef.append("outer").append(outerName).append("()");
+            return funcdef.toString();
         }
 
         private static Signature createSignature(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
@@ -238,14 +273,6 @@ public abstract class CodeNodes {
                 kwNames[i] = Character.toString(paramNom++);
             }
             return new Signature(PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
-        }
-
-        private HashingStorageNodes.GetItemNode ensureGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getItemNode;
         }
 
         private ContextReference<PythonContext> getContextRef() {
