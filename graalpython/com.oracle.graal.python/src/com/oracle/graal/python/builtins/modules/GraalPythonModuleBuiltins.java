@@ -40,55 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GlobalsNode;
-import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "__graalpython__")
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return GraalPythonModuleBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = "current_global_code_variables", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class GetCodeGlobalVarsNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        protected Object get(VirtualFrame frame, PCode code,
-                        @Cached GlobalsNode globalsNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode isTrue,
-                        @Cached("create(__CONTAINS__)") LookupAndCallBinaryNode containsNode) {
-            Object[] varNames = code.getGlobalAndBuiltinVarNames();
-            if (varNames != null) {
-                int i = 0;
-                Object[] globalNames = new Object[varNames.length];
-                Object globals = globalsNode.execute(frame);
-                for (Object name : varNames) {
-                    if (isTrue.executeBoolean(frame, containsNode.executeObject(frame, globals, name))) {
-                        globalNames[i++] = name;
-                    }
-                }
-                return factory().createTuple(Arrays.copyOf(globalNames, i));
-            }
-            return factory().createEmptyTuple();
-        }
+        return new ArrayList<>();
     }
 }

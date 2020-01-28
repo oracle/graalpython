@@ -66,4 +66,6 @@ public interface GlobalNode {
     default boolean isDict(Object globals) {
         return globals instanceof PDict;
     }
+
+    public String getAttributeId();
 }

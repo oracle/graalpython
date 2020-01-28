@@ -95,7 +95,8 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
         return PNone.NONE;
     }
 
-    public Object getAttributeId() {
+    @Override
+    public String getAttributeId() {
         return attributeId;
     }
 }
