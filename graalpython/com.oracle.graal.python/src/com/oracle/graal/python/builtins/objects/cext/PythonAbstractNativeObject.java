@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
 
+import java.lang.ref.WeakReference;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -101,7 +102,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     public PythonAbstractNativeObject(TruffleObject object, CApiContext nativeContext) {
         this.object = object;
         // during initialization of the C API, we do not yet have a C API context
-        if(nativeContext != null) {
+        if (nativeContext != null) {
             nativeContext.createNativeReference(this);
         }
     }
@@ -230,11 +231,11 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption")
+        @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(object)") PythonAbstractClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just
@@ -242,11 +243,11 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return cachedClass;
         }
 
-        @Specialization(guards = "referenceLibrary.isSame(cachedObject.object, object.object)", limit = "1", assumptions = "singleContextAssumption")
+        @Specialization(guards = "isSame(referenceLibrary, cachedObject, object)", limit = "1", assumptions = "singleContextAssumption")
         public static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass,
+                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(object)") PythonAbstractClass cachedClass,
                         @CachedLibrary("object.object") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
@@ -256,9 +257,20 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         public static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode) {
-            // do not convert wrap 'object.object' since that is really the native pointer
-            // object
+            // do not convert wrap 'object.object' since that is really the native pointer object
             return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
+        }
+
+        static WeakReference<PythonAbstractNativeObject> weak(PythonAbstractNativeObject object) {
+            return new WeakReference<>(object);
+        }
+
+        static boolean isSame(ReferenceLibrary referenceLibrary, WeakReference<PythonAbstractNativeObject> cachedObjectRef, PythonAbstractNativeObject object) {
+            PythonAbstractNativeObject cachedObject = cachedObjectRef.get();
+            if (cachedObject != null) {
+                return referenceLibrary.isSame(cachedObject.object, object.object);
+            }
+            return false;
         }
 
         public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
