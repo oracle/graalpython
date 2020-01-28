@@ -46,17 +46,16 @@ import java.lang.ref.ReferenceQueue;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Stack;
+
+import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -64,7 +63,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
-import org.graalvm.collections.Pair;
 
 public final class CApiContext extends CExtContext {
 
@@ -84,8 +82,7 @@ public final class CApiContext extends CExtContext {
                 Thread.currentThread().interrupt();
             }
             if (reference instanceof NativeObjectReference) {
-                stack.remove(reference);
-                return new CApiReferenceCleanerAction(((NativeObjectReference) reference).getObject());
+                return new CApiReferenceCleanerAction((NativeObjectReference) reference);
             }
             return null;
         });
@@ -109,15 +106,16 @@ public final class CApiContext extends CExtContext {
     }
 
     private static class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
-        private final Object nativeObject;
+        private final NativeObjectReference nativeObjectReference;
 
-        public CApiReferenceCleanerAction(Object nativeObject) {
-            this.nativeObject = nativeObject;
+        public CApiReferenceCleanerAction(NativeObjectReference nativeObjectReference) {
+            this.nativeObjectReference = nativeObjectReference;
         }
 
         @Override
         public void execute(VirtualFrame frame, Node location, RootCallTarget callTarget) {
-            PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_DECREF, nativeObject);
+            PythonLanguage.getContext().getCApiContext().stack.remove(nativeObjectReference);
+            PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_DECREF, nativeObjectReference.object);
         }
     }
 
@@ -132,7 +130,7 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public void traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
-        if(allocatedNativeMemory == null) {
+        if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
         Object value = allocatedNativeMemory.remove(ptr);
@@ -143,7 +141,7 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     public void traceAlloc(Object ptr, PFrame.Reference curFrame, String clazzName) {
-        if(allocatedNativeMemory == null) {
+        if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
         Object value = allocatedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
