@@ -71,6 +71,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -589,13 +591,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached IsBuiltinClassProfile isTupleProfile,
                         @Cached IsBuiltinClassProfile isDictProfile,
                         @Cached IsBuiltinClassProfile isListProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                                   @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             if (isTupleProfile.profileClass(object, PythonBuiltinClassType.PTuple) || isDictProfile.profileClass(object, PythonBuiltinClassType.PDict) ||
                             isListProfile.profileClass(object, PythonBuiltinClassType.PList)) {
-                // We do not actually return the traverse or clear method since we will never need
-                // it. It is just important to return something != NULL.
-                return toSulongNode.execute(PNone.NONE);
+                // We do not actually return _the_ traverse or clear function since we will never need
+                // it. It is just important to return a function.
+                PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, "sequence_clear");
+                return toSulongNode.execute(sequenceClearMethod);
             }
             return getNativeNullNode.execute();
         }

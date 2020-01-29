@@ -443,13 +443,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
 
         @Specialization(limit = "3")
-        Object doPythonCallable(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") Object wrapper,
+        static Object doPythonCallable(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") Object wrapper,
                         @SuppressWarnings("unused") LazyPythonClass type,
                         @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
             return nativeWrapperLibrary.getDelegate(callable);
+        }
+
+        @Specialization(guards = "isDecoratedManagedFunction(callable)")
+        static Object doDecoratedManaged(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, @SuppressWarnings("unused") Object wrapper,
+                        @SuppressWarnings("unused") LazyPythonClass type,
+                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+            // This can happen if a native type inherits slots from a managed type. Therefore,
+            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
+            // case, we assume that the object is already callable.
+            // Note, that this will also drop the 'native-to-java' conversion which is usually done
+            // by 'callable.getFun1()'.
+            return nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getFun0());
         }
 
         @Specialization(guards = "!isNativeWrapper(callable)")
@@ -484,7 +496,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         static boolean isNativeWrapper(Object obj) {
-            return obj instanceof PythonNativeWrapper;
+            return CApiGuards.isNativeWrapper(obj) || isDecoratedManagedFunction(obj);
+        }
+
+        static boolean isDecoratedManagedFunction(Object obj) {
+            return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getFun0());
         }
 
         private static ExternalFunctionNode createExternalFunctionRootNode(PythonLanguage lang, String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {
@@ -2108,7 +2124,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleDecorateFunction extends PythonBinaryBuiltinNode {
         @Specialization
-        PyCFunctionDecorator decorate(Object fun0, Object fun1) {
+        static PyCFunctionDecorator decorate(Object fun0, Object fun1) {
             return new PyCFunctionDecorator(fun0, fun1);
         }
     }

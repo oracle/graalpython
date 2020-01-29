@@ -1545,3 +1545,7 @@ def PyEval_GetBuiltins():
         import builtins
         __builtins_module_dict = builtins.__dict__
     return __builtins_module_dict
+
+
+def sequence_clear():
+    return 0

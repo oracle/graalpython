@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,12 +51,9 @@ import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCFunctionDecorator implements TruffleObject {
-    public static final int CACHE_SIZE = 10;
 
     final Object fun0;
     final Object fun1;
-
-    int pos = 0;
 
     public PyCFunctionDecorator(Object fun0, Object fun1) {
         this.fun0 = fun0;
@@ -75,5 +72,13 @@ public final class PyCFunctionDecorator implements TruffleObject {
                     @CachedLibrary("this.fun1") InteropLibrary interopLib1) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         Object res = interopLib0.execute(fun0, arguments);
         return interopLib1.execute(fun1, res);
+    }
+
+    public Object getFun0() {
+        return fun0;
+    }
+
+    public Object getFun1() {
+        return fun1;
     }
 }
