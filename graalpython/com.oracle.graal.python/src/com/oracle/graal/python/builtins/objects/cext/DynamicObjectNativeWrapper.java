@@ -78,11 +78,14 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGet
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetSpecialSingletonPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SetSpecialSingletonPtrNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -593,11 +596,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached IsBuiltinClassProfile isListProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                                   @Cached ReadAttributeFromObjectNode readAttrNode,
+                        @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             if (isTupleProfile.profileClass(object, PythonBuiltinClassType.PTuple) || isDictProfile.profileClass(object, PythonBuiltinClassType.PDict) ||
                             isListProfile.profileClass(object, PythonBuiltinClassType.PList)) {
-                // We do not actually return _the_ traverse or clear function since we will never need
+                // We do not actually return _the_ traverse or clear function since we will never
+                // need
                 // it. It is just important to return a function.
                 PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
                 Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, "sequence_clear");
@@ -1218,21 +1222,25 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object execute(Object[] arguments,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached.Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode,
-                    @Cached.Exclusive @Cached CExtNodes.ToJavaNode toJavaNode,
-                    @Cached.Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
-        // convert args
-        Object[] converted = new Object[arguments.length];
-        for (int i = 0; i < arguments.length; i++) {
-            converted[i] = toJavaNode.execute(arguments[i]);
-        }
-        Object result;
+                    @Cached PythonAbstractObject.PExecuteNode executeNode,
+                    @Cached AllToJavaNode allToJavaNode,
+                    @Cached CExtNodes.ToSulongNode toSulongNode,
+                    @Cached NewRefNode newRefNode,
+                    @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                    @Cached GetNativeNullNode getNativeNullNode) throws UnsupportedMessageException {
+
+        Object[] converted = allToJavaNode.execute(arguments);
         try {
-            result = executeNode.execute(lib.getDelegate(this), converted);
+            Object result = executeNode.execute(lib.getDelegate(this), converted);
+
+            // If a native wrapper is executed, we directly wrap some managed function and assume
+            // that new references are returned. So, we increase the ref count for each native
+            // object here.
+            return newRefNode.execute(toSulongNode.execute(result));
         } catch (PException e) {
-            result = PNone.NO_VALUE;
+            transformExceptionToNativeNode.execute(e);
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
-        return toSulongNode.execute(result);
     }
 
     // TO NATIVE, IS POINTER, AS POINTER

@@ -948,6 +948,7 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    @GenerateUncached
     public abstract static class AllToJavaNode extends PNodeWithContext {
 
         final Object[] execute(Object[] args) {
@@ -956,21 +957,26 @@ public abstract class CExtNodes {
 
         abstract Object[] execute(Object[] args, int offset);
 
-        @Specialization(guards = {"args.length == cachedLength", "cachedLength < 5"}, limit = "5")
+        @Specialization(guards = { //
+                        "args.length == cachedLength", //
+                        "offset == cachedOffset", //
+                        "effectiveLen(cachedLength, cachedOffset) < 5"}, //
+                        limit = "5")
         @ExplodeLoop
-        Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
+        static Object[] cached(Object[] args, @SuppressWarnings("unused") int offset,
                         @Cached("args.length") int cachedLength,
                         @Cached("offset") int cachedOffset,
-                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
-            Object[] output = new Object[cachedLength - cachedOffset];
-            for (int i = 0; i < cachedLength - cachedOffset; i++) {
-                output[i] = toJavaNode.execute(args[i + cachedOffset]);
+                        @Cached("createNodes(args.length)") AsPythonObjectNode[] toJavaNodes) {
+            int n = cachedLength - cachedOffset;
+            Object[] output = new Object[n];
+            for (int i = 0; i < n; i++) {
+                output[i] = toJavaNodes[i].execute(args[i + cachedOffset]);
             }
             return output;
         }
 
         @Specialization(replaces = "cached")
-        Object[] uncached(Object[] args, int offset,
+        static Object[] uncached(Object[] args, int offset,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode) {
             int len = args.length - offset;
             Object[] output = new Object[len];
@@ -978,6 +984,18 @@ public abstract class CExtNodes {
                 output[i] = toJavaNode.execute(args[i + offset]);
             }
             return output;
+        }
+
+        static int effectiveLen(int len, int offset) {
+            return len - offset;
+        }
+
+        static AsPythonObjectNode[] createNodes(int n) {
+            AsPythonObjectNode[] nodes = new AsPythonObjectNode[n];
+            for (int i = 0; i < n; i++) {
+                nodes[i] = AsPythonObjectNodeGen.create();
+            }
+            return nodes;
         }
 
         public static AllToJavaNode create() {
@@ -2341,6 +2359,10 @@ public abstract class CExtNodes {
     public abstract static class TransformExceptionToNativeNode extends Node {
 
         public abstract void execute(Frame frame, PException e);
+
+        public final void execute(PException e) {
+            execute(null, e);
+        }
 
         @Specialization
         static void doWithFrame(Frame frame, PException e,
