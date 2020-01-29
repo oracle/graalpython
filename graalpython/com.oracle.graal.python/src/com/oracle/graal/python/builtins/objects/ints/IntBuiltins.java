@@ -164,17 +164,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt addPInt(long left, long right) {
-            return factory().createInt(op(BigInteger.valueOf(left), BigInteger.valueOf(right)));
+            return factory().createInt(op(PInt.longToBigInteger(left), PInt.longToBigInteger(right)));
         }
 
         @Specialization
         PInt add(PInt left, long right) {
-            return add(left, factory().createInt(right));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
         PInt add(long left, PInt right) {
-            return add(factory().createInt(left), right);
+            return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization
@@ -221,17 +221,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doLLOvf(long x, long y) {
-            return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+            return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
         }
 
         @Specialization
         PInt doPIntLong(PInt left, long right) {
-            return doPIntPInt(left, factory().createInt(right));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
         PInt doLongPInt(long left, PInt right) {
-            return doPIntPInt(factory().createInt(left), right);
+            return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization
@@ -273,17 +273,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doLLOvf(long y, long x) {
-            return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+            return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
         }
 
         @Specialization
         PInt doPIntLong(PInt right, long left) {
-            return doPIntPInt(factory().createInt(left), right);
+            return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization
         PInt doLongPInt(long right, PInt left) {
-            return doPIntPInt(factory().createInt(right), left);
+            return factory().createInt(op(PInt.longToBigInteger(right), left.getValue()));
         }
 
         @Specialization
@@ -327,7 +327,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPI(long left, PInt right) {
-            return doPP(factory().createInt(left), right);
+            return op(PInt.longToBigInteger(left), right.getValue());
         }
 
         @Specialization
@@ -335,7 +335,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (right == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
             }
-            return doPP(left, factory().createInt(right));
+            return op(left.getValue(), PInt.longToBigInteger(right));
         }
 
         @Specialization
@@ -391,7 +391,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPL(PInt right, long left) {
-            return doPP(right, factory().createInt(left));
+            return op(right.getValue(), PInt.longToBigInteger(left));
         }
 
         @Specialization
@@ -477,13 +477,13 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         PInt doPiL(PInt left, int right) {
             raiseDivisionByZero(right == 0);
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
         PInt doPiL(PInt left, long right) {
             raiseDivisionByZero(right == 0);
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
@@ -530,13 +530,13 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         PInt doPiL(PInt right, long left) {
             raiseDivisionByZero(right.isZero());
-            return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
+            return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization
         PInt doLPi(long right, PInt left) {
             raiseDivisionByZero(right == 0);
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
@@ -576,13 +576,13 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         PInt doLPi(long left, PInt right) {
             raiseDivisionByZero(right.isZero());
-            return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
+            return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0")
         PInt doPiL(PInt left, long right) {
             raiseDivisionByZero(right == 0);
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()")
@@ -593,7 +593,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right < 0")
         PInt doPiLNeg(PInt left, long right) {
-            return factory().createInt(opNeg(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()")
@@ -649,7 +649,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (((ax | ay) >>> 31 != 0)) {
                 int leadingZeros = Long.numberOfLeadingZeros(ax) + Long.numberOfLeadingZeros(ay);
                 if (leadingZeros < 66) {
-                    return factory().createInt(mul(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+                    return factory().createInt(mul(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
                 }
             }
             return factory().createInt(r);
@@ -668,7 +668,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"right != 0", "right != 1"})
         PInt doPIntLong(PInt left, long right) {
-            return factory().createInt(mul(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(mul(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
@@ -733,7 +733,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right >= 0")
         PInt doInteger(int left, int right, @SuppressWarnings("unused") PNone none) {
-            return factory().createInt(op(BigInteger.valueOf(left), right));
+            return factory().createInt(op(PInt.longToBigInteger(left), right));
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
@@ -773,7 +773,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right >= 0")
         PInt doLong(long left, long right, @SuppressWarnings("unused") PNone none) {
-            return factory().createInt(op(BigInteger.valueOf(left), right));
+            return factory().createInt(op(PInt.longToBigInteger(left), right));
         }
 
         @Specialization
@@ -839,7 +839,7 @@ public class IntBuiltins extends PythonBuiltins {
                 } else if (value == 1) {
                     return BigInteger.ONE;
                 } else if (value == -1) {
-                    return (b & 1) != 0 ? BigInteger.valueOf(-1) : BigInteger.ONE;
+                    return (b & 1) != 0 ? PInt.longToBigInteger(-1) : BigInteger.ONE;
                 }
             } catch (ArithmeticException e) {
                 // fall through to normal computation
@@ -888,9 +888,9 @@ public class IntBuiltins extends PythonBuiltins {
         PInt posOvf(long arg) throws IllegalArgumentException {
             long result = Math.abs(arg);
             if (result < 0) {
-                return factory().createInt(op(BigInteger.valueOf(arg)));
+                return factory().createInt(op(PInt.longToBigInteger(arg)));
             } else {
-                return factory().createInt(BigInteger.valueOf(arg));
+                return factory().createInt(PInt.longToBigInteger(arg));
             }
         }
 
@@ -986,7 +986,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt negOvf(long arg) {
-            BigInteger value = arg == Long.MIN_VALUE ? negate(BigInteger.valueOf(arg)) : BigInteger.valueOf(-arg);
+            BigInteger value = arg == Long.MIN_VALUE ? negate(PInt.longToBigInteger(arg)) : PInt.longToBigInteger(-arg);
             return factory().createInt(value);
         }
 
@@ -1084,7 +1084,7 @@ public class IntBuiltins extends PythonBuiltins {
             try {
                 return leftShiftExact(left, right);
             } catch (ArithmeticException e) {
-                return doGuardedBiI(BigInteger.valueOf(left), right);
+                return doGuardedBiI(PInt.longToBigInteger(left), right);
             }
         }
 
@@ -1102,7 +1102,7 @@ public class IntBuiltins extends PythonBuiltins {
             } catch (ArithmeticException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
-                    return factory().createInt(op(BigInteger.valueOf(left), rightI));
+                    return factory().createInt(op(PInt.longToBigInteger(left), rightI));
                 } else {
                     throw raise(PythonErrorType.OverflowError);
                 }
@@ -1113,7 +1113,7 @@ public class IntBuiltins extends PythonBuiltins {
         PInt doLPi(long left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
             try {
-                return factory().createInt(op(BigInteger.valueOf(left), right.intValue()));
+                return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
             } catch (ArithmeticException e) {
                 throw raise(PythonErrorType.OverflowError);
             }
@@ -1191,13 +1191,13 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         PInt doIPi(int left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(BigInteger.valueOf(left), right.intValue()));
+            return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
         }
 
         @Specialization
         PInt doLPi(long left, PInt right) {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
-            return factory().createInt(op(BigInteger.valueOf(left), right.intValue()));
+            return factory().createInt(op(PInt.longToBigInteger(left), right.intValue()));
         }
 
         @Specialization
@@ -1266,12 +1266,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doPInt(long left, PInt right) {
-            return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
+            return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
         @Specialization
         PInt doPInt(PInt left, long right) {
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
@@ -1449,10 +1449,10 @@ public class IntBuiltins extends PythonBuiltins {
                     long ptrVal = lib.asPointer(a.object);
                     if (ptrVal < 0) {
                         // pointers are considered unsigned
-                        BigInteger bi = BigInteger.valueOf(ptrVal).add(BigInteger.ONE.shiftLeft(64));
+                        BigInteger bi = PInt.longToBigInteger(ptrVal).add(BigInteger.ONE.shiftLeft(64));
                         return bi.equals(b.getValue());
                     }
-                    return BigInteger.valueOf(ptrVal).equals(b.getValue());
+                    return PInt.longToBigInteger(ptrVal).equals(b.getValue());
                 } catch (UnsupportedMessageException e) {
                     // fall through
                 }

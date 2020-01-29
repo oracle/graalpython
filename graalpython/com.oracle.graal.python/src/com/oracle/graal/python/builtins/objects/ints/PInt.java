@@ -223,7 +223,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static final int compareTo(BigInteger left, long right) {
-        return left.compareTo(BigInteger.valueOf(right));
+        return left.compareTo(longToBigInteger(right));
     }
 
     @Override
@@ -234,6 +234,11 @@ public final class PInt extends PythonBuiltinObject {
     @TruffleBoundary
     private static final String toString(BigInteger value) {
         return value.toString();
+    }
+
+    @TruffleBoundary
+    public static final BigInteger longToBigInteger(long value) {
+        return BigInteger.valueOf(value);
     }
 
     public double doubleValue() {
