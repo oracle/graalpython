@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionSt
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -56,19 +57,30 @@ public class TryFinallyNode extends StatementNode {
                 restoreExceptionState(frame, exceptionState);
             }
         } else {
+            boolean executeFinalbody = true;
             try {
                 body.executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
                 SetCaughtExceptionNode.execute(frame, e);
                 throw e;
+            } catch (ControlFlowException e) {
+                throw e;
+            } catch (Throwable e) {
+                // Don't execute finally block on exceptions that occured in the interpreter itself
+                CompilerDirectives.transferToInterpreter();
+                executeFinalbody = false;
+                throw e;
             } finally {
-                try {
-                    finalbody.executeVoid(frame);
-                } catch (ControlFlowException e) {
-                    // restore
-                    restoreExceptionState(frame, exceptionState);
-                    throw e;
+                CompilerAsserts.partialEvaluationConstant(executeFinalbody);
+                if (executeFinalbody) {
+                    try {
+                        finalbody.executeVoid(frame);
+                    } catch (ControlFlowException e) {
+                        // restore
+                        restoreExceptionState(frame, exceptionState);
+                        throw e;
+                    }
                 }
                 // restore
                 restoreExceptionState(frame, exceptionState);
