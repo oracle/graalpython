@@ -163,8 +163,14 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt addPInt(long left, long right) {
-            return factory().createInt(op(PInt.longToBigInteger(left), PInt.longToBigInteger(right)));
+        Object addLongWithOverflow(long x, long y) {
+            /* Inlined version of Math.addExact(x, y) with BigInteger fallback. */
+            long r = x + y;
+            // HD 2-12 Overflow iff both arguments have the opposite sign of the result
+            if (((x ^ r) & (y ^ r)) < 0) {
+                return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+            }
+            return r;
         }
 
         @Specialization
@@ -220,8 +226,15 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doLLOvf(long x, long y) {
-            return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+        Object doLongWithOverflow(long x, long y) {
+            /* Inlined version of Math.subtractExact(x, y) with BigInteger fallback. */
+            long r = x - y;
+            // HD 2-12 Overflow iff the arguments have different signs and
+            // the sign of the result is different than the sign of x
+            if (((x ^ y) & (x ^ r)) < 0) {
+                return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+            }
+            return r;
         }
 
         @Specialization
@@ -272,8 +285,15 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doLLOvf(long y, long x) {
-            return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+        Object doLongWithOverflow(long y, long x) {
+            /* Inlined version of Math.subtractExact(x, y) with BigInteger fallback. */
+            long r = x - y;
+            // HD 2-12 Overflow iff the arguments have different signs and
+            // the sign of the result is different than the sign of x
+            if (((x ^ y) & (x ^ r)) < 0) {
+                return factory().createInt(op(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+            }
+            return r;
         }
 
         @Specialization
@@ -642,17 +662,21 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doLLOvf(long x, long y) {
+        Object doLongWithOverflow(long x, long y) {
+            /* Inlined version of Math.multiplyExact(x, y) with BigInteger fallback. */
             long r = x * y;
             long ax = Math.abs(x);
             long ay = Math.abs(y);
             if (((ax | ay) >>> 31 != 0)) {
-                int leadingZeros = Long.numberOfLeadingZeros(ax) + Long.numberOfLeadingZeros(ay);
-                if (leadingZeros < 66) {
+                // Some bits greater than 2^31 that might cause overflow
+                // Check the result using the divide operator
+                // and check for the special case of Long.MIN_VALUE * -1
+            if (((y != 0) && (r / y != x)) ||
+                (x == Long.MIN_VALUE && y == -1)) {
                     return factory().createInt(mul(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
                 }
             }
-            return factory().createInt(r);
+            return r;
         }
 
         @Specialization(guards = "right == 0")
