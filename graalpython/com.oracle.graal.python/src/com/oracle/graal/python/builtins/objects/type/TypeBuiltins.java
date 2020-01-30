@@ -521,9 +521,10 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BaseNode extends PythonBuiltinNode {
         @Specialization
-        Object base(LazyPythonClass self,
-                        @Cached("create()") TypeNodes.GetBaseClassNode getBaseClassNode) {
-            return getBaseClassNode.execute(self);
+        static Object base(LazyPythonClass self,
+                        @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
+            Object baseClass =  getBaseClassNode.execute(self);
+            return baseClass != null ? baseClass : PNone.NONE;
         }
     }
 

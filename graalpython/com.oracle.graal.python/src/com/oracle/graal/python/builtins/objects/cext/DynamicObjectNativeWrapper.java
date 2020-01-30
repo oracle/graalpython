@@ -333,18 +333,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_BASE, key)")
         static Object doTpBase(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached GetNativeNullNode getNativeNullNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             LazyPythonClass superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
-                if (superClass instanceof PythonBuiltinClassType) {
-                    return toSulongNode.execute(context.getCore().lookupType((PythonBuiltinClassType) superClass));
-                } else {
-                    return toSulongNode.execute(superClass);
-                }
+                return toSulongNode.execute(ensureClassObject(context, superClass));
             }
-            return toSulongNode.execute(object);
+            return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
+        private static PythonAbstractClass ensureClassObject(PythonContext context, LazyPythonClass klass) {
+            if (klass instanceof PythonBuiltinClassType) {
+                return context.getCore().lookupType((PythonBuiltinClassType) klass);
+            }
+            return (PythonAbstractClass) klass;
         }
 
         @Specialization(guards = "eq(TP_ALLOC, key)")

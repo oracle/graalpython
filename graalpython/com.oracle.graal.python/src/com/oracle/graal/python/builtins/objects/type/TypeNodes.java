@@ -66,14 +66,12 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
@@ -99,7 +97,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
@@ -333,34 +330,28 @@ public abstract class TypeNodes {
         public abstract LazyPythonClass execute(Object obj);
 
         @Specialization
-        LazyPythonClass doManaged(PythonManagedClass obj) {
+        static LazyPythonClass doManaged(PythonManagedClass obj) {
             return obj.getSuperClass();
         }
 
         @Specialization
-        LazyPythonClass doBuiltin(PythonBuiltinClassType obj) {
+        static LazyPythonClass doBuiltin(PythonBuiltinClassType obj) {
             return obj.getBase();
         }
 
         @Specialization
-        LazyPythonClass doNative(PythonNativeClass obj,
+        static LazyPythonClass doNative(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached PRaiseNode raise,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            Object tpBaseObj = getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE);
-            if (profile.profile(PGuards.isClass(tpBaseObj))) {
-                return (PythonAbstractClass) tpBaseObj;
+                        @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
+            if (PGuards.isPNone(result)) {
+                return null;
+            } else if (result instanceof PythonAbstractClass) {
+                return (PythonAbstractClass) result;
             }
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), tpBaseObj);
-        }
-
-        public static GetSuperClassNode create() {
-            return GetSuperClassNodeGen.create();
-        }
-
-        public static GetSuperClassNode getUncached() {
-            return GetSuperClassNodeGen.getUncached();
+            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), result);
         }
     }
 
@@ -536,15 +527,19 @@ public abstract class TypeNodes {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(NativeMemberNames.class)
     public abstract static class GetBaseClassNode extends PNodeWithContext {
 
         public abstract PythonAbstractClass execute(Object obj);
 
         @Specialization
-        PythonAbstractClass doPythonClass(PythonManagedClass obj,
+        static PythonAbstractClass doPythonClass(PythonManagedClass obj,
                         @Cached PRaiseNode raise) {
             PythonAbstractClass[] baseClasses = obj.getBaseClasses();
+            if (baseClasses.length == 0) {
+                return null;
+            }
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
@@ -552,10 +547,13 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonAbstractClass doPythonClass(PythonBuiltinClassType obj,
+        static PythonAbstractClass doPythonClass(PythonBuiltinClassType obj,
                         @Cached PRaiseNode raise,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
+            if (baseClasses.length == 0) {
+                return null;
+            }
             if (baseClasses.length == 1) {
                 return baseClasses[0];
             }
@@ -563,19 +561,18 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        PythonAbstractClass doNative(PythonNativeClass obj,
+        static PythonAbstractClass doNative(PythonNativeClass obj,
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
             Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
-            if (result instanceof PythonAbstractClass) {
+            if (PGuards.isPNone(result)) {
+                return null;
+            } else if (PGuards.isClass(result)) {
                 return (PythonAbstractClass) result;
             }
-            throw raise.raise(PythonBuiltinClassType.SystemError, "type does not provide __base__");
-        }
-
-        public static GetBaseClassNode create() {
-            return GetBaseClassNodeGen.create();
+            CompilerDirectives.transferToInterpreter();
+            throw raise.raise(SystemError, "Invalid base type object for class %s (base type was '%p' object).", GetNameNode.doSlowPath(obj), result);
         }
     }
 

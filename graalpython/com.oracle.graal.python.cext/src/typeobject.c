@@ -363,33 +363,38 @@ int PyType_Ready(PyTypeObject* cls) {
        this method, we need to keep it alive. */
     Py_INCREF(cls);
 
-    // https://docs.python.org/3/c-api/typeobj.html#c.PyObject.ob_type
-    PyTypeObject* base = cls->tp_base;
-    PyTypeObject* metaclass = Py_TYPE(cls);
-    if (!base) {
-        base = &PyBaseObject_Type;
-    } else {
-        if (!metaclass) {
-            metaclass = Py_TYPE(base);
-        }
-    }
-    if (!metaclass) {
-        metaclass = &PyType_Type;
-    }
-    cls->tp_base = base;
+
+    PyTypeObject* base;
+
+    /* Initialize tp_base (defaults to BaseObject unless that's us) */
+    base = cls->tp_base;
     if (base == NULL && cls != &PyBaseObject_Type) {
         base = cls->tp_base = &PyBaseObject_Type;
         Py_INCREF(base);
     }
 
-    Py_TYPE(cls) = metaclass;
+    /* Now the only way base can still be NULL is if type is
+     * &PyBaseObject_Type.
+     */
 
     /* Initialize the base class */
-    if (base != NULL && !(base->tp_flags % Py_TPFLAGS_READY)) {
+    if (base != NULL && !(base->tp_flags & Py_TPFLAGS_READY)) {
         if (PyType_Ready(base) < 0) {
         	RETURN_ERROR(cls);
         }
     }
+
+    /* Initialize ob_type if NULL.      This means extensions that want to be
+       compilable separately on Windows can call PyType_Ready() instead of
+       initializing the ob_type field of their type objects. */
+    /* The test for base != NULL is really unnecessary, since base is only
+       NULL when type is &PyBaseObject_Type, and we know its ob_type is
+       not NULL (it's initialized to &PyType_Type).      But coverity doesn't
+       know that. */
+    if (Py_TYPE(cls) == NULL && base != NULL) {
+        Py_TYPE(cls) = Py_TYPE(base);
+    }
+
 
     /* Initialize tp_bases */
     PyObject* bases = cls->tp_bases;
