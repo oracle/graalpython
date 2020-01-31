@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -49,7 +50,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
@@ -70,9 +71,8 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object clear(PSet self,
-                        @Cached("createClassProfile()") ValueProfile storageProfile) {
-            storageProfile.profile(self.getDictStorage()).clear();
+        public Object clear(PSet self, @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            lib.clear(self.getDictStorage());
             return PNone.NONE;
         }
     }
@@ -84,7 +84,7 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization
         public Object add(VirtualFrame frame, PSet self, Object o,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
-            setItemNode.execute(frame, self, o, PNone.NO_VALUE);
+            setItemNode.execute(frame, self, o, PNone.NONE);
             return PNone.NONE;
         }
     }
@@ -136,9 +136,9 @@ public final class SetBuiltins extends PythonBuiltins {
     abstract static class PopNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object remove(VirtualFrame frame, PBaseSet self,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
-
-            Iterator<Object> iterator = self.getDictStorage().keys().iterator();
+            Iterator<Object> iterator = lib.keys(self.getDictStorage());
             if (iterator.hasNext()) {
                 Object next = iterator.next();
                 delItemNode.execute(frame, self, self.getDictStorage(), next);

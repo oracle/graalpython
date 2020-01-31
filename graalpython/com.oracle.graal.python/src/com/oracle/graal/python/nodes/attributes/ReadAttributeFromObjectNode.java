@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -270,7 +271,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                 return ReadAttributeFromDynamicObjectNode.getUncached().execute(po.getStorage(), key);
             } else {
                 HashingStorage dictStorage = PythonObjectLibrary.getUncached().getDict(po).getDictStorage();
-                Object value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+                HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
+                Object value = lib.getItem(dictStorage, key);
                 if (value == null) {
                     return PNone.NO_VALUE;
                 } else {
@@ -287,7 +289,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
             Object value = null;
             if (d instanceof PHashingCollection) {
                 HashingStorage dictStorage = ((PHashingCollection) d).getDictStorage();
-                value = dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+                HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
+                value = lib.getItem(dictStorage, key);
             }
             if (value == null) {
                 return PNone.NO_VALUE;

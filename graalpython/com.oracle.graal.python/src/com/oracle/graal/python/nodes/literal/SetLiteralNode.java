@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -77,7 +77,7 @@ public final class SetLiteralNode extends LiteralNode {
                 storage = addAllElement(frame, storage, ((StarredExpressionNode) n).getStorage(frame));
             } else {
                 Object element = n.execute(frame);
-                storage = ensureSetItemNode().execute(frame, storage, element, PNone.NO_VALUE);
+                storage = ensureSetItemNode().execute(frame, storage, element, PNone.NONE);
             }
         }
         return factory.createSet(storage);
@@ -88,7 +88,7 @@ public final class SetLiteralNode extends LiteralNode {
         int n = ensureLenNode().execute(sequenceStorage);
         for (int i = 0; i < n; i++) {
             Object element = ensureGetItemNode().execute(frame, sequenceStorage, i);
-            storage = ensureSetItemNode().execute(frame, storage, element, PNone.NO_VALUE);
+            storage = ensureSetItemNode().execute(frame, storage, element, PNone.NONE);
         }
         return storage;
     }
@@ -97,7 +97,7 @@ public final class SetLiteralNode extends LiteralNode {
     private PSet directSet(VirtualFrame frame) {
         HashingStorage storage = PDict.createNewStorage(true, values.length);
         for (ExpressionNode v : this.values) {
-            storage = ensureSetItemNode().execute(frame, storage, v.execute(frame), PNone.NO_VALUE);
+            storage = ensureSetItemNode().execute(frame, storage, v.execute(frame), PNone.NONE);
         }
         return factory.createSet(storage);
     }

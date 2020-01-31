@@ -33,7 +33,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -53,12 +52,14 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -89,6 +90,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -428,13 +431,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer,
-                        @Cached HashingStorageNodes.LenNode len) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("d.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_DICT, version, buffer);
-            HashingStorage storage = d.getDictStorage();
-            writeInt(len.execute(storage), version, buffer);
-            for (DictEntry entry : storage.entries()) {
+            int len;
+            if (hasFrame.profile(frame != null)) {
+                len = lib.lengthWithState(d.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                len = lib.length(d.getDictStorage());
+            }
+            writeInt(len, version, buffer);
+            for (DictEntry entry : d.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
                 getRecursiveNode().execute(frame, entry.value, version, buffer);
             }
@@ -479,26 +488,36 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(interned);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
-                        @Cached HashingStorageNodes.LenNode lenNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_SET, version, buffer);
-            HashingStorage dictStorage = s.getDictStorage();
-            int len = lenNode.execute(dictStorage);
+            int len;
+            if (hasFrame.profile(frame != null)) {
+                len = lib.lengthWithState(s.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                len = lib.length(s.getDictStorage());
+            }
             writeInt(len, version, buffer);
-            for (DictEntry entry : dictStorage.entries()) {
+            for (DictEntry entry : s.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer,
-                        @Cached HashingStorageNodes.LenNode lenNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_FROZENSET, version, buffer);
-            HashingStorage dictStorage = s.getDictStorage();
-            int len = lenNode.execute(dictStorage);
+            int len;
+            if (hasFrame.profile(frame != null)) {
+                len = lib.lengthWithState(s.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                len = lib.length(s.getDictStorage());
+            }
             writeInt(len, version, buffer);
-            for (DictEntry entry : dictStorage.entries()) {
+            for (DictEntry entry : s.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
             }
         }
@@ -643,7 +662,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private PDict readDict(int depth) {
             int len = readInt();
-            HashMap<Object, Object> map = new HashMap<>(len);
+            HashingStorage store = PDict.createNewStorage(false, len);
+            PDict dict = factory().createDict(store);
+            HashingStorageLibrary lib = HashingStorageLibrary.getUncached();
             for (int i = 0; i < len; i++) {
                 Object key = readObject(depth + 1);
                 if (key == null) {
@@ -651,10 +672,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 }
                 Object value = readObject(depth + 1);
                 if (value != null) {
-                    map.put(key, value);
+                    store = lib.setItem(store, key, value);
                 }
             }
-            return factory().createDict(map);
+            dict.setDictStorage(store);
+            return dict;
         }
 
         private PList readList(int depth) {
@@ -678,7 +700,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
-            HashingStorage newStorage = EconomicMapStorage.create(n, true);
+            HashingStorage newStorage = EconomicMapStorage.create(n);
             if (n > 0 && setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 setItemNode = insert(HashingStorageNodes.SetItemNode.create());
@@ -698,7 +720,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
-            HashingStorage newStorage = EconomicMapStorage.create(n, true);
+            HashingStorage newStorage = EconomicMapStorage.create(n);
             if (n > 0 && setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 setItemNode = insert(HashingStorageNodes.SetItemNode.create());

@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDict)
@@ -204,10 +206,10 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopItemNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        @TruffleBoundary
-        public Object popItem(PDict dict) {
-            Iterator<DictEntry> iterator = dict.getDictStorage().entries().iterator();
+        @Specialization(limit = "3")
+        public Object popItem(PDict dict,
+                        @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
+            Iterator<DictEntry> iterator = lib.entries(dict.getDictStorage());
             if (iterator.hasNext()) {
                 DictEntry entry = iterator.next();
                 return factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
@@ -415,9 +417,9 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        public PDict copy(PDict dict) {
-            dict.getDictStorage().clear();
+        @Specialization(limit = "3")
+        public PDict clear(PDict dict, @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
+            lib.clear(dict.getDictStorage());
             return dict;
         }
     }

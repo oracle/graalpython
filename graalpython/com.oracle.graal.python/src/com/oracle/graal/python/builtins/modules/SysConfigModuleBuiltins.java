@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -62,7 +62,7 @@ import com.oracle.truffle.api.dsl.Specialization;
  */
 @CoreFunctions(defineModule = "_sysconfig")
 public class SysConfigModuleBuiltins extends PythonBuiltins {
-    private static final Map<Object, Object> STATIC_CONFIG_OPTIONS = new HashMap<>();
+    private static final EconomicMap<String, Object> STATIC_CONFIG_OPTIONS = EconomicMap.create();
 
     @Override
     public void initialize(PythonCore core) {

@@ -805,8 +805,8 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, "the first two maketrans arguments must have equal length");
             }
 
-            PDict translation = factory().createDict();
-            HashingStorage storage = translation.getDictStorage();
+            HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
+            PDict translation = factory().createDict(storage);
             for (int i = 0; i < fromStr.length(); i++) {
                 int key = fromStr.charAt(i);
                 int value = toStr.charAt(i);

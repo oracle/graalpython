@@ -81,13 +81,10 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SetSpecialSinglet
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectHybridDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -173,7 +170,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
     private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
 
-    private PythonObjectDictStorage nativeMemberStore;
+    private DynamicObjectStorage nativeMemberStore;
 
     public DynamicObjectNativeWrapper() {
     }
@@ -182,14 +179,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public PythonObjectDictStorage createNativeMemberStore() {
+    public DynamicObjectStorage createNativeMemberStore() {
         if (nativeMemberStore == null) {
-            nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance());
+            nativeMemberStore = new DynamicObjectStorage(SHAPE.newInstance());
         }
         return nativeMemberStore;
     }
 
-    public PythonObjectDictStorage getNativeMemberStore() {
+    public DynamicObjectStorage getNativeMemberStore() {
         return nativeMemberStore;
     }
 
@@ -539,19 +536,19 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached(value = "createEquivalence()", uncached = "getSlowPathEquivalence()") Equivalence equivalence) throws UnsupportedMessageException {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
             PHashingCollection dict = lib.getDict(object);
             HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
-            if (dictStorage instanceof PythonObjectHybridDictStorage) {
+            if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
                 return toSulongNode.execute(factory.createDict(dict.getDictStorage()));
             }
-            PythonObjectHybridDictStorage storage = new PythonObjectHybridDictStorage(object.getStorage());
+            HashingStorage storage = new DynamicObjectStorage(object.getStorage());
             if (dictStorage != null) {
                 // copy all mappings to the new storage
-                storage.addAll(dictStorage, equivalence);
+                storage = storageLib.addAllToOther(dictStorage, storage);
             }
             lib.setDict(object, factory.createMappingproxy(storage));
             return toSulongNode.execute(factory.createDict(storage));
@@ -575,14 +572,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         public static ReadTypeNativeMemberNode create() {
             return ReadTypeNativeMemberNodeGen.create();
-        }
-
-        protected static Equivalence createEquivalence() {
-            return PythonEquivalence.create();
-        }
-
-        protected static Equivalence getSlowPathEquivalence() {
-            return HashingStorage.getSlowPathEquivalence(null);
         }
     }
 
@@ -956,8 +945,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @CachedLibrary("value") PythonNativeWrapperLibrary lib) {
             // TODO more type checking; do fast path
             PDict dict = (PDict) lib.getDelegate(value);
-            for (Object item : dict.items()) {
-                GetSubclassesNode.doSlowPath(object).add((PythonClass) item);
+            for (Object v : dict.items()) {
+                GetSubclassesNode.doSlowPath(object).add((PythonClass) v);
             }
             return value;
         }
@@ -975,21 +964,20 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached HashingStorageNodes.GetItemInteropNode getItem,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
             Object value = asPythonObjectNode.execute(nativeValue);
             if (value instanceof PDict && isPrimitiveDictProfile.profileObject((PDict) value, PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
-                for (Object k : d.keys()) {
-                    writeAttrNode.execute(object, k, getItem.executeWithGlobalState(d.getDictStorage(), k));
+                for (HashingStorage.DictEntry entry : d.entries()) {
+                    writeAttrNode.execute(object, entry.getKey(), entry.getValue());
                 }
                 PHashingCollection existing = lib.getDict(object);
                 if (existing != null) {
                     d.setDictStorage(existing.getDictStorage());
                 } else {
-                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage()));
+                    d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
                 }
                 lib.setDict(object, d);
             } else {

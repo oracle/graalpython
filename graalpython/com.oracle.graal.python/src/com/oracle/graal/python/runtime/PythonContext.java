@@ -42,6 +42,7 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionValues;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -59,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemInteropNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -91,9 +96,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionValues;
 
 public final class PythonContext {
 
@@ -206,8 +208,6 @@ public final class PythonContext {
 
     /* A lock for interop calls when this context is used by multiple threads. */
     private ReentrantLock interopLock;
-
-    @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
@@ -385,7 +385,9 @@ public final class PythonContext {
      * run-time package paths.
      */
     private void patchPackagePaths(String from, String to) {
-        for (Object v : sysModules.getDictStorage().values()) {
+        Iterator<HashingStorage.DictEntry> iter = HashingStorageLibrary.getUncached().entries(sysModules.getDictStorage());
+        while (iter.hasNext()) {
+            Object v = iter.next().getValue();
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
@@ -614,14 +616,6 @@ public final class PythonContext {
 
     private static void writeWarning(String warning) {
         PythonLanguage.getLogger().warning(warning);
-    }
-
-    public HashingStorage.Equivalence getSlowPathEquivalence() {
-        if (slowPathEquivalence == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            slowPathEquivalence = new HashingStorage.SlowPathEquivalence();
-        }
-        return slowPathEquivalence;
     }
 
     @TruffleBoundary

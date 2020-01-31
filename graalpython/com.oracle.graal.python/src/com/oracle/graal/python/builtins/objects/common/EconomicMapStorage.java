@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,793 +41,568 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Objects;
 
+import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.Equivalence;
+import org.graalvm.collections.MapCursor;
+
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.LazyString;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
-/**
- * Implementation of a map with a memory-efficient structure that always preserves insertion order
- * when iterating over keys. Particularly efficient when number of entries is 0 or smaller equal
- * {@link #INITIAL_CAPACITY} or smaller 256.
- *
- * The key/value pairs are kept in an expanding flat object array with keys at even indices and
- * values at odd indices. If the map has smaller or equal to {@link #HASH_THRESHOLD} entries, there
- * is no additional hash data structure and comparisons are done via linear checking of the
- * key/value pairs.
- *
- * When the hash table needs to be constructed, the field {@link #hashArray} becomes a new hash
- * array where an entry of 0 means no hit and otherwise denotes the entry number in the
- * {@link #entriesArr} array. The hash array is interpreted as an actual byte array if the indices
- * fit within 8 bit, or as an array of short values if the indices fit within 16 bit, or as an array
- * of integer values in other cases.
- *
- * Hash collisions are handled by chaining a linked list of {@link CollisionLink} objects that take
- * the place of the values in the {@link #entriesArr} array.
- *
- * Removing entries will put {@code null} into the {@link #entriesArr} array. If the occupation of
- * the map falls below a specific threshold, the map will be compressed via the
- * {@link #maybeCompress(int, Equivalence)} method.
- */
-public class EconomicMapStorage extends HashingStorage implements Iterable<Object> {
+@ExportLibrary(HashingStorageLibrary.class)
+public class EconomicMapStorage extends HashingStorage {
 
-    /**
-     * Initial number of key/value pair entries that is allocated in the first entries array.
-     */
-    private static final int INITIAL_CAPACITY = 4;
+    public static final Equivalence DEFAULT_EQIVALENCE = new Equivalence() {
 
-    /**
-     * Maximum number of entries that are moved linearly forward if a key is removed.
-     */
-    private static final int COMPRESS_IMMEDIATE_CAPACITY = 8;
-
-    /**
-     * Minimum number of key/value pair entries added when the entries array is increased in size.
-     */
-    private static final int MIN_CAPACITY_INCREASE = 8;
-
-    /**
-     * Number of entries above which a hash table is created.
-     */
-    private static final int HASH_THRESHOLD = 4;
-
-    /**
-     * Maximum number of entries allowed in the map.
-     */
-    private static final int MAX_ELEMENT_COUNT = Integer.MAX_VALUE >> 1;
-
-    /**
-     * Number of entries above which more than 1 byte is necessary for the hash index.
-     */
-    private static final int LARGE_HASH_THRESHOLD = ((1 << Byte.SIZE) << 1);
-
-    /**
-     * Number of entries above which more than 2 bytes are are necessary for the hash index.
-     */
-    private static final int VERY_LARGE_HASH_THRESHOLD = (LARGE_HASH_THRESHOLD << Byte.SIZE);
-
-    /**
-     * Total number of entries (actual entries plus deleted entries).
-     */
-    private int totalEntries;
-
-    /**
-     * Number of deleted entries.
-     */
-    private int deletedEntries;
-
-    /**
-     * Entries array with even indices storing keys and odd indices storing values.
-     */
-    private Object[] entriesArr;
-
-    /**
-     * Hash array that is interpreted either as byte or short or int array depending on number of
-     * map entries.
-     */
-    private byte[] hashArray;
-
-    public static EconomicMapStorage create(boolean isSet) {
-        return new EconomicMapStorage(isSet);
-    }
-
-    public static EconomicMapStorage create(int initialCapacity, boolean isSet) {
-        return new EconomicMapStorage(initialCapacity, isSet);
-    }
-
-    public static EconomicMapStorage create(EconomicMapStorage other, boolean isSet, Equivalence eq) {
-        return new EconomicMapStorage(other, isSet, eq);
-    }
-
-    private EconomicMapStorage(boolean isSet) {
-        this.isSet = isSet;
-    }
-
-    private EconomicMapStorage(int initialCapacity, boolean isSet) {
-        this(isSet);
-        init(initialCapacity);
-    }
-
-    private EconomicMapStorage(EconomicMapStorage other, boolean isSet, Equivalence eq) {
-        this(isSet);
-        if (!initFrom(other)) {
-            init(other.length());
-            putAll(other, eq);
+        @Override
+        public int hashCode(Object o) {
+            return Long.hashCode(o.hashCode());
         }
-    }
 
-    @TruffleBoundary
-    private boolean initFrom(Object o) {
-        if (o instanceof EconomicMapStorage) {
-            EconomicMapStorage otherMap = (EconomicMapStorage) o;
-            // We are only allowed to directly copy if the strategies of the two maps are the same.
-            totalEntries = otherMap.totalEntries;
-            deletedEntries = otherMap.deletedEntries;
-            if (otherMap.entriesArr != null) {
-                entriesArr = otherMap.entriesArr.clone();
-            }
-            if (otherMap.hashArray != null) {
-                hashArray = otherMap.hashArray.clone();
-            }
-            return true;
+        @Override
+        public boolean equals(Object a, Object b) {
+            return (a == b) || (a != null && objectEquals(a, b));
         }
-        return false;
-    }
 
-    private void init(int size) {
-        if (size > INITIAL_CAPACITY) {
-            entriesArr = new Object[size << 1];
+        @TruffleBoundary
+        private boolean objectEquals(Object a, Object b) {
+            return a.equals(b);
         }
+    };
+
+    public static EconomicMapStorage create() {
+        return new EconomicMapStorage();
     }
 
-    private static final class DictKey {
+    public static EconomicMapStorage create(int initialCapacity) {
+        return new EconomicMapStorage(initialCapacity);
+    }
+
+    public static EconomicMapStorage create(EconomicMap<? extends Object, Object> map) {
+        return new EconomicMapStorage(map);
+    }
+
+    static final class DictKey {
         final Object value;
-        final int hash;
+        final long hash;
 
-        DictKey(Object value, int hash) {
+        DictKey(Object value, long hash) {
             this.value = value;
             this.hash = hash;
         }
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof DictKey && ((DictKey) obj).hash == hash && ((DictKey) obj).value.equals(value);
+            // Comparison as per CPython's dictobject.c#lookdict function. First
+            // check if the keys are identical, then check if the hashes are the
+            // same, and only if they are, also call the comparison function.
+            if (obj instanceof DictKey) {
+                DictKey other = (DictKey) obj;
+                if (value == other.value) {
+                    return true;
+                } else if (hash == other.hash) {
+                    final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                    return lib.equals(value, other.value, lib);
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
 
         @Override
         public int hashCode() {
-            return hash;
+            return (int) hash;
         }
     }
 
-    /**
-     * Links the collisions. Needs to be immutable class for allowing efficient shallow copy from
-     * other map on construction.
-     */
-    private static final class CollisionLink {
+    private final PEMap<DictKey, Object> map;
 
-        CollisionLink(Object value, int next) {
-            this.value = value;
-            this.next = next;
-        }
-
-        final Object value;
-
-        /**
-         * Index plus one of the next entry in the collision link chain.
-         */
-        final int next;
+    private EconomicMapStorage() {
+        this.map = new PEMap<>();
     }
 
-    @Override
-    public Object getItem(Object key, Equivalence eq) {
-        Objects.requireNonNull(key);
-
-        int index = find(new DictKey(key, eq.hashCode(key)), eq);
-        if (index != -1) {
-            return getValue(index);
-        }
-        return null;
+    private EconomicMapStorage(int initialCapacity) {
+        this.map = new PEMap<>(initialCapacity);
     }
 
-    private int find(DictKey key, Equivalence eq) {
-        if (hasHashArray()) {
-            return findHash(key, eq);
-        } else {
-            return findLinear(key, eq);
-        }
+    private EconomicMapStorage(EconomicMapStorage original) {
+        this.map = new PEMap<>(original.map.size());
+        this.map.putAll(original.map);
     }
 
-    private int findLinear(DictKey key, Equivalence eq) {
-        for (int i = 0; i < totalEntries; i++) {
-            DictKey entryKey = getKey(i);
-            if (entryKey != null && compareKeys(key, entryKey, eq)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static boolean compareKeys(DictKey key, DictKey entryKey, Equivalence strategy) {
-        // Comparison as per CPython's dictobject.c#lookdict function. First
-        // check if the keys are identical, then check if the hashes are the
-        // same, and only if they are, also call the comparison function.
-        if (key.value == entryKey.value) {
-            return true;
-        } else if (key.hash == entryKey.hash) {
-            if (strategy != null) {
-                // TODO: this may raise and on CPython, that is caught and transformed into a
-                // dictionary exception
-                return strategy.equals(key.value, entryKey.value);
-            } else {
-                return key.value.equals(entryKey.value);
-            }
-        } else {
-            return false;
-        }
-    }
-
-    private int findHash(DictKey key, Equivalence eq) {
-        int index = getHashArray(getHashIndex(key)) - 1;
-        if (index != -1) {
-            DictKey entryKey = getKey(index);
-            if (compareKeys(key, entryKey, eq)) {
-                return index;
-            } else {
-                Object entryValue = getRawValue(index);
-                if (entryValue instanceof CollisionLink) {
-                    return findWithCollision(key, (CollisionLink) entryValue, eq);
-                }
-            }
-        }
-
-        return -1;
-    }
-
-    private int findWithCollision(DictKey key, CollisionLink initialEntryValue, Equivalence eq) {
-        int index;
-        DictKey entryKey;
-        CollisionLink entryValue = initialEntryValue;
-        while (true) {
-            CollisionLink collisionLink = entryValue;
-            index = collisionLink.next;
-            entryKey = getKey(index);
-            if (compareKeys(key, entryKey, eq)) {
-                return index;
-            } else {
-                Object value = getRawValue(index);
-                if (value instanceof CollisionLink) {
-                    entryValue = (CollisionLink) getRawValue(index);
-                } else {
-                    return -1;
-                }
-            }
-        }
-    }
-
-    private int getHashArray(int index) {
-        if (entriesArr.length < LARGE_HASH_THRESHOLD) {
-            return (hashArray[index] & 0xFF);
-        } else if (entriesArr.length < VERY_LARGE_HASH_THRESHOLD) {
-            int adjustedIndex = index << 1;
-            return (hashArray[adjustedIndex] & 0xFF) | ((hashArray[adjustedIndex + 1] & 0xFF) << 8);
-        } else {
-            int adjustedIndex = index << 2;
-            return (hashArray[adjustedIndex] & 0xFF) | ((hashArray[adjustedIndex + 1] & 0xFF) << 8) | ((hashArray[adjustedIndex + 2] & 0xFF) << 16) | ((hashArray[adjustedIndex + 3] & 0xFF) << 24);
-        }
-    }
-
-    private void setHashArray(int index, int value) {
-        if (entriesArr.length < LARGE_HASH_THRESHOLD) {
-            hashArray[index] = (byte) value;
-        } else if (entriesArr.length < VERY_LARGE_HASH_THRESHOLD) {
-            int adjustedIndex = index << 1;
-            hashArray[adjustedIndex] = (byte) value;
-            hashArray[adjustedIndex + 1] = (byte) (value >> 8);
-        } else {
-            int adjustedIndex = index << 2;
-            hashArray[adjustedIndex] = (byte) value;
-            hashArray[adjustedIndex + 1] = (byte) (value >> 8);
-            hashArray[adjustedIndex + 2] = (byte) (value >> 16);
-            hashArray[adjustedIndex + 3] = (byte) (value >> 24);
-        }
-    }
-
-    private int findAndRemoveHash(DictKey key, Equivalence eq) {
-        int hashIndex = getHashIndex(key);
-        int index = getHashArray(hashIndex) - 1;
-        if (index != -1) {
-            DictKey entryKey = getKey(index);
-            if (compareKeys(key, entryKey, eq)) {
-                Object value = getRawValue(index);
-                int nextIndex = -1;
-                if (value instanceof CollisionLink) {
-                    CollisionLink collisionLink = (CollisionLink) value;
-                    nextIndex = collisionLink.next;
-                }
-                setHashArray(hashIndex, nextIndex + 1);
-                return index;
-            } else {
-                Object entryValue = getRawValue(index);
-                if (entryValue instanceof CollisionLink) {
-                    return findAndRemoveWithCollision(key, (CollisionLink) entryValue, index, eq);
-                }
-            }
-        }
-
-        return -1;
-    }
-
-    private int findAndRemoveWithCollision(DictKey key, CollisionLink initialEntryValue, int initialIndexValue, Equivalence eq) {
-        int index;
-        DictKey entryKey;
-        CollisionLink entryValue = initialEntryValue;
-        int lastIndex = initialIndexValue;
-        while (true) {
-            CollisionLink collisionLink = entryValue;
-            index = collisionLink.next;
-            entryKey = getKey(index);
-            if (compareKeys(key, entryKey, eq)) {
-                Object value = getRawValue(index);
-                if (value instanceof CollisionLink) {
-                    CollisionLink thisCollisionLink = (CollisionLink) value;
-                    setRawValue(lastIndex, new CollisionLink(collisionLink.value, thisCollisionLink.next));
-                } else {
-                    setRawValue(lastIndex, collisionLink.value);
-                }
-                return index;
-            } else {
-                Object value = getRawValue(index);
-                if (value instanceof CollisionLink) {
-                    entryValue = (CollisionLink) getRawValue(index);
-                    lastIndex = index;
-                } else {
-                    return -1;
-                }
-            }
-        }
-    }
-
-    private int getHashIndex(DictKey key) {
-        int hash = key.hash;
-        hash = hash ^ (hash >>> 16);
-        return hash & (getHashTableSize() - 1);
-    }
-
-    /**
-     * Copies all of the mappings from {@code other} to this map.
-     *
-     * @since 1.0
-     */
-    public void putAll(EconomicMapStorage other, Equivalence eq) {
-        for (DictEntry entry : other.entries()) {
-            setItem(entry.getKey(), entry.getValue(), eq);
+    @TruffleBoundary
+    public EconomicMapStorage(EconomicMap<? extends Object, ? extends Object> map) {
+        this.map = new PEMap<>(map.size());
+        MapCursor<? extends Object, ? extends Object> c = map.getEntries();
+        while (c.advance()) {
+            Object key = c.getKey();
+            assert key instanceof Integer || key instanceof String;
+            this.map.put(new DictKey(key, key.hashCode()), c.getValue());
         }
     }
 
     @Override
-    public void setItem(Object key, Object value, Equivalence eq) {
-        if (key == null) {
-            throw new UnsupportedOperationException("null not supported as key!");
-        }
-        DictKey newKey = new DictKey(key, eq.hashCode(key));
-        int index = find(newKey, eq);
-        if (index != -1) {
-            setValue(index, value);
-            return;
-        }
-
-        int nextEntryIndex = totalEntries;
-        if (entriesArr == null) {
-            entriesArr = new Object[INITIAL_CAPACITY << 1];
-        } else if (entriesArr.length == nextEntryIndex << 1) {
-            grow(eq);
-
-            assert entriesArr.length > totalEntries << 1;
-            // Can change if grow is actually compressing.
-            nextEntryIndex = totalEntries;
-        }
-
-        setKey(nextEntryIndex, newKey);
-        setValue(nextEntryIndex, value);
-        totalEntries++;
-
-        if (hasHashArray()) {
-            // Rehash on collision if hash table is more than three quarters full.
-            boolean rehashOnCollision = (getHashTableSize() < (length() + (length() >> 1)));
-            putHashEntry(newKey, nextEntryIndex, rehashOnCollision, eq);
-        } else if (totalEntries > getHashThreshold()) {
-            createHash(eq);
-        }
-
-    }
-
-    /**
-     * Number of entries above which a hash table should be constructed.
-     */
-    private static int getHashThreshold() {
-        return HASH_THRESHOLD;
-    }
-
-    private void grow(Equivalence eq) {
-        int entriesLength = entriesArr.length;
-        int newSize = (entriesLength >> 1) + Math.max(MIN_CAPACITY_INCREASE, entriesLength >> 2);
-        if (newSize > MAX_ELEMENT_COUNT) {
-            throw new UnsupportedOperationException("map grown too large!");
-        }
-        Object[] newEntries = new Object[newSize << 1];
-        System.arraycopy(entriesArr, 0, newEntries, 0, entriesLength);
-        entriesArr = newEntries;
-        if ((entriesLength < LARGE_HASH_THRESHOLD && newEntries.length >= LARGE_HASH_THRESHOLD) ||
-                        (entriesLength < VERY_LARGE_HASH_THRESHOLD && newEntries.length > VERY_LARGE_HASH_THRESHOLD)) {
-            // Rehash in order to change number of bits reserved for hash indices.
-            createHash(eq);
-        }
-    }
-
-    /**
-     * Compresses the graph if there is a large number of deleted entries and returns the translated
-     * new next index.
-     */
-    private int maybeCompress(int nextIndex, Equivalence eq) {
-        if (entriesArr.length != INITIAL_CAPACITY << 1 && deletedEntries >= (totalEntries >> 1) + (totalEntries >> 2)) {
-            return compressLarge(nextIndex, eq);
-        }
-        return nextIndex;
-    }
-
-    /**
-     * Compresses the graph and returns the translated new next index.
-     */
-    private int compressLarge(int nextIndex, Equivalence eq) {
-        int size = INITIAL_CAPACITY;
-        int remaining = totalEntries - deletedEntries;
-
-        while (size <= remaining) {
-            size += Math.max(MIN_CAPACITY_INCREASE, size >> 1);
-        }
-
-        Object[] newEntries = new Object[size << 1];
-        int z = 0;
-        int newNextIndex = remaining;
-        for (int i = 0; i < totalEntries; ++i) {
-            DictKey key = getKey(i);
-            if (i == nextIndex) {
-                newNextIndex = z;
-            }
-            if (key != null) {
-                newEntries[z << 1] = key;
-                newEntries[(z << 1) + 1] = getValue(i);
-                z++;
-            }
-        }
-
-        this.entriesArr = newEntries;
-        totalEntries = z;
-        deletedEntries = 0;
-        if (z <= getHashThreshold()) {
-            this.hashArray = null;
-        } else {
-            createHash(eq);
-        }
-        return newNextIndex;
-    }
-
-    private int getHashTableSize() {
-        if (entriesArr.length < LARGE_HASH_THRESHOLD) {
-            return hashArray.length;
-        } else if (entriesArr.length < VERY_LARGE_HASH_THRESHOLD) {
-            return hashArray.length >> 1;
-        } else {
-            return hashArray.length >> 2;
-        }
-    }
-
-    private void createHash(Equivalence eq) {
-        int entryCount = length();
-
-        // Calculate smallest 2^n that is greater number of entries.
-        int size = getHashThreshold();
-        while (size <= entryCount) {
-            size <<= 1;
-        }
-
-        // Give extra size to avoid collisions.
-        size <<= 1;
-
-        if (this.entriesArr.length >= VERY_LARGE_HASH_THRESHOLD) {
-            // Every entry has 4 bytes.
-            size <<= 2;
-        } else if (this.entriesArr.length >= LARGE_HASH_THRESHOLD) {
-            // Every entry has 2 bytes.
-            size <<= 1;
-        } else {
-            // Entries are very small => give extra size to further reduce collisions.
-            size <<= 1;
-        }
-
-        hashArray = new byte[size];
-        for (int i = 0; i < totalEntries; i++) {
-            DictKey entryKey = getKey(i);
-            if (entryKey != null) {
-                putHashEntry(entryKey, i, false, eq);
-            }
-        }
-    }
-
-    private void putHashEntry(DictKey key, int entryIndex, boolean rehashOnCollision, Equivalence eq) {
-        int hashIndex = getHashIndex(key);
-        int oldIndex = getHashArray(hashIndex) - 1;
-        if (oldIndex != -1 && rehashOnCollision) {
-            this.createHash(eq);
-            return;
-        }
-        setHashArray(hashIndex, entryIndex + 1);
-        Object value = getRawValue(entryIndex);
-        if (oldIndex != -1) {
-            assert entryIndex != oldIndex : "this cannot happend and would create an endless collision link cycle";
-            if (value instanceof CollisionLink) {
-                CollisionLink collisionLink = (CollisionLink) value;
-                setRawValue(entryIndex, new CollisionLink(collisionLink.value, oldIndex));
-            } else {
-                setRawValue(entryIndex, new CollisionLink(getRawValue(entryIndex), oldIndex));
-            }
-        } else {
-            if (value instanceof CollisionLink) {
-                CollisionLink collisionLink = (CollisionLink) value;
-                setRawValue(entryIndex, collisionLink.value);
-            }
-        }
-    }
-
-    @Override
+    @ExportMessage
     public int length() {
-        return totalEntries - deletedEntries;
+        return map.size();
+    }
+
+    public static String toString(PString key, ValueProfile profile) {
+        CharSequence profiled = profile.profile(key.getCharSequence());
+        if (profiled instanceof String) {
+            return (String) profiled;
+        } else if (profiled instanceof LazyString) {
+            return ((LazyString) profiled).toString();
+        }
+        return generic(profiled);
+    }
+
+    @TruffleBoundary
+    private static String generic(CharSequence profiled) {
+        return profiled.toString();
+    }
+
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class GetItemWithState {
+
+        @Specialization
+        static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
+            DictKey newKey = new DictKey(key, key.hashCode());
+            return self.map.get(newKey);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, getClassNode)"})
+        static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
+                        @Exclusive @Cached("createClassProfile()") ValueProfile profile,
+                        @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+            final String k = EconomicMapStorage.toString(key, profile);
+            DictKey newKey = new DictKey(k, k.hashCode());
+            return self.map.get(newKey);
+        }
+
+        @Specialization(replaces = "getItemString", limit = "3")
+        static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
+                        @CachedLibrary("key") PythonObjectLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
+            return self.map.get(newKey);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class SetItemWithState {
+
+        @Specialization
+        static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state) {
+            DictKey newKey = new DictKey(key, key.hashCode());
+            self.map.put(newKey, value);
+            return self;
+        }
+
+        @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, getClassNode)"})
+        static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
+                        @Exclusive @Cached("createClassProfile()") ValueProfile profile,
+                        @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+            final String k = EconomicMapStorage.toString(key, profile);
+            DictKey newKey = new DictKey(k, k.hashCode());
+            self.map.put(newKey, value);
+            return self;
+        }
+
+        @Specialization(replaces = "setItemString", limit = "3")
+        static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
+                        @CachedLibrary("key") PythonObjectLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
+            self.map.put(newKey, value);
+            return self;
+        }
+    }
+
+    @ExportMessage(limit = "3")
+    public HashingStorage delItemWithState(Object key, ThreadState state,
+                    @CachedLibrary("key") PythonObjectLibrary lib,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
+        map.removeKey(newKey);
+        return this;
     }
 
     @Override
-    public void clear() {
-        entriesArr = null;
-        hashArray = null;
-        totalEntries = deletedEntries = 0;
-    }
-
-    private boolean hasHashArray() {
-        return hashArray != null;
-    }
-
-    /**
-     * Removes the element at the specific index and returns the index of the next element. This can
-     * be a different value if graph compression was triggered.
-     */
-    private int remove(int indexToRemove, Equivalence eq) {
-        int index = indexToRemove;
-        int entriesAfterIndex = totalEntries - index - 1;
-        int result = index + 1;
-
-        // Without hash array, compress immediately.
-        if (entriesAfterIndex <= COMPRESS_IMMEDIATE_CAPACITY && !hasHashArray()) {
-            while (index < totalEntries - 1) {
-                setKey(index, getKey(index + 1));
-                setRawValue(index, getRawValue(index + 1));
-                index++;
-            }
-            result--;
+    @ExportMessage
+    @TruffleBoundary
+    public HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
+        HashingStorage[] result = firstValue;
+        MapCursor<DictKey, Object> cursor = map.getEntries();
+        while (cursor.advance()) {
+            result = node.execute(result, cursor.getKey().value);
         }
-
-        setKey(index, null);
-        setRawValue(index, null);
-        if (index == totalEntries - 1) {
-            // Make sure last element is always non-null.
-            totalEntries--;
-            while (index > 0 && getKey(index - 1) == null) {
-                totalEntries--;
-                deletedEntries--;
-                index--;
-            }
-        } else {
-            deletedEntries++;
-            result = maybeCompress(result, eq);
-        }
-
         return result;
     }
 
-    private abstract class SparseMapIterator implements Iterator<Object> {
+    @ExportMessage
+    public static class AddAllToOther {
+        @Specialization
+        static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+            other.map.putAll(self.map);
+            return other;
+        }
 
-        protected int current;
+        @Specialization
+        @TruffleBoundary
+        static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            HashingStorage result = other;
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                result = lib.setItem(other, cursor.getKey().value, cursor.getValue());
+            }
+            return result;
+        }
+    }
+
+    @Override
+    @ExportMessage
+    public HashingStorage clear() {
+        map.clear();
+        return this;
+    }
+
+    @Override
+    @ExportMessage
+    public HashingStorage copy() {
+        return new EconomicMapStorage(this);
+    }
+
+    @ExportMessage
+    public static class EqualsWithState {
+        @Specialization
+        @TruffleBoundary
+        static boolean toSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary compareLib) {
+            if (self.map.size() != other.map.size()) {
+                return false;
+            }
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                Object otherValue = other.map.get(cursor.getKey());
+                if (otherValue != null && !compareLib.equalsWithState(otherValue, cursor.getValue(), compareLib, state)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static boolean generic(EconomicMapStorage self, HashingStorage other, ThreadState state,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary compareLib) {
+            if (self.map.size() != lib.lengthWithState(other, state)) {
+                return false;
+            }
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                Object otherValue = lib.getItemWithState(self, cursor.getKey().value, state);
+                if (otherValue != null && !compareLib.equalsWithState(otherValue, cursor.getValue(), compareLib, state)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    @ExportMessage
+    public static class CompareKeys {
+        @TruffleBoundary
+        @Specialization
+        static int toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+            int size = self.map.size();
+            int size2 = other.map.size();
+            if (size > size2) {
+                return 1;
+            }
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                if (!other.map.containsKey(cursor.getKey())) {
+                    return 1;
+                }
+            }
+            if (size == size2) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+
+        @TruffleBoundary
+        @Specialization(limit = "1")
+        static int generic(EconomicMapStorage self, HashingStorage other,
+                        @CachedLibrary("other") HashingStorageLibrary lib) {
+            int size = self.map.size();
+            int length = lib.length(other);
+            if (size > length) {
+                return 1;
+            }
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                if (!lib.hasKey(other, cursor.getKey().value)) {
+                    return 1;
+                }
+            }
+            if (size == length) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    }
+
+    @ExportMessage
+    public static class Intersect {
+        @Specialization
+        @TruffleBoundary
+        static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+            EconomicMapStorage result = EconomicMapStorage.create();
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                if (other.map.containsKey(cursor.getKey())) {
+                    result.map.put(cursor.getKey(), cursor.getValue());
+                }
+            }
+            return result;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            EconomicMapStorage result = EconomicMapStorage.create();
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                if (lib.hasKey(other, cursor.getKey().value)) {
+                    result.map.put(cursor.getKey(), cursor.getValue());
+                }
+            }
+            return result;
+        }
+    }
+
+    @ExportMessage
+    public static class Diff {
+        @Specialization
+        @TruffleBoundary
+        static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+            EconomicMapStorage result = EconomicMapStorage.create();
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                if (!other.map.containsKey(cursor.getKey())) {
+                    result.map.put(cursor.getKey(), cursor.getValue());
+                }
+            }
+            return result;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            EconomicMapStorage result = EconomicMapStorage.create();
+            MapCursor<DictKey, Object> cursor = self.map.getEntries();
+            while (cursor.advance()) {
+                if (!lib.hasKey(other, cursor.getKey().value)) {
+                    result.map.put(cursor.getKey(), cursor.getValue());
+                }
+            }
+            return result;
+        }
+    }
+
+    @Override
+    @ExportMessage
+    public Iterator<Object> keys() {
+        return new KeysIterator(map.getKeys().iterator());
+    }
+
+    private static final class KeysIterator implements Iterator<Object> {
+        private final Iterator<DictKey> keysIterator;
+
+        KeysIterator(Iterator<DictKey> iter) {
+            this.keysIterator = iter;
+        }
 
         public boolean hasNext() {
-            return current < totalEntries;
+            return keysIterator.hasNext();
+        }
+
+        public Object next() {
+            return keysIterator.next().value;
         }
     }
-
-    private DictKey getKey(int index) {
-        return (DictKey) entriesArr[index << 1];
-    }
-
-    private void setKey(int index, DictKey newValue) {
-        entriesArr[index << 1] = newValue;
-    }
-
-    private void setValue(int index, Object newValue) {
-        Object oldValue = getRawValue(index);
-        if (oldValue instanceof CollisionLink) {
-            CollisionLink collisionLink = (CollisionLink) oldValue;
-            setRawValue(index, new CollisionLink(newValue, collisionLink.next));
-        } else {
-            setRawValue(index, newValue);
-        }
-    }
-
-    private void setRawValue(int index, Object newValue) {
-        entriesArr[(index << 1) + 1] = newValue;
-    }
-
-    private Object getRawValue(int index) {
-        return entriesArr[(index << 1) + 1];
-    }
-
-    private Object getValue(int index) {
-        Object object = getRawValue(index);
-        if (object instanceof CollisionLink) {
-            return ((CollisionLink) object).value;
-        }
-        return object;
-    }
-
-    private final boolean isSet;
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         StringBuilder builder = new StringBuilder();
-        builder.append(isSet ? "set(size=" : "map(size=").append(length()).append(", {");
+        builder.append("map(size=").append(length()).append(", {");
         String sep = "";
-        MapCursor cursor = new MapCursor();
+        MapCursor<DictKey, Object> cursor = map.getEntries();
         while (cursor.advance()) {
             builder.append(sep);
-            if (isSet) {
-                builder.append(cursor.getKey().value);
-            } else {
-                builder.append("(").append(cursor.getKey().value).append(",").append(cursor.getValue()).append(")");
-            }
+            builder.append("(").append(cursor.getKey().value).append(",").append(cursor.getValue()).append(")");
             sep = ",";
         }
         builder.append("})");
         return builder.toString();
     }
+}
 
-    public Iterator<Object> iterator() {
-        return new SparseMapIterator() {
-            @Override
-            public Object next() {
-                DictKey result;
-                while ((result = getKey(current++)) == null) {
-                    // skip null entries
-                }
-                return result.value;
-            }
-        };
+final class PEMap<K, V> {
+    private final EconomicMap<K, V> map;
+
+    @TruffleBoundary
+    PEMap(int initialCapacity) {
+        this.map = EconomicMap.create(EconomicMapStorage.DEFAULT_EQIVALENCE, initialCapacity);
     }
 
-    @Override
-    public boolean hasKey(Object key, Equivalence eq) {
-        return find(new DictKey(key, eq.hashCode(key)), eq) != -1;
+    PEMap() {
+        this(4);
     }
 
-    @Override
-    public boolean remove(Object key, Equivalence eq) {
-        if (key == null) {
-            throw new UnsupportedOperationException("null not supported as key!");
-        }
-        int index;
-        DictKey inKey = new DictKey(key, eq.hashCode(key));
-        if (hasHashArray()) {
-            index = this.findAndRemoveHash(inKey, eq);
-        } else {
-            index = this.findLinear(inKey, eq);
-        }
-
-        if (index != -1) {
-            remove(index, eq);
-            return true;
-        }
-        return false;
+    @TruffleBoundary
+    public V get(K key) {
+        return map.get(key);
     }
 
-    private class MapCursor {
+    @TruffleBoundary
+    public boolean containsKey(K key) {
+        return map.containsKey(key);
+    }
 
-        private int current = -1;
+    @TruffleBoundary
+    public int size() {
+        return map.size();
+    }
 
-        protected boolean advance() {
-            current++;
-            if (current >= totalEntries) {
-                return false;
-            } else {
-                while (EconomicMapStorage.this.getKey(current) == null) {
-                    // Skip over null entries
-                    current++;
-                }
-                return true;
-            }
+    @TruffleBoundary
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    @TruffleBoundary
+    public Iterable<K> getKeys() {
+        return new KeysIterable<>(map.getKeys());
+    }
+
+    private static final class KeysIterable<K> implements Iterable<K> {
+        private final Iterable<K> keysIterable;
+
+        private KeysIterable(Iterable<K> keysIterable) {
+            this.keysIterable = keysIterable;
         }
 
-        public DictKey getKey() {
-            return EconomicMapStorage.this.getKey(current);
-        }
-
-        public Object getValue() {
-            return EconomicMapStorage.this.getValue(current);
+        @TruffleBoundary
+        public Iterator<K> iterator() {
+            return new KeysIterator<>(keysIterable.iterator());
         }
     }
 
-    private class MapIterator extends MapCursor implements Iterator<DictEntry> {
+    private static final class KeysIterator<K> implements Iterator<K> {
+        private final Iterator<K> keysIterator;
 
-        private int consumed = 0;
+        KeysIterator(Iterator<K> iter) {
+            this.keysIterator = iter;
+        }
 
-        @Override
+        @TruffleBoundary
         public boolean hasNext() {
-            return consumed < EconomicMapStorage.this.length();
-
+            return keysIterator.hasNext();
         }
 
-        @Override
-        public DictEntry next() {
-            if (!advance()) {
-                throw new NoSuchElementException();
-            }
-            consumed++;
-            return new DictEntry(getKey().value, getValue());
+        @TruffleBoundary
+        public K next() {
+            return keysIterator.next();
         }
     }
 
-    @Override
-    public Iterable<Object> keys() {
-        return this;
-    }
-
-    @Override
     @TruffleBoundary
-    public Iterable<Object> values() {
-        return new Iterable<Object>() {
-            @Override
-            public Iterator<Object> iterator() {
-                return new SparseMapIterator() {
-                    @Override
-                    public Object next() {
-                        Object result;
-                        while (true) {
-                            result = getValue(current);
-                            if (result == null && getKey(current) == null) {
-                                // values can be null, double-check if key is also null
-                                current++;
-                            } else {
-                                current++;
-                                break;
-                            }
-                        }
-                        return result;
-                    }
-                };
-            }
-        };
+    public V put(K key, V value) {
+        return map.put(key, value);
     }
 
-    @Override
-    public Iterable<DictEntry> entries() {
-        return new Iterable<HashingStorage.DictEntry>() {
-
-            public Iterator<DictEntry> iterator() {
-                return new MapIterator();
-            }
-        };
-    }
-
-    @Override
     @TruffleBoundary
-    public HashingStorage copy(Equivalence eq) {
-        return new EconomicMapStorage(this, this.isSet, eq);
+    public void clear() {
+        map.clear();
+    }
+
+    @TruffleBoundary
+    public V removeKey(K key) {
+        return map.removeKey(key);
+    }
+
+    @TruffleBoundary
+    public MapCursor<K, V> getEntries() {
+        return new EntriesMapCursor<>(map.getEntries());
+    }
+
+    @TruffleBoundary
+    public void putAll(PEMap<K, V> other) {
+        MapCursor<K, V> e = other.getEntries();
+        while (e.advance()) {
+            put(e.getKey(), e.getValue());
+        }
+    }
+
+    private static final class EntriesMapCursor<K, V> implements MapCursor<K, V> {
+        private final MapCursor<K, V> mapCursor;
+
+        public EntriesMapCursor(MapCursor<K, V> mapCursor) {
+            this.mapCursor = mapCursor;
+        }
+
+        @TruffleBoundary
+        public boolean advance() {
+            return mapCursor.advance();
+        }
+
+        @TruffleBoundary
+        public K getKey() {
+            return mapCursor.getKey();
+        }
+
+        @TruffleBoundary
+        public V getValue() {
+            return mapCursor.getValue();
+        }
+
+        @TruffleBoundary
+        public void remove() {
+            mapCursor.remove();
+        }
     }
 }

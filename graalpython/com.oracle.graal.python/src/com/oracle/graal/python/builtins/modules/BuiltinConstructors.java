@@ -1157,7 +1157,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozenset(VirtualFrame frame, LazyPythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
-                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
+                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
             }
             return frozenSet;
         }
@@ -1172,7 +1172,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return frozenSet;

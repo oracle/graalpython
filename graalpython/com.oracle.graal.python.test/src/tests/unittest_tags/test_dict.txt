@@ -13,7 +13,6 @@
 *DictTest.test_dictview_set_operations_on_keys
 *DictTest.test_empty_presized_dict_in_freelist
 *DictTest.test_eq
-*DictTest.test_equal_operator_modifying_operand
 *DictTest.test_errors_in_view_containment_check
 *DictTest.test_fromkeys_operator_modifying_dict_operand
 *DictTest.test_fromkeys_operator_modifying_set_operand
