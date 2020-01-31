@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,11 @@ package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(InteropLibrary.class)
 public abstract class PImmutableSequence extends PSequence {
 
     public PImmutableSequence(LazyPythonClass cls) {
@@ -46,5 +50,23 @@ public abstract class PImmutableSequence extends PSequence {
     @SuppressWarnings({"static-method", "unused"})
     public final void setItem(int idx, Object value) {
         throw new UnsupportedOperationException();
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public boolean isArrayElementModifiable(long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public boolean isArrayElementInsertable(long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public boolean isArrayElementRemovable(long index) {
+        return false;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,16 +25,24 @@
  */
 package com.oracle.graal.python.runtime.sequence;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
     public PSequence(LazyPythonClass cls) {
@@ -69,4 +77,113 @@ public abstract class PSequence extends PythonBuiltinObject {
     public boolean isIterable() {
         return true;
     }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isNumber() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte asByte() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInByte() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public short asShort() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInShort() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int asInt() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInInt() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long asLong() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInLong() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public float asFloat() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInFloat() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public double asDouble() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean fitsInDouble() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isString() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public String asString() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    public boolean hasArrayElements() {
+        return true;
+    }
+
+    @ExportMessage
+    public long getArraySize(@Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(getSequenceStorageNode.execute(this));
+    }
+
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Exclusive @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                    @Cached SequenceStorageNodes.GetItemScalarNode getItem) {
+        return getItem.execute(getSequenceStorageNode.execute(this), PInt.intValueExact(index));
+    }
+
 }

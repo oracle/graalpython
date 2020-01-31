@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,10 +26,10 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
-public class PArray extends PSequence {
+public class PArray extends PMutableSequence {
 
     private SequenceStorage store;
 

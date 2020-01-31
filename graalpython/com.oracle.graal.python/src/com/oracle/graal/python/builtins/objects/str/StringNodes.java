@@ -84,6 +84,10 @@ public abstract class StringNodes {
         return x.getCharSequence() instanceof NativeCharSequence;
     }
 
+    public static boolean isNativeMaterialized(PString seq) {
+        return ((NativeCharSequence) seq.getCharSequence()).isMaterialized();
+    }
+
     public static boolean isLazyCharSequence(PString x) {
         return x.getCharSequence() instanceof LazyString;
     }
@@ -98,7 +102,12 @@ public abstract class StringNodes {
 
         public abstract String execute(PString materialize);
 
-        @Specialization(guards = "isNativeCharSequence(x)")
+        @Specialization(guards = {"isNativeCharSequence(x)", "isNativeMaterialized(x)"})
+        static String doMaterializedNative(PString x) {
+            return ((NativeCharSequence) x.getCharSequence()).materialize();
+        }
+
+        @Specialization(guards = {"isNativeCharSequence(x)"}, replaces = "doMaterializedNative")
         static String doNative(PString x,
                         @Cached PCallCapiFunction callCStringToStringNode) {
             // cast guaranteed by the guard
@@ -121,7 +130,6 @@ public abstract class StringNodes {
             // cast guaranteed by the guard
             return (String) x.getCharSequence();
         }
-
     }
 
     @GenerateUncached
@@ -142,8 +150,7 @@ public abstract class StringNodes {
         }
 
         @Specialization(guards = "isNativeCharSequence(x)")
-        static int doNativeCharSequence(PString x,
-                        @Cached StringMaterializeNode materializeNode) {
+        static int doNativeCharSequence(PString x, @Cached StringMaterializeNode materializeNode) {
             return materializeNode.execute(x).length();
         }
 
@@ -151,6 +158,18 @@ public abstract class StringNodes {
         static int doLazyString(PString x) {
             // cast guaranteed by the guard
             return ((LazyString) x.getCharSequence()).length();
+        }
+
+        @Specialization(guards = {"isNativeCharSequence(x)", "isNativeMaterialized(x)"})
+        static int nativeString(PString x) {
+            return ((NativeCharSequence) x.getCharSequence()).length();
+        }
+
+        @Specialization(guards = {"isNativeCharSequence(x)", "!isNativeMaterialized(x)"}, replaces = "nativeString")
+        static int nativeStringMat(PString x, @Cached PCallCapiFunction callCapi) {
+            NativeCharSequence ncs = (NativeCharSequence) x.getCharSequence();
+            ncs.materialize(callCapi);
+            return ncs.length();
         }
 
         @Specialization

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -119,6 +119,18 @@ public class InteropLibraryTest extends PythonTests {
 
         somePStr = context.eval("python", "1");
         assertFalse(somePStr.isBoolean());
+    }
+
+    @Test
+    public void testPListInsertable() {
+        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"insertable\"))");
+        assertPrints("False\n", source);
+    }
+
+    @Test
+    public void testPListRemovable() {
+        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "import polyglot\nmutableObj = [1,2,3,4]\nprint(polyglot.__element_info__(mutableObj, 0, \"removable\"))");
+        assertPrints("True\n", source);
     }
 
     @Test
