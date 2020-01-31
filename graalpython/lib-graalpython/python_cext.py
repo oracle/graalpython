@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -816,7 +816,7 @@ class PyCapsule:
     def __repr__(self):
         name = "NULL" if self.name is None else self.name
         quote = "" if self.name is None else '"'
-        return "<capsule object %s%s%s at %p>" % (quote, name, quote, self.pointer)
+        return "<capsule object %s%s%s at 0x%x>" % (quote, name, quote, id(self))
 
 
 @may_raise
