@@ -1019,16 +1019,30 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 4)
+    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
         @Specialization
-        static Object doBytes(VirtualFrame frame, Object arr, long n, long elementSize, Object errorMarker,
-                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        static Object doNativeWrapper(VirtualFrame frame, PythonNativeWrapper arr, long elementSize, Object errorMarker,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Shared("unicodeFromWcharNode") @Cached UnicodeFromWcharNode unicodeFromWcharNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return toSulongNode.execute(unicodeFromWcharNode.execute(arr, n, elementSize));
+                return toSulongNode.execute(unicodeFromWcharNode.execute(asPythonObjectNode.execute(arr), elementSize));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return errorMarker;
+            }
+        }
+
+        @Specialization
+        static Object doPointer(VirtualFrame frame, Object arr, long elementSize, Object errorMarker,
+                        @Shared("unicodeFromWcharNode") @Cached UnicodeFromWcharNode unicodeFromWcharNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return toSulongNode.execute(unicodeFromWcharNode.execute(arr, elementSize));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return errorMarker;
