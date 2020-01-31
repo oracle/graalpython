@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -81,6 +80,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -137,12 +137,13 @@ public class TupleBuiltins extends PythonBuiltins {
             return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
         }
 
-        private int findIndex(VirtualFrame frame, PTuple tuple, Object value, int start, int end, BinaryComparisonNode eqNode) {
+        private int findIndex(VirtualFrame frame, PTuple tuple, Object value, int start, int end,
+                        PythonObjectLibrary valueLib, PythonObjectLibrary otherLib) {
             SequenceStorage tupleStore = tuple.getSequenceStorage();
             int len = tupleStore.length();
             for (int i = start; i < end && i < len; i++) {
                 Object object = getGetItemNode().execute(frame, tupleStore, i);
-                if (eqNode.executeBool(frame, object, value)) {
+                if (valueLib.equals(object, value, otherLib)) {
                     return i;
                 }
             }
@@ -159,44 +160,51 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, 0, getLength(self), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, 0, getLength(self), valueLib, otherLib);
         }
 
         @Specialization
         int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), valueLib, otherLib);
         }
 
         @Specialization
         int index(VirtualFrame frame, PTuple self, Object value, long start, long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
         }
 
         @Specialization
         int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), valueLib, otherLib);
         }
 
         @Specialization
         int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
         }
 
         @Specialization
         int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
         }
 
         @Specialization
         int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
+            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
         }
 
         @Specialization
@@ -270,15 +278,16 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "5")
         long count(VirtualFrame frame, PTuple self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary otherLib) {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object object = getItemNode.execute(frame, tupleStore, i);
-                if (eqNode.executeBool(frame, object, value)) {
+                if (valueLib.equals(value, object, otherLib)) {
                     count++;
                 }
             }

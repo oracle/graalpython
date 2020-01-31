@@ -175,7 +175,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         private @Child BinaryComparisonNode equalsNode;
 
         @Fallback
-        public boolean doObject(VirtualFrame frame, Object value1, Object value2) {
+        public Object doObject(VirtualFrame frame, Object value1, Object value2) {
             if (value1 == value2) {
                 return true;
             }
@@ -183,7 +183,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 equalsNode = insert((BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==")));
             }
-            return equalsNode.executeBool(frame, value1, value2);
+            return equalsNode.executeWith(frame, value1, value2);
         }
     }
 

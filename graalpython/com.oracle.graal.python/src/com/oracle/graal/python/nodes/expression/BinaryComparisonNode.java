@@ -34,7 +34,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -49,7 +48,6 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     protected final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
     @Child private LookupAndCallBinaryNode callNode;
-    @Child private CoerceToBooleanNode castToBoolean;
     @Child private PRaiseNode raiseNode;
     @Child private IsNode isNode;
 
@@ -68,9 +66,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         return create(magicMethod, magicReverseMethod, operation, null, null);
     }
 
-    public abstract boolean executeBool(VirtualFrame frame, Object left, Object right);
+    public abstract boolean executeBool(VirtualFrame frame, Object left, Object right) throws UnexpectedResultException;
 
-    private Object handleNotImplemented(Object left, Object right) {
+    private boolean handleNotImplemented(Object left, Object right) {
         // just like python, if no implementation is available, do something sensible for
         // == and !=
         if (magicMethod == __EQ__) {
@@ -98,161 +96,147 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         return profile.profile(value);
     }
 
-    private UnexpectedResultException handleUnexpectedResult(VirtualFrame frame, Object result, Object left, Object right) throws UnexpectedResultException {
-        CompilerAsserts.neverPartOfCompilation();
-        if (castToBoolean == null) {
-            castToBoolean = insert(CoerceToBooleanNode.createIfTrueNode());
-        }
-        Object value;
-        if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            value = handleNotImplemented(left, right);
-        } else {
-            value = castToBoolean.executeBoolean(frame, result);
-        }
-        throw new UnexpectedResultException(value);
-    }
-
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBB(VirtualFrame frame, boolean left, boolean right) throws UnexpectedResultException {
+    @Specialization
+    boolean doBB(VirtualFrame frame, boolean left, boolean right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBI(VirtualFrame frame, boolean left, int right) throws UnexpectedResultException {
+    @Specialization
+    boolean doBI(VirtualFrame frame, boolean left, int right) {
         try {
             return profileCondition(callNode.executeBool(frame, asInt(left), right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBL(VirtualFrame frame, boolean left, long right) throws UnexpectedResultException {
+    @Specialization
+    boolean doBL(VirtualFrame frame, boolean left, long right) {
         try {
             return profileCondition(callNode.executeBool(frame, asInt(left), right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBD(VirtualFrame frame, boolean left, double right) throws UnexpectedResultException {
+    @Specialization
+    boolean doBD(VirtualFrame frame, boolean left, double right) {
         try {
             return profileCondition(callNode.executeBool(frame, asDouble(left), right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doIB(VirtualFrame frame, int left, boolean right) throws UnexpectedResultException {
+    @Specialization
+    boolean doIB(VirtualFrame frame, int left, boolean right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, asInt(right)));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doII(VirtualFrame frame, int left, int right) throws UnexpectedResultException {
+    @Specialization
+    boolean doII(VirtualFrame frame, int left, int right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doIL(VirtualFrame frame, int left, long right) throws UnexpectedResultException {
+    @Specialization
+    boolean doIL(VirtualFrame frame, int left, long right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doID(VirtualFrame frame, int left, double right) throws UnexpectedResultException {
+    @Specialization
+    boolean doID(VirtualFrame frame, int left, double right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLB(VirtualFrame frame, long left, boolean right) throws UnexpectedResultException {
+    @Specialization
+    boolean doLB(VirtualFrame frame, long left, boolean right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, asInt(right)));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLI(VirtualFrame frame, long left, int right) throws UnexpectedResultException {
+    @Specialization
+    boolean doLI(VirtualFrame frame, long left, int right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLI(VirtualFrame frame, long left, long right) throws UnexpectedResultException {
+    @Specialization
+    boolean doLI(VirtualFrame frame, long left, long right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLI(VirtualFrame frame, long left, double right) throws UnexpectedResultException {
+    @Specialization
+    boolean doLI(VirtualFrame frame, long left, double right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDB(VirtualFrame frame, double left, boolean right) throws UnexpectedResultException {
+    @Specialization
+    boolean doDB(VirtualFrame frame, double left, boolean right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, asDouble(right)));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDI(VirtualFrame frame, double left, int right) throws UnexpectedResultException {
+    @Specialization
+    boolean doDI(VirtualFrame frame, double left, int right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDL(VirtualFrame frame, double left, long right) throws UnexpectedResultException {
+    @Specialization
+    boolean doDL(VirtualFrame frame, double left, long right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 
-    @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDD(VirtualFrame frame, double left, double right) throws UnexpectedResultException {
+    @Specialization
+    boolean doDD(VirtualFrame frame, double left, double right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
-            throw handleUnexpectedResult(frame, e.getResult(), left, right);
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
 

@@ -418,7 +418,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         Object doComparisonBool(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeBool(frame, lib.asBoolean(left), right);
+                return comparisonNode.executeWith(frame, lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
                 throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
             }

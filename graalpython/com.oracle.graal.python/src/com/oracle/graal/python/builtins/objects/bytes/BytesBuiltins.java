@@ -80,7 +80,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -671,16 +670,17 @@ public class BytesBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class ByteArrayCountNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "5")
         int count(VirtualFrame frame, PIBytesLike byteArray, Object arg,
+                        @CachedLibrary("arg") PythonObjectLibrary argLib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary otherLib,
                         @Cached("createClassProfile()") ValueProfile storeProfile,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
 
             SequenceStorage profiled = storeProfile.profile(byteArray.getSequenceStorage());
             int cnt = 0;
             for (int i = 0; i < profiled.length(); i++) {
-                if (eqNode.executeBool(frame, arg, getItemNode.execute(frame, profiled, i))) {
+                if (argLib.equals(arg, getItemNode.execute(frame, profiled, i), otherLib)) {
                     cnt++;
                 }
             }
