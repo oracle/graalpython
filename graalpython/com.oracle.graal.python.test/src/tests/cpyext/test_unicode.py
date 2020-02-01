@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -493,10 +493,7 @@ class TestPyUnicode(CPyExtTestCase):
             (2, bytearray([0x30, 0x20, 0x3C, 0x20]), 2, "‰‼"),
         ),
         code='''PyObject* wrap_PyUnicode_FromKindAndData(int kind, Py_buffer buffer, Py_ssize_t size, PyObject* dummy) {
-            PyObject* res;
-            res = PyUnicode_FromKindAndData(kind, (const char *)buffer.buf, size);
-            Py_XINCREF(res);
-            return res;
+            return PyUnicode_FromKindAndData(kind, (const char *)buffer.buf, size);
         }
         ''',
         resultspec="O",
@@ -522,4 +519,29 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* str", "const char* encoding", "const char* errors"],
         cmpfunc=unhandled_error_compare
     )
+
+
+    # NOTE: this test assumes that Python uses UTF-8 encoding for source files
+    test_PyUnicode_FromWideChar = CPyExtFunction(
+        lambda args: args[3],
+        lambda: (
+            (4, bytearray([0xA2, 0x0E, 0x02, 0x00]), 1, "𠺢"),
+            (4, bytearray([0xA2, 0x0E, 0x02, 0x00, 0x4C, 0x0F, 0x02, 0x00]), 2, "𠺢𠽌"),
+            (2, bytearray([0x30, 0x20]), 1, "‰"),
+            (2, bytearray([0x30, 0x20, 0x3C, 0x20]), 2, "‰‼"),
+        ),
+        code='''PyObject* wrap_PyUnicode_FromWideChar(int expectedWcharSize, Py_buffer buffer, Py_ssize_t size, PyObject* dummy) {
+            if (SIZEOF_WCHAR_T == expectedWcharSize) {
+                return PyUnicode_FromWideChar((const wchar_t *) buffer.buf, size);
+            }
+            return dummy;
+        }
+        ''',
+        resultspec="O",
+        argspec='iy*nO',
+        arguments=["int expectedWcharSize", "Py_buffer buffer", "Py_ssize_t size", "PyObject* dummy"],
+        callfunction="wrap_PyUnicode_FromWideChar",
+        cmpfunc=unhandled_error_compare
+    )
+
 
