@@ -63,6 +63,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -254,11 +256,11 @@ public abstract class CExtCommonNodes {
     @ImportStatic(PythonOptions.class)
     public abstract static class UnicodeFromWcharNode extends PNodeWithContext {
 
-        public abstract String execute(Object arr, Object length, Object elementSize);
+        public abstract String execute(Object arr, Object elementSize);
 
         @Specialization(guards = "elementSize == cachedElementSize", limit = "getVariableArgumentInlineCacheLimit()")
-        static String doBytes(Object arr, long n, long elementSize,
-                        @Cached("elementSize") long cachedElementSize,
+        static String doBytes(Object arr, @SuppressWarnings("unused") long elementSize,
+                        @Cached(value = "elementSize", allowUncached = true) long cachedElementSize,
                         @CachedLibrary("arr") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -266,12 +268,13 @@ public abstract class CExtCommonNodes {
                 ByteBuffer bytes;
                 if (cachedElementSize == 1L || cachedElementSize == 2L || cachedElementSize == 4L) {
                     if (!lib.hasArrayElements(arr)) {
-                        throw raiseNode.raise(SystemError, "provided object is not an array", elementSize);
+                        throw raiseNode.raise(SystemError, "provided object is not an array", cachedElementSize);
                     }
-                    bytes = readWithSize(lib, elemLib, arr, PInt.intValueExact(n), (int) cachedElementSize);
+                    long arraySize = lib.getArraySize(arr);
+                    bytes = readWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), (int) cachedElementSize);
                     bytes.flip();
                 } else {
-                    throw raiseNode.raise(ValueError, "unsupported 'wchar_t' size; was: %d", elementSize);
+                    throw raiseNode.raise(ValueError, "unsupported 'wchar_t' size; was: %d", cachedElementSize);
                 }
                 return decode(bytes);
             } catch (ArithmeticException e) {
@@ -288,14 +291,15 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
-        static String doBytes(Object arr, PInt n, PInt elementSize,
+        static String doBytes(Object arr, Object elementSizeObj,
+                        @Cached CastToJavaLongNode castToJavaLongNode,
                         @CachedLibrary("arr") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             try {
-                long es = elementSize.longValueExact();
-                return doBytes(arr, n.longValueExact(), es, es, lib, elemLib, raiseNode);
-            } catch (ArithmeticException e) {
+                long es = castToJavaLongNode.execute(elementSizeObj);
+                return doBytes(arr, es, es, lib, elemLib, raiseNode);
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(ValueError, "invalid parameters");
             }
         }
