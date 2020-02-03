@@ -51,8 +51,7 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.RefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -105,7 +104,7 @@ public final class CApiContext extends CExtContext {
         return nativeObjectsQueue;
     }
 
-    private static class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
+    private static final class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
         private final NativeObjectReference nativeObjectReference;
 
         public CApiReferenceCleanerAction(NativeObjectReference nativeObjectReference) {
@@ -115,7 +114,7 @@ public final class CApiContext extends CExtContext {
         @Override
         public void execute(VirtualFrame frame, Node location, RootCallTarget callTarget) {
             PythonLanguage.getContext().getCApiContext().stack.remove(nativeObjectReference);
-            PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_DECREF, nativeObjectReference.object);
+            RefCntNodeGen.getUncached().dec(nativeObjectReference.object);
         }
     }
 

@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IncRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
@@ -55,7 +55,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -136,13 +135,13 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached ToJavaNode toJavaNode,
                         @Exclusive @Cached IsBuiltinClassProfile errProfile,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached IncRefNode incRefNode,
+                        @Cached RefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
                 throw ArityException.create(2, arguments.length);
             }
             try {
-                return incRefNode.execute(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
+                return incRefNode.inc(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
             } catch (PException e) {
                 e.expectAttributeError(errProfile);
                 transformExceptionToNativeNode.execute(null, e);

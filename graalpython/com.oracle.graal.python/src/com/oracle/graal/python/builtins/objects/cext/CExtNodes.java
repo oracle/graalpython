@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -124,6 +125,8 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonOptions.GetEngineFlagNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -132,6 +135,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -205,7 +209,8 @@ public abstract class CExtNodes {
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             try {
-                return toJavaNode.execute(interopLibrary.execute(importCAPISymbolNode.execute(functionName), toSulongNode.execute(object), arg));
+                Object result = interopLibrary.execute(importCAPISymbolNode.execute(functionName), toSulongNode.execute(object), arg);
+                return toJavaNode.execute(result);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("C subtype_new function failed", e);
@@ -573,11 +578,11 @@ public abstract class CExtNodes {
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PCallCapiFunction callIncrefNode) {
+                        @Cached RefCntNode incRefNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
                 // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
-                IncRefNode.doNativeObject(object, callIncrefNode);
+                incRefNode.inc(object);
                 return new PythonAbstractNativeObject(object, cApiContext);
             }
             return new PythonAbstractNativeObject(object, null);
@@ -2424,24 +2429,93 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
-    public abstract static class IncRefNode extends Node {
+    public abstract static class RefCntNode extends PNodeWithContext {
 
-        public abstract Object execute(Object object);
+        /**
+         * Do not use directly! Use {@link #inc(Object)} or {@link #dec(Object)};
+         */
+        abstract Object execute(String fun, Object object);
+
+        public final Object inc(Object object) {
+            return execute(NativeCAPISymbols.FUN_INCREF, object);
+        }
+
+        public final Object dec(Object object) {
+            return execute(NativeCAPISymbols.FUN_DECREF, object);
+        }
 
         @Specialization
-        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper) {
+        static Object doNativeWrapper(@SuppressWarnings("unused") String fun, PythonNativeWrapper nativeWrapper) {
             nativeWrapper.increaseRefCount();
             return nativeWrapper;
         }
 
         @Specialization(guards = "!isNativeWrapper(object)")
-        static Object doNativeObject(Object object,
-                        @Cached PCallCapiFunction callIncRefNode) {
-            callIncRefNode.call(NativeCAPISymbols.FUN_INCREF, object);
+        static Object doNativeObject(String fun, Object object,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callIncRefNode,
+                        @Cached GetEngineFlagNode getTraceMemFlagNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            Object ptrVal = asPointer(object, lib);
+            if (context.getCApiContext() != null) {
+                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory) && !context.getCApiContext().isAllocated(ptrVal)) {
+                    PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + asHex(ptrVal));
+                }
+                CompilerAsserts.partialEvaluationConstant(fun);
+                callIncRefNode.call(fun, object);
+            }
             return object;
+        }
+
+        public static Object asPointer(Object ptr, InteropLibrary lib) {
+            // The first branch should avoid materialization of pointer objects.
+            if (lib.isPointer(ptr)) {
+                try {
+                    return lib.asPointer(ptr);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException();
+                }
+            }
+            return ptr;
+        }
+
+        @TruffleBoundary
+        static String asHex(Object ptr) {
+            if (ptr instanceof Number) {
+                return Long.toHexString(((Number) ptr).longValue());
+            }
+            return Objects.toString(ptr);
         }
     }
 
+    /**
+     * This node ensures that a new Python reference is returned.<br/>
+     * Concept:<br/>
+     * <p>
+     * If the reference is a {@link PythonNativeWrapper}, we just do nothing because as soon as it
+     * receives the {@code toNative} message, it will have reference count {@code 1} as it is
+     * required for a new reference.
+     * </p>
+     * <p>
+     * If the reference is a {@link PythonAbstractNativeObject} (i.e. a wrapped native pointer), the
+     * reference count will be increased by 1. This is necessary because if the currently returning
+     * upcall function already got a new reference, it won't have increased the refcnt but will
+     * eventually decreases it.<br/>
+     * Consider following example:<br/>
+     * 
+     * <pre>
+     *     some.py: nativeLong0 * nativeLong1
+     * </pre>
+     * 
+     * Assume that {@code nativeLong0} is a native object with a native type. It will call
+     * {@code nativeType->tp_as_number.nb_multiply}. This one then often uses
+     * {@code PyNumber_Multiply} which should just pass through the newly created native reference.
+     * But it will decrease the reference count since it wraps the gained native pointer. So, the
+     * intermediate upcall should effectively not alter the refcnt which means that we need to
+     * increase it since it will finally decrease it.
+     * </p>
+     */
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class NewRefNode extends Node {
@@ -2456,8 +2530,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isNativeWrapper(object)")
         static Object doNativeObject(Object object,
-                        @Cached PCallCapiFunction callIncRefNode) {
-            return IncRefNode.doNativeObject(object, callIncRefNode);
+                        @Cached RefCntNode incRefNode) {
+            return incRefNode.inc(object);
         }
     }
 }

@@ -3059,7 +3059,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         int doNativeWrapper(VirtualFrame frame, Object ptr,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            trace(context, asPointer(ptr, lib), null, null);
+            trace(context, RefCntNode.asPointer(ptr, lib), null, null);
             return 0;
         }
 
@@ -3070,7 +3070,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
 
             PFrame.Reference ref = getCurrentFrameRef.execute(frame);
-            trace(context, asPointer(ptr, lib), ref, null);
+            trace(context, RefCntNode.asPointer(ptr, lib), ref, null);
             return 0;
         }
 
@@ -3087,19 +3087,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         static boolean traceCalls(PythonContext context) {
             return PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
-        }
-
-        static Object asPointer(Object ptr, InteropLibrary lib) {
-            // The first branch should avoid materialization of pointer objects.
-            if (lib.isPointer(ptr)) {
-                try {
-                    return lib.asPointer(ptr);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw new IllegalStateException();
-                }
-            }
-            return ptr;
         }
 
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
