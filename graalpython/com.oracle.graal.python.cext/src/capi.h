@@ -120,17 +120,22 @@ int PyTruffle_Trace_Memory() {
 
 /* upcall functions for calling into Python */
 void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
-extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
+extern PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
+extern PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
-extern PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
+extern PyObject*(*PY_TRUFFLE_CEXT_LANDING_BORROWED)(void* name, ...);
+extern PyObject*(*PY_TRUFFLE_CEXT_LANDING_NEWREF)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
 /* Call function with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_O(__recv__, __name__, ...) PY_TRUFFLE_LANDING((__recv__), __name__, ##__VA_ARGS__)
+#define UPCALL_O(__recv__, __name__, ...) PY_TRUFFLE_LANDING_NEWREF((__recv__), __name__, ##__VA_ARGS__)
+
+/* Call function with return type 'PyObject *'; does polyglot cast and error handling */
+#define UPCALL_BORROWED(__recv__, __name__, ...) PY_TRUFFLE_LANDING_BORROWED((__recv__), __name__, ##__VA_ARGS__)
 
 /* Call function with a primitive return; no polyglot cast but error handling */
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), __name__, ##__VA_ARGS__))
@@ -148,13 +153,16 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_PTR(__recv__, __name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_LANDING_PTR((__recv__), __name__, ##__VA_ARGS__)))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING_NEWREF(__name__, ##__VA_ARGS__)
+
+/* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
+#define UPCALL_CEXT_BORROWED(__name__, ...) PY_TRUFFLE_CEXT_LANDING_BORROWED(__name__, ##__VA_ARGS__)
 
 /* Call void function of 'python_cext' module; no polyglot cast and no error handling */
-#define UPCALL_CEXT_VOID(__name__, ...) ((void)PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_VOID(__name__, ...) ((void)PY_TRUFFLE_CEXT_LANDING_BORROWED(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'PyObject*'; no polyglot cast but error handling */
-#define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
+#define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING_BORROWED(__name__, ##__VA_ARGS__)
 
 /* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
 #define UPCALL_CEXT_PTR(__name__, ...) (polyglot_ensure_ptr(PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__)))

@@ -46,11 +46,13 @@ void *Py_NoValue;
 
 void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 
-PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
 void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
-PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
+PyObject*(*PY_TRUFFLE_CEXT_LANDING_BORROWED)(void* name, ...);
+PyObject*(*PY_TRUFFLE_CEXT_LANDING_NEWREF)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
@@ -69,11 +71,13 @@ static void initialize_upcall_functions() {
 
     pytruffle_decorate_function = ((void*(*)(void *fun0, void* fun1))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Decorate_Function", SRC_CS)));
 
-    PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
+    PY_TRUFFLE_LANDING_BORROWED = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_Borrowed", SRC_CS)));
+    PY_TRUFFLE_LANDING_NEWREF = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_NewRef", SRC_CS)));
     PY_TRUFFLE_LANDING_L = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
     PY_TRUFFLE_LANDING_D = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
     PY_TRUFFLE_LANDING_PTR = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)));
-    PY_TRUFFLE_CEXT_LANDING = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_BORROWED = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_Borrowed", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_NEWREF = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_NewRef", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_L = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_D = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_PTR = ((void*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));

@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
@@ -1845,9 +1846,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Upcall", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Upcall_Borrowed", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallNode extends UpcallLandingNode {
+    abstract static class UpcallBorrowedNode extends UpcallLandingNode {
 
         @Specialization
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -1857,6 +1858,26 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return toSulongNode.execute(upcallNode.execute(frame, args));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return toSulongNode.execute(getNativeNullNode.execute(cextModule));
+            }
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Upcall_NewRef", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class UpcallNewRefNode extends UpcallLandingNode {
+
+        @Specialization
+        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ObjectUpcallNode upcallNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached NewRefNode newRefNode) {
+            try {
+                return newRefNode.execute(toSulongNode.execute(upcallNode.execute(frame, args)));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return toSulongNode.execute(getNativeNullNode.execute(cextModule));
@@ -1918,9 +1939,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Cext_Upcall_Borrowed", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class UpcallCextNode extends UpcallLandingNode {
+    abstract static class UpcallCextBorrowedNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
         Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -1941,9 +1962,31 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_Cext_Upcall_NewRef", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    @ImportStatic(UpcallCextBorrowedNode.class)
+    abstract static class UpcallCextNewRefNode extends UpcallLandingNode {
+
+        @Specialization(guards = "isStringCallee(args)")
+        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached CExtNodes.CextUpcallNode upcallNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
+            return newRefNode.execute(toSulongNode.execute(upcallNode.execute(frame, cextModule, args)));
+        }
+
+        @Specialization(guards = "!isStringCallee(args)")
+        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached CExtNodes.DirectUpcallNode upcallNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
+            return newRefNode.execute(toSulongNode.execute(upcallNode.execute(frame, args)));
+        }
+    }
+
     @Builtin(name = "PyTruffle_Cext_Upcall_d", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @ImportStatic(UpcallCextNode.class)
+    @ImportStatic(UpcallCextBorrowedNode.class)
     abstract static class UpcallCextDNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
@@ -1963,7 +2006,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Cext_Upcall_l", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @ImportStatic(UpcallCextNode.class)
+    @ImportStatic(UpcallCextBorrowedNode.class)
     abstract static class UpcallCextLNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
@@ -1995,7 +2038,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Cext_Upcall_ptr", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    @ImportStatic(UpcallCextNode.class)
+    @ImportStatic(UpcallCextBorrowedNode.class)
     abstract static class UpcallCextPtrNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
