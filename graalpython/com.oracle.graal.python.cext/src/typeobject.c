@@ -140,6 +140,12 @@ find_signature(const char *name, const char *doc)
     return doc;
 }
 
+typedef void (*trace_type_fun_t)(PyTypeObject* type, void* type_name);
+UPCALL_TYPED_ID(PyTruffle_Trace_Type, trace_type_fun_t);
+static void pytruffle_trace_type(PyTypeObject* type) {
+    _jls_PyTruffle_Trace_Type(type, type->tp_name != NULL ? polyglot_from_string(type->tp_name, SRC_CS) : NULL);
+}
+
 #define SIGNATURE_END_MARKER         ")\n--\n\n"
 #define SIGNATURE_END_MARKER_LENGTH  6
 /*
@@ -357,6 +363,11 @@ int PyType_Ready(PyTypeObject* cls) {
         return 0;
     }
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READYING;
+
+    /* Types are often just static mem; so register them to be able to rule out invalid accesses.  */
+    if(PyTruffle_Trace_Memory()) {
+        pytruffle_trace_type(cls);
+    }
 
     /* IMPORTANT: This is a Truffle-specific statement. Since the refcnt for the type is currently 0 and
        we will create several references to this object that will be collected during the execution of

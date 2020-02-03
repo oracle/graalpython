@@ -108,5 +108,9 @@ int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size) {
 
 int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr) {
 	// 0 = success, -2 = disabled
-    return 0;
+    if(PyTruffle_Trace_Memory()) {
+        (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Trace_Free", (int64_t)ptr);
+        return 0;
+    }
+    return -2;
 }

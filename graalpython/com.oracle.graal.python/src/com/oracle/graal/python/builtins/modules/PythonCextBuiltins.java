@@ -2528,7 +2528,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doIt(PythonNativeObject self, String className) {
-            PythonLanguage.getLogger().fine(() -> String.format("Computing MRO for native type %s (ptr = %s)", className, self.getPtr()));
             PythonAbstractClass[] doSlowPath = TypeNodes.ComputeMroNode.doSlowPath(PythonNativeClass.cast(self));
             return factory().createTuple(new MroSequenceStorage(className, doSlowPath));
         }
@@ -3202,6 +3201,33 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     context.getCApiContext().traceFree(ptr, ref, null);
                 }
             }
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Trace_Type", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleTraceType extends PythonBinaryBuiltinNode {
+
+        @Specialization(limit = "3")
+        int trace(Object ptr, Object classNameObj,
+                        @CachedLibrary("ptr") InteropLibrary ptrLib,
+                        @CachedLibrary("classNameObj") InteropLibrary nameLib) {
+            final String className;
+            if (nameLib.isString(classNameObj)) {
+                try {
+                    className = nameLib.asString(classNameObj);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException();
+                }
+            } else {
+                className = null;
+            }
+            PythonContext context = getContext();
+            Object primitivePtr = RefCntNode.asPointer(ptr, ptrLib);
+            context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
+            PythonLanguage.getLogger().fine(() -> String.format("Initializing native type %s (ptr = %s)", className, primitivePtr));
             return 0;
         }
     }

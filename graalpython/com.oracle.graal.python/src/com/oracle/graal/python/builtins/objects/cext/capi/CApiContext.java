@@ -43,8 +43,10 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.graalvm.collections.Pair;
@@ -60,7 +62,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class CApiContext extends CExtContext {
@@ -68,6 +72,9 @@ public final class CApiContext extends CExtContext {
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private final LinkedList<Object> stack = new LinkedList<>();
     private Map<Object, Pair<PFrame.Reference, String>> allocatedNativeMemory;
+
+    /** Container of pointers that have seen to be free'd. */
+    private Map<Object, Pair<PFrame.Reference, String>> freedNativeMemory;
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -132,8 +139,14 @@ public final class CApiContext extends CExtContext {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
-        Object value = allocatedNativeMemory.remove(ptr);
-        if (value == null) {
+        if (freedNativeMemory == null) {
+            freedNativeMemory = new HashMap<>();
+        }
+        Object allocatedValue = allocatedNativeMemory.remove(ptr);
+        Object freedValue = freedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+        if (freedValue != null) {
+            PythonLanguage.getLogger().severe(String.format("freeing memory that was already free'd 0x%X (double-free)", ptr));
+        } else if (allocatedValue == null) {
             PythonLanguage.getLogger().severe(String.format("freeing non-allocated memory 0x%X (maybe a double-free?)", ptr));
         }
     }
@@ -144,7 +157,55 @@ public final class CApiContext extends CExtContext {
             allocatedNativeMemory = new HashMap<>();
         }
         Object value = allocatedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+        if (freedNativeMemory != null) {
+            freedNativeMemory.remove(ptr);
+        }
         assert value == null : "native memory allocator reserved same memory twice";
+    }
+
+    /**
+     * Use this method to register memory that is known to be allocated (i.e. static variables like
+     * types). This is basically the same as {@link #traceAlloc(Object, PFrame.Reference, String)}
+     * but does not consider it to be an error if the memory is already allocated.
+     */
+    @TruffleBoundary
+    public void traceStaticMemory(Object ptr, PFrame.Reference curFrame, String clazzName) {
+        if (allocatedNativeMemory == null) {
+            allocatedNativeMemory = new HashMap<>();
+        }
+        if (freedNativeMemory != null) {
+            freedNativeMemory.remove(ptr);
+        }
+        allocatedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+    }
+
+    @TruffleBoundary
+    public boolean isAllocated(Object ptr) {
+        if (freedNativeMemory != null && freedNativeMemory.containsKey(ptr)) {
+            assert !allocatedNativeMemory.containsKey(ptr);
+            return false;
+        }
+        return true;
+    }
+
+    public List<Integer> containsAddress(long l) {
+        int i = 0;
+        List<Integer> indx = new ArrayList<>();
+        InteropLibrary lib = InteropLibrary.getFactory().getUncached();
+        for (Object ref : stack) {
+            NativeObjectReference nor = (NativeObjectReference) ref;
+            Object obj = nor.object;
+
+            try {
+                if (lib.isPointer(obj) && lib.asPointer(obj) == l) {
+                    indx.add(i);
+                }
+            } catch (UnsupportedMessageException e) {
+                // ignore
+            }
+            i++;
+        }
+        return indx;
     }
 
 }
