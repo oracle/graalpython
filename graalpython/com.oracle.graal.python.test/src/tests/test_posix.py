@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,13 @@ class PosixTests(unittest.TestCase):
         with open(cwd+'/test.txt', 'r') as result:
             assert 'the_text' in result.readline()
         self.delete_file(new_file_path, cwd)
+
+    def test_path_respecialization(self):
+        # regression test for https://github.com/graalvm/graalpython/issues/124
+        from pathlib import PurePath
+        p = PurePath(".")
+        for path in [p, "."]:
+            os.scandir(path)
 
     def create_file(self):
         cwd = os.getcwd()

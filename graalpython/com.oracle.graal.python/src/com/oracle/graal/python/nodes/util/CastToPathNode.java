@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -63,7 +64,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 /**
  * Converts a Python object to a Path string
  */
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic({SpecialMethodNames.class, PGuards.class})
 public abstract class CastToPathNode extends Node {
     private static final String ERROR_MESSAGE = "path should be string, bytes or os.PathLike, not %p";
 
@@ -108,7 +109,7 @@ public abstract class CastToPathNode extends Node {
         return x.getValue();
     }
 
-    @Specialization
+    @Specialization(guards = {"!isString(object)", "!isBytes(object)", "!isMemoryView(object)"})
     String doObject(VirtualFrame frame, Object object,
                     @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                     @Cached PRaiseNode raise,
