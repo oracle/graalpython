@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,28 +40,72 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ABSOLUTE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_AND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_BOOL;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_DIVMOD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_FLOAT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_FLOOR_DIVIDE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_AND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_FLOOR_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_LSHIFT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_OR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_POWER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_RSHIFT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_SUBTRACT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_XOR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INVERT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_LSHIFT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_NEGATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_OR;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POSITIVE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POWER;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_REMAINDER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_RSHIFT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_SUBTRACT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_XOR;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ILSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INVERT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IPOW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IRSHIFT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IXOR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -92,31 +136,75 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
     @CompilationFinal(dimensions = 1) private static final String[] NUMBER_METHODS = new String[]{
+                    NB_ABSOLUTE,
                     NB_ADD,
-                    NB_SUBTRACT,
-                    NB_REMAINDER,
                     NB_AND,
-                    NB_INDEX,
-                    NB_POW,
-                    NB_TRUE_DIVIDE,
+                    NB_BOOL,
+                    NB_DIVMOD,
+                    NB_FLOAT,
                     NB_FLOOR_DIVIDE,
-                    NB_MULTIPLY,
+                    NB_INDEX,
                     NB_INPLACE_ADD,
-                    NB_INPLACE_MULTIPLY
+                    NB_INPLACE_AND,
+                    NB_INPLACE_FLOOR_DIVIDE,
+                    NB_INPLACE_LSHIFT,
+                    NB_INPLACE_MULTIPLY,
+                    NB_INPLACE_OR,
+                    NB_INPLACE_POWER,
+                    NB_INPLACE_REMAINDER,
+                    NB_INPLACE_RSHIFT,
+                    NB_INPLACE_SUBTRACT,
+                    NB_INPLACE_TRUE_DIVIDE,
+                    NB_INPLACE_XOR,
+                    NB_INT,
+                    NB_INVERT,
+                    NB_LSHIFT,
+                    NB_MULTIPLY,
+                    NB_NEGATIVE,
+                    NB_OR,
+                    NB_POSITIVE,
+                    NB_POWER,
+                    NB_REMAINDER,
+                    NB_RSHIFT,
+                    NB_SUBTRACT,
+                    NB_TRUE_DIVIDE,
+                    NB_XOR,
     };
 
     @CompilationFinal(dimensions = 1) private static final String[] NUMBER_METHODS_MAPPING = new String[]{
+                    __ABS__,
                     __ADD__,
-                    __SUB__,
-                    __MOD__,
                     __AND__,
-                    __INDEX__,
-                    __POW__,
-                    __TRUEDIV__,
+                    __BOOL__,
+                    __DIVMOD__,
+                    __FLOAT__,
                     __FLOORDIV__,
-                    __MUL__,
+                    __INDEX__,
                     __IADD__,
-                    __IMUL__
+                    __IAND__,
+                    __IFLOORDIV__,
+                    __ILSHIFT__,
+                    __IMUL__,
+                    __IOR__,
+                    __IPOW__,
+                    __IMOD__,
+                    __IRSHIFT__,
+                    __ISUB__,
+                    __ITRUEDIV__,
+                    __IXOR__,
+                    __INT__,
+                    __INVERT__,
+                    __LSHIFT__,
+                    __MUL__,
+                    __NEG__,
+                    __OR__,
+                    __POS__,
+                    __POW__,
+                    __MOD__,
+                    __RSHIFT__,
+                    __SUB__,
+                    __TRUEDIV__,
+                    __XOR__
     };
 
     public PyNumberMethodsWrapper(PythonManagedClass delegate) {
