@@ -89,7 +89,8 @@ def _init_posix():
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
     g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
-    g['AR'] = "ar"
+    g['AR'] = sys.__graal_get_toolchain_path('AR')
+    g['RANLIB'] = sys.__graal_get_toolchain_path('RANLIB')
     g['ARFLAGS'] = "rc"
     g['EXE'] = ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
@@ -171,9 +172,11 @@ def customize_compiler(compiler):
                 _osx_support.customize_compiler(_config_vars)
                 _config_vars['CUSTOMIZED_OSX_COMPILER'] = 'True'
 
-        (cc, cxx, opt, cflags, ccshared, ldshared, shlib_suffix, ar, ar_flags) = \
+        # TRUFFLE CHANGE BEGIN: added 'ranlib'
+        (cc, cxx, opt, cflags, ccshared, ldshared, shlib_suffix, ar, ar_flags, ranlib) = \
             get_config_vars('CC', 'CXX', 'OPT', 'CFLAGS',
-                            'CCSHARED', 'LDSHARED', 'SHLIB_SUFFIX', 'AR', 'ARFLAGS')
+                            'CCSHARED', 'LDSHARED', 'SHLIB_SUFFIX', 'AR', 'ARFLAGS', 'RANLIB')
+        # TRUFFLE CHANGE END
 
         if 'CC' in os.environ:
             newcc = os.environ['CC']
@@ -207,6 +210,13 @@ def customize_compiler(compiler):
             archiver = ar + ' ' + os.environ['ARFLAGS']
         else:
             archiver = ar + ' ' + ar_flags
+        # TRUFFLE CHANGE BEGIN: added 'ranlib'
+        if compiler.executables['ranlib']:
+            if 'RANLIB' in os.environ:
+                ranlib = os.environ['RANLIB']
+        else:
+            ranlib = None
+        # TRUFFLE CHANGE END
 
         cc_cmd = cc + ' ' + cflags
         compiler.set_executables(
@@ -216,6 +226,11 @@ def customize_compiler(compiler):
             compiler_cxx=cxx,
             linker_so=ldshared,
             linker_exe=cc,
-            archiver=archiver)
+            archiver=archiver,
+            # TRUFFLE CHANGE BEGIN: added 'ranlib'
+            # Note: it will only be !=None if compiler already had a default indicating that it needs ranlib
+            ranlib=ranlib
+            # TRUFFLE CHANGE END
+            )
 
         compiler.shared_lib_extension = shlib_suffix
