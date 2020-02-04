@@ -80,7 +80,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -108,7 +107,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         private static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.ItemIndexNode itemIndexNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         public abstract int execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3, Object arg4);
@@ -137,74 +136,47 @@ public class TupleBuiltins extends PythonBuiltins {
             return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
         }
 
-        private int findIndex(VirtualFrame frame, PTuple tuple, Object value, int start, int end,
-                        PythonObjectLibrary valueLib, PythonObjectLibrary otherLib) {
-            SequenceStorage tupleStore = tuple.getSequenceStorage();
-            int len = tupleStore.length();
-            for (int i = start; i < end && i < len; i++) {
-                Object object = getGetItemNode().execute(frame, tupleStore, i);
-                if (valueLib.equals(object, value, otherLib)) {
-                    return i;
-                }
+        private int findIndex(VirtualFrame frame, SequenceStorage s, Object value, int start, int end) {
+            int idx = getItemIndexNode().execute(frame, s, value, start, end);
+            if (idx != -1) {
+                return idx;
             }
             throw raise(PythonErrorType.ValueError, "tuple.index(x): x not in tuple");
         }
 
-        private SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
-            }
-            return getItemNode;
+        @Specialization
+        int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return findIndex(frame, self.getSequenceStorage(), value, 0, getLength(self));
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, 0, getLength(self), valueLib, otherLib);
+        int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), getLength(self));
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), valueLib, otherLib);
+        int index(VirtualFrame frame, PTuple self, Object value, long start, long end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, long end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
+        int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), getLength(self));
         }
 
         @Specialization
-        int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), valueLib, otherLib);
+        int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
-        int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
+        int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
-        int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
-        }
-
-        @Specialization
-        int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end,
-                        @Shared("valueLib") @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherLib) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), valueLib, otherLib);
+        int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
@@ -270,6 +242,14 @@ public class TupleBuiltins extends PythonBuiltins {
 
         protected IndexNode createIndexNode() {
             return TupleBuiltinsFactory.IndexNodeFactory.create(new ReadArgumentNode[0]);
+        }
+
+        private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
+            if (itemIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                itemIndexNode = insert(SequenceStorageNodes.ItemIndexNode.create());
+            }
+            return itemIndexNode;
         }
 
     }
