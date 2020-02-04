@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,17 +105,39 @@ public final class NativeMemberNames {
     public static final String MD_DICT = "md_dict";
     public static final String BUF_DELEGATE = "buf_delegate";
     public static final String BUF_READONLY = "readonly";
+    public static final String NB_ABSOLUTE = "nb_absolute";
     public static final String NB_ADD = "nb_add";
-    public static final String NB_SUBTRACT = "nb_subtract";
-    public static final String NB_REMAINDER = "nb_remainder";
     public static final String NB_AND = "nb_and";
-    public static final String NB_INDEX = "nb_index";
-    public static final String NB_POW = "nb_power";
-    public static final String NB_TRUE_DIVIDE = "nb_true_divide";
+    public static final String NB_BOOL = "nb_bool";
+    public static final String NB_DIVMOD = "nb_divmod";
+    public static final String NB_FLOAT = "nb_float";
     public static final String NB_FLOOR_DIVIDE = "nb_floor_divide";
-    public static final String NB_MULTIPLY = "nb_multiply";
+    public static final String NB_INDEX = "nb_index";
     public static final String NB_INPLACE_ADD = "nb_inplace_add";
+    public static final String NB_INPLACE_AND = "nb_inplace_and";
+    public static final String NB_INPLACE_FLOOR_DIVIDE = "nb_inplace_floor_divide";
+    public static final String NB_INPLACE_LSHIFT = "nb_inplace_lshift";
     public static final String NB_INPLACE_MULTIPLY = "nb_inplace_multiply";
+    public static final String NB_INPLACE_OR = "nb_inplace_or";
+    public static final String NB_INPLACE_POWER = "nb_inplace_power";
+    public static final String NB_INPLACE_REMAINDER = "nb_inplace_remainder";
+    public static final String NB_INPLACE_RSHIFT = "nb_inplace_rshift";
+    public static final String NB_INPLACE_SUBTRACT = "nb_inplace_subtract";
+    public static final String NB_INPLACE_TRUE_DIVIDE = "nb_inplace_true_divide";
+    public static final String NB_INPLACE_XOR = "nb_inplace_xor";
+    public static final String NB_INT = "nb_int";
+    public static final String NB_INVERT = "nb_invert";
+    public static final String NB_LSHIFT = "nb_lshift";
+    public static final String NB_MULTIPLY = "nb_multiply";
+    public static final String NB_NEGATIVE = "nb_negative";
+    public static final String NB_OR = "nb_or";
+    public static final String NB_POSITIVE = "nb_positive";
+    public static final String NB_POWER = "nb_power";
+    public static final String NB_REMAINDER = "nb_remainder";
+    public static final String NB_RSHIFT = "nb_rshift";
+    public static final String NB_SUBTRACT = "nb_subtract";
+    public static final String NB_TRUE_DIVIDE = "nb_true_divide";
+    public static final String NB_XOR = "nb_xor";
     public static final String MP_LENGTH = "mp_length";
     public static final String MP_SUBSCRIPT = "mp_subscript";
     public static final String MP_ASS_SUBSCRIPT = "mp_ass_subscript";
