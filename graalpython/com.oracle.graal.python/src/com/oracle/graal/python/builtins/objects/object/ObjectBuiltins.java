@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -102,6 +103,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -118,7 +120,6 @@ public class ObjectBuiltins extends PythonBuiltins {
     abstract static class ClassNode extends PythonBinaryBuiltinNode {
         @Child private LookupAttributeInMRONode lookupSlotsInSelf;
         @Child private LookupAttributeInMRONode lookupSlotsInOther;
-        @Child private BinaryComparisonNode slotsAreEqual;
         @Child private TypeNodes.GetNameNode getTypeNameNode;
 
         private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
@@ -142,6 +143,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary slotsLib,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch,
                         @Cached("create()") BranchProfile errorSlotsBranch,
@@ -158,21 +160,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object selfSlots = getLookupSlotsInSelf().execute(lazyClass);
             if (selfSlots != PNone.NO_VALUE) {
                 Object otherSlots = getLookupSlotsInOther().execute(value);
-                if (otherSlots == PNone.NO_VALUE || !getSlotsAreEqual().executeBool(frame, selfSlots, otherSlots)) {
+                if (otherSlots == PNone.NO_VALUE || !slotsLib.equals(selfSlots, otherSlots, slotsLib)) {
                     errorSlotsBranch.enter();
                     throw raise(TypeError, "__class__ assignment: '%s' object layout differs from '%s'", getTypeName(value), getTypeName(lazyClass));
                 }
             }
             lib.setLazyPythonClass(self, value);
             return PNone.NONE;
-        }
-
-        private BinaryComparisonNode getSlotsAreEqual() {
-            if (slotsAreEqual == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                slotsAreEqual = insert(BinaryComparisonNode.create(__EQ__, null, "=="));
-            }
-            return slotsAreEqual;
         }
 
         private LookupAttributeInMRONode getLookupSlotsInSelf() {
@@ -591,6 +585,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
+        @CompilationFinal private boolean seenNonBoolean = false;
 
         protected BinaryComparisonNode createOp(String op) {
             return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
@@ -599,8 +594,19 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
         boolean richcmp(VirtualFrame frame, Object left, Object right, @SuppressWarnings("unused") String op,
                         @SuppressWarnings("unused") @Cached("op") String cachedOp,
-                        @Cached("createOp(op)") BinaryComparisonNode node) {
-            return node.executeBool(frame, left, right);
+                        @Cached("createOp(op)") BinaryComparisonNode node,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode) {
+            if (!seenNonBoolean) {
+                try {
+                    return node.executeBool(frame, left, right);
+                } catch (UnexpectedResultException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    seenNonBoolean = true;
+                    return castToBooleanNode.executeBoolean(frame, e.getResult());
+                }
+            } else {
+                return castToBooleanNode.executeBoolean(frame, node.executeWith(frame, left, right));
+            }
         }
     }
 

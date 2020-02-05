@@ -1227,6 +1227,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     public abstract static class MinMaxNode extends PythonBuiltinNode {
 
+        @CompilationFinal private boolean seenNonBoolean = false;
+
         protected final BinaryComparisonNode createComparison() {
             if (this instanceof MaxNode) {
                 return BinaryComparisonNode.create(SpecialMethodNames.__GT__, SpecialMethodNames.__LT__, ">");
@@ -1240,9 +1242,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached("create()") IsBuiltinClassProfile errorProfile1,
                         @Cached("create()") IsBuiltinClassProfile errorProfile2) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, getIterator, next, compare, null, errorProfile1, errorProfile2);
+            return minmaxSequenceWithKey(frame, arg1, args, null, getIterator, next, compare, castToBooleanNode, null, errorProfile1, errorProfile2);
         }
 
         @Specialization(guards = "args.length == 0")
@@ -1250,6 +1253,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
+                        @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached("create()") CallNode keyCall,
                         @Cached("create()") IsBuiltinClassProfile errorProfile1,
                         @Cached("create()") IsBuiltinClassProfile errorProfile2) {
@@ -1271,7 +1275,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     break;
                 }
                 Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-                if (compare.executeBool(frame, nextKey, currentKey)) {
+                boolean isTrue;
+                if (!seenNonBoolean) {
+                    try {
+                        isTrue = compare.executeBool(frame, nextKey, currentKey);
+                    } catch (UnexpectedResultException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        seenNonBoolean = true;
+                        isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                    }
+                } else {
+                    isTrue = castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey));
+                }
+                if (isTrue) {
                     currentKey = nextKey;
                     currentValue = nextValue;
                 }
@@ -1297,7 +1313,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object currentKey = applyKeyFunction(frame, keywordArg, keyCall, currentValue);
             Object nextValue = args[0];
             Object nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-            if (castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey))) {
+            boolean isTrue;
+            try {
+                isTrue = compare.executeBool(frame, nextKey, currentKey);
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenNonBoolean = true;
+                isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+            }
+            if (isTrue) {
                 currentKey = nextKey;
                 currentValue = nextValue;
             }
@@ -1305,7 +1329,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 for (int i = 0; i < args.length; i++) {
                     nextValue = args[i];
                     nextKey = applyKeyFunction(frame, keywordArg, keyCall, nextValue);
-                    if (compare.executeBool(frame, nextKey, currentKey)) {
+                    if (!seenNonBoolean) {
+                        try {
+                            isTrue = compare.executeBool(frame, nextKey, currentKey);
+                        } catch (UnexpectedResultException e) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            seenNonBoolean = true;
+                            isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
+                        }
+                    } else {
+                        isTrue = castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey));
+                    }
+                    if (isTrue) {
                         currentKey = nextKey;
                         currentValue = nextValue;
                     }

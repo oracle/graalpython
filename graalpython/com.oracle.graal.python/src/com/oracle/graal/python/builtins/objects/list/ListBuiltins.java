@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -706,16 +705,17 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "5")
         long count(VirtualFrame frame, PList self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary otherLib) {
             long count = 0;
             SequenceStorage s = self.getSequenceStorage();
             for (int i = 0; i < lenNode.execute(s); i++) {
                 Object object = getItemNode.execute(frame, s, i);
-                if (eqNode.executeBool(frame, object, value)) {
+                if (valueLib.equals(value, object, otherLib)) {
                     count++;
                 }
             }

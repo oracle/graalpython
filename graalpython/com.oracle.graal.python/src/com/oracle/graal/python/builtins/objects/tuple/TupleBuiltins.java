@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -108,7 +107,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         private static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.ItemIndexNode itemIndexNode;
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         public abstract int execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3, Object arg4);
@@ -137,66 +136,47 @@ public class TupleBuiltins extends PythonBuiltins {
             return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
         }
 
-        private int findIndex(VirtualFrame frame, PTuple tuple, Object value, int start, int end, BinaryComparisonNode eqNode) {
-            SequenceStorage tupleStore = tuple.getSequenceStorage();
-            int len = tupleStore.length();
-            for (int i = start; i < end && i < len; i++) {
-                Object object = getGetItemNode().execute(frame, tupleStore, i);
-                if (eqNode.executeBool(frame, object, value)) {
-                    return i;
-                }
+        private int findIndex(VirtualFrame frame, SequenceStorage s, Object value, int start, int end) {
+            int idx = getItemIndexNode().execute(frame, s, value, start, end);
+            if (idx != -1) {
+                return idx;
             }
             throw raise(PythonErrorType.ValueError, "tuple.index(x): x not in tuple");
         }
 
-        private SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
-            }
-            return getItemNode;
+        @Specialization
+        int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return findIndex(frame, self.getSequenceStorage(), value, 0, getLength(self));
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, 0, getLength(self), eqNode);
+        int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), getLength(self));
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), eqNode);
+        int index(VirtualFrame frame, PTuple self, Object value, long start, long end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), getLength(self));
         }
 
         @Specialization
-        int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), getLength(self), eqNode);
+        int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
-        int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
-        int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
-        }
-
-        @Specialization
-        int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(frame, self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end) {
+            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
         }
 
         @Specialization
@@ -264,21 +244,30 @@ public class TupleBuiltins extends PythonBuiltins {
             return TupleBuiltinsFactory.IndexNodeFactory.create(new ReadArgumentNode[0]);
         }
 
+        private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
+            if (itemIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                itemIndexNode = insert(SequenceStorageNodes.ItemIndexNode.create());
+            }
+            return itemIndexNode;
+        }
+
     }
 
     @Builtin(name = "count", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "5")
         long count(VirtualFrame frame, PTuple self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+                        @CachedLibrary("value") PythonObjectLibrary valueLib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary otherLib) {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object object = getItemNode.execute(frame, tupleStore, i);
-                if (eqNode.executeBool(frame, object, value)) {
+                if (valueLib.equals(value, object, otherLib)) {
                     count++;
                 }
             }

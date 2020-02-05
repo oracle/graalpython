@@ -41,9 +41,9 @@
 package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -51,8 +51,10 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ContainsNode extends BinaryOpNode {
@@ -69,67 +71,72 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBoolean(VirtualFrame frame, Object iter, boolean item) throws UnexpectedResultException {
+    boolean doBoolean(VirtualFrame frame, Object iter, boolean item,
+                    @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
             Object iterator = getGetIterator().executeWith(frame, iter);
-            return sequenceContains(frame, iterator, item);
+            return sequenceContains(frame, iterator, item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doInt(VirtualFrame frame, Object iter, int item) throws UnexpectedResultException {
+    boolean doInt(VirtualFrame frame, Object iter, int item,
+                    @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item);
+            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLong(VirtualFrame frame, Object iter, long item) throws UnexpectedResultException {
+    boolean doLong(VirtualFrame frame, Object iter, long item,
+                    @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item);
+            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDouble(VirtualFrame frame, Object iter, double item) throws UnexpectedResultException {
+    boolean doDouble(VirtualFrame frame, Object iter, double item,
+                    @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item);
+            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization
-    boolean doGeneric(VirtualFrame frame, Object iter, Object item) {
+    boolean doGeneric(VirtualFrame frame, Object iter, Object item,
+                    @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContainsObject(frame, getGetIterator().executeWith(frame, iter), item);
+            return sequenceContainsObject(frame, getGetIterator().executeWith(frame, iter), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
-    private void handleUnexpectedResult(VirtualFrame frame, Object iterator, Object item, UnexpectedResultException e) throws UnexpectedResultException {
+    private void handleUnexpectedResult(VirtualFrame frame, Object iterator, Object item, UnexpectedResultException e, PythonObjectLibrary lib) throws UnexpectedResultException {
         // If we got an unexpected (non-primitive) result from the iterator, we need to compare it
         // and continue iterating with "next" through the generic case. However, we also want the
         // specialization to go away, so we wrap the boolean result in a new
         // UnexpectedResultException. This will cause the DSL to disable the specialization with the
         // primitive value and return the result we got, without iterating again.
         Object result = e.getResult();
-        if (getEqNode().executeBool(frame, result, item)) {
+        if (lib.equals(result, item, lib)) {
             result = true;
         } else {
-            result = sequenceContainsObject(frame, iterator, item);
+            result = sequenceContainsObject(frame, iterator, item, lib);
         }
         throw new UnexpectedResultException(result);
     }
 
-    private boolean sequenceContains(VirtualFrame frame, Object iterator, boolean item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, boolean item, PythonObjectLibrary lib) throws UnexpectedResultException {
         while (true) {
             try {
                 if (getNext().executeBoolean(frame, iterator) == item) {
@@ -139,12 +146,12 @@ public abstract class ContainsNode extends BinaryOpNode {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(frame, iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e, lib);
             }
         }
     }
 
-    private boolean sequenceContains(VirtualFrame frame, Object iterator, int item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, int item, PythonObjectLibrary lib) throws UnexpectedResultException {
         while (true) {
             try {
                 if (getNext().executeInt(frame, iterator) == item) {
@@ -154,12 +161,12 @@ public abstract class ContainsNode extends BinaryOpNode {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(frame, iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e, lib);
             }
         }
     }
 
-    private boolean sequenceContains(VirtualFrame frame, Object iterator, long item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, long item, PythonObjectLibrary lib) throws UnexpectedResultException {
         while (true) {
             try {
                 if (getNext().executeLong(frame, iterator) == item) {
@@ -169,12 +176,12 @@ public abstract class ContainsNode extends BinaryOpNode {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(frame, iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e, lib);
             }
         }
     }
 
-    private boolean sequenceContains(VirtualFrame frame, Object iterator, double item) throws UnexpectedResultException {
+    private boolean sequenceContains(VirtualFrame frame, Object iterator, double item, PythonObjectLibrary lib) throws UnexpectedResultException {
         while (true) {
             try {
                 if (getNext().executeDouble(frame, iterator) == item) {
@@ -184,15 +191,15 @@ public abstract class ContainsNode extends BinaryOpNode {
                 e.expectStopIteration(getErrorProfile());
                 return false;
             } catch (UnexpectedResultException e) {
-                handleUnexpectedResult(frame, iterator, item, e);
+                handleUnexpectedResult(frame, iterator, item, e, lib);
             }
         }
     }
 
-    private boolean sequenceContainsObject(VirtualFrame frame, Object iterator, Object item) {
+    private boolean sequenceContainsObject(VirtualFrame frame, Object iterator, Object item, PythonObjectLibrary lib) {
         while (true) {
             try {
-                if (getEqNode().executeBool(frame, getNext().execute(frame, iterator), item)) {
+                if (lib.equals(getNext().execute(frame, iterator), item, lib)) {
                     return true;
                 }
             } catch (PException e) {
@@ -200,14 +207,6 @@ public abstract class ContainsNode extends BinaryOpNode {
                 return false;
             }
         }
-    }
-
-    private BinaryComparisonNode getEqNode() {
-        if (eqNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            eqNode = insert(BinaryComparisonNode.create(__EQ__, __EQ__, "=="));
-        }
-        return eqNode;
     }
 
     private IsBuiltinClassProfile getErrorProfile() {
