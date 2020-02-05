@@ -49,7 +49,7 @@ PyObject* PyList_New(Py_ssize_t size) {
 
 UPCALL_ID(PyList_GetItem);
 PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
-    return UPCALL_CEXT_O(_jls_PyList_GetItem, native_to_java(op), i);
+    return UPCALL_CEXT_BORROWED(_jls_PyList_GetItem, native_to_java(op), i);
 }
 
 UPCALL_TYPED_ID(PyList_SetItem, setitem_fun_t);

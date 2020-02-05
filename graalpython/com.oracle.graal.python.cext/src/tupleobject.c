@@ -62,7 +62,7 @@ int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
 
 UPCALL_ID(PyTuple_GetItem);
 PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return UPCALL_CEXT_O(_jls_PyTuple_GetItem, native_to_java(tuple), position);
+    return UPCALL_CEXT_BORROWED(_jls_PyTuple_GetItem, native_to_java(tuple), position);
 }
 
 UPCALL_ID(PyTuple_Size);
