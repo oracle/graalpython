@@ -64,6 +64,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import org.graalvm.collections.Pair;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -3188,13 +3190,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleTraceFree extends PythonUnaryBuiltinNode {
         @Specialization
-        static int doNativeWrapper(long ptr,
+        static int doNativeWrapper(VirtualFrame frame, long ptr,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
             TruffleLogger logger = PythonLanguage.getLogger();
             boolean isLoggable = logger.isLoggable(Level.FINE);
             boolean traceNativeMemory = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
+            boolean traceNativeMemoryCalls = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
             if (isLoggable || traceNativeMemory) {
                 if (isLoggable) {
                     PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: 0x%X", ptr));
@@ -3204,7 +3207,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
                         ref = getCurrentFrameRef.execute(null);
                     }
-                    context.getCApiContext().traceFree(ptr, ref, null);
+                    Pair<Reference, String> allocLocation = context.getCApiContext().traceFree(ptr, ref, null);
+                    if (traceNativeMemoryCalls) {
+                        Reference left = allocLocation.getLeft();
+                        PFrame pyFrame = null;
+                        while (pyFrame == null && left != null) {
+                            pyFrame = left.getPyFrame();
+                            left = left.getCallerInfo();
+                        }
+                        if (pyFrame != null) {
+                            final PFrame f = pyFrame;
+                            PythonLanguage.getLogger().fine(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                        }
+                    }
                 }
             }
             return 0;
