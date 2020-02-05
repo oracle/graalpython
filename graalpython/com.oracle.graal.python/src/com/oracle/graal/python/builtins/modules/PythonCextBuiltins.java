@@ -2432,12 +2432,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private BuiltinConstructors.FloatNode floatNode;
 
         @Specialization(guards = "object.isDouble()")
-        Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object;
         }
 
         @Specialization(guards = "!object.isDouble()")
-        Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
+        static Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @Cached CExtNodes.ToSulongNode primitiveToSulongNode) {
             return primitiveToSulongNode.execute((double) object.getLong());
         }
@@ -2445,21 +2445,23 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(rewriteOn = PException.class)
         Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, Object object,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
             if (floatNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
             }
-            return toSulongNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
+            return newRefNode.execute(toSulongNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object))));
         }
 
         @Specialization(replaces = "doGeneric")
         Object doGenericErr(VirtualFrame frame, Object module, Object object,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
             try {
-                return doGeneric(frame, module, object, toSulongNode, asPythonObjectNode);
+                return doGeneric(frame, module, object, toSulongNode, asPythonObjectNode, newRefNode);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute(module);
@@ -2829,7 +2831,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyObjectCallNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = {"argsLib.isNull(argsObj)", "kwargsLib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
-        Object doNoArgsAndNoKeywords(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+        static Object doNoArgsAndNoKeywords(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
                         @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
                         @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
                         @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
@@ -2839,10 +2841,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached NewRefNode newRefNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
-                return toSulongNode.execute(callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS));
+                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS)));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
@@ -2850,7 +2853,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!argsLib.isNull(argsObj)", "kwargsLib.isNull(kwargsObj) || isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
-        Object doNoKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+        static Object doNoKeywords(VirtualFrame frame, Object callableObj, Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
                         @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
                         @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
                         @Cached ExecutePositionalStarargsNode expandArgsNode,
@@ -2862,11 +2865,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached NewRefNode newRefNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
-                return toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
+                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS)));
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -2875,7 +2879,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"argsLib.isNull(argsObj)", "!kwargsLib.isNull(kwargsObj)", "!isEmptyDict(kwargsToJavaNode, lenNode, kwargsObj)"}, limit = "3")
-        Object doNoArgs(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
+        static Object doNoArgs(VirtualFrame frame, Object callableObj, @SuppressWarnings("unused") Object argsObj, @SuppressWarnings("unused") Object kwargsObj,
                         @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
                         @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode,
@@ -2886,11 +2890,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached NewRefNode newRefNode) {
             try {
                 PKeyword[] keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
                 Object callable = callableToJavaNode.execute(callableObj);
-                return toSulongNode.execute(callNode.execute(frame, callable, new Object[0], keywords));
+                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, new Object[0], keywords)));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
@@ -2898,7 +2903,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doNoArgsAndNoKeywords", "doNoKeywords", "doNoArgs"}, limit = "3")
-        Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
+        static Object doGeneric(VirtualFrame frame, Object callableObj, Object argsObj, Object kwargsObj,
                         @CachedLibrary("argsObj") @SuppressWarnings("unused") InteropLibrary argsLib,
                         @CachedLibrary("kwargsObj") @SuppressWarnings("unused") InteropLibrary kwargsLib,
                         @Cached ExecutePositionalStarargsNode expandArgsNode,
@@ -2912,7 +2917,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached NewRefNode newRefNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args;
@@ -2931,7 +2937,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 } else {
                     keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
                 }
-                return toSulongNode.execute(callNode.execute(frame, callable, args, keywords));
+                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, args, keywords)));
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
