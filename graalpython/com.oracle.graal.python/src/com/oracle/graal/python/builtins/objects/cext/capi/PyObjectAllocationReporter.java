@@ -101,6 +101,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
                 PFrame.Reference ref = null;
                 if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
                     ref = getCurrentFrameRef.execute(null);
+                    ref.markAsEscaped();
                 }
                 context.getCApiContext().traceAlloc(arguments[0], ref, null);
             }
