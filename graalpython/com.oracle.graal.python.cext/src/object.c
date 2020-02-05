@@ -201,6 +201,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
         if (strlen(fmt) == 1) {
+            Py_XINCREF(singleArg);
             PyTuple_SetItem(args, 0, singleArg);
         }
     }
@@ -220,6 +221,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
         if (strlen(fmt) == 1) {
+            Py_XINCREF(singleArg);
             PyTuple_SetItem(args, 0, singleArg);
         }
     }
@@ -231,7 +233,9 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
     PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
     for (int i = 1; i < polyglot_get_arg_count() - 1; i++) {
-        PyTuple_SetItem(args, i - 1, polyglot_get_arg(i));
+        PyObject* arg = (PyObject*) polyglot_get_arg(i);
+        Py_XINCREF(arg);
+        PyTuple_SetItem(args, i - 1, arg);
     }
     return PyObject_CallObject(callable, args);
 }
@@ -269,8 +273,11 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
 PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t nargs, PyObject *kwargs) {
 	PyObject* targs = PyTuple_New(nargs);
 	Py_ssize_t i;
+	PyObject* arg;
 	for(i=0; i < nargs; i++) {
-		PyTuple_SetItem(targs, i, args[i]);
+	    arg = args[i];
+	    Py_XINCREF(arg);
+		PyTuple_SetItem(targs, i, arg);
 	}
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java_slim(func), native_to_java_slim(targs), native_to_java_slim(kwargs));
 }
