@@ -2450,21 +2450,27 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "!isNativeWrapper(object)")
+        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
         static Object doNativeObject(String fun, Object object,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callIncRefNode,
                         @Cached GetEngineFlagNode getTraceMemFlagNode,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            Object ptrVal = asPointer(object, lib);
-            if (context.getCApiContext() != null) {
-                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory) && !context.getCApiContext().isAllocated(ptrVal)) {
-                    PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + asHex(ptrVal));
+                        @CachedLibrary("object") InteropLibrary lib) {
+            if (!lib.isNull(object) && context.getCApiContext() != null) {
+                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
+                    checkAccess(object, lib, context);
                 }
                 CompilerAsserts.partialEvaluationConstant(fun);
                 callIncRefNode.call(fun, object);
             }
             return object;
+        }
+
+        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
+            Object ptrVal = asPointer(object, lib);
+            if (!context.getCApiContext().isAllocated(ptrVal)) {
+                PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + asHex(ptrVal));
+            }
         }
 
         public static Object asPointer(Object ptr, InteropLibrary lib) {
