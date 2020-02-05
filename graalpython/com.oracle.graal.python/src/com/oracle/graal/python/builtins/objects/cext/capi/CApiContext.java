@@ -49,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -135,20 +136,21 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public void traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public Pair<PFrame.Reference, String> traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
         if (freedNativeMemory == null) {
             freedNativeMemory = new HashMap<>();
         }
-        Object allocatedValue = allocatedNativeMemory.remove(ptr);
-        Object freedValue = freedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+        Pair<PFrame.Reference, String> allocatedValue = allocatedNativeMemory.remove(ptr);
+        Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
         if (freedValue != null) {
             PythonLanguage.getLogger().severe(String.format("freeing memory that was already free'd 0x%X (double-free)", ptr));
         } else if (allocatedValue == null) {
             PythonLanguage.getLogger().severe(String.format("freeing non-allocated memory 0x%X (maybe a double-free?)", ptr));
         }
+        return allocatedValue;
     }
 
     @TruffleBoundary
