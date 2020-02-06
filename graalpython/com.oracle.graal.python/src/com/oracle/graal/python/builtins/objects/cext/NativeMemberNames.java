@@ -142,6 +142,7 @@ public final class NativeMemberNames {
     public static final String MP_SUBSCRIPT = "mp_subscript";
     public static final String MP_ASS_SUBSCRIPT = "mp_ass_subscript";
     public static final String OB_FVAL = "ob_fval";
+    public static final String OB_DIGIT = "ob_digit";
     public static final String START = "start";
     public static final String STOP = "stop";
     public static final String STEP = "step";

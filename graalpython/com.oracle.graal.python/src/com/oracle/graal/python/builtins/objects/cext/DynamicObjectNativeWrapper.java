@@ -601,14 +601,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(o);
         }
 
-        @Specialization(guards = "eq(OB_SIZE, key)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "eq(OB_SIZE, key)")
         long doObSize(Object object, @SuppressWarnings("unused") String key,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                return lib.length(object);
-            } catch (PException e) {
-                return -1;
-            }
+                        @Cached ObSizeNode obSizeNode) {
+            return obSizeNode.execute(object);
         }
 
         @Specialization(guards = "eq(MA_USED, key)", limit = "getCallSiteInlineCacheMaxDepth()")
@@ -646,6 +642,21 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object, 4);
+        }
+
+        @Specialization(guards = "eq(OB_DIGIT, key)")
+        Object doObDigit(int object, @SuppressWarnings("unused") String key) {
+            return new PyLongDigitsWrapper(object);
+        }
+
+        @Specialization(guards = "eq(OB_DIGIT, key)")
+        Object doObDigit(long object, @SuppressWarnings("unused") String key) {
+            return new PyLongDigitsWrapper(object);
+        }
+
+        @Specialization(guards = "eq(OB_DIGIT, key)")
+        Object doObDigit(PInt object, @SuppressWarnings("unused") String key) {
+            return new PyLongDigitsWrapper(object);
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
@@ -1518,5 +1529,45 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     protected Object getNativeType(
                     @Cached PGetDynamicTypeNode getDynamicTypeNode) {
         return getDynamicTypeNode.execute(this);
+    }
+
+    /**
+     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
+     * any PyVarObject usually returns the number of contained elements.
+     */
+    @GenerateUncached
+    @ImportStatic(PythonOptions.class)
+    abstract static class ObSizeNode extends Node {
+
+        public abstract long execute(Object object);
+
+        @Specialization
+        static long doInteger(@SuppressWarnings("unused") int object) {
+            return 1;
+        }
+
+        @Specialization
+        static long doLong(@SuppressWarnings("unused") long object) {
+            return 2;
+        }
+
+        @Specialization
+        static long doPInt(PInt object) {
+            return object.bitCount() / 32;
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static long doOther(Object object,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            try {
+                return lib.length(object);
+            } catch (PException e) {
+                return -1;
+            }
+        }
+
+        static boolean isFallback(Object object) {
+            return !(object instanceof PInt);
+        }
     }
 }

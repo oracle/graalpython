@@ -368,6 +368,15 @@ public final class PInt extends PythonBuiltinObject {
         return value.byteValueExact();
     }
 
+    public byte[] toByteArray() {
+        return toByteArray(value);
+    }
+
+    @TruffleBoundary
+    private static byte[] toByteArray(BigInteger delegate) {
+        return delegate.toByteArray();
+    }
+
     public static boolean isIntRange(long val) {
         return val == (int) val;
     }
