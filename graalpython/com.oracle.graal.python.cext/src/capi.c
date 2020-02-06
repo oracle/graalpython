@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -171,6 +171,7 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
+POLYGLOT_DECLARE_TYPE(uint32_t);
 
 static void initialize_globals() {
     // register native NULL
@@ -320,6 +321,11 @@ unsigned long get_tp_flags(PyTypeObject* obj) {
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
+}
+
+/** to be used from Java code only; returns the type ID for a uint32_t array */
+polyglot_typeid get_uint32_t_array_typeid(uint64_t len) {
+    return polyglot_array_typeid(polyglot_uint32_t_typeid(), len);
 }
 
 /** to be used from Java code only; returns the type ID for a 'PyObject*' array */
