@@ -554,3 +554,6 @@ if sys.implementation.name == "graalpython":
     # Truffle: import our overrides
     from distutils.sysconfig_graalpython import *
     from distutils.sysconfig_graalpython import _config_vars # needed by setuptools
+
+    # Truffle: we cannot provide the Makefile
+    del get_makefile_filename
