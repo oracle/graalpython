@@ -1455,7 +1455,7 @@ def initialize_datetime_capi():
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
     import_c_func("set_PyDateTime_typeids")(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
-    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
+    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", wrap_PyDateTime_CAPI(PyDateTime_CAPI()), None)
     datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize")()
     datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
     datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()

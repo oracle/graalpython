@@ -64,6 +64,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNodeGen;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.TruffleLanguage.Registration;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -3337,6 +3344,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(frame, e);
                 return toSulongNode.execute(getNativeNullNode.execute(module));
             }
+        }
+    }
+
+    @Builtin(name = "wrap_PyDateTime_CAPI", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class WrapPyDateTimeCAPI extends PythonBuiltinNode {
+        @Specialization
+        static Object doGeneric(Object object) {
+            return new PyDateTimeCAPIWrapper(object);
         }
     }
 }
