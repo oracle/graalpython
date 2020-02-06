@@ -83,6 +83,7 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     }
     for (int i = 0; i < n; i++) {
         PyObject *o = polyglot_get_arg(i+1);
+        Py_XINCREF(o);
         PyTuple_SetItem(result, i, o);
     }
     return result;
@@ -92,7 +93,9 @@ MUST_INLINE
 PyObject* PyTruffle_Tuple_Pack(int dummy, va_list vlist, void **argv, int argc) {
     PyObject *result = PyTuple_New(argc);
     for (int i = 0; i < argc; i++) {
-        PyTuple_SetItem(result, i, (PyObject*) argv[i]);
+        PyObject *o = (PyObject*) argv[i];
+        Py_XINCREF(o);
+        PyTuple_SetItem(result, i, o);
     }
     return result;
 }
