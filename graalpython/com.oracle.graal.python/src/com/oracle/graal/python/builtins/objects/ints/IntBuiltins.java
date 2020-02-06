@@ -347,6 +347,9 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPI(long left, PInt right) {
+            if (right.isZero()) {
+                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+            }
             return op(PInt.longToBigInteger(left), right.getValue());
         }
 
@@ -411,7 +414,10 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPL(PInt right, long left) {
-            return op(right.getValue(), PInt.longToBigInteger(left));
+           if (right.isZero()) {
+                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
+            }
+            return op(PInt.longToBigInteger(left), right.getValue());
         }
 
         @Specialization
