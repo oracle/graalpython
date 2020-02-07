@@ -414,7 +414,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         double doPL(PInt right, long left) {
-           if (right.isZero()) {
+            if (right.isZero()) {
                 throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
             }
             return op(PInt.longToBigInteger(left), right.getValue());
@@ -677,8 +677,8 @@ public class IntBuiltins extends PythonBuiltins {
                 // Some bits greater than 2^31 that might cause overflow
                 // Check the result using the divide operator
                 // and check for the special case of Long.MIN_VALUE * -1
-            if (((y != 0) && (r / y != x)) ||
-                (x == Long.MIN_VALUE && y == -1)) {
+                if (((y != 0) && (r / y != x)) ||
+                                (x == Long.MIN_VALUE && y == -1)) {
                     return factory().createInt(mul(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
                 }
             }
