@@ -226,25 +226,25 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     	case 'i':
     	case 'x':
     	case 'd':
-            SETARG(args, i, va_arg(vargs, int));
+            SETARG(args, i, PyLong_FromLong(va_arg(vargs, int)));
     		break;
     	case 'D':
-            SETARG(args, i, va_arg(vargs, long));
+            SETARG(args, i, PyLong_FromLong(va_arg(vargs, long)));
     		break;
     	case 'u':
-            SETARG(args, i, va_arg(vargs, unsigned int));
+            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned int)));
     		break;
     	case 'U':
-            SETARG(args, i, va_arg(vargs, unsigned long));
+            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned long)));
     		break;
     	case 't':
-            SETARG(args, i, va_arg(vargs, size_t));
+            SETARG(args, i, PyLong_FromSize_t(va_arg(vargs, size_t)));
             break;
     	case 's':
             SETARG(args, i, polyglot_from_string(va_arg(vargs, const char*), SRC_CS));
     		break;
     	case 'p':
-            SETARG(args, i, native_to_java(va_arg(vargs, void*)));
+            SETARG(args, i, PyLong_FromVoidPtr(va_arg(vargs, void*)));
     		break;
     	}
     }
