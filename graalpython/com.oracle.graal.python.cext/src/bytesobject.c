@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,7 +105,7 @@ PyObject * PyBytes_FromFormat(const char *format, ...) {
 
 
 UPCALL_ID(PyBytes_FromFormat);
-UPCALL_ID(PyTuple_SetItem);
+UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     /* Unfortunately, we need to know the expected types of the arguments before we can do an upcall. */
     char *s;
@@ -215,7 +215,7 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     }
 
 
-#define SETARG(__args, __i, __arg) UPCALL_CEXT_I(_jls_PyTuple_SetItem, native_to_java(__args), (__i), (__arg))
+#define SETARG(__args, __i, __arg) _jls_PyTuple_SetItem(native_to_java(__args), (__i), (__arg))
 
     // do actual conversion using one-character type specifiers
     int conversions = strlen(buffer);
