@@ -220,11 +220,11 @@ public abstract class PythonObjectFactory extends Node {
      * Primitive types
      */
     public PInt createInt(int value) {
-        return trace(new PInt(PythonBuiltinClassType.PInt, BigInteger.valueOf(value)));
+        return trace(new PInt(PythonBuiltinClassType.PInt, PInt.longToBigInteger(value)));
     }
 
     public PInt createInt(long value) {
-        return trace(new PInt(PythonBuiltinClassType.PInt, BigInteger.valueOf(value)));
+        return trace(new PInt(PythonBuiltinClassType.PInt, PInt.longToBigInteger(value)));
     }
 
     public PInt createInt(BigInteger value) {
@@ -232,11 +232,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public Object createInt(LazyPythonClass cls, int value) {
-        return trace(new PInt(cls, BigInteger.valueOf(value)));
+        return trace(new PInt(cls, PInt.longToBigInteger(value)));
     }
 
     public Object createInt(LazyPythonClass cls, long value) {
-        return trace(new PInt(cls, BigInteger.valueOf(value)));
+        return trace(new PInt(cls, PInt.longToBigInteger(value)));
     }
 
     public PInt createInt(LazyPythonClass cls, BigInteger value) {
