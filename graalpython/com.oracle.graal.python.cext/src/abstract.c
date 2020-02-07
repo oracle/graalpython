@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -340,9 +340,10 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
     return UPCALL_CEXT_O(_jls_PySequence_List, native_to_java(v));
 }
 
-UPCALL_ID(PyObject_GetItem);
+typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
+UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-    return UPCALL_CEXT_O(_jls_PyObject_GetItem, native_to_java(o), polyglot_from_string(key, SRC_CS));
+    return _jls_PyObject_GetItem(native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
 UPCALL_ID(PyMapping_Keys);
