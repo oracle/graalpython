@@ -74,7 +74,6 @@ public abstract class IsExpressionNode extends BinaryOpNode {
     }
 
     @GenerateUncached
-    @ImportStatic({PGuards.class})
     public abstract static class IsNode extends Node {
 
         public abstract boolean execute(Object left, Object right);
