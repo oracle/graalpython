@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -449,3 +449,44 @@ if sys.implementation.name == "graalpython":
             exec("from java.util.logging.Logger import *", globals=d, locals=d)
             assert "getGlobal" in d
             assert d["getGlobal"]().getName() == d["GLOBAL_LOGGER_NAME"]
+
+    def test_java_null_is_none():
+        import java.lang.Integer as Integer
+        x = Integer.getInteger("something_what_does_not_exists")
+        y = Integer.getInteger("something_what_does_not_exists2")
+        z = None
+
+        if sys.graal_python_jython_emulation_enabled:
+
+            assert x == None
+            assert (x != None) == False
+            assert x is None
+            assert (x is not None) == False
+                        
+            assert x == y
+            assert (x != y) == False
+            assert x is y
+            assert (x is not y) == False
+
+            assert x == z
+            assert (x != z) == False
+            assert x is z
+            assert (x is not z) == False
+
+        else:
+
+            assert x == None
+            assert (x != None) == False
+            assert (x is None) == False
+            assert x is not None
+
+            assert (x == y) == False
+            assert x != y
+            assert x is y
+            assert (x is not y) == False
+
+            assert x == z
+            assert (x != z) == False
+            assert (x is z) == False
+            assert x is not z
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,21 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -208,6 +213,22 @@ public abstract class IsExpressionNode extends BinaryOpNode {
                 return leftCt.getRootNode() == rightCt.getRootNode();
             }
             return left == right;
+        }
+
+        @Specialization
+        boolean doObjectPNone(Object left, PNone right,
+                        @Cached.Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            if (PythonOptions.getFlag(ctxt, PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
+                            right == PNone.NONE) {
+                return true;
+            }
+            return doGeneric(left, right);
+        }
+
+        @Specialization
+        boolean doPNoneObject(PNone left, Object right,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+            return doObjectPNone(right, left, ctxt);
         }
 
         @Fallback
