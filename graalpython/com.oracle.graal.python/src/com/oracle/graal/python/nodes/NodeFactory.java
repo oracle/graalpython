@@ -36,7 +36,6 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
-import com.oracle.graal.python.nodes.cell.WriteCellVarNode;
 import com.oracle.graal.python.nodes.cell.WriteLocalCellNode;
 import com.oracle.graal.python.nodes.classes.ReadClassAttributeNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
@@ -446,10 +445,6 @@ public class NodeFactory {
 
     public ExpressionNode createReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
         return ReadClassAttributeNode.create(identifier, cellSlot, isFreeVar);
-    }
-
-    public StatementNode createWriteCellVar(ExpressionNode readNode, FunctionRootNode funcRootNode, String identifier) {
-        return WriteCellVarNode.create(readNode, funcRootNode, identifier);
     }
 
     public ExpressionNode createReadLocalCell(FrameSlot slot, boolean isFreeVar) {

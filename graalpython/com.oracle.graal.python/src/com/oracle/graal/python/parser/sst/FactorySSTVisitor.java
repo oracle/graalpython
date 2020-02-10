@@ -43,6 +43,7 @@ package com.oracle.graal.python.parser.sst;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.TEMP_LOCAL_PREFIX;
@@ -388,7 +389,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         classBody.assignSourceSection(createSourceSection(classBodyStart, node.body.endOffset));
 
         delta = delta + (classScope.hasAnnotations() ? 1 : 0);
-        StatementNode[] classStatements = new StatementNode[2 + delta];
+        StatementNode[] classStatements = new StatementNode[3 + delta];
         // ClassStatemtns look like:
         // [0] ClassDefinitionPrologueNode
         classStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
@@ -401,8 +402,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (classScope.hasAnnotations()) {
             classStatements[delta] = scopeEnvironment.findVariable(__ANNOTATIONS__).makeWriteNode(nodeFactory.createDictLiteral());
         }
-        // [last] class body statements
+        // [last - 1] class body statements
         classStatements[1 + delta] = classBody;
+        // [last] assign __class__ cell to __classcell__
+        classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
+                        nodeFactory.createReadLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
         StatementNode body = nodeFactory.createBlock(classStatements);
@@ -439,11 +443,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
         ReadNode read = scopeEnvironment.findVariable(node.name);
 
-        ReadNode tempLocal = makeTempLocalVariable();
-        ExpressionNode newClass = ((ExpressionNode) tempLocal).withSideEffect(
-                        nodeFactory.createBlock(tempLocal.makeWriteNode(classDef),
-                                        nodeFactory.createWriteCellVar((ExpressionNode) tempLocal, classBodyRoot, __CLASS__)));
-        PNode result = read.makeWriteNode(newClass);
+        PNode result = read.makeWriteNode(classDef);
         result.assignSourceSection(nodeSourceSection);
         return result;
     }
