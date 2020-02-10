@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.UnionNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -89,6 +91,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -301,18 +305,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         protected boolean readUncached(VirtualFrame frame, HashingStorage storage, Object name,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                if (hasFrame.profile(frame != null)) {
-                    return lib.hasKeyWithState(storage, name, PArguments.getThreadState(frame));
-                } else {
-                    return lib.hasKey(storage, name);
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+            if (hasFrame.profile(frame != null)) {
+                return lib.hasKeyWithState(storage, name, PArguments.getThreadState(frame));
+            } else {
+                return lib.hasKey(storage, name);
             }
         }
 
@@ -345,13 +343,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         protected HashingStorage doGeneric(VirtualFrame frame, HashingStorage storage, Object key, Object value,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
+            if (hasFrame.profile(frame != null)) {
+                return lib.setItemWithState(storage, key, value, PArguments.getThreadState(frame));
+            } else {
                 return lib.setItem(storage, key, value);
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -370,18 +367,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, HashingStorage storage, Object key,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                if (hasFrame.profile(frame != null)) {
-                    return lib.getItemWithState(storage, key, PArguments.getThreadState(frame));
-                } else {
-                    return lib.getItem(storage, key);
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+            if (hasFrame.profile(frame != null)) {
+                return lib.getItemWithState(storage, key, PArguments.getThreadState(frame));
+            } else {
+                return lib.getItem(storage, key);
             }
         }
     }
@@ -410,18 +401,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, HashingStorage self, HashingStorage other,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                if (hasFrame.profile(frame != null)) {
-                    return lib.equalsWithState(self, other, PArguments.getThreadState(frame));
-                } else {
-                    return lib.equals(self, other);
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+            if (hasFrame.profile(frame != null)) {
+                return lib.equalsWithState(self, other, PArguments.getThreadState(frame));
+            } else {
+                return lib.equals(self, other);
             }
         }
 
@@ -435,13 +420,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(selfStorage, other, PArguments.getThreadState(frame)) == 0;
+            } else {
                 return lib.compareKeys(selfStorage, other) == 0;
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -455,13 +439,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(selfStorage, other, PArguments.getThreadState(frame)) <= 0;
+            } else {
                 return lib.compareKeys(selfStorage, other) <= 0;
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -475,13 +458,12 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, HashingStorage selfStorage, HashingStorage other,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(other, selfStorage, PArguments.getThreadState(frame)) <= 0;
+            } else {
                 return lib.compareKeys(other, selfStorage) <= 0;
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
             }
         }
 
@@ -495,18 +477,22 @@ public abstract class HashingStorageNodes {
 
         @Specialization
         protected boolean doGeneric(VirtualFrame frame, PHashingCollection container, HashingStorage storage, Object key,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached BranchProfile updatedStorage,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                boolean hasKey; // TODO: FIXME: this might call __hash__ twice
-                if (hasFrame.profile(frame != null)) {
-                    hasKey = lib.hasKeyWithState(storage, key, PArguments.getThreadState(frame));
-                } else {
-                    hasKey = lib.hasKey(storage, key);
+            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
+            if (hasFrame.profile(frame != null)) {
+                ThreadState state = PArguments.getThreadState(frame);
+                hasKey = lib.hasKeyWithState(storage, key, state);
+                if (hasKey) {
+                    HashingStorage newStore = lib.delItemWithState(storage, key, state);
+                    if (newStore != storage) {
+                        updatedStorage.enter();
+                        container.setDictStorage(newStore);
+                    }
                 }
+            } else {
+                hasKey = lib.hasKey(storage, key);
                 if (hasKey) {
                     HashingStorage newStore = lib.delItem(storage, key);
                     if (newStore != storage) {
@@ -514,10 +500,8 @@ public abstract class HashingStorageNodes {
                         container.setDictStorage(newStore);
                     }
                 }
-                return hasKey;
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
             }
+            return hasKey;
         }
 
         public static DelItemNode create() {

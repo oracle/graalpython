@@ -146,22 +146,22 @@ public final class DynamicObjectStorage extends HashingStorage {
     public static class GetItemWithState {
         @Specialization
         static Object string(DynamicObjectStorage self, String key, ThreadState state,
-                        @Shared("readNodeGetItem") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            Object result = readNode.execute(self.store, key);
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey) {
+            Object result = readKey.execute(self.store, key);
             return result == PNone.NO_VALUE ? null : result;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(DynamicObjectStorage self, PString key, ThreadState state,
-                        @Shared("readNodeGetItem") @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), state, readNode);
+            return string(self, key.getValue(), state, readKey);
         }
 
         @Specialization(guards = {"cachedShape == self.store.getShape()", "!isBuiltinString(key, profile)"}, limit = "1")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         static Object notString(DynamicObjectStorage self, Object key, ThreadState state,
-                        @Shared("readNodeGetItem") @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "cachedShape.getKeyList().toArray()", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
@@ -174,12 +174,12 @@ public final class DynamicObjectStorage extends HashingStorage {
                     if (gotState.profile(state != null)) {
                         long keyHash = lib.hashWithState(currentKey, state);
                         if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                            return string(self, (String) currentKey, state, readNode);
+                            return string(self, (String) currentKey, state, readKey);
                         }
                     } else {
                         long keyHash = lib.hash(currentKey);
                         if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                            return string(self, (String) currentKey, null, readNode);
+                            return string(self, (String) currentKey, null, readKey);
                         }
                     }
                 }
@@ -189,7 +189,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "!isBuiltinString(key, profile)", replaces = "notString", limit = "1")
         static Object notStringLoop(DynamicObjectStorage self, Object key, ThreadState state,
-                        @Shared("readNodeGetItem") @Cached ReadAttributeFromDynamicObjectNode readNode,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
@@ -202,12 +202,12 @@ public final class DynamicObjectStorage extends HashingStorage {
                     if (gotState.profile(state != null)) {
                         keyHash = lib.hashWithState(currentKey, state);
                         if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                            return string(self, (String) currentKey, state, readNode);
+                            return string(self, (String) currentKey, state, readKey);
                         }
                     } else {
                         keyHash = lib.hash(currentKey);
                         if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                            return string(self, (String) currentKey, null, readNode);
+                            return string(self, (String) currentKey, null, readKey);
                         }
                     }
                 }

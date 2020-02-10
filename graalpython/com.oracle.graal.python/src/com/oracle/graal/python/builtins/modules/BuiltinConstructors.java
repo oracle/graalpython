@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -2267,7 +2268,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
-        @Child private HashingStorageNodes.GetItemNode getDictItemNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
@@ -2287,6 +2287,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object type(VirtualFrame frame, LazyPythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached GetLazyClassNode getMetaclassNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached HashingStorageNodes.GetItemNode getClasscellNode,
@@ -2322,7 +2323,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(frame, globals);
+                        String moduleName = getModuleNameFromGlobals(frame, globals, hlib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2346,12 +2347,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private String getModuleNameFromGlobals(VirtualFrame frame, PythonObject globals) {
+        private String getModuleNameFromGlobals(VirtualFrame frame, PythonObject globals, HashingStorageLibrary hlib) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
             } else if (globals instanceof PDict) {
-                nameAttr = ensureGetDictItemNode().execute(frame, ((PDict) globals).getDictStorage(), __NAME__);
+                nameAttr = hlib.getItem(((PDict) globals).getDictStorage(), __NAME__);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("invalid globals object");
@@ -2688,14 +2689,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
             return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
-        }
-
-        private HashingStorageNodes.GetItemNode ensureGetDictItemNode() {
-            if (getDictItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getDictItemNode;
         }
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {

@@ -146,14 +146,22 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public boolean equalsWithState(HashingStorage other, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         if (this == other) {
             return true;
-        } else if (lib.lengthWithState(this, state) == lib.length(other)) {
-            return lib.compareEntriesWithState(this, other, state) == 0;
-        } else {
-            return false;
         }
+        if (gotState.profile(state != null)) {
+            if (lib.lengthWithState(this, state) == lib.lengthWithState(other, state)) {
+                return lib.compareEntriesWithState(this, other, state) == 0;
+            }
+        } else {
+            if (lib.length(this) == lib.length(other)) {
+                return lib.compareEntries(this, other) == 0;
+            }
+        }
+        return false;
+
     }
 
     @GenerateUncached
@@ -225,12 +233,19 @@ public abstract class HashingStorage {
     @ExportMessage
     public int compareEntriesWithState(HashingStorage other, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Cached TestKeyValueEqual testNode) {
+                    @Cached TestKeyValueEqual testNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         if (this == other) {
             return 0;
         }
-        int otherLen = lib.lengthWithState(other, state);
-        int selfLen = lib.lengthWithState(this, state);
+        int otherLen, selfLen;
+        if (gotState.profile(state != null)) {
+            otherLen = lib.lengthWithState(other, state);
+            selfLen = lib.lengthWithState(this, state);
+        } else {
+            otherLen = lib.length(other);
+            selfLen = lib.length(this);
+        }
         if (selfLen > otherLen) {
             return 1;
         }

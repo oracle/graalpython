@@ -94,7 +94,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -1617,24 +1617,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
-        @Child private HashingStorageNodes.GetItemNode getSysModuleNode;
         @Child private ReadAttributeFromObjectNode getBreakpointhookNode;
         @Child private CallNode callNode;
 
         @Specialization
-        public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs) {
+        public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs,
+                        @CachedLibrary("getContext().getSysModules().getDictStorage()") HashingStorageLibrary hlib) {
             if (getDebuggerSessionCount() > 0) {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
             } else if (getContext().isInitialized()) {
                 if (callNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getSysModuleNode = insert(HashingStorageNodes.GetItemNode.create());
                     getBreakpointhookNode = insert(ReadAttributeFromObjectNode.create());
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = getSysModuleNode.execute(frame, sysModules.getDictStorage(), "sys");
+                Object sysModule = hlib.getItem(sysModules.getDictStorage(), "sys");
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");

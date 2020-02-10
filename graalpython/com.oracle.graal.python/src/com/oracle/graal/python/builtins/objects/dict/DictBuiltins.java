@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -77,6 +78,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -245,37 +248,48 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Child private HashingStorageNodes.GetItemNode getItemNode;
 
-        @Specialization(guards = "!isNoValue(defaultValue)")
-        public Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue) {
-            final Object value = getGetItemNode().execute(frame, self.getDictStorage(), key);
+        @Specialization(guards = "!isNoValue(defaultValue)", limit = "1")
+        public Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
+                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+            final Object value;
+            if (profile.profile(frame != null)) {
+                value = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
+            } else {
+                value = hlib.getItem(self.getDictStorage(), key);
+            }
             return value != null ? value : defaultValue;
         }
 
-        @Specialization
-        public Object doNoDefault(VirtualFrame frame, PDict self, Object key, @SuppressWarnings("unused") PNone defaultValue) {
-            final Object value = getGetItemNode().execute(frame, self.getDictStorage(), key);
-            return value != null ? value : PNone.NONE;
-        }
-
-        private HashingStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
+        @Specialization(limit = "1")
+        public Object doNoDefault(VirtualFrame frame, PDict self, Object key, @SuppressWarnings("unused") PNone defaultValue,
+                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile) {
+            final Object value;
+            if (profile.profile(frame != null)) {
+                value = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
+            } else {
+                value = hlib.getItem(self.getDictStorage(), key);
             }
-            return getItemNode;
+            return value != null ? value : PNone.NONE;
         }
     }
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         Object getItem(VirtualFrame frame, PDict self, Object key,
-                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
+                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Cached("create(__MISSING__)") LookupAndCallBinaryNode specialNode) {
-            final Object result = getItemNode.execute(frame, self.getDictStorage(), key);
+            final Object result;
+            if (profile.profile(frame != null)) {
+                result = hlib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
+            } else {
+                result = hlib.getItem(self.getDictStorage(), key);
+            }
             if (result == null) {
                 return specialNode.executeObject(frame, self, key);
             }

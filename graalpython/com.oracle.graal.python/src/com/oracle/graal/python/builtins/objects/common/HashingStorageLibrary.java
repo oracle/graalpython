@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
@@ -185,9 +185,7 @@ public abstract class HashingStorageLibrary extends Library {
      *
      * @return the return value of the last call to {@link InjectIntoNode#execute}
      */
-    public HashingStorage[] injectInto(HashingStorage self, HashingStorage[] firstValue, InjectIntoNode node) {
-        throw new AbstractMethodError("HashingStorageLibrary.injectInto");
-    }
+    public abstract HashingStorage[] injectInto(HashingStorage self, HashingStorage[] firstValue, InjectIntoNode node);
 
     /**
      * Stores all key-value pairs from {@code self} into {@code other}, replacing key-value pairs
@@ -199,9 +197,7 @@ public abstract class HashingStorageLibrary extends Library {
      * @return the new store to use for {@code other} from now on, the previous {@code other} has
      *         become invalid.
      */
-    public HashingStorage addAllToOther(HashingStorage self, HashingStorage other) {
-        throw new AbstractMethodError("HashingStorageLibrary.addAllToOther");
-    }
+    public abstract HashingStorage addAllToOther(HashingStorage self, HashingStorage other);
 
     /**
      * @return an empty store to use from now on, {@code self} has become invalid.
@@ -211,9 +207,7 @@ public abstract class HashingStorageLibrary extends Library {
     /**
      * @return a copy of this store, potentially with a different storage.
      */
-    public HashingStorage copy(HashingStorage self) {
-        throw new AbstractMethodError("HashingStorageLibrary.copy");
-    }
+    public abstract HashingStorage copy(HashingStorage self);
 
     /**
      * @return {@code true} if the key-value pairs are equal between these storages.
@@ -255,37 +249,39 @@ public abstract class HashingStorageLibrary extends Library {
      *         {@code 1} if neither.
      */
     public int compareEntriesWithState(HashingStorage self, HashingStorage other, ThreadState state) {
-        throw new AbstractMethodError("HashingStorageLibrary.compareEntriesWithState");
+        if (state == null) {
+            throw new AbstractMethodError("HashingStorageLibrary.compareKeysWithState");
+        }
+        return compareEntries(self, other);
+    }
+
+    /**
+     * @see #compareEntriesWithState(HashingStorage, HashingStorage, ThreadState)
+     */
+    public int compareEntries(HashingStorage self, HashingStorage other) {
+        return compareEntriesWithState(self, other, null);
     }
 
     /**
      * @return the intersection of the two storages, keeping the values from {@code other}.
      */
-    public HashingStorage intersect(HashingStorage self, HashingStorage other) {
-        throw new AbstractMethodError("HashingStorageLibrary.intersect");
-    }
+    public abstract HashingStorage intersect(HashingStorage self, HashingStorage other);
 
     /**
      * @return the xor of the two storages.
      */
-    public HashingStorage xor(HashingStorage self, HashingStorage other) {
-        throw new AbstractMethodError("HashingStorageLibrary.xor");
-    }
+    public abstract HashingStorage xor(HashingStorage self, HashingStorage other);
 
     /**
      * @return the union of the two storages, by keys, keeping the values from {@code other} in case
      *         of conflicts.
      */
-    public HashingStorage union(HashingStorage self, HashingStorage other) {
-        throw new AbstractMethodError("HashingStorageLibrary.union");
-    }
+    public abstract HashingStorage union(HashingStorage self, HashingStorage other);
 
     /**
      * @return the a storage with all keys of {@code self} that are not also in {@code other}
      */
-    public HashingStorage diff(HashingStorage self, HashingStorage other) {
-        throw new AbstractMethodError("HashingStorageLibrary.diff");
-    }
+    public abstract HashingStorage diff(HashingStorage self, HashingStorage other);
 
     /**
      * This method can be used to iterate over the keys of a store. Due to the nature of Java
@@ -294,9 +290,7 @@ public abstract class HashingStorageLibrary extends Library {
      *
      * @return an iterator over the keys in this store.
      */
-    public Iterator<Object> keys(HashingStorage self) {
-        throw new AbstractMethodError("HashingStorageLibrary.keys");
-    }
+    public abstract Iterator<Object> keys(HashingStorage self);
 
     /**
      * This method can be used to iterate over the values of a store. Due to the nature of Java

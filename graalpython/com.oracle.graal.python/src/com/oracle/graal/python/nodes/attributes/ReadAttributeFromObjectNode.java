@@ -103,18 +103,6 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
 
-    private static Object readDirectlyFromBuiltinDict(PHashingCollection dict, String key,
-                    HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    HashingStorageNodes.GetItemNode getItemNode) {
-        // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItemNode.execute(null, getDictStorage.execute(dict), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
-
     protected static boolean isBuiltinDict(PHashingCollection globals, IsBuiltinClassProfile profile) {
         return globals instanceof PDict && profile.profileObject(globals, PythonBuiltinClassType.PDict);
     }
@@ -140,9 +128,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                     @Cached("getStorage(object, cachedDict)") HashingStorage cachedStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @Cached HashingStorageNodes.GetItemNode getItemNode) {
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         // note that we don't need to pass the state here - string keys are hashable by definition
-        Object value = getItemNode.execute(null, cachedStorage, key);
+        Object value = hlib.getItem(cachedStorage, key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -164,8 +152,17 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @Cached HashingStorageNodes.GetItemNode getItemNode) {
-        return readDirectlyFromBuiltinDict(cachedDict, key, getDictStorage, getItemNode);
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        Object value = hlib.getItem(getDictStorage.execute(cachedDict), key);
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
+    }
+
+    protected HashingStorage getDictStorage(PythonObject object, PythonObjectLibrary lib) {
+        return lib.getDict(object) != null ? lib.getDict(object).getDictStorage() : null;
     }
 
     // read from a builtin dict
@@ -175,8 +172,13 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
-        return readDirectlyFromBuiltinDict(lib.getDict(object), key, getDictStorage, getItemNode);
+                    @CachedLibrary("getDictStorage(object, lib)") HashingStorageLibrary hlib) {
+        Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);
+        if (value == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return value;
+        }
     }
 
     // read from the Dict
