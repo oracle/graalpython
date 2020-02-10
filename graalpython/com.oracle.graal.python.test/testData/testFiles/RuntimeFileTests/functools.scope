@@ -1,6 +1,6 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [<>temp2, <>temp0, <>temp1]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: singledispatch
@@ -250,7 +250,7 @@ Scope: []
             FreeVars: [__class__]
     Scope: cmp_to_key
         Kind: Function
-        FrameDescriptor: [mycmp, <>temp2, K, <return_val>]
+        FrameDescriptor: [mycmp, K, <return_val>]
         CellVars: [mycmp]
         FreeVars: Empty
         Scope: K

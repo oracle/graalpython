@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [<return_val>, DerivedClassName, <>temp1]
+        FrameDescriptor: [<return_val>, DerivedClassName]
         CellVars: Empty
         FreeVars: Empty
         Scope: DerivedClassName

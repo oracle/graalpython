@@ -10,7 +10,7 @@ Scope: []
         FreeVars: Empty
         Scope: get_nested_class
             Kind: Function
-            FrameDescriptor: [Test, <>temp2, method_and_var, <return_val>]
+            FrameDescriptor: [Test, method_and_var, <return_val>]
             CellVars: [method_and_var]
             FreeVars: Empty
             Scope: Test

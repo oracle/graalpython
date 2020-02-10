@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 1 slots [<>temp0]
+  FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,33]`@class_decorator↵cla...`
     ExpressionWithSideEffect SourceSection: [0,33]`@class_decorator↵cla...`
@@ -13,57 +13,53 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
           Identifier: foo
           PythonCallNodeGen SourceSection: [0,16]`@class_decorator`
             CallNodeGen SourceSection: None
-            ExpressionWithSideEffects SourceSection: None
-              WriteLocalVariableNodeGen SourceSection: None
-                Identifier: <>temp0
-                WriteLocalFrameSlotNodeGen SourceSection: None
-                  Frame: [0,<>temp0,Illegal]
-                PythonCallNodeGen SourceSection: [17,33]`class foo():pass`
-                  CallNodeGen SourceSection: None
-                  FunctionDefinitionNode Name: foo SourceSection: None
-                    Arguments: None
-                    KwArguments: None
-                    Documentation: None
-                    FreeVarSlots: None
-                    ExecutionSlots:
-                      FreeVarsSlots: None
-                      CellVarsSlots: __class__, 
-                    ClassBodyRootNode SourceSection: [17,33]`class foo():pass`
-                      Name: foo
-                      Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                        Param Names: namespace
-                      CelVars: __class__
-                      FreeVars: None
-                      NeedsCellFrame: False
-                      FrameDescriptor: 1 slots [__class__]
-                      ExecutionSlots:
-                        FreeVarsSlots: None
-                        CellVarsSlots: __class__, 
-                      InnerRootNode SourceSection: [17,33]`class foo():pass`
-                        ReturnTargetNode SourceSection: [17,33]`class foo():pass`
-                          Body: BlockNode SourceSection: None
-                            ClassDefinitionPrologueNode SourceSection: None
-                              QualName: foo
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: __name__
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                              SetItemIfNotPresentNodeGen SourceSection: None
-                                SetItemNodeGen SourceSection: None
-                            FunctionBodyNode SourceSection: [29,33]`pass`
-                              ExpressionStatementNode SourceSection: [29,33]`pass`
-                                EmptyNode SourceSection: [29,33]`pass`
-                          Return Expresssion: ObjectLiteralNode SourceSection: None
-                  StringLiteralNode SourceSection: None
-                  GetCallAttributeNodeGen SourceSection: None
-                    BuiltinsLiteralNode SourceSection: None
-              WriteCellVarNodeGen SourceSection: None
-                ReadLocalVariableNode SourceSection: None
-                  Frame: [0,<>temp0,Illegal]
-                  ReadVariableFromFrameNodeGen SourceSection: None
-              ReadLocalVariableNode SourceSection: None
-                Frame: [0,<>temp0,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
+            PythonCallNodeGen SourceSection: [17,33]`class foo():pass`
+              CallNodeGen SourceSection: None
+              FunctionDefinitionNode Name: foo SourceSection: None
+                Arguments: None
+                KwArguments: None
+                Documentation: None
+                FreeVarSlots: None
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: __class__, 
+                ClassBodyRootNode SourceSection: [17,33]`class foo():pass`
+                  Name: foo
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                    Param Names: namespace
+                  CelVars: __class__
+                  FreeVars: None
+                  NeedsCellFrame: False
+                  FrameDescriptor: 1 slots [__class__]
+                  ExecutionSlots:
+                    FreeVarsSlots: None
+                    CellVarsSlots: __class__, 
+                  InnerRootNode SourceSection: [17,33]`class foo():pass`
+                    ReturnTargetNode SourceSection: [17,33]`class foo():pass`
+                      Body: BlockNode SourceSection: None
+                        ClassDefinitionPrologueNode SourceSection: None
+                          QualName: foo
+                          ReadGlobalOrBuiltinNodeGen SourceSection: None
+                            Identifier: __name__
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                          SetItemIfNotPresentNodeGen SourceSection: None
+                            SetItemNodeGen SourceSection: None
+                        FunctionBodyNode SourceSection: [29,33]`pass`
+                          ExpressionStatementNode SourceSection: [29,33]`pass`
+                            EmptyNode SourceSection: [29,33]`pass`
+                        SetItemNodeGen SourceSection: None
+                          ArgumentExpressionNode SourceSection: None
+                            ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
+                          StringLiteralNode SourceSection: None
+                          ReadLocalVariableNode SourceSection: None
+                            Frame: [0,__class__,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                      Return Expresssion: ObjectLiteralNode SourceSection: None
+              StringLiteralNode SourceSection: None
+              GetCallAttributeNodeGen SourceSection: None
+                BuiltinsLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [0,16]`@class_decorator`
               Identifier: class_decorator

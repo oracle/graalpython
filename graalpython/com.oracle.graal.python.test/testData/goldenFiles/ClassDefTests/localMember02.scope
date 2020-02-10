@@ -10,7 +10,7 @@ Scope: []
         FreeVars: Empty
         Scope: f
             Kind: Function
-            FrameDescriptor: [C, <>temp2, <return_val>, a_local_var_out]
+            FrameDescriptor: [C, <return_val>, a_local_var_out]
             CellVars: Empty
             FreeVars: [a_local_var_out]
             Scope: C

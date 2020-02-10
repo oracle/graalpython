@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 1 slots [<>temp0]
+  FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,36]`class Enum(metaclass...`
     ExpressionWithSideEffect SourceSection: [0,36]`class Enum(metaclass...`
@@ -11,62 +11,58 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
       SideEffect:
         WriteNameNodeGen SourceSection: [0,36]`class Enum(metaclass...`
           Identifier: Enum
-          ExpressionWithSideEffects SourceSection: None
-            WriteLocalVariableNodeGen SourceSection: None
-              Identifier: <>temp0
-              WriteLocalFrameSlotNodeGen SourceSection: None
-                Frame: [0,<>temp0,Illegal]
-              PythonCallNodeGen SourceSection: [0,36]`class Enum(metaclass...`
-                CallNodeGen SourceSection: None
-                FunctionDefinitionNode Name: Enum SourceSection: None
-                  Arguments: None
-                  KwArguments: None
-                  Documentation: None
-                  FreeVarSlots: None
-                  ExecutionSlots:
-                    FreeVarsSlots: None
-                    CellVarsSlots: __class__, 
-                  ClassBodyRootNode SourceSection: [0,36]`class Enum(metaclass...`
-                    Name: Enum
-                    Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                      Param Names: namespace
-                    CelVars: __class__
-                    FreeVars: None
-                    NeedsCellFrame: False
-                    FrameDescriptor: 1 slots [__class__]
-                    ExecutionSlots:
-                      FreeVarsSlots: None
-                      CellVarsSlots: __class__, 
-                    InnerRootNode SourceSection: [0,36]`class Enum(metaclass...`
-                      ReturnTargetNode SourceSection: [0,36]`class Enum(metaclass...`
-                        Body: BlockNode SourceSection: None
-                          ClassDefinitionPrologueNode SourceSection: None
-                            QualName: Enum
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: __name__
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                            SetItemIfNotPresentNodeGen SourceSection: None
-                              SetItemNodeGen SourceSection: None
-                          FunctionBodyNode SourceSection: [32,36]`pass`
-                            ExpressionStatementNode SourceSection: [32,36]`pass`
-                              EmptyNode SourceSection: [32,36]`pass`
-                        Return Expresssion: ObjectLiteralNode SourceSection: None
-                StringLiteralNode SourceSection: None
-                KeywordArgumentsNodeGen SourceSection: None
-                  KeywordLiteralNode SourceSection: None
-                    ReadNameNodeGen SourceSection: [21,29]`EnumMeta`
-                      Identifier: EnumMeta
-                  CompactKeywordsNodeGen SourceSection: None
-                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                    EmptyNode SourceSection: None
-                GetCallAttributeNodeGen SourceSection: None
-                  BuiltinsLiteralNode SourceSection: None
-            WriteCellVarNodeGen SourceSection: None
-              ReadLocalVariableNode SourceSection: None
-                Frame: [0,<>temp0,Illegal]
-                ReadVariableFromFrameNodeGen SourceSection: None
-            ReadLocalVariableNode SourceSection: None
-              Frame: [0,<>temp0,Illegal]
-              ReadVariableFromFrameNodeGen SourceSection: None
+          PythonCallNodeGen SourceSection: [0,36]`class Enum(metaclass...`
+            CallNodeGen SourceSection: None
+            FunctionDefinitionNode Name: Enum SourceSection: None
+              Arguments: None
+              KwArguments: None
+              Documentation: None
+              FreeVarSlots: None
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: __class__, 
+              ClassBodyRootNode SourceSection: [0,36]`class Enum(metaclass...`
+                Name: Enum
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                  Param Names: namespace
+                CelVars: __class__
+                FreeVars: None
+                NeedsCellFrame: False
+                FrameDescriptor: 1 slots [__class__]
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: __class__, 
+                InnerRootNode SourceSection: [0,36]`class Enum(metaclass...`
+                  ReturnTargetNode SourceSection: [0,36]`class Enum(metaclass...`
+                    Body: BlockNode SourceSection: None
+                      ClassDefinitionPrologueNode SourceSection: None
+                        QualName: Enum
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: __name__
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
+                        SetItemIfNotPresentNodeGen SourceSection: None
+                          SetItemNodeGen SourceSection: None
+                      FunctionBodyNode SourceSection: [32,36]`pass`
+                        ExpressionStatementNode SourceSection: [32,36]`pass`
+                          EmptyNode SourceSection: [32,36]`pass`
+                      SetItemNodeGen SourceSection: None
+                        ArgumentExpressionNode SourceSection: None
+                          ReadIndexedArgumentNodeGen SourceSection: None
+                            Index: 0
+                        StringLiteralNode SourceSection: None
+                        ReadLocalVariableNode SourceSection: None
+                          Frame: [0,__class__,Illegal]
+                          ReadVariableFromFrameNodeGen SourceSection: None
+                    Return Expresssion: ObjectLiteralNode SourceSection: None
+            StringLiteralNode SourceSection: None
+            KeywordArgumentsNodeGen SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [21,29]`EnumMeta`
+                  Identifier: EnumMeta
+              CompactKeywordsNodeGen SourceSection: None
+              ExecuteKeywordStarargsNodeGen SourceSection: None
+                EmptyNode SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None

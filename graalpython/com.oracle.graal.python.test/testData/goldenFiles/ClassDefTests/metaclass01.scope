@@ -1,11 +1,11 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [<>temp0]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: A
         Kind: Class
-        FrameDescriptor: [B, <>temp2, __class__]
+        FrameDescriptor: [B, __class__]
         CellVars: [__class__]
         FreeVars: Empty
         Scope: B

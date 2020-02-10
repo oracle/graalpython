@@ -1,6 +1,6 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [<>temp0]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: OrderedDict
