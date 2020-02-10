@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -287,9 +287,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Map<String, String> getenv = System.getenv();
         PDict environ = core.factory().createDict();
         for (Entry<String, String> entry : getenv.entrySet()) {
-            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(entry.getValue().getBytes()));
+            String value;
+            if ("__PYVENV_LAUNCHER__".equals(entry.getKey())) {
+                // On Mac, the CPython launcher uses this env variable to specify the real Python
+                // executable. It will be honored by packages like "site". So, if it is set, we
+                // overwrite it with our executable to ensure that subprocesses will use us.
+                value = PythonOptions.getOption(core.getContext(), PythonOptions.Executable);
+            } else {
+                value = entry.getValue();
+            }
+            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(value.getBytes()));
         }
-
         PythonModule posix = core.lookupBuiltinModule("posix");
         Object environAttr = posix.getAttribute("environ");
         ((PDict) environAttr).setDictStorage(environ.getDictStorage());
