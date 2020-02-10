@@ -217,7 +217,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         @Specialization
         boolean doObjectPNone(Object left, PNone right,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+                        @Cached.Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
             if (PythonOptions.getFlag(ctxt, PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
