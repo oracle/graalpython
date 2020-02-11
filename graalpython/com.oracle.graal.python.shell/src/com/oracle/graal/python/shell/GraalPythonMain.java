@@ -35,12 +35,11 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-
-import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
 import org.graalvm.nativeimage.ImageInfo;
@@ -54,6 +53,8 @@ import org.graalvm.polyglot.PolyglotException.StackFrame;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
+
+import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
 
 import jline.console.UserInterruptException;
 
@@ -82,6 +83,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private List<String> givenArguments;
     private List<String> relaunchArgs;
     private boolean wantsExperimental = false;
+    private Map<String, String> enginePolyglotOptions;
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -267,6 +269,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         return unrecognized;
     }
 
+    @Override
+    protected void validateArguments(Map<String, String> polyglotOptions) {
+        if (multiContext) {
+            // Hack to pass polyglot options to the shared engine, not to the context which would
+            // refuse them
+            this.enginePolyglotOptions = new HashMap<>(polyglotOptions);
+            polyglotOptions.clear();
+        }
+    }
+
     private void addRelaunchArg(String arg) {
         if (relaunchArgs == null) {
             relaunchArgs = new ArrayList<>();
@@ -371,7 +383,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
 
         if (multiContext) {
-            contextBuilder.engine(Engine.create());
+            contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
         }
 
         int rc = 1;
