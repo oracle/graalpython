@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: fn
         Kind: Function
-        FrameDescriptor: [ret, gen, MyIter, <>temp3, <return_val>]
+        FrameDescriptor: [ret, gen, MyIter, <return_val>]
         CellVars: [MyIter, ret]
         FreeVars: Empty
         Scope: gen

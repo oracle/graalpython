@@ -5,7 +5,7 @@ Scope: []
     FreeVars: Empty
     Scope: make_named_tuple_class
         Kind: Function
-        FrameDescriptor: [named_tuple, name, <>temp3, fields, <return_val>]
+        FrameDescriptor: [named_tuple, name, fields, <return_val>]
         CellVars: [fields, name]
         FreeVars: Empty
         Scope: named_tuple

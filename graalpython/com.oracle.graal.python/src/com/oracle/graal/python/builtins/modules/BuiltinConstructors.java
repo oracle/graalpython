@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
@@ -2001,8 +2002,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetLazyClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                        @Cached HashingStorageNodes.GetItemNode getClasscellNode,
+                        @Cached HashingStorageNodes.DelItemNode delClasscellNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
+
             // Determine the proper metatype to deal with this
             LazyPythonClass metaclass = calculate_metaclass(frame, cls, bases, getMetaclassNode);
             if (metaclass != cls) {
@@ -2036,6 +2040,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
                     }
+                }
+
+                // set __class__ cell contents
+                Object classcell = getClasscellNode.execute(frame, namespace.getDictStorage(), __CLASSCELL__);
+                if (classcell != null) {
+                    if (classcell instanceof PCell) {
+                        ((PCell) classcell).setRef(newType);
+                    } else {
+                        raise(TypeError, "__classcell__ must be a cell");
+                    }
+                    delClasscellNode.execute(frame, namespace, namespace.getDictStorage(), __CLASSCELL__);
                 }
 
                 return newType;

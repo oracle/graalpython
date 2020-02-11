@@ -389,7 +389,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/CallD
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/InvokeNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/PythonCallNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/cell/ReadLocalCellNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/cell/WriteCellVarNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/cell/WriteLocalCellNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/BaseBlockNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/BlockNode.java,zippy.copyright

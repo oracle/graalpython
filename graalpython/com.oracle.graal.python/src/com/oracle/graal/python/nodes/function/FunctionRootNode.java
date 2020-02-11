@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -54,7 +54,6 @@ import com.oracle.truffle.api.source.SourceSection;
  */
 public class FunctionRootNode extends PClosureFunctionRootNode {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
-    private final PCell[] cells;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
     private final SourceSection sourceSection;
@@ -72,7 +71,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
                     ExecutionCellSlots executionCellSlots, Signature signature) {
         super(language, frameDescriptor, executionCellSlots, signature);
         this.executionCellSlots = executionCellSlots;
-        this.cells = new PCell[this.cellVarSlots.length];
 
         this.sourceSection = sourceSection;
         assert sourceSection != null;
@@ -91,10 +89,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public String getName() {
         return functionName;
-    }
-
-    public PCell[] getCells() {
-        return cells;
     }
 
     public FrameSlot[] getCellVarSlots() {
@@ -123,7 +117,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
             // store the cell as a local var
             frame.setObject(frameSlot, cell);
-            this.cells[i] = cell;
         }
     }
 

@@ -1,6 +1,6 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [<>temp0]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: SimpleNamespace
@@ -35,7 +35,7 @@ Scope: []
             FreeVars: [__class__]
     Scope: make_named_tuple_class
         Kind: Function
-        FrameDescriptor: [named_tuple, name, _define_named_tuple_methods, <>temp4, fields, <return_val>]
+        FrameDescriptor: [named_tuple, name, _define_named_tuple_methods, fields, <return_val>]
         CellVars: [fields, name, named_tuple]
         FreeVars: Empty
         Scope: _define_named_tuple_methods

@@ -1,6 +1,6 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [<>temp18, <>temp17, <>temp19, <>temp14, <>temp13, <>temp16, <>temp15, <>temp2, <>temp10, <>temp3, <>temp4, <>temp12, <>temp5, <>temp11, <>temp0, <>temp1, <>temp24, <>temp21, <>temp20, <>temp23, <>temp22, <>temp6, <>temp7, <>temp8, <>temp9]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: MutableSequence
