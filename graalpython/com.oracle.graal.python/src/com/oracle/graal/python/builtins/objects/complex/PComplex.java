@@ -92,7 +92,7 @@ public final class PComplex extends PythonBuiltinObject {
     @TruffleBoundary
     public String toString() {
         if (Double.compare(real, 0.0) == 0) {
-            return toString(imag) + "j";
+            return Double.compare(imag, 0.0) >= 0 ? toString(imag) + "j" : String.format("-%sj", toString(-imag));
         } else {
             String realString = toString(real);
             if (real == 0.0) {
@@ -111,6 +111,14 @@ public final class PComplex extends PythonBuiltinObject {
         if (value == Math.floor(value) && value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
             return Long.toString((long) value);
         } else {
+            if (Double.isInfinite(value)) {
+                if (Double.NEGATIVE_INFINITY == value) {
+                    return "-inf";
+                }
+                return "inf";
+            } else if (Double.isNaN(value)) {
+                return "nan";
+            }
             return Double.toString(value);
         }
     }
