@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCom
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
@@ -605,6 +606,23 @@ public abstract class CExtNodes {
             }
             return new PythonAbstractNativeObject(object, null);
         }
+    }
+
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
+
+        @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+                        @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
+                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
+            // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
+            // be used in the user value space but might be passed-through
+
+            // do not modify reference count at all; this is for non-'PyObject*' pointers
+            return new PythonAbstractNativeObject(object, null);
+        }
+
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -2213,7 +2231,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
     public abstract static class GetTypeMemberNode extends PNodeWithContext {
-        public abstract Object execute(Object obj, String getterFuncName);
+        public abstract Object execute(Object obj, NativeMemberNames nativeMember);
 
         /*
          * A note about the logic here, and why this is fine: the cachedObj is from a particular
@@ -2223,43 +2241,62 @@ public abstract class CExtNodes {
         @Specialization(guards = {"referenceLibrary.isSame(cachedObj, obj)", "memberName == cachedMemberName"}, //
                         limit = "1", //
                         assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
-        public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") String memberName,
+        public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMemberNames memberName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @CachedLibrary("cachedObj") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
-                        @Cached("memberName") @SuppressWarnings("unused") String cachedMemberName,
-                        @Cached("getterFuncName(memberName)") @SuppressWarnings("unused") String getterFuncName,
-                        @Cached("doSlowPath(obj, getterFuncName)") Object result) {
+                        @Cached("memberName") @SuppressWarnings("unused") NativeMemberNames cachedMemberName,
+                        @Cached("doSlowPath(obj, memberName)") Object result) {
             return result;
         }
 
         @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = "doCachedObj")
-        public Object doCachedMember(Object self, @SuppressWarnings("unused") String memberName,
-                        @SuppressWarnings("unused") @Cached("memberName") String cachedMemberName,
+        public Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMemberNames memberName,
+                        @SuppressWarnings("unused") @Cached("memberName") NativeMemberNames cachedMemberName,
                         @Cached("getterFuncName(memberName)") String getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Shared("asPythonObject") @Cached AsPythonObjectNode asPythonObject,
+                        @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") AsPythonObjectBaseNode asPythonObject,
                         @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
             assert isNativeTypeObject(self);
             return asPythonObject.execute(callGetTpDictNode.call(getterName, toSulong.execute(self)));
         }
 
         @Specialization(replaces = "doCachedMember")
-        public Object doUncached(Object self, String memberName,
+        public Object doUncached(Object self, NativeMemberNames memberName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
-                        @Shared("asPythonObject") @Cached AsPythonObjectNode asPythonObject,
+                        @Cached AsPythonObjectNode asPythonObject,
+                        @Cached WrapVoidPtrNode wrapVoidPtrNode,
                         @Shared("callCapi") @Cached PCallCapiFunction callGetTpDictNode) {
             assert isNativeTypeObject(self);
-            return asPythonObject.execute(callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self)));
+            Object value = callGetTpDictNode.call(getterFuncName(memberName), toSulong.execute(self));
+            if (memberName.getType() == NativeMemberType.OBJECT) {
+                return asPythonObject.execute(value);
+            }
+            return wrapVoidPtrNode.execute(value);
         }
 
-        protected Object doSlowPath(Object obj, String getterFuncName) {
-            return AsPythonObjectNodeGen.getUncached().execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
+        protected Object doSlowPath(Object obj, NativeMemberNames memberName) {
+            String getterFuncName = getterFuncName(memberName);
+            return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
-        protected String getterFuncName(String memberName) {
-            String name = "get_" + memberName;
+        protected String getterFuncName(NativeMemberNames memberName) {
+            String name = "get_" + memberName.getMemberName();
             assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;
             return name;
+        }
+
+        static AsPythonObjectBaseNode createForMember(NativeMemberNames member) {
+            if (member.getType() == NativeMemberType.OBJECT) {
+                return AsPythonObjectNodeGen.create();
+            }
+            return WrapVoidPtrNodeGen.create();
+        }
+
+        static AsPythonObjectBaseNode getUncachedForMember(NativeMemberNames member) {
+            if (member.getType() == NativeMemberType.OBJECT) {
+                return AsPythonObjectNodeGen.getUncached();
+            }
+            return WrapVoidPtrNodeGen.getUncached();
         }
 
         protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
@@ -2324,10 +2361,10 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(PythonAbstractClass cls, String nativeMemberName, Object managedMemberName);
+        public abstract Object execute(PythonAbstractClass cls, NativeMemberNames nativeMemberName, Object managedMemberName);
 
         @Specialization
-        Object doSingleContext(PythonAbstractClass cls, String nativeMemberName, Object managedMemberName,
+        static Object doSingleContext(PythonAbstractClass cls, NativeMemberNames nativeMemberName, Object managedMemberName,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
@@ -2339,7 +2376,7 @@ public abstract class CExtNodes {
 
             for (int i = 0; i < n; i++) {
                 PythonAbstractClass mroCls = (PythonAbstractClass) getItemNode.execute(mroStorage, i);
-                Object result = PNone.NO_VALUE;
+                Object result;
                 if (PGuards.isManagedClass(mroCls)) {
                     result = readAttrNode.execute(mroCls, managedMemberName);
                 } else {

@@ -71,7 +71,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'
-    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {GP_OBJECT, OB_BASE, OB_TYPE, OB_REFCNT};
+    @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = {GP_OBJECT, OB_BASE.getMemberName(), OB_TYPE.getMemberName(), OB_REFCNT.getMemberName()};
 
     public TruffleObjectNativeWrapper(TruffleObject foreignObject) {
         super(foreignObject);
@@ -106,7 +106,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     @ExportMessage
     boolean isMemberModifiable(String member) {
         // we only allow to write to 'ob_refcnt'
-        return OB_REFCNT.equals(member);
+        return OB_REFCNT.getMemberName().equals(member);
     }
 
     @ExportMessage
@@ -142,7 +142,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isObBase(String key) {
-            return OB_BASE.equals(key);
+            return OB_BASE.getMemberName().equals(key);
         }
     }
 
@@ -150,7 +150,7 @@ public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
     void writeMember(String member, Object value,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached WriteNativeMemberNode writeNativeMemberNode) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
-        if (OB_REFCNT.equals(member)) {
+        if (OB_REFCNT.getMemberName().equals(member)) {
             Object delegate = lib.getDelegate(this);
             writeNativeMemberNode.execute(delegate, this, member, value);
         } else {

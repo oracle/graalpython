@@ -135,7 +135,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ImportStatic(SpecialMethodNames.class)
 public class PyNumberMethodsWrapper extends PythonNativeWrapper {
 
-    @CompilationFinal(dimensions = 1) private static final String[] NUMBER_METHODS = new String[]{
+    @CompilationFinal(dimensions = 1) private static final NativeMemberNames[] NUMBER_METHODS = new NativeMemberNames[]{
                     NB_ABSOLUTE,
                     NB_ADD,
                     NB_AND,
@@ -284,7 +284,7 @@ public class PyNumberMethodsWrapper extends PythonNativeWrapper {
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     private static String translate(String key) {
         for (int i = 0; i < NUMBER_METHODS.length; i++) {
-            if (NUMBER_METHODS[i].equals(key)) {
+            if (NUMBER_METHODS[i].getMemberName().equals(key)) {
                 return NUMBER_METHODS_MAPPING[i];
             }
         }

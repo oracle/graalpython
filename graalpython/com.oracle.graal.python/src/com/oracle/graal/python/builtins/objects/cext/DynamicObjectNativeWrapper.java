@@ -242,7 +242,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isObBase(String key) {
-            return NativeMemberNames.OB_BASE.equals(key);
+            return NativeMemberNames.OB_BASE.getMemberName().equals(key);
         }
     }
 
@@ -290,8 +290,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getClassNode.execute(object));
         }
 
-        protected static boolean eq(String expected, String actual) {
-            return expected.equals(actual);
+        protected static boolean eq(NativeMemberNames expected, String actual) {
+            return expected.getMemberName().equals(actual);
         }
 
         protected static Object getSliceComponent(int sliceComponent) {
@@ -363,7 +363,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static Object doTpDealloc(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result = lookupNativeMemberNode.execute(object, NativeMemberNames.TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
+            Object result = lookupNativeMemberNode.execute(object, TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
             return toSulongNode.execute(result);
         }
 
@@ -371,7 +371,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static Object doTpFree(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            Object result = lookupNativeMemberNode.execute(object, NativeMemberNames.TP_FREE, TypeBuiltins.TYPE_FREE);
+            Object result = lookupNativeMemberNode.execute(object, TP_FREE, TypeBuiltins.TYPE_FREE);
             return toSulongNode.execute(result);
         }
 
@@ -1076,7 +1076,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
         static Object doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
                         @CachedLibrary("nativeWrapper.createNativeMemberStore()") HashingStorageLibrary lib) {
-            lib.setItem(nativeWrapper.createNativeMemberStore(), MD_DEF, value);
+            lib.setItem(nativeWrapper.createNativeMemberStore(), MD_DEF.getMemberName(), value);
             return value;
         }
 
@@ -1150,50 +1150,35 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             LOGGER.log(Level.FINE, "write of Python struct native member " + key);
         }
 
-        protected static boolean eq(String expected, String actual) {
-            return expected.equals(actual);
+        protected static boolean eq(NativeMemberNames expected, String actual) {
+            return expected.getMemberName().equals(actual);
         }
 
         protected static boolean isGenericCase(Object object, String key) {
             if (object instanceof PMemoryView) {
                 return false;
             }
-
-            switch (key) {
-                case OB_TYPE:
-                case OB_REFCNT:
-                case TP_FLAGS:
-                case TP_BASICSIZE:
-                case TP_ALLOC:
-                case TP_DEALLOC:
-                case TP_FREE:
-                case TP_SUBCLASSES:
-                case MD_DEF:
-                case TP_DICT:
-                    return false;
-            }
-            return true;
+            return !(OB_TYPE.getMemberName().equals(key) ||
+                            OB_REFCNT.getMemberName().equals(key) || TP_FLAGS.getMemberName().equals(key) || TP_BASICSIZE.getMemberName().equals(key) || TP_ALLOC.getMemberName().equals(key) ||
+                            TP_DEALLOC.getMemberName().equals(key) || TP_FREE.getMemberName().equals(key) || TP_SUBCLASSES.getMemberName().equals(key) || MD_DEF.getMemberName().equals(key) ||
+                            TP_DICT.getMemberName().equals(key));
         }
+
     }
 
     @ExportMessage
     protected boolean isMemberModifiable(String member) {
-        switch (member) {
-            case OB_TYPE:
-            case OB_REFCNT:
-            case TP_FLAGS:
-            case TP_BASICSIZE:
-            case TP_ALLOC:
-            case TP_DEALLOC:
-            case TP_FREE:
-            case TP_SUBCLASSES:
-            case MD_DEF:
-            case TP_DICT:
-            case TP_DICTOFFSET:
-                return true;
-            default:
-                return false;
-        }
+        return OB_TYPE.getMemberName().equals(member) ||
+                        OB_REFCNT.getMemberName().equals(member) ||
+                        TP_FLAGS.getMemberName().equals(member) ||
+                        TP_BASICSIZE.getMemberName().equals(member) ||
+                        TP_ALLOC.getMemberName().equals(member) ||
+                        TP_DEALLOC.getMemberName().equals(member) ||
+                        TP_FREE.getMemberName().equals(member) ||
+                        TP_SUBCLASSES.getMemberName().equals(member) ||
+                        MD_DEF.getMemberName().equals(member) ||
+                        TP_DICT.getMemberName().equals(member) ||
+                        TP_DICTOFFSET.getMemberName().equals(member);
     }
 
     @ExportMessage

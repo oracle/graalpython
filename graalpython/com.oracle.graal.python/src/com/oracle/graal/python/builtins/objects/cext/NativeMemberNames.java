@@ -40,148 +40,162 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import java.lang.reflect.Field;
-import java.util.HashSet;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberType.OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberType.POINTER;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberType.PRIMITIVE;
+
+import java.lang.annotation.Native;
 
 import com.oracle.truffle.api.CompilerAsserts;
 
-public final class NativeMemberNames {
-    public static final String OB_BASE = "ob_base";
-    public static final String OB_REFCNT = "ob_refcnt";
-    public static final String OB_TYPE = "ob_type";
-    public static final String OB_SIZE = "ob_size";
-    public static final String OB_SVAL = "ob_sval";
-    public static final String OB_START = "ob_start";
-    public static final String TP_FLAGS = "tp_flags";
-    public static final String TP_NAME = "tp_name";
-    public static final String TP_BASE = "tp_base";
-    public static final String TP_BASES = "tp_bases";
-    public static final String TP_MRO = "tp_mro";
-    public static final String TP_BASICSIZE = "tp_basicsize";
-    public static final String TP_ITEMSIZE = "tp_itemsize";
-    public static final String TP_DICTOFFSET = "tp_dictoffset";
-    public static final String TP_WEAKLISTOFFSET = "tp_weaklistoffset";
-    public static final String TP_DOC = "tp_doc";
-    public static final String TP_ALLOC = "tp_alloc";
-    public static final String TP_DEALLOC = "tp_dealloc";
-    public static final String TP_FREE = "tp_free";
-    public static final String TP_AS_NUMBER = "tp_as_number";
-    public static final String TP_HASH = "tp_hash";
-    public static final String TP_RICHCOMPARE = "tp_richcompare";
-    public static final String TP_SUBCLASSES = "tp_subclasses";
-    public static final String TP_AS_BUFFER = "tp_as_buffer";
-    public static final String TP_AS_SEQUENCE = "tp_as_sequence";
-    public static final String TP_AS_MAPPING = "tp_as_mapping";
-    public static final String TP_GETATTR = "tp_getattr";
-    public static final String TP_SETATTR = "tp_setattr";
-    public static final String TP_GETATTRO = "tp_getattro";
-    public static final String TP_SETATTRO = "tp_setattro";
-    public static final String TP_ITERNEXT = "tp_iternext";
-    public static final String TP_NEW = "tp_new";
-    public static final String TP_DICT = "tp_dict";
-    public static final String TP_STR = "tp_str";
-    public static final String TP_REPR = "tp_repr";
-    public static final String TP_TRAVERSE = "tp_traverse";
-    public static final String TP_CLEAR = "tp_clear";
-    public static final String _BASE = "_base";
-    public static final String OB_ITEM = "ob_item";
-    public static final String SQ_ITEM = "sq_item";
-    public static final String MA_USED = "ma_used";
-    public static final String UNICODE_LENGTH = "length";
-    public static final String UNICODE_DATA = "data";
-    public static final String UNICODE_DATA_ANY = "any";
-    public static final String UNICODE_DATA_LATIN1 = "latin1";
-    public static final String UNICODE_DATA_UCS2 = "ucs2";
-    public static final String UNICODE_DATA_UCS4 = "ucs4";
-    public static final String UNICODE_WSTR = "wstr";
-    public static final String UNICODE_WSTR_LENGTH = "wstr_length";
-    public static final String UNICODE_STATE = "state";
-    public static final String UNICODE_STATE_INTERNED = "interned";
-    public static final String UNICODE_STATE_KIND = "kind";
-    public static final String UNICODE_STATE_COMPACT = "compact";
-    public static final String UNICODE_STATE_ASCII = "ascii";
-    public static final String UNICODE_STATE_READY = "ready";
-    public static final String UNICODE_HASH = "hash";
-    public static final String MD_STATE = "md_state";
-    public static final String MD_DEF = "md_def";
-    public static final String MD_DICT = "md_dict";
-    public static final String BUF_DELEGATE = "buf_delegate";
-    public static final String BUF_READONLY = "readonly";
-    public static final String NB_ABSOLUTE = "nb_absolute";
-    public static final String NB_ADD = "nb_add";
-    public static final String NB_AND = "nb_and";
-    public static final String NB_BOOL = "nb_bool";
-    public static final String NB_DIVMOD = "nb_divmod";
-    public static final String NB_FLOAT = "nb_float";
-    public static final String NB_FLOOR_DIVIDE = "nb_floor_divide";
-    public static final String NB_INDEX = "nb_index";
-    public static final String NB_INPLACE_ADD = "nb_inplace_add";
-    public static final String NB_INPLACE_AND = "nb_inplace_and";
-    public static final String NB_INPLACE_FLOOR_DIVIDE = "nb_inplace_floor_divide";
-    public static final String NB_INPLACE_LSHIFT = "nb_inplace_lshift";
-    public static final String NB_INPLACE_MULTIPLY = "nb_inplace_multiply";
-    public static final String NB_INPLACE_OR = "nb_inplace_or";
-    public static final String NB_INPLACE_POWER = "nb_inplace_power";
-    public static final String NB_INPLACE_REMAINDER = "nb_inplace_remainder";
-    public static final String NB_INPLACE_RSHIFT = "nb_inplace_rshift";
-    public static final String NB_INPLACE_SUBTRACT = "nb_inplace_subtract";
-    public static final String NB_INPLACE_TRUE_DIVIDE = "nb_inplace_true_divide";
-    public static final String NB_INPLACE_XOR = "nb_inplace_xor";
-    public static final String NB_INT = "nb_int";
-    public static final String NB_INVERT = "nb_invert";
-    public static final String NB_LSHIFT = "nb_lshift";
-    public static final String NB_MULTIPLY = "nb_multiply";
-    public static final String NB_NEGATIVE = "nb_negative";
-    public static final String NB_OR = "nb_or";
-    public static final String NB_POSITIVE = "nb_positive";
-    public static final String NB_POWER = "nb_power";
-    public static final String NB_REMAINDER = "nb_remainder";
-    public static final String NB_RSHIFT = "nb_rshift";
-    public static final String NB_SUBTRACT = "nb_subtract";
-    public static final String NB_TRUE_DIVIDE = "nb_true_divide";
-    public static final String NB_XOR = "nb_xor";
-    public static final String MP_LENGTH = "mp_length";
-    public static final String MP_SUBSCRIPT = "mp_subscript";
-    public static final String MP_ASS_SUBSCRIPT = "mp_ass_subscript";
-    public static final String OB_FVAL = "ob_fval";
-    public static final String OB_DIGIT = "ob_digit";
-    public static final String START = "start";
-    public static final String STOP = "stop";
-    public static final String STEP = "step";
-    public static final String IM_FUNC = "im_func";
-    public static final String IM_SELF = "im_self";
-    public static final String SQ_REPEAT = "sq_repeat";
-    public static final String MEMORYVIEW_FLAGS = "flags";
-    public static final String D_COMMON = "d_common";
-    public static final String D_MEMBER = "d_member";
-    public static final String D_GETSET = "d_getset";
-    public static final String D_METHOD = "d_method";
-    public static final String D_BASE = "d_base";
-    public static final String D_QUALNAME = "d_qualname";
-    public static final String D_NAME = "d_name";
-    public static final String D_TYPE = "d_type";
-    public static final String M_ML = "m_ml";
-    public static final String DATETIME_DATA = "data";
-    public static final String SET_USED = "used";
-    public static final String MMAP_DATA = "data";
+public enum NativeMemberNames {
+    OB_BASE("ob_base"),
+    OB_REFCNT("ob_refcnt", PRIMITIVE),
+    OB_TYPE("ob_type", OBJECT),
+    OB_SIZE("ob_size", PRIMITIVE),
+    OB_SVAL("ob_sval"),
+    OB_START("ob_start"),
+    TP_FLAGS("tp_flags", PRIMITIVE),
+    TP_NAME("tp_name"),
+    TP_BASE("tp_base", OBJECT),
+    TP_BASES("tp_bases", OBJECT),
+    TP_MRO("tp_mro", OBJECT),
+    TP_BASICSIZE("tp_basicsize", PRIMITIVE),
+    TP_ITEMSIZE("tp_itemsize", PRIMITIVE),
+    TP_DICTOFFSET("tp_dictoffset", PRIMITIVE),
+    TP_WEAKLISTOFFSET("tp_weaklistoffset", PRIMITIVE),
+    TP_DOC("tp_doc"),
+    TP_ALLOC("tp_alloc"),
+    TP_DEALLOC("tp_dealloc"),
+    TP_FREE("tp_free"),
+    TP_AS_NUMBER("tp_as_number"),
+    TP_HASH("tp_hash"),
+    TP_RICHCOMPARE("tp_richcompare"),
+    TP_SUBCLASSES("tp_subclasses", OBJECT),
+    TP_AS_BUFFER("tp_as_buffer"),
+    TP_AS_SEQUENCE("tp_as_sequence"),
+    TP_AS_MAPPING("tp_as_mapping"),
+    TP_GETATTR("tp_getattr"),
+    TP_SETATTR("tp_setattr"),
+    TP_GETATTRO("tp_getattro"),
+    TP_SETATTRO("tp_setattro"),
+    TP_ITERNEXT("tp_iternext"),
+    TP_NEW("tp_new"),
+    TP_DICT("tp_dict", OBJECT),
+    TP_STR("tp_str"),
+    TP_REPR("tp_repr"),
+    TP_TRAVERSE("tp_traverse"),
+    TP_CLEAR("tp_clear"),
+    _BASE("_base"),
+    OB_ITEM("ob_item"),
+    SQ_ITEM("sq_item"),
+    MA_USED("ma_used", PRIMITIVE),
+    UNICODE_LENGTH("length", PRIMITIVE),
+    UNICODE_DATA("data"),
+    UNICODE_DATA_ANY("any"),
+    UNICODE_DATA_LATIN1("latin1"),
+    UNICODE_DATA_UCS2("ucs2"),
+    UNICODE_DATA_UCS4("ucs4"),
+    UNICODE_WSTR("wstr"),
+    UNICODE_WSTR_LENGTH("wstr_length", PRIMITIVE),
+    UNICODE_STATE("state", PRIMITIVE),
+    UNICODE_STATE_INTERNED("interned", PRIMITIVE),
+    UNICODE_STATE_KIND("kind", PRIMITIVE),
+    UNICODE_STATE_COMPACT("compact", PRIMITIVE),
+    UNICODE_STATE_ASCII("ascii", PRIMITIVE),
+    UNICODE_STATE_READY("ready", PRIMITIVE),
+    UNICODE_HASH("hash", PRIMITIVE),
+    MD_STATE("md_state"),
+    MD_DEF("md_def"),
+    MD_DICT("md_dict", OBJECT),
+    BUF_DELEGATE("buf_delegate"),
+    BUF_READONLY("readonly", PRIMITIVE),
+    NB_ABSOLUTE("nb_absolute"),
+    NB_ADD("nb_add"),
+    NB_AND("nb_and"),
+    NB_BOOL("nb_bool"),
+    NB_DIVMOD("nb_divmod"),
+    NB_FLOAT("nb_float"),
+    NB_FLOOR_DIVIDE("nb_floor_divide"),
+    NB_INDEX("nb_index"),
+    NB_INPLACE_ADD("nb_inplace_add"),
+    NB_INPLACE_AND("nb_inplace_and"),
+    NB_INPLACE_FLOOR_DIVIDE("nb_inplace_floor_divide"),
+    NB_INPLACE_LSHIFT("nb_inplace_lshift"),
+    NB_INPLACE_MULTIPLY("nb_inplace_multiply"),
+    NB_INPLACE_OR("nb_inplace_or"),
+    NB_INPLACE_POWER("nb_inplace_power"),
+    NB_INPLACE_REMAINDER("nb_inplace_remainder"),
+    NB_INPLACE_RSHIFT("nb_inplace_rshift"),
+    NB_INPLACE_SUBTRACT("nb_inplace_subtract"),
+    NB_INPLACE_TRUE_DIVIDE("nb_inplace_true_divide"),
+    NB_INPLACE_XOR("nb_inplace_xor"),
+    NB_INT("nb_int"),
+    NB_INVERT("nb_invert"),
+    NB_LSHIFT("nb_lshift"),
+    NB_MULTIPLY("nb_multiply"),
+    NB_NEGATIVE("nb_negative"),
+    NB_OR("nb_or"),
+    NB_POSITIVE("nb_positive"),
+    NB_POWER("nb_power"),
+    NB_REMAINDER("nb_remainder"),
+    NB_RSHIFT("nb_rshift"),
+    NB_SUBTRACT("nb_subtract"),
+    NB_TRUE_DIVIDE("nb_true_divide"),
+    NB_XOR("nb_xor"),
+    MP_LENGTH("mp_length", PRIMITIVE),
+    MP_SUBSCRIPT("mp_subscript"),
+    MP_ASS_SUBSCRIPT("mp_ass_subscript"),
+    OB_FVAL("ob_fval", PRIMITIVE),
+    OB_DIGIT("ob_digit"),
+    START("start", OBJECT),
+    STOP("stop", OBJECT),
+    STEP("step", OBJECT),
+    IM_FUNC("im_func", OBJECT),
+    IM_SELF("im_self", OBJECT),
+    SQ_REPEAT("sq_repeat"),
+    MEMORYVIEW_FLAGS("flags", PRIMITIVE),
+    D_COMMON("d_common"),
+    D_MEMBER("d_member"),
+    D_GETSET("d_getset"),
+    D_METHOD("d_method"),
+    D_BASE("d_base"),
+    D_QUALNAME("d_qualname", OBJECT),
+    D_NAME("d_name", OBJECT),
+    D_TYPE("d_type", OBJECT),
+    M_ML("m_ml"),
+    DATETIME_DATA("data"),
+    SET_USED("used", PRIMITIVE),
+    MMAP_DATA("data");
 
-    private static final HashSet<String> values = new HashSet<>();
+    private final String memberName;
+    private final NativeMemberType type;
 
-    static {
-        Field[] declaredFields = NativeMemberNames.class.getDeclaredFields();
-        for (int i = 0; i < declaredFields.length; i++) {
-            Field s = declaredFields[i];
-            if (s.getType() == String.class) {
-                try {
-                    values.add((String) s.get(NativeMemberNames.class));
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                }
-            }
-        }
+    NativeMemberNames(String name) {
+        this.memberName = name;
+        this.type = POINTER;
+    }
+
+    NativeMemberNames(String name, NativeMemberType type) {
+        this.memberName = name;
+        this.type = type;
+    }
+
+    public String getMemberName() {
+        return memberName;
+    }
+
+    public NativeMemberType getType() {
+        return type;
     }
 
     public static boolean isValid(String name) {
         CompilerAsserts.neverPartOfCompilation();
-        return values.contains(name);
+        for (NativeMemberNames nativeMember : NativeMemberNames.values()) {
+            if (nativeMember.memberName.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -202,7 +202,6 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
     public abstract static class GetMroStorageNode extends PNodeWithContext {
 
@@ -278,7 +277,6 @@ public abstract class TypeNodes {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
     public abstract static class GetNameNode extends Node {
 
@@ -324,7 +322,6 @@ public abstract class TypeNodes {
 
     @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
-    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetSuperClassNode extends Node {
 
         public abstract LazyPythonClass execute(Object obj);
@@ -482,7 +479,6 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetBaseClassesNode extends PNodeWithContext {
 
         // TODO(fa): this should not return a Java array; maybe a SequenceStorage would fit
@@ -528,7 +524,6 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(NativeMemberNames.class)
     public abstract static class GetBaseClassNode extends PNodeWithContext {
 
         public abstract PythonAbstractClass execute(Object obj);

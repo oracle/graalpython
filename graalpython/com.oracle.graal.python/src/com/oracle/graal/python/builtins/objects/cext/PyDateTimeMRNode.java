@@ -117,8 +117,8 @@ public abstract class PyDateTimeMRNode extends Node {
         return GetAttributeNode.create(expected, null);
     }
 
-    protected static boolean eq(String expected, String actual) {
-        return expected.equals(actual);
+    protected static boolean eq(NativeMemberNames expected, String actual) {
+        return expected.getMemberName().equals(actual);
     }
 
     public static PyDateTimeMRNode create() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import java.nio.charset.Charset;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_ANY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_LATIN1;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_UCS2;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_UCS4;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_ASCII;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_COMPACT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_KIND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_READY;
+
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
@@ -73,19 +83,19 @@ public abstract class PyUnicodeWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(
+        boolean isPointer(
                         @Cached CExtNodes.IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public long asPointer(
+        long asPointer(
                         @Cached PAsPointerNode pAsPointerNode) {
             return pAsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public void toNative(
+        void toNative(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToPyObjectNode toPyObjectNode,
                         @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
@@ -97,14 +107,14 @@ public abstract class PyUnicodeWrappers {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        protected boolean hasNativeType() {
+        boolean hasNativeType() {
             // TODO implement native type
             return false;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        public Object getNativeType() {
+        Object getNativeType() {
             // TODO implement native type
             return null;
         }
@@ -128,40 +138,32 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
             return new String[]{
-                            NativeMemberNames.UNICODE_DATA_ANY,
-                            NativeMemberNames.UNICODE_DATA_LATIN1,
-                            NativeMemberNames.UNICODE_DATA_UCS2,
-                            NativeMemberNames.UNICODE_DATA_UCS4
+                            UNICODE_DATA_ANY.getMemberName(),
+                            UNICODE_DATA_LATIN1.getMemberName(),
+                            UNICODE_DATA_UCS2.getMemberName(),
+                            UNICODE_DATA_UCS4.getMemberName()
             };
         }
 
         @ExportMessage
-        protected boolean isMemberReadable(String member) {
-            switch (member) {
-                case NativeMemberNames.UNICODE_DATA_ANY:
-                case NativeMemberNames.UNICODE_DATA_LATIN1:
-                case NativeMemberNames.UNICODE_DATA_UCS2:
-                case NativeMemberNames.UNICODE_DATA_UCS4:
-                    return true;
-                default:
-                    return false;
-            }
+        boolean isMemberReadable(String member) {
+            return UNICODE_DATA_ANY.getMemberName().equals(member) ||
+                            UNICODE_DATA_LATIN1.getMemberName().equals(member) ||
+                            UNICODE_DATA_UCS2.getMemberName().equals(member) ||
+                            UNICODE_DATA_UCS4.getMemberName().equals(member);
         }
 
         @ExportMessage
-        protected Object readMember(String member,
+        Object readMember(String member,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached(value = "createNativeOrder()", uncached = "getUncachedNativeOrder()") UnicodeAsWideCharNode asWideCharNode,
                         @Cached CExtNodes.SizeofWCharNode sizeofWcharNode,
                         @Exclusive @Cached StringLenNode stringLenNode) throws UnknownIdentifierException {
-            switch (member) {
-                case NativeMemberNames.UNICODE_DATA_ANY:
-                case NativeMemberNames.UNICODE_DATA_LATIN1:
-                case NativeMemberNames.UNICODE_DATA_UCS2:
-                case NativeMemberNames.UNICODE_DATA_UCS4:
-                    int elementSize = (int) sizeofWcharNode.execute();
-                    PString s = getPString(lib);
-                    return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, stringLenNode.execute(s)), elementSize);
+
+            if (isMemberReadable(member)) {
+                int elementSize = (int) sizeofWcharNode.execute();
+                PString s = getPString(lib);
+                return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, stringLenNode.execute(s)), elementSize);
             }
             throw UnknownIdentifierException.create(member);
         }
@@ -187,29 +189,25 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
             return new String[]{
-                            NativeMemberNames.UNICODE_DATA_ANY,
-                            NativeMemberNames.UNICODE_DATA_LATIN1,
-                            NativeMemberNames.UNICODE_DATA_UCS2,
-                            NativeMemberNames.UNICODE_DATA_UCS4
+                            UNICODE_STATE_INTERNED.getMemberName(),
+                            UNICODE_STATE_KIND.getMemberName(),
+                            UNICODE_STATE_COMPACT.getMemberName(),
+                            UNICODE_STATE_ASCII.getMemberName(),
+                            UNICODE_STATE_READY.getMemberName()
             };
         }
 
         @ExportMessage
-        protected boolean isMemberReadable(String member) {
-            switch (member) {
-                case NativeMemberNames.UNICODE_STATE_INTERNED:
-                case NativeMemberNames.UNICODE_STATE_KIND:
-                case NativeMemberNames.UNICODE_STATE_COMPACT:
-                case NativeMemberNames.UNICODE_STATE_ASCII:
-                case NativeMemberNames.UNICODE_STATE_READY:
-                    return true;
-                default:
-                    return false;
-            }
+        boolean isMemberReadable(String member) {
+            return UNICODE_STATE_INTERNED.getMemberName().equals(member) ||
+                            UNICODE_STATE_KIND.getMemberName().equals(member) ||
+                            UNICODE_STATE_COMPACT.getMemberName().equals(member) ||
+                            UNICODE_STATE_ASCII.getMemberName().equals(member) ||
+                            UNICODE_STATE_READY.getMemberName().equals(member);
         }
 
         @ExportMessage
-        protected Object readMember(String member,
+        Object readMember(String member,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
@@ -218,14 +216,9 @@ public abstract class PyUnicodeWrappers {
                 value |= 0b1_0_000_00;
             }
             value |= ((int) sizeofWcharNode.execute() << 2) & 0b11100;
-            switch (member) {
-                case NativeMemberNames.UNICODE_STATE_INTERNED:
-                case NativeMemberNames.UNICODE_STATE_KIND:
-                case NativeMemberNames.UNICODE_STATE_COMPACT:
-                case NativeMemberNames.UNICODE_STATE_ASCII:
-                case NativeMemberNames.UNICODE_STATE_READY:
-                    // it's a bit field; so we need to return the whole 32-bit word
-                    return value;
+            if (isMemberReadable(member)) {
+                // it's a bit field; so we need to return the whole 32-bit word
+                return value;
             }
             throw UnknownIdentifierException.create(member);
         }
@@ -239,7 +232,7 @@ public abstract class PyUnicodeWrappers {
 
         @TruffleBoundary
         private static CharsetEncoder newAsciiEncoder() {
-            return Charset.forName("US-ASCII").newEncoder();
+            return StandardCharsets.US_ASCII.newEncoder();
         }
 
         @TruffleBoundary

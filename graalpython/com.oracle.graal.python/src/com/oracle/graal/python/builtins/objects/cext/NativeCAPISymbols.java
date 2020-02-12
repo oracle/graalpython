@@ -108,7 +108,7 @@ public abstract class NativeCAPISymbols {
             Field s = declaredFields[i];
             if (s.getType() == String.class) {
                 try {
-                    values[i] = (String) s.get(NativeMemberNames.class);
+                    values[i] = (String) s.get(NativeCAPISymbols.class);
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                 }
             }

@@ -72,7 +72,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@ImportStatic({PGuards.class, PythonOptions.class, NativeMemberNames.class})
+@ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     public static ReadAttributeFromObjectNode create() {
         return ReadAttributeFromObjectNotTypeNodeGen.create();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.SQ_ITEM;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.SQ_REPEAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 
@@ -83,13 +85,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        switch (member) {
-            case NativeMemberNames.SQ_REPEAT:
-            case NativeMemberNames.SQ_ITEM:
-                return true;
-            default:
-                return false;
-        }
+        return SQ_REPEAT.getMemberName().equals(member) || SQ_ITEM.getMemberName().equals(member);
     }
 
     @ExportMessage
@@ -108,15 +104,13 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
                     @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
         Object result;
         try {
-            switch (member) {
-                case NativeMemberNames.SQ_REPEAT:
-                    result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
-                    break;
-                case NativeMemberNames.SQ_ITEM:
-                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
-                default:
-                    // TODO extend list
-                    throw UnknownIdentifierException.create(member);
+            if (SQ_REPEAT.getMemberName().equals(member)) {
+                result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
+            } else if (SQ_ITEM.getMemberName().equals(member)) {
+                return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
+            } else {
+                // TODO extend list
+                throw UnknownIdentifierException.create(member);
             }
         } catch (PException e) {
             errorProfile.enter();
