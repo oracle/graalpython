@@ -3084,6 +3084,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Object_Free", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
     abstract static class PyTruffleObjectFree extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "3")
@@ -3106,6 +3107,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 PythonLanguage.getLogger().fine(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, delegate));
                 callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
             }
+            return 1;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)")
+        static int doOther(@SuppressWarnings("unused") Object object) {
+            // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
             return 0;
         }
     }
@@ -3196,8 +3203,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Trace_Free", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleTraceFree extends PythonUnaryBuiltinNode {
-        @Specialization
-        static int doNativeWrapper(VirtualFrame frame, long ptr,
+        @Specialization(limit = "2")
+        static int doNativeWrapper(VirtualFrame frame, Object ptr,
+                        @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
@@ -3209,7 +3217,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (isLoggable) {
                     PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: 0x%X", ptr));
                 }
-                if (traceNativeMemory && ptr != 0) {
+                if (traceNativeMemory && !lib.isNull(ptr)) {
                     PFrame.Reference ref = null;
                     if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
                         ref = getCurrentFrameRef.execute(null);
