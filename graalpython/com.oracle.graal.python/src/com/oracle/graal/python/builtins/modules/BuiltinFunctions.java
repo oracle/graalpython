@@ -1056,6 +1056,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
 
+        @CompilationFinal private Boolean emulateJython;
+
         public static IsInstanceNode create() {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
         }
@@ -1101,8 +1103,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return false;
         }
 
+        protected boolean emulateJython() {
+            if (emulateJython == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                emulateJython = PythonOptions.getFlag(getContext(), PythonOptions.EmulateJython);
+            }
+            return emulateJython;
+        }
+
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
+            if (emulateJython() && getContext().getEnv().isHostObject(cls)) {
+                Object hostType = getContext().getEnv().asHostObject(cls);
+                return instance.getClass().isAssignableFrom((Class<?>) hostType);
+            }
             return isInstanceCheckInternal(frame, instance, cls) || typeInstanceCheckNode.executeWith(frame, cls, instance);
         }
 

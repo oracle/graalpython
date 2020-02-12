@@ -490,3 +490,9 @@ if sys.implementation.name == "graalpython":
             assert (x is z) == False
             assert x is not z
 
+    def test_isinstance():
+        if sys.graal_python_jython_emulation_enabled:
+            import java.lang.Integer as Integer
+            i = Integer(1)
+            assert isinstance(i, Integer)
+        
