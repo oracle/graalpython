@@ -490,9 +490,17 @@ if sys.implementation.name == "graalpython":
             assert (x is z) == False
             assert x is not z
 
-    def test_isinstance():
+    def test_isinstance01():
         if sys.graal_python_jython_emulation_enabled:
             import java.lang.Integer as Integer
             i = Integer(1)
             assert isinstance(i, Integer)
+
+    def test_isinstance02():
+        if sys.graal_python_jython_emulation_enabled:
+            import java.util.Map as Map
+            import java.util.HashMap as HashMap
+            h = HashMap()
+            assert isinstance(h, HashMap)
+            assert isinstance(h, Map)
         

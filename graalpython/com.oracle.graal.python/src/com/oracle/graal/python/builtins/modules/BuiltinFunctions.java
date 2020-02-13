@@ -180,6 +180,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -203,6 +204,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import java.util.HashMap;
+import java.util.Map;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -1113,9 +1116,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            if (emulateJython() && getContext().getEnv().isHostObject(cls)) {
-                Object hostType = getContext().getEnv().asHostObject(cls);
-                return instance.getClass().isAssignableFrom((Class<?>) hostType);
+            TruffleLanguage.Env env = getContext().getEnv();
+            if (emulateJython() && env.isHostObject(cls)) {
+                Object hostCls = env.asHostObject(cls);
+                Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
+                return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
             }
             return isInstanceCheckInternal(frame, instance, cls) || typeInstanceCheckNode.executeWith(frame, cls, instance);
         }
