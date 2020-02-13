@@ -204,8 +204,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
-import java.util.HashMap;
-import java.util.Map;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
