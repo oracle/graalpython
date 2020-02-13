@@ -878,7 +878,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         public boolean isClose(VirtualFrame frame, Object a, Object b, Object rel_tol, Object abs_tol) {
-            if (castANode == null) {
+            if (castAbsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 castANode = insert(CastToDoubleNode.create());
                 castBNode = insert(CastToDoubleNode.create());
@@ -989,7 +989,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Fallback
         public double ldexpOO(VirtualFrame frame, Object mantissa, Object exp) {
             if (PGuards.isInteger(exp) || PGuards.isPInt(exp) || (exp instanceof Boolean)) {
-                if (castNode == null) {
+                if (recursiveNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     castNode = insert(CastToDoubleNode.create());
                     recursiveNode = insert(LdexpNode.create());

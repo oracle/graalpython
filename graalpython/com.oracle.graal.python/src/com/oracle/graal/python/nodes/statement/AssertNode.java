@@ -66,8 +66,8 @@ public class AssertNode extends StatementNode {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             PythonContext context = getContext();
-            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
             javaExceptionsFailAssertions = PythonOptions.getOption(context, PythonOptions.CatchAllExceptions);
+            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {

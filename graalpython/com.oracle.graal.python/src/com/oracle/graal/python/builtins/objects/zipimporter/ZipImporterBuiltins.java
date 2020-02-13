@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -357,10 +357,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
         @Specialization
         public PNone init(VirtualFrame frame, PZipImporter self, PythonObject path) {
             // at first we need to find out, whether path object has __fspath__ method
-            if (getClassNode == null) {
+            if (findFspathNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetLazyClassNode.create());
-                CompilerDirectives.transferToInterpreterAndInvalidate();
                 findFspathNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__FSPATH__));
             }
             Object result = findFspathNode.execute(getClassNode.execute(path));

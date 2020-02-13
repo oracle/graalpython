@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -397,7 +397,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 // not binding to an object or already bound
                 return this;
             } else {
-                if (superInit == null) {
+                if (getType == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     superInit = insert(SuperInitNodeFactory.create());
                     getType = insert(GetTypeNodeGen.create());
@@ -483,7 +483,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                          * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
                          */
                         // acts as a branch profile
-                        if (getObject == null) {
+                        if (callGet == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             getObject = insert(GetObjectNodeGen.create());
                             callGet = insert(CallTernaryMethodNode.create());

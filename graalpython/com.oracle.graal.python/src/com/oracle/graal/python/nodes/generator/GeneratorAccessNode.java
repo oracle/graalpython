@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -65,10 +65,14 @@ final class GeneratorAccessNode extends Node {
     public boolean isActive(VirtualFrame frame, int flagSlot) {
         if (active.length <= flagSlot) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            byte[] newActive = new byte[flagSlot + 1];
-            Arrays.fill(newActive, UNSET);
-            System.arraycopy(active, 0, newActive, 0, active.length);
-            active = newActive;
+            synchronized (this) {
+                if (active.length <= flagSlot) {
+                    byte[] newActive = new byte[flagSlot + 1];
+                    Arrays.fill(newActive, UNSET);
+                    System.arraycopy(active, 0, newActive, 0, active.length);
+                    active = newActive;
+                }
+            }
         }
         if (active[flagSlot] == UNSET) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -94,10 +98,14 @@ final class GeneratorAccessNode extends Node {
     public int getIndex(VirtualFrame frame, int blockIndexSlot) {
         if (indices.length <= blockIndexSlot) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            int[] newIndices = new int[blockIndexSlot + 1];
-            Arrays.fill(newIndices, UNSET);
-            System.arraycopy(indices, 0, newIndices, 0, indices.length);
-            indices = newIndices;
+            synchronized (this) {
+                if (indices.length <= blockIndexSlot) {
+                    int[] newIndices = new int[blockIndexSlot + 1];
+                    Arrays.fill(newIndices, UNSET);
+                    System.arraycopy(indices, 0, newIndices, 0, indices.length);
+                    indices = newIndices;
+                }
+            }
         }
         if (indices[blockIndexSlot] == UNSET) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
