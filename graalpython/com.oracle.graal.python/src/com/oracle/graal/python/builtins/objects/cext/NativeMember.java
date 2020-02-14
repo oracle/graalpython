@@ -222,7 +222,12 @@ public enum NativeMember {
 
     // PySetObject
     SET_USED("used", PRIMITIVE),
-    MMAP_DATA("data");
+    MMAP_DATA("data"),
+
+    // PyFrameObject
+    F_BACK("f_back", OBJECT),
+    F_LINENO("f_lineno", PRIMITIVE),
+    F_CODE("f_code", OBJECT);
 
     private final String memberName;
     private final NativeMemberType type;

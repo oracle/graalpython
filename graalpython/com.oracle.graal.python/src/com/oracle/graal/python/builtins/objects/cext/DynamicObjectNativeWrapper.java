@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -148,6 +149,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -934,6 +936,23 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("getClassNode") @Cached @SuppressWarnings("unused") GetClassNode getClassNode,
                         @Cached PyDateTimeMRNode pyDateTimeMRNode) {
             return pyDateTimeMRNode.execute(object, key);
+        }
+
+        @Specialization(guards = "eq(F_LINENO, key)")
+        static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getLine();
+        }
+
+        @Specialization(guards = "eq(F_CODE, key)")
+        static Object doFCode(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            RootCallTarget ct = object.getTarget();
+            if (ct != null) {
+                return toSulongNode.execute(factory.createCode(ct));
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("should not be reached");
         }
 
         // TODO fallback guard
