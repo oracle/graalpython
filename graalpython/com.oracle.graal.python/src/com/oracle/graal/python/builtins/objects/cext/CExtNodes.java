@@ -2231,7 +2231,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     @TypeSystemReference(PythonTypes.class)
     public abstract static class GetTypeMemberNode extends PNodeWithContext {
-        public abstract Object execute(Object obj, NativeMemberNames nativeMember);
+        public abstract Object execute(Object obj, NativeMember nativeMember);
 
         /*
          * A note about the logic here, and why this is fine: the cachedObj is from a particular
@@ -2241,17 +2241,17 @@ public abstract class CExtNodes {
         @Specialization(guards = {"referenceLibrary.isSame(cachedObj, obj)", "memberName == cachedMemberName"}, //
                         limit = "1", //
                         assumptions = {"getNativeClassStableAssumption(cachedObj)", "singleContextAssumption()"})
-        public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMemberNames memberName,
+        public Object doCachedObj(@SuppressWarnings("unused") PythonAbstractNativeObject obj, @SuppressWarnings("unused") NativeMember memberName,
                         @Cached("obj") @SuppressWarnings("unused") PythonAbstractNativeObject cachedObj,
                         @CachedLibrary("cachedObj") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
-                        @Cached("memberName") @SuppressWarnings("unused") NativeMemberNames cachedMemberName,
+                        @Cached("memberName") @SuppressWarnings("unused") NativeMember cachedMemberName,
                         @Cached("doSlowPath(obj, memberName)") Object result) {
             return result;
         }
 
         @Specialization(guards = "memberName == cachedMemberName", limit = "1", replaces = "doCachedObj")
-        public Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMemberNames memberName,
-                        @SuppressWarnings("unused") @Cached("memberName") NativeMemberNames cachedMemberName,
+        public Object doCachedMember(Object self, @SuppressWarnings("unused") NativeMember memberName,
+                        @SuppressWarnings("unused") @Cached("memberName") NativeMember cachedMemberName,
                         @Cached("getterFuncName(memberName)") String getterName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached(value = "createForMember(memberName)", uncached = "getUncachedForMember(memberName)") AsPythonObjectBaseNode asPythonObject,
@@ -2261,7 +2261,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(replaces = "doCachedMember")
-        public Object doUncached(Object self, NativeMemberNames memberName,
+        public Object doUncached(Object self, NativeMember memberName,
                         @Shared("toSulong") @Cached ToSulongNode toSulong,
                         @Cached AsPythonObjectNode asPythonObject,
                         @Cached WrapVoidPtrNode wrapVoidPtrNode,
@@ -2274,25 +2274,25 @@ public abstract class CExtNodes {
             return wrapVoidPtrNode.execute(value);
         }
 
-        protected Object doSlowPath(Object obj, NativeMemberNames memberName) {
+        protected Object doSlowPath(Object obj, NativeMember memberName) {
             String getterFuncName = getterFuncName(memberName);
             return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
-        protected String getterFuncName(NativeMemberNames memberName) {
+        protected String getterFuncName(NativeMember memberName) {
             String name = "get_" + memberName.getMemberName();
             assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;
             return name;
         }
 
-        static AsPythonObjectBaseNode createForMember(NativeMemberNames member) {
+        static AsPythonObjectBaseNode createForMember(NativeMember member) {
             if (member.getType() == NativeMemberType.OBJECT) {
                 return AsPythonObjectNodeGen.create();
             }
             return WrapVoidPtrNodeGen.create();
         }
 
-        static AsPythonObjectBaseNode getUncachedForMember(NativeMemberNames member) {
+        static AsPythonObjectBaseNode getUncachedForMember(NativeMember member) {
             if (member.getType() == NativeMemberType.OBJECT) {
                 return AsPythonObjectNodeGen.getUncached();
             }
@@ -2361,15 +2361,15 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class LookupNativeMemberInMRONode extends Node {
 
-        public abstract Object execute(PythonAbstractClass cls, NativeMemberNames nativeMemberName, Object managedMemberName);
+        public abstract Object execute(PythonAbstractClass cls, NativeMember nativeMemberName, Object managedMemberName);
 
         @Specialization
-        static Object doSingleContext(PythonAbstractClass cls, NativeMemberNames nativeMemberName, Object managedMemberName,
-                        @Cached GetMroStorageNode getMroNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                        @Cached GetTypeMemberNode getTypeMemberNode) {
+        static Object doSingleContext(PythonAbstractClass cls, NativeMember nativeMemberName, Object managedMemberName,
+                                      @Cached GetMroStorageNode getMroNode,
+                                      @Cached SequenceStorageNodes.LenNode lenNode,
+                                      @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                                      @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                                      @Cached GetTypeMemberNode getTypeMemberNode) {
 
             MroSequenceStorage mroStorage = getMroNode.execute(cls);
             int n = lenNode.execute(mroStorage);

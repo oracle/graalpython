@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -124,7 +124,7 @@ public abstract class TypeNodes {
             @Specialization
             long doNative(PythonNativeClass clazz,
                             @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-                return (long) getTpFlagsNode.execute(clazz, NativeMemberNames.TP_FLAGS);
+                return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
             }
         }
 
@@ -163,7 +163,7 @@ public abstract class TypeNodes {
                     return getValue(mclazz, mclazz.getFlagsContainer());
                 }
             } else if (PGuards.isNativeClass(clazz)) {
-                return (long) CExtNodes.GetTypeMemberNode.getUncached().execute(clazz, NativeMemberNames.TP_FLAGS);
+                return (long) CExtNodes.GetTypeMemberNode.getUncached().execute(clazz, NativeMember.TP_FLAGS);
             }
             throw new IllegalStateException("unknown type");
 
@@ -224,7 +224,7 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
                         @Cached("createClassProfile()") ValueProfile storageProfile) {
-            Object tupleObj = getTpMroNode.execute(obj, NativeMemberNames.TP_MRO);
+            Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
             if (tupleObj == PNone.NO_VALUE) {
                 // Special case: lazy type initialization (should happen at most only once per type)
                 CompilerDirectives.transferToInterpreter();
@@ -235,7 +235,7 @@ public abstract class TypeNodes {
                     throw raise.raise(PythonBuiltinClassType.SystemError, "lazy initialization of type %s failed", GetNameNode.getUncached().execute(obj));
                 }
 
-                tupleObj = getTpMroNode.execute(obj, NativeMemberNames.TP_MRO);
+                tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
                 assert tupleObj != PNone.NO_VALUE : "MRO object is still NULL even after lazy type initialization";
             }
             Object profiled = tpMroProfile.profile(tupleObj);
@@ -256,7 +256,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
-                Object tupleObj = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_MRO);
+                Object tupleObj = GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_MRO);
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
                     if (sequenceStorage instanceof MroSequenceStorage) {
@@ -295,7 +295,7 @@ public abstract class TypeNodes {
         @Specialization
         String doNativeClass(PythonNativeClass obj,
                         @Cached CExtNodes.GetTypeMemberNode getTpNameNode) {
-            return (String) getTpNameNode.execute(obj, NativeMemberNames.TP_NAME);
+            return (String) getTpNameNode.execute(obj, NativeMember.TP_NAME);
         }
 
         @Specialization(replaces = {"doManagedClass", "doBuiltinClassType", "doNativeClass"})
@@ -306,7 +306,7 @@ public abstract class TypeNodes {
             } else if (obj instanceof PythonBuiltinClassType) {
                 return ((PythonBuiltinClassType) obj).getName();
             } else if (PGuards.isNativeClass(obj)) {
-                return (String) CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_NAME);
+                return (String) CExtNodes.GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_NAME);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -341,7 +341,7 @@ public abstract class TypeNodes {
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached PRaiseNode raise,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
-            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (result instanceof PythonAbstractClass) {
@@ -374,7 +374,7 @@ public abstract class TypeNodes {
         Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpSubclassesNode,
                         @Cached("createClassProfile()") ValueProfile profile) {
-            Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMemberNames.TP_SUBCLASSES);
+            Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMember.TP_SUBCLASSES);
 
             Object profiled = profile.profile(tpSubclasses);
             if (profiled instanceof PDict) {
@@ -501,7 +501,7 @@ public abstract class TypeNodes {
                         @Cached GetTypeMemberNode getTpBasesNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                         @Cached GetInternalObjectArrayNode toArrayNode) {
-            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMemberNames.TP_BASES));
+            Object result = resultTypeProfile.profile(getTpBasesNode.execute(obj, NativeMember.TP_BASES));
             if (result instanceof PTuple) {
                 Object[] values = toArrayNode.execute(((PTuple) result).getSequenceStorage());
                 try {
@@ -560,7 +560,7 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached GetTypeMemberNode getTpBaseNode,
                         @Cached("createClassProfile()") ValueProfile resultTypeProfile) {
-            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMemberNames.TP_BASE));
+            Object result = resultTypeProfile.profile(getTpBaseNode.execute(obj, NativeMember.TP_BASE));
             if (PGuards.isPNone(result)) {
                 return null;
             } else if (PGuards.isClass(result)) {

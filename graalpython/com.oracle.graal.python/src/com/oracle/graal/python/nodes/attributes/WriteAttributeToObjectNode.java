@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -227,7 +227,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Cached GetTypeMemberNode getNativeDict,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PRaiseNode raiseNode) {
-            return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMemberNames.TP_DICT), setItemNode, raiseNode);
+            return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMember.TP_DICT), setItemNode, raiseNode);
         }
     }
 

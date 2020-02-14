@@ -40,15 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_ANY;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_LATIN1;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_UCS2;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_DATA_UCS4;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_ASCII;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_COMPACT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_INTERNED;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_KIND;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.UNICODE_STATE_READY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_DATA_ANY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_DATA_LATIN1;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_DATA_UCS2;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_DATA_UCS4;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_STATE_ASCII;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_STATE_COMPACT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_STATE_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_STATE_KIND;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE_STATE_READY;
 
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;

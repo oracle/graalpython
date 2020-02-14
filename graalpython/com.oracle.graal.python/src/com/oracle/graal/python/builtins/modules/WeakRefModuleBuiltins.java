@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -163,7 +163,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
                 }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMemberNames.TP_WEAKLISTOFFSET);
+                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMember.TP_WEAKLISTOFFSET);
                 if (tpWeaklistoffset != PNone.NO_VALUE) {
                     return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
                 }

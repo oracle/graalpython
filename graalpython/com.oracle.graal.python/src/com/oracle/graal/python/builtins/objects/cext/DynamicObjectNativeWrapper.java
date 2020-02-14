@@ -41,17 +41,17 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MD_DEF;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_REFCNT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_TYPE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_ALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DEALLOC;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DICT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_DICTOFFSET;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_FLAGS;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_FREE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.TP_SUBCLASSES;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MD_DEF;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_ALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DEALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DICT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DICTOFFSET;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_FLAGS;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_FREE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_SUBCLASSES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
@@ -242,7 +242,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isObBase(String key) {
-            return NativeMemberNames.OB_BASE.getMemberName().equals(key);
+            return NativeMember.OB_BASE.getMemberName().equals(key);
         }
     }
 
@@ -266,7 +266,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class, PythonOptions.class})
+    @ImportStatic({NativeMember.class, SpecialMethodNames.class, SpecialAttributeNames.class, PythonOptions.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends Node {
 
@@ -290,7 +290,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getClassNode.execute(object));
         }
 
-        protected static boolean eq(NativeMemberNames expected, String actual) {
+        protected static boolean eq(NativeMember expected, String actual) {
             return expected.getMemberName().equals(actual);
         }
 
@@ -958,7 +958,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     // WRITE
     @GenerateUncached
-    @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
+    @ImportStatic({NativeMember.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     abstract static class WriteNativeMemberNode extends Node {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(WriteNativeMemberNode.class);
 
@@ -1150,7 +1150,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             LOGGER.log(Level.FINE, "write of Python struct native member " + key);
         }
 
-        protected static boolean eq(NativeMemberNames expected, String actual) {
+        protected static boolean eq(NativeMember expected, String actual) {
             return expected.getMemberName().equals(actual);
         }
 
@@ -1392,7 +1392,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        @ImportStatic({PGuards.class, NativeMemberNames.class, DynamicObjectNativeWrapper.class})
+        @ImportStatic({PGuards.class, NativeMember.class, DynamicObjectNativeWrapper.class})
         abstract static class IsMemberReadable {
 
             @SuppressWarnings("unused")
@@ -1429,13 +1429,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
                             @Cached GetLazyClassNode getClassNode,
                             @Cached GetNameNode getNameNode) {
-                return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMemberNames.isValid(name) ||
+                return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMember.isValid(name) ||
                                 ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
             }
         }
 
         @ExportMessage
-        @ImportStatic({PGuards.class, NativeMemberNames.class, DynamicObjectNativeWrapper.class})
+        @ImportStatic({PGuards.class, NativeMember.class, DynamicObjectNativeWrapper.class})
         abstract static class IsMemberModifiable {
 
             @SuppressWarnings("unused")
@@ -1565,7 +1565,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @ExportMessage
-        @ImportStatic({PGuards.class, NativeMemberNames.class, DynamicObjectNativeWrapper.class})
+        @ImportStatic({PGuards.class, NativeMember.class, DynamicObjectNativeWrapper.class})
         abstract static class IsMemberReadable {
 
             @SuppressWarnings("unused")
@@ -1586,7 +1586,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @Specialization
             @TruffleBoundary
             static boolean isReadableFallback(@SuppressWarnings("unused") PrimitiveNativeWrapper receiver, String name) {
-                return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMemberNames.isValid(name);
+                return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMember.isValid(name);
             }
 
         }

@@ -44,17 +44,29 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMemberType.OBJ
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberType.PRIMITIVE;
 
-import java.lang.annotation.Native;
-
 import com.oracle.truffle.api.CompilerAsserts;
 
-public enum NativeMemberNames {
+public enum NativeMember {
+    // PyObject_VAR_HEAD
     OB_BASE("ob_base"),
+
+    // PyObject
     OB_REFCNT("ob_refcnt", PRIMITIVE),
     OB_TYPE("ob_type", OBJECT),
+
+    // PyVarObject
     OB_SIZE("ob_size", PRIMITIVE),
+
+    // PyBytesObject
     OB_SVAL("ob_sval"),
+
+    // PyByteArrayObject
     OB_START("ob_start"),
+
+    // PyTupleObject, PyListObject, arrayobject
+    OB_ITEM("ob_item"),
+
+    // PyTypeObject
     TP_FLAGS("tp_flags", PRIMITIVE),
     TP_NAME("tp_name"),
     TP_BASE("tp_base", OBJECT),
@@ -87,29 +99,44 @@ public enum NativeMemberNames {
     TP_TRAVERSE("tp_traverse"),
     TP_CLEAR("tp_clear"),
     _BASE("_base"),
-    OB_ITEM("ob_item"),
+
+    // PySequenceMethods
     SQ_ITEM("sq_item"),
+    SQ_REPEAT("sq_repeat"),
+
+    // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
+
+    // PyASCIIObject
     UNICODE_LENGTH("length", PRIMITIVE),
-    UNICODE_DATA("data"),
-    UNICODE_DATA_ANY("any"),
-    UNICODE_DATA_LATIN1("latin1"),
-    UNICODE_DATA_UCS2("ucs2"),
-    UNICODE_DATA_UCS4("ucs4"),
-    UNICODE_WSTR("wstr"),
-    UNICODE_WSTR_LENGTH("wstr_length", PRIMITIVE),
+    UNICODE_HASH("hash", PRIMITIVE),
     UNICODE_STATE("state", PRIMITIVE),
     UNICODE_STATE_INTERNED("interned", PRIMITIVE),
     UNICODE_STATE_KIND("kind", PRIMITIVE),
     UNICODE_STATE_COMPACT("compact", PRIMITIVE),
     UNICODE_STATE_ASCII("ascii", PRIMITIVE),
     UNICODE_STATE_READY("ready", PRIMITIVE),
-    UNICODE_HASH("hash", PRIMITIVE),
+    UNICODE_WSTR("wstr"),
+
+    // PyCompactUnicodeObject
+    UNICODE_WSTR_LENGTH("wstr_length", PRIMITIVE),
+
+    // PyUnicodeObject
+    UNICODE_DATA("data"),
+    UNICODE_DATA_ANY("any"),
+    UNICODE_DATA_LATIN1("latin1"),
+    UNICODE_DATA_UCS2("ucs2"),
+    UNICODE_DATA_UCS4("ucs4"),
+
+    // PyModuleObject
     MD_STATE("md_state"),
     MD_DEF("md_def"),
     MD_DICT("md_dict", OBJECT),
+
     BUF_DELEGATE("buf_delegate"),
     BUF_READONLY("readonly", PRIMITIVE),
+
+    // PyNumberMethods
     NB_ABSOLUTE("nb_absolute"),
     NB_ADD("nb_add"),
     NB_AND("nb_and"),
@@ -143,40 +170,69 @@ public enum NativeMemberNames {
     NB_SUBTRACT("nb_subtract"),
     NB_TRUE_DIVIDE("nb_true_divide"),
     NB_XOR("nb_xor"),
+
+    // PyMappingMethods
     MP_LENGTH("mp_length", PRIMITIVE),
     MP_SUBSCRIPT("mp_subscript"),
     MP_ASS_SUBSCRIPT("mp_ass_subscript"),
+
+    // PyFloatObject
     OB_FVAL("ob_fval", PRIMITIVE),
+
+    // PyLongObject
     OB_DIGIT("ob_digit"),
+
+    // PySliceObject
     START("start", OBJECT),
     STOP("stop", OBJECT),
     STEP("step", OBJECT),
+
+    // PyMethodObject
     IM_FUNC("im_func", OBJECT),
     IM_SELF("im_self", OBJECT),
-    SQ_REPEAT("sq_repeat"),
+
+    // PyMemoryViewObject
     MEMORYVIEW_FLAGS("flags", PRIMITIVE),
+
+    // PyDescr_COMMON
     D_COMMON("d_common"),
+
+    // PyMemberDescrObject,
     D_MEMBER("d_member"),
+
+    // PyMethodDescrObject
     D_GETSET("d_getset"),
+
+    // PyMethodDescrObject
     D_METHOD("d_method"),
+
+    // PyWrapperDescrObject
     D_BASE("d_base"),
+
+    // PyDescrObject
     D_QUALNAME("d_qualname", OBJECT),
     D_NAME("d_name", OBJECT),
     D_TYPE("d_type", OBJECT),
+
+    // PyCFunctionObject
     M_ML("m_ml"),
+
+    // PyDateTime_Date
     DATETIME_DATA("data"),
+
+    // PySetObject
     SET_USED("used", PRIMITIVE),
     MMAP_DATA("data");
 
     private final String memberName;
     private final NativeMemberType type;
 
-    NativeMemberNames(String name) {
+    NativeMember(String name) {
         this.memberName = name;
         this.type = POINTER;
     }
 
-    NativeMemberNames(String name, NativeMemberType type) {
+    NativeMember(String name, NativeMemberType type) {
         this.memberName = name;
         this.type = type;
     }
@@ -191,7 +247,7 @@ public enum NativeMemberNames {
 
     public static boolean isValid(String name) {
         CompilerAsserts.neverPartOfCompilation();
-        for (NativeMemberNames nativeMember : NativeMemberNames.values()) {
+        for (NativeMember nativeMember : NativeMember.values()) {
             if (nativeMember.memberName.equals(name)) {
                 return true;
             }

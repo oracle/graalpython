@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MP_LENGTH;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MP_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MP_ASS_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MP_LENGTH;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MP_SUBSCRIPT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;

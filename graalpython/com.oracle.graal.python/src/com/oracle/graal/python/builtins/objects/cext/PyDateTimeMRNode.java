@@ -54,7 +54,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@ImportStatic({NativeMemberNames.class, PythonOptions.class})
+@ImportStatic({NativeMember.class, PythonOptions.class})
 public abstract class PyDateTimeMRNode extends Node {
 
     public abstract Object execute(PythonObject object, String key);
@@ -117,7 +117,7 @@ public abstract class PyDateTimeMRNode extends Node {
         return GetAttributeNode.create(expected, null);
     }
 
-    protected static boolean eq(NativeMemberNames expected, String actual) {
+    protected static boolean eq(NativeMember expected, String actual) {
         return expected.getMemberName().equals(actual);
     }
 

@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -246,7 +246,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-            return readNative(key, getNativeDict.execute(object, NativeMemberNames.TP_DICT), hlib, getDictStorage);
+            return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib, getDictStorage);
         }
 
         @Fallback
@@ -281,9 +281,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                 }
             }
         } else if (object instanceof PythonAbstractNativeObject) {
-            Object d = null;
+            Object d;
             if (forceType) {
-                d = GetTypeMemberNode.getUncached().execute(object, NativeMemberNames.TP_DICT);
+                d = GetTypeMemberNode.getUncached().execute(object, NativeMember.TP_DICT);
             } else {
                 d = PythonObjectLibrary.getUncached().getDict(object);
             }

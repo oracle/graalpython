@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.SQ_ITEM;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.SQ_REPEAT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.SQ_ITEM;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.SQ_REPEAT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 

@@ -41,9 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.GP_OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_BASE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_REFCNT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_BASE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_TYPE;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
