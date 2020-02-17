@@ -930,17 +930,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final BranchProfile gotException = BranchProfile.create();
 
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
-        Object open(VirtualFrame frame, Object pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
+        Object open(VirtualFrame frame, Object pathname, long flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd,
                         @Cached CastToPathNode cast) {
             return openMode(frame, pathname, flags, 0777, dir_fd, cast);
         }
 
         @Specialization(guards = {"isNoValue(dir_fd)"})
-        Object openMode(VirtualFrame frame, Object pathArg, int flags, int fileMode, @SuppressWarnings("unused") PNone dir_fd,
+        Object openMode(VirtualFrame frame, Object pathArg, long flags, long fileMode, @SuppressWarnings("unused") PNone dir_fd,
                         @Cached CastToPathNode cast) {
             String pathname = cast.execute(frame, pathArg);
-            Set<StandardOpenOption> options = flagsToOptions(flags);
-            FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes(fileMode);
+            Set<StandardOpenOption> options = flagsToOptions((int) flags);
+            FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes((int) fileMode);
             try {
                 SeekableByteChannel fc;
                 TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
