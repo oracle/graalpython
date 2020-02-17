@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -184,8 +184,15 @@ public final class ForNode extends LoopNode {
     public void executeVoid(VirtualFrame frame) {
         if (iteratorSlot == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
-            ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
+            getLock().lock();
+            try {
+                if (iteratorSlot == null) {
+                    iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
+                    ((ForRepeatingNode) loopNode.getRepeatingNode()).iteratorSlot = iteratorSlot;
+                }
+            } finally {
+                getLock().unlock();
+            }
         }
         frame.setObject(iteratorSlot, iterator.execute(frame));
         try {

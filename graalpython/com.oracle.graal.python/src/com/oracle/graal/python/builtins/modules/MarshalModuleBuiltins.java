@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -245,8 +245,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         protected MarshallerNode getRecursiveNode() {
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = insert(create());
-                recursiveNode.depth += 1;
+                synchronized (this) {
+                    recursiveNode = insert(create());
+                    recursiveNode.depth += 1;
+                }
             }
             return recursiveNode;
         }

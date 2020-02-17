@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -119,7 +119,7 @@ public class ImportFromNode extends AbstractImportNode {
                         throw pe;
                     }
                     String fullname = pkgname + "." + attr;
-                    if (getItem == null) {
+                    if (readModules == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         getItem = insert(GetItemNode.create());
                         readModules = insert(ReadAttributeFromObjectNode.create());

@@ -1627,7 +1627,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
             } else if (getContext().isInitialized()) {
-                if (getSysModuleNode == null) {
+                if (callNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getSysModuleNode = insert(HashingStorageNodes.GetItemNode.create());
                     getBreakpointhookNode = insert(ReadAttributeFromObjectNode.create());
