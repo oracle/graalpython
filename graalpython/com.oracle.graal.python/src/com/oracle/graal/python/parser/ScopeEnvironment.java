@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     public static String CLASS_VAR_PREFIX = "<>class";
     public static String LAMBDA_NAME = "lambda";
+    public static int CLASS_VAR_PREFIX_IDX = CLASS_VAR_PREFIX.length();
 
     private final NodeFactory factory;
 
@@ -116,21 +117,21 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 String name = identifier instanceof String ? (String) identifier : identifier.toString();
 
                 if (localySeenVars != null) {
-                    // remove the localy declared variable
+                    // remove the locally declared variable
                     if (definingScopeKind == ScopeInfo.ScopeKind.Class && name.startsWith(CLASS_VAR_PREFIX)) {
-                        localySeenVars.remove(name.substring(7));
+                        localySeenVars.remove(name.substring(CLASS_VAR_PREFIX_IDX));
                     } else {
                         localySeenVars.remove(name);
                     }
                 }
 
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
-                // was the declared varibale seen before?
+                // was the declared variable seen before?
                 if (usedInScopes != null && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) {
-                    // make the varible freevar and cellvar in scopes, where is used
+                    // make the variable freevar and cellvar in scopes, where is used
                     List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
                     for (ScopeInfo scope : copy) {
-                        // we need to find out, whether the scope is a under the defing scope
+                        // we need to find out, whether the scope is a under the defining scope
                         ScopeInfo tmpScope = scope;
                         ScopeInfo parentDefiningScope = definingScope.getParent();
                         while (tmpScope != null && tmpScope != definingScope && tmpScope != parentDefiningScope) {
@@ -177,13 +178,13 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 String name = (String) identifier;
                 if (name.startsWith(CLASS_VAR_PREFIX)) {
                     definingScope.getFrameDescriptor().removeFrameSlot(identifier);
-                    name = name.substring(7);
+                    name = name.substring(CLASS_VAR_PREFIX_IDX);
                     definingScope.createSlotIfNotPresent(name);
                     copy = true;
                 }
             }
             if (copy) {
-                // we copy it because the idexes are now wrong due the issue GR-17984
+                // we copy it because the indexes are now wrong due the issue GR-17984
                 definingScope.setFrameDescriptor(definingScope.getFrameDescriptor().copy());
             }
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -930,3 +930,18 @@ def test_classbody_scope():
     locs = list(A.locs.keys())
     for k in ["__module__", "__qualname__", "ranges", "B", "C", "locs", "D"]:
         assert k in locs, locs
+
+
+def test_free_var_with_nonlocals():
+    def outer():
+        var = None
+
+        def toInternal(obj):
+            nonlocal var
+            x = 10
+
+        return toInternal
+    fnc = outer()
+    c = fnc.__code__
+    assert c.co_freevars == ('var',)
+    assert c.co_cellvars == tuple()

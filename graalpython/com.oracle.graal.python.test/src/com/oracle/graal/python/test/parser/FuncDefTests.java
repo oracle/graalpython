@@ -475,6 +475,12 @@ public class FuncDefTests extends ParserTestBase {
         checkSyntaxError("async def f(a, *, c, /, d, e): pass");
     }
 
+    @Test
+    public void issue21351() throws Exception {
+        // parser test for GR-21351
+        checkScopeAndTree();
+    }
+
     private void checkScopeAndTree() throws Exception {
         File testFile = getTestFileFromTestAndTestMethod();
         checkScopeFromFile(testFile, true);
