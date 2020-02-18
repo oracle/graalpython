@@ -204,6 +204,10 @@ public final class ScopeInfo {
         return explicitNonlocalVariables != null && explicitNonlocalVariables.contains(identifier);
     }
 
+    public Set<String> getExplicitNonlocalVariables() {
+        return explicitNonlocalVariables;
+    }
+
     public void addCellVar(String identifier) {
         addCellVar(identifier, false);
     }
@@ -216,10 +220,6 @@ public final class ScopeInfo {
         if (createFrameSlot) {
             this.createSlotIfNotPresent(identifier);
         }
-    }
-
-    public void addFreeVar(String identifier) {
-        addFreeVar(identifier, false);
     }
 
     public void addFreeVar(String identifier, boolean createFrameSlot) {
