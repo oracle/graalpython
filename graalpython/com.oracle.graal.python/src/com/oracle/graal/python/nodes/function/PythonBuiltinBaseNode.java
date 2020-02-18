@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -178,10 +178,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getRaiseNode().raise(type, e);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, int num) {
-        return getRaiseOSNode().raiseOSError(frame, num);
-    }
-
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {
         return getRaiseOSNode().raiseOSError(frame, num);
     }
@@ -192,5 +188,17 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
         return getRaiseOSNode().raiseOSError(frame, oserror, filename);
+    }
+
+    public final PException raiseOSError(VirtualFrame frame, Exception e) {
+        return getRaiseOSNode().raiseOSError(frame, e);
+    }
+
+    public final PException raiseOSError(VirtualFrame frame, Exception e, String filename) {
+        return getRaiseOSNode().raiseOSError(frame, e, filename);
+    }
+
+    public final PException raiseOSError(VirtualFrame frame, Exception e, String filename, String filename2) {
+        return getRaiseOSNode().raiseOSError(frame, e, filename, filename2);
     }
 }

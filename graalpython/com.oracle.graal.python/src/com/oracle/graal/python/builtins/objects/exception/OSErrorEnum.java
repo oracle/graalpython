@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,8 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.objects.exception;
+
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public enum OSErrorEnum {
 
@@ -205,5 +207,26 @@ public enum OSErrorEnum {
 
     public int getNumber() {
         return number;
+    }
+
+    @TruffleBoundary
+    public static OSErrorEnum fromMessage(String message) {
+        for (OSErrorEnum oserror : values()) {
+            if (message.equals(oserror.getMessage())) {
+                return oserror;
+            }
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public static OSErrorEnum fromNumber(int number) {
+        OSErrorEnum[] values = values();
+        for (int i = number; i < values.length; i++) {
+            if (values[i].getNumber() == number) {
+                return values[i];
+            }
+        }
+        return null;
     }
 }
