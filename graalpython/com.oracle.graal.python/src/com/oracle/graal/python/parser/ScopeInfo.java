@@ -193,6 +193,7 @@ public final class ScopeInfo {
         if (explicitNonlocalVariables == null) {
             explicitNonlocalVariables = new HashSet<>();
         }
+        addSeenVar(identifier);
         explicitNonlocalVariables.add(identifier);
     }
 
