@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -305,11 +304,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object execute(VirtualFrame frame, PythonModule thisModule, PString path, PTuple args) {
-            return execute(frame, thisModule, path.getValue(), args);
-        }
-
-        @Specialization
         Object execute(VirtualFrame frame, PythonModule thisModule, String path, PTuple args) {
             // in case of execl the PList happens to be in the tuples first entry
             Object list = GetItemDynamicNode.getUncached().execute(args.getSequenceStorage(), 0);
@@ -317,8 +311,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object execute(VirtualFrame frame, PythonModule thisModule, PString path, PList args) {
-            return doExecute(frame, thisModule, path.getValue(), args);
+        Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PTuple args,
+                        @Cached @Shared("castToPath") CastToPathNode castToPathNode) {
+            return execute(frame, thisModule, castToPathNode.execute(frame, path), args);
+        }
+
+        @Specialization
+        Object executePath(VirtualFrame frame, PythonModule thisModule, Object path, PList args,
+                        @Cached @Shared("castToPath") CastToPathNode castToPathNode) {
+            return doExecute(frame, thisModule, castToPathNode.execute(frame, path), args);
         }
 
         Object doExecute(VirtualFrame frame, PythonModule thisModule, String path, PSequence args) {
@@ -404,8 +405,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone chdirPString(VirtualFrame frame, PString spath) {
-            return chdir(frame, spath.getValue());
+        PNone chdirPath(VirtualFrame frame, Object path,
+                        @Cached CastToPathNode castToPathNode) {
+            return chdir(frame, castToPathNode.execute(frame, path));
         }
     }
 
