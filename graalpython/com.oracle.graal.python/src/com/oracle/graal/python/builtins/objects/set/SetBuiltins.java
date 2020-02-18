@@ -37,8 +37,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -51,6 +53,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
@@ -92,10 +96,10 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object doSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
-            return factory().createSet(unionNode.execute(frame, self.getDictStorage(), other.getDictStorage()));
+        @Specialization(limit = "1")
+        Object doSet(@SuppressWarnings("unused") VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(lib.union(self.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
@@ -108,25 +112,69 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "remove", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object remove(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
-
-            if (!delItemNode.execute(frame, self, self.getDictStorage(), other)) {
-                throw raise(PythonErrorType.KeyError, "%s", other);
+        @Specialization(limit = "1")
+        Object remove(VirtualFrame frame, PBaseSet self, Object key,
+                        @Cached BranchProfile updatedStorage,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = self.getDictStorage();
+            HashingStorage newStore = null;
+            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
+            if (hasFrame.profile(frame != null)) {
+                ThreadState state = PArguments.getThreadState(frame);
+                hasKey = lib.hasKeyWithState(storage, key, state);
+                if (hasKey) {
+                    newStore = lib.delItemWithState(storage, key, state);
+                }
+            } else {
+                hasKey = lib.hasKey(storage, key);
+                if (hasKey) {
+                    newStore = lib.delItem(storage, key);
+                }
             }
-            return PNone.NONE;
+
+            if (hasKey) {
+                if (newStore != storage) {
+                    updatedStorage.enter();
+                    self.setDictStorage(newStore);
+                }
+                return PNone.NONE;
+            }
+            throw raise(PythonErrorType.KeyError, "%s", key);
+
         }
     }
 
     @Builtin(name = "discard", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object discard(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
+        @Specialization(limit = "1")
+        Object discard(VirtualFrame frame, PBaseSet self, Object key,
+                        @Cached BranchProfile updatedStorage,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = self.getDictStorage();
+            HashingStorage newStore = null;
+            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
+            if (hasFrame.profile(frame != null)) {
+                ThreadState state = PArguments.getThreadState(frame);
+                hasKey = lib.hasKeyWithState(storage, key, state);
+                if (hasKey) {
+                    newStore = lib.delItemWithState(storage, key, state);
+                }
+            } else {
+                hasKey = lib.hasKey(storage, key);
+                if (hasKey) {
+                    newStore = lib.delItem(storage, key);
+                }
+            }
 
-            delItemNode.execute(frame, self, self.getDictStorage(), other);
+            if (hasKey) {
+                if (newStore != storage) {
+                    updatedStorage.enter();
+                    self.setDictStorage(newStore);
+                }
+            }
             return PNone.NONE;
         }
     }
@@ -134,14 +182,42 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "pop", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PopNode extends PythonUnaryBuiltinNode {
-        @Specialization
+
+        protected void removeItem(VirtualFrame frame, PBaseSet self, Object key,
+                        HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
+            HashingStorage storage = self.getDictStorage();
+            HashingStorage newStore = null;
+            boolean hasKey; // TODO: FIXME: this might call __hash__ twice
+            if (hasFrame.profile(frame != null)) {
+                ThreadState state = PArguments.getThreadState(frame);
+                hasKey = lib.hasKeyWithState(storage, key, state);
+                if (hasKey) {
+                    newStore = lib.delItemWithState(storage, key, state);
+                }
+            } else {
+                hasKey = lib.hasKey(storage, key);
+                if (hasKey) {
+                    newStore = lib.delItem(storage, key);
+                }
+            }
+
+            if (hasKey) {
+                if (newStore != storage) {
+                    updatedStorage.enter();
+                    self.setDictStorage(newStore);
+                }
+            }
+        }
+
+        @Specialization(limit = "1")
         Object remove(VirtualFrame frame, PBaseSet self,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
+                        @Cached BranchProfile updatedStorage,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             Iterator<Object> iterator = lib.keys(self.getDictStorage());
             if (iterator.hasNext()) {
                 Object next = iterator.next();
-                delItemNode.execute(frame, self, self.getDictStorage(), next);
+                removeItem(frame, self, next, lib, hasFrame, updatedStorage);
                 return next;
             }
             throw raise(PythonErrorType.KeyError, "pop from an emtpy set");

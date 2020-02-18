@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -564,7 +563,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     public abstract static class UnmarshallerNode extends PNodeWithState implements IndirectCallNode {
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
         @Child private CodeNodes.CreateCodeNode createCodeNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -638,26 +636,26 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
-        private PCode readCode(int depth) {
+        private PCode readCode(int depth, HashingStorageLibrary lib) {
             int argcount = readInt();
             int kwonlyargcount = readInt();
             int nlocals = readInt();
             int stacksize = readInt();
             int flags = readInt();
             byte[] codestring = readBytes();
-            Object[] constants = getArray((PTuple) readObject(depth + 1));
-            Object[] names = getArray((PTuple) readObject(depth + 1));
-            Object[] varnames = getArray((PTuple) readObject(depth + 1));
-            Object[] freevars = getArray((PTuple) readObject(depth + 1));
-            Object[] cellvars = getArray((PTuple) readObject(depth + 1));
-            String filename = ((String) readObject(depth + 1));
-            String name = ((String) readObject(depth + 1));
+            Object[] constants = getArray((PTuple) readObject(depth + 1, lib));
+            Object[] names = getArray((PTuple) readObject(depth + 1, lib));
+            Object[] varnames = getArray((PTuple) readObject(depth + 1, lib));
+            Object[] freevars = getArray((PTuple) readObject(depth + 1, lib));
+            Object[] cellvars = getArray((PTuple) readObject(depth + 1, lib));
+            String filename = ((String) readObject(depth + 1, lib));
+            String name = ((String) readObject(depth + 1, lib));
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
 
             return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
                             nlocals, stacksize, flags, codestring, constants, names,
-                            varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+                            varnames, freevars, cellvars, filename, name, firstlineno, lnotab, lib);
         }
 
         private PDict readDict(int depth) {
@@ -666,11 +664,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             PDict dict = factory().createDict(store);
             HashingStorageLibrary lib = HashingStorageLibrary.getUncached();
             for (int i = 0; i < len; i++) {
-                Object key = readObject(depth + 1);
+                Object key = readObject(depth + 1, lib);
                 if (key == null) {
                     break;
                 }
-                Object value = readObject(depth + 1);
+                Object value = readObject(depth + 1, lib);
                 if (value != null) {
                     store = lib.setItem(store, key, value);
                 }
@@ -679,14 +677,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        private PList readList(int depth) {
+        private PList readList(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
             Object[] items = new Object[n];
             for (int i = 0; i < n; i++) {
-                Object item = readObject(depth + 1);
+                Object item = readObject(depth + 1, lib);
                 if (item == null) {
                     throw raise(ValueError, "bad marshal data");
                 }
@@ -695,41 +693,33 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createList(items);
         }
 
-        private PSet readSet(int depth) {
+        private PSet readSet(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
             HashingStorage newStorage = EconomicMapStorage.create(n);
-            if (n > 0 && setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
             for (int i = 0; i < n; i++) {
-                Object key = readObject(depth + 1);
+                Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                setItemNode.execute(null, newStorage, key, PNone.NO_VALUE);
+                lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createSet(newStorage);
         }
 
-        private PFrozenSet readFrozenSet(int depth) {
+        private PFrozenSet readFrozenSet(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
             HashingStorage newStorage = EconomicMapStorage.create(n);
-            if (n > 0 && setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
             for (int i = 0; i < n; i++) {
-                Object key = readObject(depth + 1);
+                Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                setItemNode.execute(null, newStorage, key, PNone.NO_VALUE);
+                lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createFrozenSet(newStorage);
@@ -742,7 +732,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object readObject(int depth) {
+        private Object readObject(int depth, HashingStorageLibrary lib) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
                 throw raise(ValueError, "Maximum marshal stack depth");
             }
@@ -785,20 +775,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                     Object[] items = new Object[n];
                     for (int i = 0; i < n; i++) {
-                        items[i] = readObject(depth + 1);
+                        items[i] = readObject(depth + 1, lib);
                     }
                     return factory().createTuple(items);
                 }
                 case TYPE_DICT:
                     return readDict(depth);
                 case TYPE_LIST:
-                    return readList(depth);
+                    return readList(depth, lib);
                 case TYPE_SET:
-                    return readSet(depth);
+                    return readSet(depth, lib);
                 case TYPE_FROZENSET:
-                    return readFrozenSet(depth);
+                    return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode(depth);
+                    return readCode(depth, lib);
                 default:
                     throw raise(ValueError, "bad marshal data");
             }
@@ -814,12 +804,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             reset();
             this.data = dataBytes;
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return readObject(0);
+                return readObject(0, lib);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

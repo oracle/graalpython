@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,40 +43,34 @@ package com.oracle.graal.python.builtins.objects.common;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HashingCollectionNodes {
 
     @ImportStatic(PGuards.class)
     public abstract static class LenNode extends PNodeWithContext {
-        private @Child HashingStorageNodes.LenNode lenNode;
-
-        public HashingStorageNodes.LenNode getLenNode() {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(HashingStorageNodes.LenNode.create());
-            }
-            return lenNode;
-        }
-
         public abstract int execute(PHashingCollection c);
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
         int getLenCached(PHashingCollection c,
+                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            return getLenNode().execute(cachedClass.cast(c).getDictStorage());
+            return lib.length(cachedClass.cast(c).getDictStorage());
         }
 
-        @Specialization(replaces = "getLenCached")
-        int getLenGeneric(PHashingCollection c) {
-            return getLenNode().execute(c.getDictStorage());
+        @Specialization(replaces = "getLenCached", limit = "1")
+        int getLenGeneric(PHashingCollection c,
+                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
+            return lib.length(c.getDictStorage());
         }
 
         public static LenNode create() {
@@ -90,15 +84,29 @@ public abstract class HashingCollectionNodes {
 
         @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
         void doSetItemCached(VirtualFrame frame, PHashingCollection c, Object key, Object value,
-                        @Cached HashingStorageNodes.SetItemNode setItemNode,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            cachedClass.cast(c).setDictStorage(setItemNode.execute(frame, cachedClass.cast(c).getDictStorage(), key, value));
+            HashingStorage storage = cachedClass.cast(c).getDictStorage();
+            if (hasFrame.profile(frame != null)) {
+                storage = lib.setItemWithState(storage, key, value, PArguments.getThreadState(frame));
+            } else {
+                storage = lib.setItem(storage, key, value);
+            }
+            cachedClass.cast(c).setDictStorage(storage);
         }
 
-        @Specialization(replaces = "doSetItemCached")
+        @Specialization(replaces = "doSetItemCached", limit = "1")
         void doSetItemGeneric(VirtualFrame frame, PHashingCollection c, Object key, Object value,
-                        @Cached HashingStorageNodes.SetItemNode setItemNode) {
-            c.setDictStorage(setItemNode.execute(frame, c.getDictStorage(), key, value));
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = c.getDictStorage();
+            if (hasFrame.profile(frame != null)) {
+                storage = lib.setItemWithState(storage, key, value, PArguments.getThreadState(frame));
+            } else {
+                storage = lib.setItem(storage, key, value);
+            }
+            c.setDictStorage(storage);
         }
 
         public static SetItemNode create() {

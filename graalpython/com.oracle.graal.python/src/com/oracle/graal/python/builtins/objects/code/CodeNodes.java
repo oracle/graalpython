@@ -43,7 +43,8 @@ package com.oracle.graal.python.builtins.objects.code;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -89,7 +90,6 @@ public abstract class CodeNodes {
             return dontNeedExceptionState;
         }
 
-        @Child private HashingStorageNodes.GetItemNode getItemNode;
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         @SuppressWarnings("try")
@@ -98,12 +98,13 @@ public abstract class CodeNodes {
                         byte[] codestring, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
                         String filename, String name, int firstlineno,
-                        byte[] lnotab) {
+                        byte[] lnotab, HashingStorageLibrary lib) {
 
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+                return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring,
+                                constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab, lib);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -189,8 +188,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected Object readFromDict(PythonObject object, Object key,
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
-        Object value = getItemNode.executeWithGlobalState(getDictStorage.execute(lib.getDict(object)), key);
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -230,8 +229,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         protected Object readNativeObject(PythonAbstractNativeObject object, Object key,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                        @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
-            return readNative(key, lib.getDict(object), getItemNode, getDictStorage);
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+            return readNative(key, lib.getDict(object), hlib, getDictStorage);
         }
 
         @Fallback
@@ -246,8 +245,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         protected Object readNativeClass(PythonNativeClass object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @Cached("create()") HashingStorageNodes.GetItemInteropNode getItemNode) {
-            return readNative(key, getNativeDict.execute(object, NativeMemberNames.TP_DICT), getItemNode, getDictStorage);
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+            return readNative(key, getNativeDict.execute(object, NativeMemberNames.TP_DICT), hlib, getDictStorage);
         }
 
         @Fallback
@@ -256,9 +255,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    private static Object readNative(Object key, Object dict, HashingStorageNodes.GetItemInteropNode getItemNode, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
+    private static Object readNative(Object key, Object dict, HashingStorageLibrary hlib, HashingCollectionNodes.GetDictStorageNode getDictStorage) {
         if (dict instanceof PHashingCollection) {
-            Object result = getItemNode.executeWithGlobalState(getDictStorage.execute((PHashingCollection) dict), key);
+            Object result = hlib.getItem(getDictStorage.execute((PHashingCollection) dict), key);
             if (result != null) {
                 return result;
             }

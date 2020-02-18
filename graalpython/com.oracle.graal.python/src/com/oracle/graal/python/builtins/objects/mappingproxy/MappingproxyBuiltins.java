@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -55,7 +54,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -193,20 +191,25 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         boolean run(VirtualFrame frame, PMappingproxy self, Object key,
-                        @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
-            return containsKeyNode.execute(frame, self.getDictStorage(), key);
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.hasKeyWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
+            } else {
+                return lib.hasKey(self.getDictStorage(), key);
+            }
         }
     }
 
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         public int len(PMappingproxy self,
-                        @Cached HashingStorageNodes.LenNode len) {
-            return len.execute(self.getDictStorage());
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return lib.length(self.getDictStorage());
         }
     }
 
@@ -223,16 +226,26 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         Object doProxyProxy(VirtualFrame frame, PMappingproxy self, PMappingproxy other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.equalsWithState(self.getDictStorage(), other.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                return lib.equals(self.getDictStorage(), other.getDictStorage());
+            }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object doProxDict(VirtualFrame frame, PMappingproxy self, PDict other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.equalsWithState(self.getDictStorage(), other.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                return lib.equals(self.getDictStorage(), other.getDictStorage());
+            }
         }
 
         @Fallback

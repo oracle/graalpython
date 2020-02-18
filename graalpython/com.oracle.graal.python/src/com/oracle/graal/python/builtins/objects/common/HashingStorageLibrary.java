@@ -44,7 +44,6 @@ import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;

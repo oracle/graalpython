@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -95,9 +96,9 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -143,7 +144,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -2267,7 +2267,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
-        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
@@ -2287,11 +2286,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object type(VirtualFrame frame, LazyPythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached GetLazyClassNode getMetaclassNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary nslib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary glib,
+                        @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached HashingStorageNodes.GetItemNode getClasscellNode,
-                        @Cached HashingStorageNodes.DelItemNode delClasscellNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
 
@@ -2308,7 +2307,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib);
 
                 // TODO: Call __set_name__ on all descriptors in a newly generated type
 
@@ -2323,7 +2322,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(frame, globals, hlib);
+                        String moduleName = getModuleNameFromGlobals(globals, glib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2331,14 +2330,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // set __class__ cell contents
-                Object classcell = getClasscellNode.execute(frame, namespace.getDictStorage(), __CLASSCELL__);
+                Object classcell = nslib.getItem(namespace.getDictStorage(), __CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         raise(TypeError, "__classcell__ must be a cell");
                     }
-                    delClasscellNode.execute(frame, namespace, namespace.getDictStorage(), __CLASSCELL__);
+                    if (nslib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
+                        HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __CLASSCELL__);
+                        if (newStore != namespace.getDictStorage()) {
+                            updatedStorage.enter();
+                            namespace.setDictStorage(newStore);
+                        }
+                    }
                 }
 
                 return newType;
@@ -2347,7 +2352,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private String getModuleNameFromGlobals(VirtualFrame frame, PythonObject globals, HashingStorageLibrary hlib) {
+        private String getModuleNameFromGlobals(PythonObject globals, HashingStorageLibrary hlib) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
@@ -2361,7 +2366,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @SuppressWarnings("try")
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass) {
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass, HashingStorageLibrary nslib) {
 
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
@@ -2463,7 +2468,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PythonContext context = getContextRef().get();
                 Object state = ForeignCallContext.enter(frame, context, this);
                 try {
-                    PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
+                    PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace, nslib);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
                     if (basesArray.length > 1) {
                         // TODO: tfel - check if secondary bases provide weakref or dict when we
@@ -2483,7 +2488,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace) {
+        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace, HashingStorageLibrary nslib) {
             SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
@@ -2503,7 +2508,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (getContainsKeyNode().execute(null, namespace.getDictStorage(), slotName)) {
+                if (nslib.hasKey(namespace.getDictStorage(), slotName)) {
                     throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
                 }
                 j++;
@@ -2550,14 +2555,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
             return "_" + privateobj.substring(ipriv) + ident;
-        }
-
-        private HashingStorageNodes.ContainsKeyNode getContainsKeyNode() {
-            if (containsKeyNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                containsKeyNode = insert(HashingStorageNodes.ContainsKeyNode.create());
-            }
-            return containsKeyNode;
         }
 
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
@@ -2986,7 +2983,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
                         @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) throws UnsupportedMessageException {
             byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
             byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
 
@@ -3001,7 +2999,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
                             getStringArg(filename), getStringArg(name), firstlineno,
-                            lnotabBytes);
+                            lnotabBytes, lib);
         }
 
         @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
@@ -3089,7 +3087,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
-                        @Cached("create()") HashingStorageNodes.InitNode initNode,
+                        @Cached("create()") HashingStorage.InitNode initNode,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
         }

@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCal
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ParseTupleAndKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1018,8 +1018,8 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         @CachedLibrary("kwdnames") InteropLibrary kwdnamesLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached PCallCExtFunction callCStringToString) throws InteropException {
 
             Object out = null;
@@ -1038,7 +1038,7 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof String) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = getDictItemNode.executeWithGlobalState(getDictStorageNode.execute((PDict) kwds), kwdname);
+                    out = lib.getItem(getDictStorageNode.execute((PDict) kwds), kwdname);
                 }
             }
             state.v.argnum++;

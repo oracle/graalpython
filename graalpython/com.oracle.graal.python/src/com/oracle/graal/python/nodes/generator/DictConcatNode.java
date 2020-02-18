@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,26 +41,35 @@
 package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class DictConcatNode extends ExpressionNode {
+@GenerateNodeFactory
+public abstract class DictConcatNode extends ExpressionNode {
 
     @Children final ExpressionNode[] mappables;
-    @Child private HashingStorageNodes.SetItemNode setItemNode;
-    @Child private HashingStorageNodes.GetItemNode getItemNode;
 
-    private DictConcatNode(ExpressionNode... mappablesNodes) {
+    protected DictConcatNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
     }
 
-    @Override
     @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
+    @Specialization
+    public Object concat(VirtualFrame frame,
+                    @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary firstlib,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary otherlib) {
         PDict first = null;
         PDict other;
         for (ExpressionNode n : mappables) {
@@ -68,21 +77,25 @@ public final class DictConcatNode extends ExpressionNode {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                addAllToDict(frame, first, other);
+                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib);
             }
         }
         return first;
     }
 
-    private void addAllToDict(VirtualFrame frame, PDict dict, PDict other) {
-        if (setItemNode == null || getItemNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            getItemNode = insert(HashingStorageNodes.GetItemNode.create());
-        }
+    private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
+                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib) {
+        ThreadState state = PArguments.getThreadState(frame);
         HashingStorage dictStorage = dict.getDictStorage();
         for (Object key : other.keys()) {
-            dictStorage = setItemNode.execute(frame, dictStorage, key, getItemNode.execute(frame, other.getDictStorage(), key));
+            Object value;
+            if (hasFrame.profile(frame != null)) {
+                value = otherlib.getItemWithState(other.getDictStorage(), key, state);
+                dictStorage = firstlib.setItemWithState(dictStorage, key, value, state);
+            } else {
+                value = otherlib.getItem(other.getDictStorage(), key);
+                dictStorage = firstlib.setItem(dictStorage, key, value);
+            }
         }
         dict.setDictStorage(dictStorage);
     }
@@ -93,10 +106,6 @@ public final class DictConcatNode extends ExpressionNode {
             throw new RuntimeException("non-dictionary in dictionary appending");
         }
         return (PDict) first;
-    }
-
-    public static DictConcatNode create(ExpressionNode... mappableNodes) {
-        return new DictConcatNode(mappableNodes);
     }
 
 }

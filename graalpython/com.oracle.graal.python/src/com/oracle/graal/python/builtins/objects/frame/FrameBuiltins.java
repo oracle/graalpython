@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -133,7 +135,8 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, PFrame self,
-                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
+                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             RootCallTarget ct = self.getTarget();
             if (ct != null) {
                 return factory().createCode(ct);
@@ -141,7 +144,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             // TODO: frames: this just shouldn't happen anymore
             assert false : "should not be reached";
             return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0], "<internal>",
-                            "<internal>", -1, new byte[0]);
+                            "<internal>", -1, new byte[0], lib);
         }
     }
 

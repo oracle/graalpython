@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemInteropNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -649,7 +648,7 @@ public final class PythonContext {
         PythonLanguage.getLogger().fine("shutting down threads");
         PDict importedModules = getImportedModules();
         HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
-        Object value = GetItemInteropNode.getUncached().executeWithGlobalState(dictStorage, "threading");
+        Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, "threading");
         if (value != null) {
             Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.SHUTDOWN);
             if (attrShutdown == PNone.NO_VALUE) {

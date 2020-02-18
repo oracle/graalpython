@@ -105,7 +105,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") VirtualFrame frame,
                     @SuppressWarnings("unused") @Cached("getGlobals(frame)") Object cachedGlobals,
                     @Cached("getStorage(cachedGlobals)") HashingStorage cachedStorage,
-                    @CachedLibrary(value = "cachedStorage") HashingStorageLibrary hlib,
+                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile builtinProfile) {
         Object result = hlib.getItem(cachedStorage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
