@@ -60,6 +60,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.BytesLikeNoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GenNodeSupplier;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
@@ -73,22 +75,21 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -564,80 +565,218 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class StartsWithNode extends PythonBuiltinNode {
-        @Child private SequenceStorageNodes.LenNode lenNode;
+    abstract static class PrefixSuffixBaseNode extends PythonQuaternaryBuiltinNode {
+
+        @Child private CastToSliceComponentNode castSliceComponentNode;
+        @Child private GetObjectArrayNode getObjectArrayNode;
+
+        // common and specialized cases --------------------
 
         @Specialization
-        boolean startswith(VirtualFrame frame, PByteArray self, PTuple prefixes, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached GetIteratorNode getIteratorNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached GetNextNode getNextNode,
-                        @Cached BytesNodes.FindNode findNode) {
-            Object iterator = getIteratorNode.executeWith(frame, prefixes);
-            while (true) {
-                try {
-                    Object arrayObj = getNextNode.execute(frame, iterator);
-                    if (arrayObj instanceof PIBytesLike) {
-                        PIBytesLike array = (PIBytesLike) arrayObj;
-                        if (startswith(frame, self, array, start, end, findNode)) {
-                            return true;
-                        }
-                    } else {
-                        throw raise(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'", arrayObj);
+        boolean doPrefixStartEnd(PIBytesLike self, PIBytesLike substr, int start, int end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+            int len = bytes.length;
+            return doIt(bytes, substrBytes, adjustStart(start, len), adjustStart(end, len));
+        }
+
+        @Specialization
+        boolean doPrefixStart(PIBytesLike self, PIBytesLike substr, int start, @SuppressWarnings("unused") PNone end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+            int len = bytes.length;
+            return doIt(bytes, substrBytes, adjustStart(start, len), len);
+        }
+
+        @Specialization
+        boolean doPrefix(PIBytesLike self, PIBytesLike substr, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+            return doIt(bytes, substrBytes, 0, bytes.length);
+        }
+
+        @Specialization
+        boolean doTuplePrefixStartEnd(PIBytesLike self, PTuple substrs, int start, int end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            int len = bytes.length;
+            return doIt(bytes, substrs, adjustStart(start, len), adjustStart(end, len), toByteArrayNode);
+        }
+
+        @Specialization
+        boolean doTuplePrefixStart(PIBytesLike self, PTuple substrs, int start, @SuppressWarnings("unused") PNone end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            int len = bytes.length;
+            return doIt(bytes, substrs, adjustStart(start, len), len, toByteArrayNode);
+        }
+
+        @Specialization
+        boolean doTuplePrefix(PIBytesLike self, PTuple substrs, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            return doIt(bytes, substrs, 0, bytes.length, toByteArrayNode);
+        }
+
+        // generic cases --------------------
+
+        @Specialization(replaces = {"doPrefixStartEnd", "doPrefixStart", "doPrefix"})
+        boolean doPrefixGeneric(VirtualFrame frame, PIBytesLike self, PIBytesLike substr, Object start, Object end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+            int len = bytes.length;
+            int istart = PGuards.isPNone(start) ? 0 : castSlicePart(frame, start);
+            int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
+            return doIt(bytes, substrBytes, adjustStart(istart, len), adjustStart(iend, len));
+        }
+
+        @Specialization(replaces = {"doTuplePrefixStartEnd", "doTuplePrefixStart", "doTuplePrefix"})
+        boolean doTuplePrefixGeneric(VirtualFrame frame, PIBytesLike self, PTuple substrs, Object start, Object end,
+                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+            int len = bytes.length;
+            int istart = PGuards.isPNone(start) ? 0 : castSlicePart(frame, start);
+            int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
+            return doIt(bytes, substrs, adjustStart(istart, len), adjustStart(iend, len), toByteArrayNode);
+        }
+
+        @Specialization(guards = {"!isBytes(substr)", "!isPTuple(substr)"})
+        boolean doGeneric(@SuppressWarnings("unused") PIBytesLike self, Object substr, @SuppressWarnings("unused") Object start,
+                        @SuppressWarnings("unused") Object end) {
+            throw raise(TypeError, "first arg must be bytes or a tuple of bytes, not %p", substr);
+        }
+
+        @Specialization(guards = "!isBytes(self)")
+        boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
+                        @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end) {
+            throw raise(TypeError, "Method requires a 'bytes' object, got '%p'", self);
+        }
+
+        // the actual operation; will be overridden by subclasses
+        protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("should not reach");
+        }
+
+        private boolean doIt(byte[] self, PTuple substrs, int start, int stop, SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            for (Object element : ensureGetObjectArrayNode().execute(substrs)) {
+                if (element instanceof PIBytesLike) {
+                    if (doIt(self, toByteArrayNode.execute(((PIBytesLike) element).getSequenceStorage()), start, stop)) {
+                        return true;
                     }
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    return false;
+                } else {
+                    throw raise(TypeError, getErrorMessage(), element);
                 }
             }
+            return false;
         }
 
-        @Specialization
-        boolean startswith(VirtualFrame frame, PIBytesLike self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, prefix, 0, getLength(self.getSequenceStorage())) == 0;
+        protected String getErrorMessage() {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("should not reach");
         }
 
-        @Specialization
-        boolean startswith(VirtualFrame frame, PIBytesLike self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, prefix, start, getLength(self.getSequenceStorage())) == start;
-        }
+        // helper methods --------------------
 
-        @Specialization
-        boolean startswith(VirtualFrame frame, PIBytesLike self, PIBytesLike prefix, int start, int end,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, prefix, start, end) == start;
-        }
-
-        private int getLength(SequenceStorage s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
+        // for semantics, see macro 'ADJUST_INDICES' in CPython's 'unicodeobject.c'
+        static int adjustStart(int start, int length) {
+            if (start < 0) {
+                int adjusted = start + length;
+                return adjusted < 0 ? 0 : adjusted;
             }
-            return lenNode.execute(s);
+            return start;
+        }
+
+        // for semantics, see macro 'ADJUST_INDICES' in CPython's 'unicodeobject.c'
+        static int adjustEnd(int end, int length) {
+            if (end > length) {
+                return length;
+            }
+            return adjustStart(end, length);
+        }
+
+        private int castSlicePart(VirtualFrame frame, Object idx) {
+            if (castSliceComponentNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // None should map to 0, overflow to the maximum integer
+                castSliceComponentNode = insert(CastToSliceComponentNode.create(0, Integer.MAX_VALUE));
+            }
+            return castSliceComponentNode.execute(frame, idx);
+        }
+
+        private GetObjectArrayNode ensureGetObjectArrayNode() {
+            if (getObjectArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
+            }
+            return getObjectArrayNode;
         }
     }
 
-    @Builtin(name = "endswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    // bytes.startswith(prefix[, start[, end]])
+    // bytearray.startswith(prefix[, start[, end]])
+    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, parameterNames = {"self", "prefix", "start", "end"})
     @GenerateNodeFactory
-    abstract static class EndsWithNode extends PythonBuiltinNode {
-        @Child private SequenceStorageNodes.LenNode lenNode;
+    public abstract static class StartsWithNode extends PrefixSuffixBaseNode {
 
-        @Specialization
-        boolean endswith(VirtualFrame frame, PIBytesLike self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, suffix, getLength(self.getSequenceStorage()) - getLength(suffix.getSequenceStorage()), getLength(self.getSequenceStorage())) != -1;
+        private static final String INVALID_ELEMENT_TYPE = "a bytes-like object is required, not '%p'";
+
+        @Override
+        protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
+            // start and end must be normalized indices for 'bytes'
+            assert start >= 0;
+            assert end >= 0 && end <= bytes.length;
+
+            if (end - start < prefix.length) {
+                return false;
+            }
+            for (int i = 0; i < prefix.length; i++) {
+                if (bytes[start + i] != prefix[i]) {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        private int getLength(SequenceStorage s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
+        @Override
+        protected String getErrorMessage() {
+            return INVALID_ELEMENT_TYPE;
+        }
+    }
+
+    // bytes.endswith(suffix[, start[, end]])
+    // bytearray.endswith(suffix[, start[, end]])
+    @Builtin(name = "endswith", minNumOfPositionalArgs = 2, parameterNames = {"self", "suffix", "start", "end"})
+    @GenerateNodeFactory
+    public abstract static class EndsWithNode extends PrefixSuffixBaseNode {
+
+        private static final String INVALID_ELEMENT_TYPE = "a bytes-like object is required, not '%p'";
+
+        @Override
+        protected boolean doIt(byte[] bytes, byte[] suffix, int start, int end) {
+            // start and end must be normalized indices for 'bytes'
+            assert start >= 0;
+            assert end >= 0 && end <= bytes.length;
+
+            int suffixLen = suffix.length;
+            if (end - start < suffixLen) {
+                return false;
             }
-            return lenNode.execute(s);
+            for (int i = 0; i < suffix.length; i++) {
+                if (bytes[end - suffixLen + i] != suffix[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        protected String getErrorMessage() {
+            return INVALID_ELEMENT_TYPE;
         }
     }
 
