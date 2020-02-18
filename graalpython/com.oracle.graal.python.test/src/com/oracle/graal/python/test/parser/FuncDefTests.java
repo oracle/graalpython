@@ -474,7 +474,7 @@ public class FuncDefTests extends ParserTestBase {
     public void positionalOnlyArg47() throws Exception {
         checkSyntaxError("async def f(a, *, c, /, d, e): pass");
     }
-    
+
     @Test
     public void issue21351() throws Exception {
         // parser test for GR-21351
