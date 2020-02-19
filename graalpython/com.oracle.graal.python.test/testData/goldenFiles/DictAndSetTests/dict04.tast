@@ -5,7 +5,7 @@ ModuleRootNode Name: <module 'dict04'> SourceSection: [0,10]`{a:b, c:d}`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,10]`{a:b, c:d}`
-    DictLiteralNode SourceSection: [0,10]`{a:b, c:d}`
+    DictLiteralNodeGen SourceSection: [0,10]`{a:b, c:d}`
       PythonObjectFactoryNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [1,2]`a`
         Identifier: a

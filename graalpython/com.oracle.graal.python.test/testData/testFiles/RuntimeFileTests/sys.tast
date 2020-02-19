@@ -598,7 +598,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7087]`# Copyright (c) 2019
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4239,4263]`path_importer_cache ...`
         Identifier: path_importer_cache
-        DictLiteralNode SourceSection: [4261,4263]`{}`
+        DictLiteralNodeGen SourceSection: [4261,4263]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4367,4383]`warnoptions = []`
         Identifier: warnoptions

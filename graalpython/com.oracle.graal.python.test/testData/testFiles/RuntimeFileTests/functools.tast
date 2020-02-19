@@ -231,7 +231,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                 ReadLocalVariableNode SourceSection: [2321,2325]`attr`
                                   Frame: [5,attr,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                DictLiteralNode SourceSection: [2327,2329]`{}`
+                                DictLiteralNodeGen SourceSection: [2327,2329]`{}`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2304,2311]`getattr`
                                   Identifier: getattr
@@ -1510,7 +1510,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                   ReadVariableFromFrameNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [6784,7281]`_convert = {↵    '__...`
         Identifier: _convert
-        DictLiteralNode SourceSection: [6795,7281]`{↵    '__lt__': [('_...`
+        DictLiteralNodeGen SourceSection: [6795,7281]`{↵    '__lt__': [('_...`
           PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [6801,6809]`'__lt__'`
           StringLiteralNode SourceSection: [6922,6930]`'__le__'`
@@ -3509,7 +3509,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Identifier: kwds
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,kwds,Illegal]
-                                        DictLiteralNode SourceSection: [11512,11514]`{}`
+                                        DictLiteralNodeGen SourceSection: [11512,11514]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       IfNode SourceSection: None
                                         NotNodeGen SourceSection: [11528,11550]`type(kwds) is not di...`
@@ -3549,7 +3549,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         Identifier: namespace
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,namespace,Illegal]
-                                        DictLiteralNode SourceSection: [11677,11679]`{}`
+                                        DictLiteralNodeGen SourceSection: [11677,11679]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     SetAttributeNodeGen SourceSection: [11689,11714]`self.__dict__ = name...`
@@ -4825,7 +4825,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 ReadNameNodeGen SourceSection: [15659,15665]`object`
                   Identifier: object
               PythonObjectFactoryNodeGen SourceSection: None
-            SetLiteralNode SourceSection: [15696,15729]`{int, str, frozenset...`
+            SetLiteralNodeGen SourceSection: [15696,15729]`{int, str, frozenset...`
               PythonObjectFactoryNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [15697,15700]`int`
                 Identifier: int
@@ -5511,7 +5511,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                       ReadLocalVariableNode SourceSection: None
                         Frame: [10,cache,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-                      DictLiteralNode SourceSection: [18708,18710]`{}`
+                      DictLiteralNodeGen SourceSection: [18708,18710]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     BlockNode SourceSection: [18715,18732]`hits = misses = 0`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -8613,7 +8613,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           ReadLocalVariableNode SourceSection: None
                             Frame: [3,registry,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          DictLiteralNode SourceSection: [29843,29845]`{}`
+                          DictLiteralNodeGen SourceSection: [29843,29845]`{}`
                             PythonObjectFactoryNodeGen SourceSection: None
                         WriteLocalCellNodeGen SourceSection: [29850,29894]`dispatch_cache = wea...`
                           Identifier: dispatch_cache
@@ -8945,7 +8945,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadFromCellNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [31022,31039]`'__annotations__'`
-                                              DictLiteralNode SourceSection: [31041,31043]`{}`
+                                              DictLiteralNodeGen SourceSection: [31041,31043]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [31009,31016]`getattr`
                                                 Identifier: getattr

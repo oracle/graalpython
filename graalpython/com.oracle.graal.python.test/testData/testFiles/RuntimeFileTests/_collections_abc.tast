@@ -94,7 +94,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             PythonCallNodeGen SourceSection: [1471,1480]`{}.keys()`
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
-                DictLiteralNode SourceSection: [1471,1473]`{}`
+                DictLiteralNodeGen SourceSection: [1471,1473]`{}`
                   PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1466,1470]`iter`
               Identifier: iter
@@ -109,7 +109,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             PythonCallNodeGen SourceSection: [1514,1525]`{}.values()`
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
-                DictLiteralNode SourceSection: [1514,1516]`{}`
+                DictLiteralNodeGen SourceSection: [1514,1516]`{}`
                   PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1509,1513]`iter`
               Identifier: iter
@@ -124,7 +124,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             PythonCallNodeGen SourceSection: [1558,1568]`{}.items()`
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
-                DictLiteralNode SourceSection: [1558,1560]`{}`
+                DictLiteralNodeGen SourceSection: [1558,1560]`{}`
                   PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1553,1557]`iter`
               Identifier: iter
@@ -253,7 +253,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           PythonCallNodeGen SourceSection: [1895,1904]`{}.keys()`
             CallNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
-              DictLiteralNode SourceSection: [1895,1897]`{}`
+              DictLiteralNodeGen SourceSection: [1895,1897]`{}`
                 PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1890,1894]`type`
             Identifier: type
@@ -264,7 +264,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           PythonCallNodeGen SourceSection: [1925,1936]`{}.values()`
             CallNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
-              DictLiteralNode SourceSection: [1925,1927]`{}`
+              DictLiteralNodeGen SourceSection: [1925,1927]`{}`
                 PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1920,1924]`type`
             Identifier: type
@@ -275,7 +275,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           PythonCallNodeGen SourceSection: [1956,1966]`{}.items()`
             CallNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
-              DictLiteralNode SourceSection: [1956,1958]`{}`
+              DictLiteralNodeGen SourceSection: [1956,1958]`{}`
                 PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1951,1955]`type`
             Identifier: type
