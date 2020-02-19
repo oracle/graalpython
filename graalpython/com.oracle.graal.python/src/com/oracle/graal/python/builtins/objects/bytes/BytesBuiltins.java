@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -570,90 +571,96 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private CastToSliceComponentNode castSliceComponentNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
 
+        private static final String INVALID_RECEIVER = "Method requires a 'bytes' object, got '%p'";
+        private static final String INVALID_FIRST_ARG = "first arg must be bytes or a tuple of bytes, not %p";
+        private static final String INVALID_ELEMENT_TYPE = "a bytes-like object is required, not '%p'";
+
         // common and specialized cases --------------------
 
-        @Specialization
-        boolean doPrefixStartEnd(PIBytesLike self, PIBytesLike substr, int start, int end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
-            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+        @Specialization(guards = "!isPTuple(substr)", limit = "2")
+        boolean doPrefixStartEnd(PIBytesLike self, Object substr, int start, int end,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary("substr") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
+            byte[] substrBytes = getBytes(substrLib, substr, INVALID_FIRST_ARG);
             int len = bytes.length;
             return doIt(bytes, substrBytes, adjustStart(start, len), adjustStart(end, len));
         }
 
-        @Specialization
-        boolean doPrefixStart(PIBytesLike self, PIBytesLike substr, int start, @SuppressWarnings("unused") PNone end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
-            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+        @Specialization(guards = "!isPTuple(substr)", limit = "2")
+        boolean doPrefixStart(PIBytesLike self, Object substr, int start, @SuppressWarnings("unused") PNone end,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary("substr") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
+            byte[] substrBytes = getBytes(substrLib, substr, INVALID_FIRST_ARG);
             int len = bytes.length;
             return doIt(bytes, substrBytes, adjustStart(start, len), len);
         }
 
-        @Specialization
-        boolean doPrefix(PIBytesLike self, PIBytesLike substr, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
-            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+        @Specialization(guards = "!isPTuple(substr)", limit = "2")
+        boolean doPrefix(PIBytesLike self, Object substr, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary("substr") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
+            byte[] substrBytes = getBytes(substrLib, substr, INVALID_FIRST_ARG);
             return doIt(bytes, substrBytes, 0, bytes.length);
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         boolean doTuplePrefixStartEnd(PIBytesLike self, PTuple substrs, int start, int end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
             int len = bytes.length;
-            return doIt(bytes, substrs, adjustStart(start, len), adjustStart(end, len), toByteArrayNode);
+            return doIt(bytes, substrs, adjustStart(start, len), adjustStart(end, len), substrLib);
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         boolean doTuplePrefixStart(PIBytesLike self, PTuple substrs, int start, @SuppressWarnings("unused") PNone end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
             int len = bytes.length;
-            return doIt(bytes, substrs, adjustStart(start, len), len, toByteArrayNode);
+            return doIt(bytes, substrs, adjustStart(start, len), len, substrLib);
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         boolean doTuplePrefix(PIBytesLike self, PTuple substrs, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
-            return doIt(bytes, substrs, 0, bytes.length, toByteArrayNode);
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
+            return doIt(bytes, substrs, 0, bytes.length, substrLib);
         }
 
         // generic cases --------------------
 
-        @Specialization(replaces = {"doPrefixStartEnd", "doPrefixStart", "doPrefix"})
-        boolean doPrefixGeneric(VirtualFrame frame, PIBytesLike self, PIBytesLike substr, Object start, Object end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
-            byte[] substrBytes = toByteArrayNode.execute(substr.getSequenceStorage());
+        @Specialization(guards = "!isPTuple(substr)", replaces = {"doPrefixStartEnd", "doPrefixStart", "doPrefix"}, limit = "200")
+        boolean doPrefixGeneric(VirtualFrame frame, PIBytesLike self, Object substr, Object start, Object end,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary("substr") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
+            byte[] substrBytes = getBytes(substrLib, substr, INVALID_FIRST_ARG);
             int len = bytes.length;
             int istart = PGuards.isPNone(start) ? 0 : castSlicePart(frame, start);
             int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
             return doIt(bytes, substrBytes, adjustStart(istart, len), adjustStart(iend, len));
         }
 
-        @Specialization(replaces = {"doTuplePrefixStartEnd", "doTuplePrefixStart", "doTuplePrefix"})
+        @Specialization(replaces = {"doTuplePrefixStartEnd", "doTuplePrefixStart", "doTuplePrefix"}, limit = "2")
         boolean doTuplePrefixGeneric(VirtualFrame frame, PIBytesLike self, PTuple substrs, Object start, Object end,
-                        @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            byte[] bytes = toByteArrayNode.execute(self.getSequenceStorage());
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "16") PythonObjectLibrary substrLib) {
+            byte[] bytes = getBytes(lib, self);
             int len = bytes.length;
             int istart = PGuards.isPNone(start) ? 0 : castSlicePart(frame, start);
             int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
-            return doIt(bytes, substrs, adjustStart(istart, len), adjustStart(iend, len), toByteArrayNode);
-        }
-
-        @Specialization(guards = {"!isBytes(substr)", "!isPTuple(substr)"})
-        boolean doGeneric(@SuppressWarnings("unused") PIBytesLike self, Object substr, @SuppressWarnings("unused") Object start,
-                        @SuppressWarnings("unused") Object end) {
-            throw raise(TypeError, "first arg must be bytes or a tuple of bytes, not %p", substr);
+            return doIt(bytes, substrs, adjustStart(istart, len), adjustStart(iend, len), substrLib);
         }
 
         @Specialization(guards = "!isBytes(self)")
         boolean doGeneric(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object substr,
                         @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end) {
-            throw raise(TypeError, "Method requires a 'bytes' object, got '%p'", self);
+            throw raise(TypeError, INVALID_RECEIVER, self);
         }
 
         // the actual operation; will be overridden by subclasses
@@ -662,22 +669,30 @@ public class BytesBuiltins extends PythonBuiltins {
             throw new IllegalStateException("should not reach");
         }
 
-        private boolean doIt(byte[] self, PTuple substrs, int start, int stop, SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+        private boolean doIt(byte[] self, PTuple substrs, int start, int stop, PythonObjectLibrary lib) {
             for (Object element : ensureGetObjectArrayNode().execute(substrs)) {
-                if (element instanceof PIBytesLike) {
-                    if (doIt(self, toByteArrayNode.execute(((PIBytesLike) element).getSequenceStorage()), start, stop)) {
-                        return true;
-                    }
-                } else {
-                    throw raise(TypeError, getErrorMessage(), element);
+                byte[] bytes = getBytes(lib, element, INVALID_ELEMENT_TYPE);
+                if (doIt(self, bytes, start, stop)) {
+                    return true;
                 }
             }
             return false;
         }
 
-        protected String getErrorMessage() {
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("should not reach");
+        private byte[] getBytes(PythonObjectLibrary lib, Object object) {
+            try {
+                return lib.getBufferBytes(object);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(e);
+            }
+        }
+
+        private byte[] getBytes(PythonObjectLibrary lib, Object object, String errorMessage) {
+            if (!lib.isBuffer(object)) {
+                throw raise(TypeError, errorMessage, object);
+            }
+            return getBytes(lib, object);
         }
 
         // helper methods --------------------
@@ -723,8 +738,6 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StartsWithNode extends PrefixSuffixBaseNode {
 
-        private static final String INVALID_ELEMENT_TYPE = "a bytes-like object is required, not '%p'";
-
         @Override
         protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
             // start and end must be normalized indices for 'bytes'
@@ -741,11 +754,6 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             return true;
         }
-
-        @Override
-        protected String getErrorMessage() {
-            return INVALID_ELEMENT_TYPE;
-        }
     }
 
     // bytes.endswith(suffix[, start[, end]])
@@ -753,8 +761,6 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "endswith", minNumOfPositionalArgs = 2, parameterNames = {"self", "suffix", "start", "end"})
     @GenerateNodeFactory
     public abstract static class EndsWithNode extends PrefixSuffixBaseNode {
-
-        private static final String INVALID_ELEMENT_TYPE = "a bytes-like object is required, not '%p'";
 
         @Override
         protected boolean doIt(byte[] bytes, byte[] suffix, int start, int end) {
@@ -772,11 +778,6 @@ public class BytesBuiltins extends PythonBuiltins {
                 }
             }
             return true;
-        }
-
-        @Override
-        protected String getErrorMessage() {
-            return INVALID_ELEMENT_TYPE;
         }
     }
 
