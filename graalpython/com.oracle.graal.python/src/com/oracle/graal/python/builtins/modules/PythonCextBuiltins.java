@@ -3094,12 +3094,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (nativeWrapper.getRefCount() > 0) {
                 throw new IllegalStateException("deallocating native object with refcnt > 0");
             }
+
+            // clear native wrapper
+            Object delegate = lib.getDelegate(nativeWrapper);
+            if (delegate instanceof PythonAbstractObject) {
+                // If this assertion fails, it indicates that the native code still uses a free'd
+                // native wrapper.
+                assert ((PythonAbstractObject) delegate).getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
+                ((PythonAbstractObject) delegate).clearNativeWrapper();
+            }
+
+            // If it already went to native, also release the handle or free the native memory.
             if (lib.isNative(nativeWrapper)) {
-                // clear native wrapper
-                Object delegate = lib.getDelegate(nativeWrapper);
-                if (delegate instanceof PythonAbstractObject) {
-                    ((PythonAbstractObject) delegate).clearNativeWrapper();
-                }
                 // We do not call 'truffle_release_handle' directly because we still want to support
                 // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
                 // necessary distinction.
