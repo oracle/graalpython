@@ -453,15 +453,23 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached CallNode callGetattributeNode,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetattribute,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileMember) throws UnknownIdentifierException, UnsupportedMessageException {
-        Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-        if (profileGetattribute.profile(attrGetattribute != PNone.NO_VALUE)) {
-            Object memberObj = callGetattributeNode.execute(null, attrGetattribute, this, member);
-            if (profileMember.profile(memberObj != PNone.NO_VALUE)) {
-                return executeNode.execute(memberObj, arguments);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileMember,
+                    @Exclusive @Cached IsBuiltinClassProfile attributeErrorProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+        Object memberObj;
+        try {
+            Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
+            if (profileGetattribute.profile(attrGetattribute == PNone.NO_VALUE)) {
+                throw UnknownIdentifierException.create(member);
             }
+            memberObj = callGetattributeNode.execute(null, attrGetattribute, this, member);
+            if (profileMember.profile(memberObj == PNone.NO_VALUE)) {
+                throw UnknownIdentifierException.create(member);
+            }
+        } catch (PException e) {
+            e.expect(AttributeError, attributeErrorProfile);
+            throw UnknownIdentifierException.create(member);
         }
-        throw UnknownIdentifierException.create(member);
+        return executeNode.execute(memberObj, arguments);
     }
 
     @ExportMessage
