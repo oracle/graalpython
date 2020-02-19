@@ -3221,7 +3221,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             boolean traceNativeMemoryCalls = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
             if (isLoggable || traceNativeMemory) {
                 if (isLoggable) {
-                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: 0x%X", ptr));
+                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", PyObjectAllocationReporter.asHex(ptr)));
                 }
                 if (traceNativeMemory && !lib.isNull(ptr)) {
                     PFrame.Reference ref = null;

@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -95,7 +96,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
                 throw UnsupportedTypeException.create(arguments, "invalid type for second argument 'objectSize'");
             }
             if (isLoggable) {
-                logger.fine(() -> String.format("Allocated memory at 0x%X (size: %d bytes)", arguments[0], objectSize));
+                logger.fine(() -> String.format("Allocated memory at %s (size: %d bytes)", asHex(arguments[0]), objectSize));
             }
             if (traceNativeMemory) {
                 PFrame.Reference ref = null;
@@ -116,6 +117,14 @@ public class PyObjectAllocationReporter implements TruffleObject {
             return 0;
         }
         return -2;
+    }
+
+    @TruffleBoundary
+    public static Object asHex(Object object) {
+        if(object instanceof Number) {
+            return "0x" + Long.toHexString(((Number)object).longValue());
+        }
+        return object;
     }
 
     protected static AllocationReporter getAllocationReporter(PythonContext context) {
