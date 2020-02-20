@@ -52,7 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
-import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -137,7 +136,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -2691,7 +2689,7 @@ public abstract class CExtNodes {
         private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
             Object ptrVal = asPointer(object, lib);
             if (!context.getCApiContext().isAllocated(ptrVal)) {
-                PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + asHex(ptrVal));
+                PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
             }
         }
 

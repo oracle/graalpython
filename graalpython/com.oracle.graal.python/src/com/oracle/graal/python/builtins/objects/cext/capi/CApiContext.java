@@ -48,8 +48,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -93,6 +93,14 @@ public final class CApiContext extends CExtContext {
             }
             return null;
         });
+    }
+
+    @TruffleBoundary
+    public static Object asHex(Object ptr) {
+        if (ptr instanceof Number) {
+            return "0x" + Long.toHexString(((Number) ptr).longValue());
+        }
+        return Objects.toString(ptr);
     }
 
     public static class NativeObjectReference extends PhantomReference<PythonAbstractNativeObject> {
@@ -146,9 +154,9 @@ public final class CApiContext extends CExtContext {
         Pair<PFrame.Reference, String> allocatedValue = allocatedNativeMemory.remove(ptr);
         Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
         if (freedValue != null) {
-            PythonLanguage.getLogger().severe(String.format("freeing memory that was already free'd 0x%X (double-free)", ptr));
+            PythonLanguage.getLogger().severe(String.format("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
         } else if (allocatedValue == null) {
-            PythonLanguage.getLogger().severe(String.format("freeing non-allocated memory 0x%X (maybe a double-free?)", ptr));
+            PythonLanguage.getLogger().info(String.format("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
         }
         return allocatedValue;
     }

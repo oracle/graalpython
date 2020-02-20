@@ -66,12 +66,8 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNodeGen;
-import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.TruffleLanguage.Registration;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -3209,7 +3205,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             boolean traceNativeMemoryCalls = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
             if (isLoggable || traceNativeMemory) {
                 if (isLoggable) {
-                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", PyObjectAllocationReporter.asHex(ptr)));
+                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
                 if (traceNativeMemory && !lib.isNull(ptr)) {
                     PFrame.Reference ref = null;
