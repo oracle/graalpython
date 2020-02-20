@@ -221,7 +221,7 @@ def python3_unittests(args):
 def retag_unittests(args):
     """run the cPython stdlib unittests"""
     with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
+        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py", '--retag'] + args)
 
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]

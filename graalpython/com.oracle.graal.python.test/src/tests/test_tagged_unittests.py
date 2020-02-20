@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -106,8 +106,8 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_success = re.compile("(test\S+) \(([^\s]+)\) \.\.\. ok$", re.MULTILINE)
-    re_failure = re.compile("(test\S+) \(([^\s]+)\) \.\.\. (?:ERROR|FAIL)$", re.MULTILINE)
+    re_success = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. ok$", re.MULTILINE)
+    re_failure = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. (?:ERROR|FAIL)$", re.MULTILINE)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
