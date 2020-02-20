@@ -64,6 +64,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
@@ -3081,6 +3082,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
                         @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
+                        @Cached ClearNativeWrapperNode clearNativeWrapperNode,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
             if (nativeWrapper.getRefCount() > 0) {
                 throw new IllegalStateException("deallocating native object with refcnt > 0");
@@ -3088,12 +3090,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             // clear native wrapper
             Object delegate = lib.getDelegate(nativeWrapper);
-            if (delegate instanceof PythonAbstractObject) {
-                // If this assertion fails, it indicates that the native code still uses a free'd
-                // native wrapper.
-                assert ((PythonAbstractObject) delegate).getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
-                ((PythonAbstractObject) delegate).clearNativeWrapper();
-            }
+            clearNativeWrapperNode.execute(delegate, nativeWrapper);
 
             // If it already went to native, also release the handle or free the native memory.
             if (lib.isNative(nativeWrapper)) {

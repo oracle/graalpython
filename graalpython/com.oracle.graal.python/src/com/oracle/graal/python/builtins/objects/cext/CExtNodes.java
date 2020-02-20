@@ -2707,13 +2707,36 @@ public abstract class CExtNodes {
             }
             return ptr;
         }
+    }
 
-        @TruffleBoundary
-        static String asHex(Object ptr) {
-            if (ptr instanceof Number) {
-                return Long.toHexString(((Number) ptr).longValue());
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    public abstract static class ClearNativeWrapperNode extends Node {
+        public abstract void execute(Object delegate, PythonNativeWrapper nativeWrapper);
+
+        @Specialization(guards = "!isPrimitiveNativeWrapper(nativeWrapper)")
+        static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper) {
+            // If this assertion fails, it indicates that the native code still uses a free'd native
+            // wrapper.
+            assert delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
+            delegate.clearNativeWrapper();
+        }
+
+        @Specialization
+        static void doPrimitiveNativeWrapper(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
+                delegate.clearNativeWrapper();
             }
-            return Objects.toString(ptr);
+        }
+
+        @Specialization(guards = "!isAnyPythonObject(delegate)")
+        static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
+            // ignore
+        }
+
+        static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
+            return nativeWrapper instanceof PrimitiveNativeWrapper;
         }
     }
 }
