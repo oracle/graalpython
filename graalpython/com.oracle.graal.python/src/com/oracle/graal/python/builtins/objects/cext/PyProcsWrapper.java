@@ -41,9 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
@@ -194,7 +194,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
         protected Object execute(Object[] arguments,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached ToSulongNode toSulongNode,
-                        @Cached NewRefNode newRefNode,
+                        @Cached ToNewRefNode toNewRefNode,
                         @Cached CallBinaryMethodNode executeNode,
                         @Cached ToJavaNode toJavaNode,
                         @Cached GetNativeNullNode getNativeNullNode,
@@ -205,9 +205,8 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             }
             assert arguments[1] instanceof Number;
             try {
-                Object result = toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]));
-
-                return newRef ? newRefNode.execute(result) : result;
+                Object result = executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), arguments[1]);
+                return newRef ? toNewRefNode.execute(result) : toSulongNode.execute(result);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(null, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());

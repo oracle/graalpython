@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFir
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -317,43 +318,43 @@ public abstract class CExtNodes {
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
         @Specialization
-        Object doString(@SuppressWarnings("unused") CExtContext cextContext, String str,
+        static Object doString(@SuppressWarnings("unused") CExtContext cextContext, String str,
                         @Cached PythonObjectFactory factory,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
+            return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
         }
 
         @Specialization
-        Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
+        static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             PythonCore core = context.getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
-                nativeWrapper = DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createBool(b);
+                nativeWrapper = PrimitiveNativeWrapper.createBool(b);
                 boxed.setNativeWrapper(nativeWrapper);
             }
             return nativeWrapper;
         }
 
         @Specialization
-        Object doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
-            return DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createInt(i);
+        static Object doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
+            return PrimitiveNativeWrapper.createInt(i);
         }
 
         @Specialization
-        Object doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
-            return DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createLong(l);
+        static Object doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
+            return PrimitiveNativeWrapper.createLong(l);
         }
 
         @Specialization(guards = "!isNaN(d)")
-        Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, double d) {
-            return DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createDouble(d);
+        static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, double d) {
+            return PrimitiveNativeWrapper.createDouble(d);
         }
 
         @Specialization(guards = "isNaN(d)")
-        Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
+        static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
             PFloat boxed = context.getCore().getNaN();
@@ -363,63 +364,75 @@ public abstract class CExtNodes {
                 // This deliberately uses 'CompilerDirectives.transferToInterpreter()' because this
                 // code will happen just once per context.
                 CompilerDirectives.transferToInterpreter();
-                nativeWrapper = DynamicObjectNativeWrapper.PrimitiveNativeWrapper.createDouble(Double.NaN);
+                nativeWrapper = PrimitiveNativeWrapper.createDouble(Double.NaN);
                 boxed.setNativeWrapper(nativeWrapper);
             }
             return nativeWrapper;
         }
 
         @Specialization
-        Object doNativeClass(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractNativeObject nativeClass) {
-            return nativeClass.getPtr();
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractNativeObject nativeObject) {
+            return nativeObject.getPtr();
         }
 
         @Specialization
-        Object doNativeNull(@SuppressWarnings("unused") CExtContext cextContext, PythonNativeNull object) {
+        static Object doNativeNull(@SuppressWarnings("unused") CExtContext cextContext, PythonNativeNull object) {
             return object.getPtr();
         }
 
         @Specialization(guards = "object == cachedObject", limit = "3")
-        Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
+        static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonClass")
-        Object doPythonClassUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonManagedClass object,
-                        @Cached("create()") TypeNodes.GetNameNode getNameNode) {
+        static Object doPythonClassUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonManagedClass object,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
-        Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
+        static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
             assert object != PNone.NO_VALUE;
-            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
+            return PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
         @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
-        Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
+        static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             assert object != PNone.NO_VALUE;
-            return DynamicObjectNativeWrapper.PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
+            return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
         @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object) {
+        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
 
-        @Fallback
-        Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj) {
-            assert obj != null : "Java 'null' cannot be a Sulong value";
-            return obj;
+        @Specialization(guards = "isNoValue(object)")
+        static PNone doNoValue(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PNone object) {
+            // TODO(fa): check if this case is still required
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "isFallback(object)")
+        static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object) {
+            assert object != null : "Java 'null' cannot be a Sulong value";
+            assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
+            return object;
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
+        }
+
+        static boolean isFallback(Object object) {
+            return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
+                            object instanceof PythonNativeNull || object instanceof PythonAbstractObject || (PGuards.isForeignObject(object) && !CApiGuards.isNativeWrapper(object)));
         }
 
         protected static boolean isNaN(double d) {
@@ -432,6 +445,166 @@ public abstract class CExtNodes {
 
         public static ToSulongNode getUncached() {
             return CExtNodesFactory.ToSulongNodeGen.getUncached();
+        }
+    }
+
+    /**
+     * Same as {@code ToSulongNode} but ensures that a new Python reference is returned.<br/>
+     * Concept:<br/>
+     * <p>
+     * If the value to convert is a managed object or a Java primitive, we will (1) do nothing if a
+     * fresh wrapper is created, or (2) increase the reference count by 1 if the wrapper already
+     * exists.
+     * </p>
+     * <p>
+     * If the value to convert is a {@link PythonAbstractNativeObject} (i.e. a wrapped native
+     * pointer), the reference count will be increased by 1. This is necessary because if the
+     * currently returning upcall function already got a new reference, it won't have increased the
+     * refcnt but will eventually decreases it.<br/>
+     * Consider following example:<br/>
+     *
+     * <pre>
+     *     some.py: nativeLong0 * nativeLong1
+     * </pre>
+     *
+     * Assume that {@code nativeLong0} is a native object with a native type. It will call
+     * {@code nativeType->tp_as_number.nb_multiply}. This one then often uses
+     * {@code PyNumber_Multiply} which should just pass through the newly created native reference.
+     * But it will decrease the reference count since it wraps the gained native pointer. So, the
+     * intermediate upcall should effectively not alter the refcnt which means that we need to
+     * increase it since it will finally decrease it.
+     * </p>
+     */
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class ToNewRefNode extends CExtToNativeNode {
+
+        @Specialization
+        static Object doString(CExtContext cextContext, String str,
+                        @Cached PythonObjectFactory factory,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+            return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
+        }
+
+        @Specialization
+        static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            PythonCore core = context.getCore();
+            PInt boxed = b ? core.getTrue() : core.getFalse();
+            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+            if (profile.profile(nativeWrapper == null)) {
+                nativeWrapper = PrimitiveNativeWrapper.createBool(b);
+                boxed.setNativeWrapper(nativeWrapper);
+            } else {
+                nativeWrapper.increaseRefCount();
+            }
+            return nativeWrapper;
+        }
+
+        @Specialization
+        static Object doInteger(CExtContext cextContext, int i) {
+            return ToSulongNode.doInteger(cextContext, i);
+        }
+
+        @Specialization
+        static Object doLong(CExtContext cextContext, long l) {
+            return ToSulongNode.doLong(cextContext, l);
+        }
+
+        @Specialization(guards = "!isNaN(d)")
+        static Object doDouble(CExtContext cextContext, double d) {
+            return ToSulongNode.doDouble(cextContext, d);
+        }
+
+        @Specialization(guards = "isNaN(d)")
+        static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
+            PFloat boxed = context.getCore().getNaN();
+            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+            // Use a counting profile since we should enter the branch just once per context.
+            if (noWrapperProfile.profile(nativeWrapper == null)) {
+                // This deliberately uses 'CompilerDirectives.transferToInterpreter()' because this
+                // code will happen just once per context.
+                CompilerDirectives.transferToInterpreter();
+                nativeWrapper = PrimitiveNativeWrapper.createDouble(Double.NaN);
+                boxed.setNativeWrapper(nativeWrapper);
+            } else {
+                nativeWrapper.increaseRefCount();
+            }
+            return nativeWrapper;
+        }
+
+        @Specialization
+        static Object doNativeObject(CExtContext cextContext, PythonAbstractNativeObject nativeObject,
+                        @Cached RefCntNode refCntNode) {
+
+            Object res = ToSulongNode.doNativeObject(cextContext, nativeObject);
+            refCntNode.inc(res);
+            return res;
+        }
+
+        @Specialization
+        static Object doNativeNull(CExtContext cextContext, PythonNativeNull object) {
+            return ToSulongNode.doNativeNull(cextContext, object);
+        }
+
+        @Specialization(guards = "object == cachedObject", limit = "3")
+        static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
+                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonClass")
+        static Object doPythonClassUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonManagedClass object,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
+        }
+
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
+        static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
+            assert object != PNone.NO_VALUE;
+            return PythonObjectNativeWrapper.wrapNewRef(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
+        }
+
+        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
+        static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+            assert object != PNone.NO_VALUE;
+            return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
+        }
+
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
+            // this will always be a new wrapper; it's implicitly always a new reference in any case
+            return ToSulongNode.doForeignObject(cextContext, object);
+        }
+
+        @Specialization(guards = "isNoValue(object)")
+        static PNone doNoValue(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PNone object) {
+            // TODO(fa): check if this case is still required
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "isFallback(object)")
+        static Object run(CExtContext cextContext, Object object) {
+            return ToSulongNode.run(cextContext, object);
+        }
+
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
+            return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
+        }
+
+        static boolean isFallback(Object object) {
+            return ToSulongNode.isFallback(object);
+        }
+
+        protected static boolean isNaN(double d) {
+            return Double.isNaN(d);
         }
     }
 
@@ -2365,11 +2538,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doSingleContext(PythonAbstractClass cls, NativeMember nativeMemberName, Object managedMemberName,
-                                      @Cached GetMroStorageNode getMroNode,
-                                      @Cached SequenceStorageNodes.LenNode lenNode,
-                                      @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                                      @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
-                                      @Cached GetTypeMemberNode getTypeMemberNode) {
+                        @Cached GetMroStorageNode getMroNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached GetTypeMemberNode getTypeMemberNode) {
 
             MroSequenceStorage mroStorage = getMroNode.execute(cls);
             int n = lenNode.execute(mroStorage);
@@ -2529,52 +2702,6 @@ public abstract class CExtNodes {
                 return Long.toHexString(((Number) ptr).longValue());
             }
             return Objects.toString(ptr);
-        }
-    }
-
-    /**
-     * This node ensures that a new Python reference is returned.<br/>
-     * Concept:<br/>
-     * <p>
-     * If the reference is a {@link PythonNativeWrapper}, we just do nothing because as soon as it
-     * receives the {@code toNative} message, it will have reference count {@code 1} as it is
-     * required for a new reference.
-     * </p>
-     * <p>
-     * If the reference is a {@link PythonAbstractNativeObject} (i.e. a wrapped native pointer), the
-     * reference count will be increased by 1. This is necessary because if the currently returning
-     * upcall function already got a new reference, it won't have increased the refcnt but will
-     * eventually decreases it.<br/>
-     * Consider following example:<br/>
-     * 
-     * <pre>
-     *     some.py: nativeLong0 * nativeLong1
-     * </pre>
-     * 
-     * Assume that {@code nativeLong0} is a native object with a native type. It will call
-     * {@code nativeType->tp_as_number.nb_multiply}. This one then often uses
-     * {@code PyNumber_Multiply} which should just pass through the newly created native reference.
-     * But it will decrease the reference count since it wraps the gained native pointer. So, the
-     * intermediate upcall should effectively not alter the refcnt which means that we need to
-     * increase it since it will finally decrease it.
-     * </p>
-     */
-    @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    public abstract static class NewRefNode extends Node {
-
-        public abstract Object execute(Object object);
-
-        @Specialization
-        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper) {
-            // just do nothing
-            return nativeWrapper;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)")
-        static Object doNativeObject(Object object,
-                        @Cached RefCntNode incRefNode) {
-            return incRefNode.inc(object);
         }
     }
 }

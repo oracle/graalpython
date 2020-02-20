@@ -121,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
@@ -1879,17 +1878,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class UpcallNewRefNode extends UpcallLandingNode {
 
         @Specialization
-        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
+        static Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached NewRefNode newRefNode) {
+                        @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                return newRefNode.execute(toSulongNode.execute(upcallNode.execute(frame, args)));
+                return toNewRefNode.execute(upcallNode.execute(frame, args));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return toSulongNode.execute(getNativeNullNode.execute(cextModule));
+                return toNewRefNode.execute(getNativeNullNode.execute(cextModule));
             }
         }
     }
@@ -1977,19 +1975,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class UpcallCextNewRefNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
-        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.CextUpcallNode upcallNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
-            return newRefNode.execute(toSulongNode.execute(upcallNode.execute(frame, cextModule, args)));
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(upcallNode.execute(frame, cextModule, args));
         }
 
         @Specialization(guards = "!isStringCallee(args)")
-        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.DirectUpcallNode upcallNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
-            return newRefNode.execute(toSulongNode.execute(upcallNode.execute(frame, args)));
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(upcallNode.execute(frame, args));
         }
     }
 
@@ -2453,24 +2449,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(rewriteOn = PException.class)
         Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, Object object,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode,
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             if (floatNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create(null));
             }
-            return newRefNode.execute(toSulongNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object))));
+            return toNewRefNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
         }
 
         @Specialization(replaces = "doGeneric")
         Object doGenericErr(VirtualFrame frame, Object module, Object object,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Shared("newRefNode") @Cached NewRefNode newRefNode) {
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode,
+                        @Shared("asPythonObjectNode") @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             try {
-                return doGeneric(frame, module, object, toSulongNode, asPythonObjectNode, newRefNode);
+                return doGeneric(frame, module, object, toNewRefNode, asPythonObjectNode);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute(module);
@@ -2846,15 +2840,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached NewRefNode newRefNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
-                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS)));
+                return toNewRefNode.execute(callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
@@ -2870,16 +2863,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode argsToJavaNode,
                         @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached NewRefNode newRefNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args = expandArgsNode.executeWith(frame, argsToJavaNode.execute(argsObj));
-                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS)));
+                return toNewRefNode.execute(callNode.execute(frame, callable, args, PKeyword.EMPTY_KEYWORDS));
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -2895,16 +2887,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.AsPythonObjectNode callableToJavaNode,
                         @Cached @SuppressWarnings("unused") CExtNodes.AsPythonObjectNode kwargsToJavaNode,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached CallNode callNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached NewRefNode newRefNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 PKeyword[] keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
                 Object callable = callableToJavaNode.execute(callableObj);
-                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, new Object[0], keywords)));
+                return toNewRefNode.execute(callNode.execute(frame, callable, new Object[0], keywords));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return nullToSulongNode.execute(getNativeNullNode.execute());
@@ -2923,11 +2914,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile argsIsNullProfile,
                         @Cached("createBinaryProfile()") ConditionProfile kwargsIsNullProfile,
                         @Exclusive @Cached CallNode callNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached CExtNodes.ToSulongNode nullToSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached NewRefNode newRefNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = callableToJavaNode.execute(callableObj);
                 Object[] args;
@@ -2946,7 +2936,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 } else {
                     keywords = expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
                 }
-                return newRefNode.execute(toSulongNode.execute(callNode.execute(frame, callable, args, keywords)));
+                return toNewRefNode.execute(callNode.execute(frame, callable, args, keywords));
             } catch (PException e) {
                 // getContext() acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -3314,8 +3304,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallBinaryMethodNode callGetItemNode,
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectNode positionAsPythonObjectNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached NewRefNode newRefNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -3325,10 +3314,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     throw raise(TypeError, "'%s' object does not support indexing", delegate);
                 }
                 Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
-                return newRefNode.execute(toSulongNode.execute(item));
+                return toNewRefNode.execute(item);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return toSulongNode.execute(getNativeNullNode.execute(module));
+                return toNewRefNode.execute(getNativeNullNode.execute(module));
             }
         }
     }
@@ -3342,8 +3331,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallBinaryMethodNode callGetItemNode,
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectNode positionAsPythonObjectNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached NewRefNode newRefNode,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -3353,10 +3341,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     throw raise(TypeError, "'%s' object is not subscriptable", delegate);
                 }
                 Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
-                return newRefNode.execute(toSulongNode.execute(item));
+                return toNewRefNode.execute(item);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
-                return toSulongNode.execute(getNativeNullNode.execute(module));
+                return toNewRefNode.execute(getNativeNullNode.execute(module));
             }
         }
     }

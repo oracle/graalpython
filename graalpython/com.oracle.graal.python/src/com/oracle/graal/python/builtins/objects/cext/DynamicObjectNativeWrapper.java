@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetSpecialSingletonPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.NewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SetSpecialSingletonPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
@@ -1232,8 +1231,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PExecuteNode executeNode,
                     @Cached AllToJavaNode allToJavaNode,
-                    @Cached CExtNodes.ToSulongNode toSulongNode,
-                    @Cached NewRefNode newRefNode,
+                    @Cached CExtNodes.ToNewRefNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                     @Cached GetNativeNullNode getNativeNullNode) throws UnsupportedMessageException {
 
@@ -1244,10 +1242,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             // If a native wrapper is executed, we directly wrap some managed function and assume
             // that new references are returned. So, we increase the ref count for each native
             // object here.
-            return newRefNode.execute(toSulongNode.execute(result));
+            return toNewRefNode.execute(result);
         } catch (PException e) {
             transformExceptionToNativeNode.execute(e);
-            return toSulongNode.execute(getNativeNullNode.execute());
+            return toNewRefNode.execute(getNativeNullNode.execute());
         }
     }
 
@@ -1393,12 +1391,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return nativeWrapper;
         }
 
-        public static DynamicObjectNativeWrapper wrapSlowPath(PythonAbstractObject obj) {
+        public static DynamicObjectNativeWrapper wrapNewRef(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
             // important: native wrappers are cached
             DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-            if (nativeWrapper == null) {
+            if (noWrapperProfile.profile(nativeWrapper == null)) {
                 nativeWrapper = new PythonObjectNativeWrapper(obj);
                 obj.setNativeWrapper(nativeWrapper);
+            } else {
+                // it already existed, so we need to increase the reference count
+                nativeWrapper.increaseRefCount();
             }
             return nativeWrapper;
         }
