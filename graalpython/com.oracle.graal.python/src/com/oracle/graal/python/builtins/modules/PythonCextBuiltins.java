@@ -2177,40 +2177,41 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // directly called without landing function
     @Builtin(name = "PyLong_FromLongLong", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyLong_FromLongLong extends PythonBinaryBuiltinNode {
+    abstract static class PyLongFromLongLong extends PythonBinaryBuiltinNode {
         @Specialization(guards = "signed != 0")
         static Object doSignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(n);
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.executeInt(n);
         }
 
         @Specialization(guards = "signed == 0")
         static Object doUnsignedInt(int n, @SuppressWarnings("unused") int signed,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
             if (n < 0) {
-                return toSulongNode.execute(n & 0xFFFFFFFFL);
+                return toNewRefNode.executeLong(n & 0xFFFFFFFFL);
             }
-            return toSulongNode.execute(n);
+            return toNewRefNode.executeInt(n);
         }
 
         @Specialization(guards = "signed != 0")
         static Object doSignedLong(long n, @SuppressWarnings("unused") int signed,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(n);
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.executeLong(n);
         }
 
         @Specialization(guards = {"signed == 0", "n >= 0"})
         static Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") int signed,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(n);
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.executeLong(n);
         }
 
         @Specialization(guards = {"signed == 0", "n < 0"})
         Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") int signed,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(factory().createInt(convertToBigInteger(n)));
+                        @Shared("toNewRefNode") @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(factory().createInt(convertToBigInteger(n)));
         }
 
         @TruffleBoundary

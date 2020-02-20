@@ -479,6 +479,18 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToNewRefNode extends CExtToNativeNode {
 
+        public final Object executeInt(int i) {
+            return executeInt(CExtContext.LAZY_CONTEXT, i);
+        }
+
+        public final Object executeLong(long l) {
+            return executeLong(CExtContext.LAZY_CONTEXT, l);
+        }
+
+        public abstract Object executeInt(CExtContext cExtContext, int i);
+
+        public abstract Object executeLong(CExtContext cExtContext, long l);
+
         @Specialization
         static Object doString(CExtContext cextContext, String str,
                         @Cached PythonObjectFactory factory,

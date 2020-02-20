@@ -101,13 +101,14 @@ size_t PyLong_AsSize_t(PyObject *obj) {
     return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(size_t));
 }
 
-UPCALL_ID(PyLong_FromLongLong);
+typedef PyObject* (*from_long_fun_t)(int64_t, int32_t);
+UPCALL_TYPED_ID(PyLong_FromLongLong, from_long_fun_t);
 PyObject * PyLong_FromLong(long n)  {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
+    return _jls_PyLong_FromLongLong(n, 1);
 }
 
 PyObject * PyLong_FromLongLong(long long n)  {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
+    return _jls_PyLong_FromLongLong(n, 1);
 }
 
 PyObject * PyLong_FromUnsignedLong(unsigned long n) {
@@ -115,7 +116,7 @@ PyObject * PyLong_FromUnsignedLong(unsigned long n) {
 }
 
 PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 0);
+    return _jls_PyLong_FromLongLong(n, 0);
 }
 
 typedef PyObject* (*fromVoidPtr_fun_t)(void*);
