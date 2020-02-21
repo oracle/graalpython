@@ -123,7 +123,7 @@ if __name__ == "__main__":
         else:
             glob_pattern = os.path.join(os.path.dirname(test.__file__), arg)
 
-    p = subprocess.run(["/usr/bin/which", "timeout"], **kwargs)
+    p = subprocess.run(["/usr/bin/which", "timeout" if sys.platform != 'darwin' else 'gtimeout'], **kwargs)
     if p.returncode != 0:
         print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
         sys.exit(1)
