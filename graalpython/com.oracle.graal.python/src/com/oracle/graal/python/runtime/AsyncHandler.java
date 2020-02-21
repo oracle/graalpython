@@ -50,14 +50,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import com.oracle.graal.python.util.Supplier;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -78,7 +75,7 @@ public class AsyncHandler {
      * An action to be run triggered by an asynchronous event.
      */
     public interface AsyncAction {
-        void execute(VirtualFrame frame, Node location, RootCallTarget callTarget);
+        void execute(VirtualFrame frame, Node location, PythonContext context);
     }
 
     public abstract static class AsyncPythonAction implements AsyncAction {
@@ -103,7 +100,7 @@ public class AsyncHandler {
         }
 
         @Override
-        public final void execute(VirtualFrame frame, Node location, RootCallTarget callTarget) {
+        public final void execute(VirtualFrame frame, Node location, PythonContext context) {
             Object callable = callable();
             if (callable != null) {
                 Object[] arguments = arguments();
@@ -115,12 +112,13 @@ public class AsyncHandler {
                 PArguments.setArgument(args, 3, frame);
 
                 try {
-                    GenericInvokeNode.getUncached().execute(frame, callTarget, args);
+                    GenericInvokeNode.getUncached().execute(frame, context.getAsyncHandler().callTarget, args);
                 } catch (RuntimeException e) {
                     // we cannot raise the exception here (well, we could, but CPython
                     // doesn't), so we do what they do and just print it
 
-                    // Just print a Python-like stack trace; CPython does the same (see 'weakrefobject.c: handle_callback')
+                    // Just print a Python-like stack trace; CPython does the same (see
+                    // 'weakrefobject.c: handle_callback')
                     ExceptionUtils.printPythonLikeStackTrace(e);
                 }
             }
@@ -134,6 +132,8 @@ public class AsyncHandler {
             return t;
         }
     });
+
+    private final PythonContext context;
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private volatile boolean hasScheduledAction = false;
     private final Lock executingScheduledActions = new ReentrantLock();
@@ -211,8 +211,9 @@ public class AsyncHandler {
 
     private final RootCallTarget callTarget;
 
-    AsyncHandler(PythonLanguage language) {
-        callTarget = Truffle.getRuntime().createCallTarget(new CallRootNode(language));
+    AsyncHandler(PythonContext context) {
+        this.context = context;
+        this.callTarget = Truffle.getRuntime().createCallTarget(new CallRootNode(context.getLanguage()));
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {
@@ -267,7 +268,7 @@ public class AsyncHandler {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 AsyncAction action;
                 while ((action = actions.poll()) != null) {
-                    action.execute(frame, location, callTarget);
+                    action.execute(frame, location, context);
                 }
             } finally {
                 executingScheduledActions.unlock();

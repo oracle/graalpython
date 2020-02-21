@@ -54,16 +54,23 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.RefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -78,6 +85,8 @@ public final class CApiContext extends CExtContext {
 
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, Pair<PFrame.Reference, String>> freedNativeMemory;
+
+    private RootCallTarget referenceCleanerCallTarget;
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -121,6 +130,13 @@ public final class CApiContext extends CExtContext {
         return ptr;
     }
 
+    private RootCallTarget getReferenceCleanerCallTarget() {
+        if(referenceCleanerCallTarget == null) {
+            referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext().getLanguage()));
+        }
+        return referenceCleanerCallTarget;
+    }
+
     public static class NativeObjectReference extends PhantomReference<PythonAbstractNativeObject> {
         private final TruffleObject object;
 
@@ -138,6 +154,39 @@ public final class CApiContext extends CExtContext {
         return nativeObjectsQueue;
     }
 
+    /**
+     * Simple root node that executes a reference decrease.
+     */
+    private static final class CApiReferenceCleanerRootNode extends PRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr"}, new String[0]);
+
+        @Child private RefCntNode refCntNode;
+
+        protected CApiReferenceCleanerRootNode(TruffleLanguage<?> language) {
+            super(language);
+            refCntNode = RefCntNodeGen.create();
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object pointerObject = PArguments.getArgument(frame, 0);
+            return refCntNode.dec(pointerObject);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+    }
+
+    /**
+     * Reference cleaner action that will be executed by the {@link AsyncHandler}.
+     */
     private static final class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
         private final NativeObjectReference nativeObjectReference;
 
@@ -146,9 +195,11 @@ public final class CApiContext extends CExtContext {
         }
 
         @Override
-        public void execute(VirtualFrame frame, Node location, RootCallTarget callTarget) {
-            PythonLanguage.getContext().getCApiContext().stack.remove(nativeObjectReference);
-            RefCntNodeGen.getUncached().dec(nativeObjectReference.object);
+        public void execute(VirtualFrame frame, Node location, PythonContext context) {
+            context.getCApiContext().stack.remove(nativeObjectReference);
+            Object[] pArguments = PArguments.create(1);
+            PArguments.setArgument(pArguments, 0, nativeObjectReference.object);
+            GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
         }
     }
 

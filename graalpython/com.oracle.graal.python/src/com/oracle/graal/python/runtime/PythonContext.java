@@ -231,7 +231,7 @@ public final class PythonContext {
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
-        this.handler = new AsyncHandler(language);
+        this.handler = new AsyncHandler(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
         this.resources.setEnv(env);
         this.in = env.in();
@@ -257,7 +257,6 @@ public final class PythonContext {
         return globalId.incrementAndGet();
     }
 
-    @SuppressWarnings("unchecked")
     public <T> T getOption(OptionKey<T> key) {
         if (CompilerDirectives.inInterpreter()) {
             return getEnv().getOptions().get(key);
@@ -760,6 +759,10 @@ public final class PythonContext {
      */
     public void triggerAsyncActions(VirtualFrame frame, Node location) {
         handler.triggerAsyncActions(frame, location);
+    }
+
+    public AsyncHandler getAsyncHandler() {
+        return handler;
     }
 
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
