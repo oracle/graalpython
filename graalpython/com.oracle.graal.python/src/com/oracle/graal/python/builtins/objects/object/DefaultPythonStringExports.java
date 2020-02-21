@@ -71,7 +71,7 @@ final class DefaultPythonStringExports {
 
     @ExportMessage
     static boolean isBuffer(@SuppressWarnings("unused") String str) {
-        return true;
+        return false;
     }
 
     @ExportMessage
