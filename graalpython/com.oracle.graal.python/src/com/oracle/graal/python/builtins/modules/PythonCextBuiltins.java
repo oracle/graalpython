@@ -2428,20 +2428,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // directly called without landing function
     @Builtin(name = "PyNumber_Float", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class PyNumber_Float extends NativeBuiltin {
+    abstract static class PyNumberFloat extends NativeBuiltin {
 
         @Child private BuiltinConstructors.FloatNode floatNode;
 
         @Specialization(guards = "object.isDouble()")
-        static Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object;
+        static Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
+                        @Cached RefCntNode refCntNode) {
+            return refCntNode.inc(object);
         }
 
         @Specialization(guards = "!object.isDouble()")
-        static Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                        @Cached CExtNodes.ToSulongNode primitiveToSulongNode) {
+        static Object doLongNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
+                        @Cached CExtNodes.ToNewRefNode primitiveToSulongNode) {
             return primitiveToSulongNode.execute((double) object.getLong());
         }
 
@@ -2465,7 +2467,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return doGeneric(frame, module, object, toNewRefNode, asPythonObjectNode);
             } catch (PException e) {
                 transformToNative(frame, e);
-                return getNativeNullNode.execute(module);
+                return toNewRefNode.execute(getNativeNullNode.execute(module));
             }
         }
     }
