@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.IDN;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -357,13 +358,22 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object getHostByName(String name) {
             try {
-                InetAddress[] adresses = getAllByName(name);
+                InetAddress[] adresses = getAllByName(IDNtoASCII(name));
                 if (adresses.length == 0) {
                     return PNone.NONE;
                 }
                 return factory().createString(getHostAddress(adresses[0]));
             } catch (UnknownHostException e) {
                 throw raise(PythonBuiltinClassType.OSError);
+            }
+        }
+
+        @TruffleBoundary
+        private String IDNtoASCII(String name) {
+            try {
+                return IDN.toASCII(name);
+            } catch (IllegalArgumentException e) {
+                throw raise(PythonBuiltinClassType.UnicodeError, "IDN encoding failed: %s", e.getMessage());
             }
         }
     }
