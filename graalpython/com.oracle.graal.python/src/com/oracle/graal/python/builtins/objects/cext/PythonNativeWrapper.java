@@ -163,9 +163,9 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         // we must not set the pointer for one of the context-insensitive singletons
         assert PythonLanguage.getSingletonNativePtrIdx(delegate) == -1;
 
-        if(this.nativePointer == null) {
+        if (this.nativePointer == null) {
             this.handleValidAssumption = Truffle.getRuntime().createAssumption();
-        } else if(nativePointer == null) {
+        } else if (nativePointer == null) {
             this.handleValidAssumption = null;
         }
         this.nativePointer = nativePointer;

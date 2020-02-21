@@ -523,7 +523,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object base(LazyPythonClass self,
                         @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
-            Object baseClass =  getBaseClassNode.execute(self);
+            Object baseClass = getBaseClassNode.execute(self);
             return baseClass != null ? baseClass : PNone.NONE;
         }
     }

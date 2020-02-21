@@ -63,7 +63,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 public abstract class GetCurrentFrameRef extends Node {
 
-    private static final ConditionProfile[] DISABLED = new ConditionProfile[0];
+    private static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
 
     public abstract Reference execute(Frame frame);
 
@@ -104,6 +104,7 @@ public abstract class GetCurrentFrameRef extends Node {
             if (ref == null) {
                 return PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }
+            return ref;
         }
         return PArguments.getCurrentFrameInfo(frame);
     }

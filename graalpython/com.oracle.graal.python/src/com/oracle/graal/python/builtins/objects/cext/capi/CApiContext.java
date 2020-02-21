@@ -131,7 +131,7 @@ public final class CApiContext extends CExtContext {
     }
 
     private RootCallTarget getReferenceCleanerCallTarget() {
-        if(referenceCleanerCallTarget == null) {
+        if (referenceCleanerCallTarget == null) {
             referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext().getLanguage()));
         }
         return referenceCleanerCallTarget;
