@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -273,7 +273,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (getContext().getEnv().isNativeAccessAllowed()) {
                 PSocket oldSocket = getContext().getResources().getSocket(fileno);
                 if (oldSocket == null) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
+                    throw raiseOSError(frame, OSErrorEnum.EBADF);
                 }
                 PSocket newSocket = factory().createSocket(cls, family == -1 ? oldSocket.getFamily() : family, type == -1 ? oldSocket.getType() : type, proto == -1 ? oldSocket.getProto() : proto,
                                 fileno);
@@ -629,17 +629,17 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             PSocket socket = getContext().getResources().getSocket(fd);
 
             if (socket == null) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
+                throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
 
             if (!socket.isOpen()) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
+                throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
 
             try {
                 socket.close();
             } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF.getNumber());
+                throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
             getContext().getResources().close(socket.getFileno());
             return PNone.NONE;

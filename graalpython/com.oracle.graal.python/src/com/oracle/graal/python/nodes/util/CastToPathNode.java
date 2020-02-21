@@ -59,7 +59,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * Converts a Python object to a Path string
@@ -105,22 +104,22 @@ public abstract class CastToPathNode extends Node {
     }
 
     @Specialization
-    String doPString(PString x) {
-        return x.getValue();
+    String doPString(PString x,
+                    @Cached CastToJavaStringNode castToJavaStringNode) {
+        return castToJavaStringNode.execute(x);
     }
 
     @Specialization(guards = {"!isString(object)", "!isBytes(object)", "!isMemoryView(object)"})
     String doObject(VirtualFrame frame, Object object,
-                    @Cached("createClassProfile()") ValueProfile resultTypeProfile,
                     @Cached PRaiseNode raise,
-                    @Cached("createFsPathCall()") LookupAndCallUnaryNode callFsPath) {
-        Object profiled = resultTypeProfile.profile(callFsPath.executeObject(frame, object));
-        if (profiled instanceof String) {
-            return (String) profiled;
-        } else if (profiled instanceof PString) {
-            return doPString((PString) profiled);
+                    @Cached("createFsPathCall()") LookupAndCallUnaryNode callFsPath,
+                    @Cached CastToJavaStringNode castToJavaStringNode) {
+        Object pathObject = callFsPath.executeObject(frame, object);
+        String path = castToJavaStringNode.execute(pathObject);
+        if (path == null) {
+            throw raise.raise(PythonBuiltinClassType.TypeError, "invalid type %p return from path-like object", pathObject);
         }
-        throw raise.raise(PythonBuiltinClassType.TypeError, "invalid type %p return from path-like object", profiled);
+        return path;
     }
 
     protected LookupAndCallUnaryNode createFsPathCall() {
