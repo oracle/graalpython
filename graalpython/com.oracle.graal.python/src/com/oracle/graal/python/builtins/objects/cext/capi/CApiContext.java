@@ -173,6 +173,16 @@ public final class CApiContext extends CExtContext {
         assert value == null : "native memory allocator reserved same memory twice";
     }
 
+    @SuppressWarnings("unused")
+    public void trackObject(Object ptr, PFrame.Reference curFrame, String clazzName) {
+        // TODO(fa): implement tracking of container objects for cycle detection
+    }
+
+    @SuppressWarnings("unused")
+    public void untrackObject(Object ptr, PFrame.Reference curFrame, String clazzName) {
+        // TODO(fa): implement untracking of container objects
+    }
+
     /**
      * Use this method to register memory that is known to be allocated (i.e. static variables like
      * types). This is basically the same as {@link #traceAlloc(Object, PFrame.Reference, String)}

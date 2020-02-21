@@ -3157,8 +3157,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
-            PythonLanguage.getLogger().fine(() -> String.format("Deallocated object at 0x%X", ptr));
-            context.getCApiContext().traceFree(ptr, ref, className);
+            PythonLanguage.getLogger().fine(() -> String.format("Untracking container object at %s", CApiContext.asHex(ptr)));
+            context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
 
@@ -3168,8 +3168,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
-            PythonLanguage.getLogger().fine(() -> String.format("Allocated object at 0x%X", ptr));
-            context.getCApiContext().traceAlloc(ptr, ref, className);
+            PythonLanguage.getLogger().fine(() -> String.format("Tracking container object at %s", CApiContext.asHex(ptr)));
+            context.getCApiContext().trackObject(ptr, ref, className);
         }
     }
 
