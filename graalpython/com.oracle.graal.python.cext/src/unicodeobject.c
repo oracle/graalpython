@@ -365,7 +365,11 @@ PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, cons
 
 UPCALL_ID(PyUnicode_InternInPlace);
 void PyUnicode_InternInPlace(PyObject **s) {
-    *s = UPCALL_CEXT_O(_jls_PyUnicode_InternInPlace, native_to_java(*s));
+	PyObject *t = UPCALL_CEXT_O(_jls_PyUnicode_InternInPlace, native_to_java(*s));
+	if (t != *s) {
+		Py_INCREF(t);
+		Py_SETREF(*s, t);
+	}
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
