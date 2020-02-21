@@ -1555,8 +1555,21 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).state == state && ((PrimitiveNativeWrapper) obj).value == value &&
-                            ((PrimitiveNativeWrapper) obj).dvalue == dvalue;
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+
+            CompilerAsserts.neverPartOfCompilation();
+
+            PrimitiveNativeWrapper other = (PrimitiveNativeWrapper) obj;
+            if (other.state == state && other.value == value && other.dvalue == dvalue) {
+                // n.b.: in the equals, we also require the native pointer to be the same. The
+                // reason for this is to avoid native pointer sharing. Handles are shared if the
+                // objects are equal but in this case we must not share because otherwise we would
+                // mess up the reference counts.
+                return GetNativePointer.getGenericPtr(this) == GetNativePointer.getGenericPtr(other);
+            }
+            return false;
         }
 
         @Override
