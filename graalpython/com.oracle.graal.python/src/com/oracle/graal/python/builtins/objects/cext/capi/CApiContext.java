@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -225,7 +226,14 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
+    /**
+     * Internal method for debugging purposes. This method looks up how many phantom references are
+     * currently in the escaped references list. This is useful to check if the current reference
+     * count of a native object is consistent with the upcoming decrements.
+     */
+    @SuppressWarnings("unused")
     public List<Integer> containsAddress(long l) {
+        CompilerAsserts.neverPartOfCompilation();
         int i = 0;
         List<Integer> indx = new ArrayList<>();
         InteropLibrary lib = InteropLibrary.getFactory().getUncached();
