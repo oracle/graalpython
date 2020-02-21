@@ -64,10 +64,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ClearNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -109,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectSte
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
@@ -131,10 +128,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUn
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PyCFunctionDecorator;
+import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -144,6 +143,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyObjectAllocationReporter;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
@@ -3115,7 +3115,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         int doNativeWrapper(VirtualFrame frame, Object ptr,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            trace(context, RefCntNode.asPointer(ptr, lib), null, null);
+            trace(context, CApiContext.asPointer(ptr, lib), null, null);
             return 0;
         }
 
@@ -3126,7 +3126,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
 
             PFrame.Reference ref = getCurrentFrameRef.execute(frame);
-            trace(context, RefCntNode.asPointer(ptr, lib), ref, null);
+            trace(context, CApiContext.asPointer(ptr, lib), ref, null);
             return 0;
         }
 
@@ -3196,7 +3196,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleTraceFree extends PythonUnaryBuiltinNode {
         @Specialization(limit = "2")
-        static int doNativeWrapper(VirtualFrame frame, Object ptr,
+        static int doNativeWrapper(Object ptr,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
@@ -3206,15 +3206,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
             boolean traceNativeMemory = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
             boolean traceNativeMemoryCalls = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
             if (isLoggable || traceNativeMemory) {
-                if (isLoggable) {
+                boolean isNullPtr = lib.isNull(ptr);
+                if (isLoggable && !isNullPtr) {
                     PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
-                if (traceNativeMemory && !lib.isNull(ptr)) {
+                if (traceNativeMemory && !isNullPtr) {
                     PFrame.Reference ref = null;
                     if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
                         ref = getCurrentFrameRef.execute(null);
                     }
-                    Pair<Reference, String> allocLocation = context.getCApiContext().traceFree(ptr, ref, null);
+                    Pair<Reference, String> allocLocation = context.getCApiContext().traceFree(CApiContext.asPointer(ptr, lib), ref, null);
                     if (traceNativeMemoryCalls) {
                         Reference left = allocLocation.getLeft();
                         PFrame pyFrame = null;
@@ -3253,9 +3254,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 className = null;
             }
             PythonContext context = getContext();
-            Object primitivePtr = RefCntNode.asPointer(ptr, ptrLib);
+            Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
             context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
-            PythonLanguage.getLogger().fine(() -> String.format("Initializing native type %s (ptr = %s)", className, primitivePtr));
+            PythonLanguage.getLogger().fine(() -> String.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
             return 0;
         }
     }

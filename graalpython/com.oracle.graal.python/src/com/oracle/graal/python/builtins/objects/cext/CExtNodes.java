@@ -2687,24 +2687,12 @@ public abstract class CExtNodes {
         }
 
         private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
-            Object ptrVal = asPointer(object, lib);
+            Object ptrVal = CApiContext.asPointer(object, lib);
             if (!context.getCApiContext().isAllocated(ptrVal)) {
                 PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
             }
         }
 
-        public static Object asPointer(Object ptr, InteropLibrary lib) {
-            // The first branch should avoid materialization of pointer objects.
-            if (lib.isPointer(ptr)) {
-                try {
-                    return lib.asPointer(ptr);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw new IllegalStateException();
-                }
-            }
-            return ptr;
-        }
     }
 
     @GenerateUncached

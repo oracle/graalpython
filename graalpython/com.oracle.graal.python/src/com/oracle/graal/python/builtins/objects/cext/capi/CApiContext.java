@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -101,6 +102,22 @@ public final class CApiContext extends CExtContext {
             return "0x" + Long.toHexString(((Number) ptr).longValue());
         }
         return Objects.toString(ptr);
+    }
+
+    /**
+     * Tries to convert the object to a pointer (type: {@code long}) to avoid materialization of
+     * pointer objects. If that is not possible, the object will be returned as given.
+     */
+    public static Object asPointer(Object ptr, InteropLibrary lib) {
+        if (lib.isPointer(ptr)) {
+            try {
+                return lib.asPointer(ptr);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException();
+            }
+        }
+        return ptr;
     }
 
     public static class NativeObjectReference extends PhantomReference<PythonAbstractNativeObject> {
@@ -227,5 +244,4 @@ public final class CApiContext extends CExtContext {
         }
         return indx;
     }
-
 }

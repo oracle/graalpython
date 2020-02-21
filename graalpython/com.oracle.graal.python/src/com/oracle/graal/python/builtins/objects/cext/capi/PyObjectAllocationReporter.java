@@ -57,6 +57,7 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -78,6 +79,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
                     @Cached CastToJavaLongNode castToJavaLongNode,
                     @Cached GetCurrentFrameRef getCurrentFrameRef,
                     @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Cached(value = "getAllocationReporter(context)", allowUncached = true) AllocationReporter reporter) throws ArityException, UnsupportedTypeException {
         TruffleLogger logger = PythonLanguage.getLogger();
         boolean isLoggable = logger.isLoggable(Level.FINE);
@@ -103,7 +105,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
                     ref = getCurrentFrameRef.execute(null);
                     ref.markAsEscaped();
                 }
-                context.getCApiContext().traceAlloc(arguments[0], ref, null);
+                context.getCApiContext().traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null);
             }
             if (reportAllocation) {
                 try {
