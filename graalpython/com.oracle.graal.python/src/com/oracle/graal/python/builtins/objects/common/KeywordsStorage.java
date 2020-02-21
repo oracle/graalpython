@@ -44,8 +44,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -70,44 +70,84 @@ public class KeywordsStorage extends HashingStorage {
         this.keywords = keywords;
     }
 
+    public PKeyword[] getStore() {
+        return keywords;
+    }
+
     @Override
     @ExportMessage
     public int length() {
         return keywords.length;
     }
 
-    public PKeyword[] getStore() {
-        return keywords;
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+    protected int findCachedStringKey(String key, int len) {
+        for (int i = 0; i < len; i++) {
+            if (keywords[i].getName().equals(key)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    protected int findStringKey(String key) {
+        for (int i = 0; i < keywords.length; i++) {
+            if (keywords[i].getName().equals(key)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @SuppressWarnings("unused")
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class HasKeyWithState {
+
+        @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
+        static boolean cached(KeywordsStorage self, String key, ThreadState state,
+                        @Exclusive @Cached("self.length()") int cachedLen) {
+            return self.findCachedStringKey(key, cachedLen) != -1;
+        }
+
+        @Specialization(replaces = "cached")
+        static boolean string(KeywordsStorage self, String key, ThreadState state) {
+            return self.findStringKey(key) != -1;
+        }
+
+        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
+                        @Exclusive @Cached IsBuiltinClassProfile profile) {
+            return string(self, key.getValue(), state);
+        }
+
+        @Specialization(guards = "!isBuiltinString(key, profile)")
+        static boolean notString(KeywordsStorage self, Object key, ThreadState state,
+                        @Exclusive @Cached IsBuiltinClassProfile profile,
+                        @CachedLibrary("self") HashingStorageLibrary lib) {
+            return lib.getItemWithState(self, key, state) != null;
+        }
     }
 
     @ExportMessage(limit = "1")
     @ImportStatic(PGuards.class)
     public static class GetItemWithState {
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         static Object cached(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Exclusive @Cached("self.length()") int cachedLen) {
-            for (int i = 0; i < cachedLen; i++) {
-                if (self.keywords[i].getName().equals(key)) {
-                    return self.keywords[i].getValue();
-                }
-            }
-            return null;
+            final int idx = self.findCachedStringKey(key, cachedLen);
+            return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(replaces = "cached")
         static Object string(KeywordsStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
-            for (int i = 0; i < self.keywords.length; i++) {
-                if (self.keywords[i].getName().equals(key)) {
-                    return self.keywords[i].getValue();
-                }
-            }
-            return null;
+            final int idx = self.findStringKey(key);
+            return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
+                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile) {
             return string(self, key.getValue(), state);
         }
 

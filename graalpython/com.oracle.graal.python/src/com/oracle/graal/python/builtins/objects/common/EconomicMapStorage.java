@@ -81,7 +81,6 @@ public class EconomicMapStorage extends HashingStorage {
             return (a == b) || (a != null && objectEquals(a, b));
         }
 
-        @TruffleBoundary
         private boolean objectEquals(Object a, Object b) {
             return a.equals(b);
         }
@@ -134,24 +133,23 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
-    private final PEMap<DictKey, Object> map;
-
-    private EconomicMapStorage() {
-        this.map = new PEMap<>();
-    }
+    private final PEMap map;
 
     private EconomicMapStorage(int initialCapacity) {
-        this.map = new PEMap<>(initialCapacity);
+        this.map = PEMap.create(EconomicMapStorage.DEFAULT_EQIVALENCE, initialCapacity, false);
+    }
+
+    private EconomicMapStorage() {
+        this(4);
     }
 
     private EconomicMapStorage(EconomicMapStorage original) {
-        this.map = new PEMap<>(original.map.size());
+        this(original.map.size());
         this.map.putAll(original.map);
     }
 
-    @TruffleBoundary
     public EconomicMapStorage(EconomicMap<? extends Object, ? extends Object> map) {
-        this.map = new PEMap<>(map.size());
+        this(map.size());
         MapCursor<? extends Object, ? extends Object> c = map.getEntries();
         while (c.advance()) {
             Object key = c.getKey();
@@ -255,7 +253,6 @@ public class EconomicMapStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    @TruffleBoundary
     public HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
         HashingStorage[] result = firstValue;
         MapCursor<DictKey, Object> cursor = map.getEntries();
@@ -274,7 +271,6 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @Specialization
-        @TruffleBoundary
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage result = other;
@@ -302,16 +298,16 @@ public class EconomicMapStorage extends HashingStorage {
     @ExportMessage
     public static class EqualsWithState {
         @Specialization
-        @TruffleBoundary
-        static boolean toSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary compareLib) {
+        static boolean equalSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib1,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib2) {
             if (self.map.size() != other.map.size()) {
                 return false;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
                 Object otherValue = other.map.get(cursor.getKey());
-                if (otherValue != null && !compareLib.equalsWithState(otherValue, cursor.getValue(), compareLib, state)) {
+                if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
                     return false;
                 }
             }
@@ -319,17 +315,17 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @Specialization
-        @TruffleBoundary
-        static boolean generic(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary compareLib) {
+        static boolean equalGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
+                        @CachedLibrary(limit = "5") HashingStorageLibrary lib,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib1,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib2) {
             if (self.map.size() != lib.lengthWithState(other, state)) {
                 return false;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
                 Object otherValue = lib.getItemWithState(self, cursor.getKey().value, state);
-                if (otherValue != null && !compareLib.equalsWithState(otherValue, cursor.getValue(), compareLib, state)) {
+                if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
                     return false;
                 }
             }
@@ -339,9 +335,8 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class CompareKeys {
-        @TruffleBoundary
         @Specialization
-        static int toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+        static int compareSameType(EconomicMapStorage self, EconomicMapStorage other) {
             int size = self.map.size();
             int size2 = other.map.size();
             if (size > size2) {
@@ -360,9 +355,8 @@ public class EconomicMapStorage extends HashingStorage {
             }
         }
 
-        @TruffleBoundary
-        @Specialization(limit = "1")
-        static int generic(EconomicMapStorage self, HashingStorage other,
+        @Specialization(limit = "4")
+        static int compareGeneric(EconomicMapStorage self, HashingStorage other,
                         @CachedLibrary("other") HashingStorageLibrary lib) {
             int size = self.map.size();
             int length = lib.length(other);
@@ -386,8 +380,7 @@ public class EconomicMapStorage extends HashingStorage {
     @ExportMessage
     public static class Intersect {
         @Specialization
-        @TruffleBoundary
-        static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+        static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
@@ -398,10 +391,9 @@ public class EconomicMapStorage extends HashingStorage {
             return result;
         }
 
-        @Specialization
-        @TruffleBoundary
-        static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+        @Specialization(limit = "4")
+        static HashingStorage intersectGeneric(EconomicMapStorage self, HashingStorage other,
+                        @CachedLibrary("other") HashingStorageLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
@@ -416,8 +408,7 @@ public class EconomicMapStorage extends HashingStorage {
     @ExportMessage
     public static class Diff {
         @Specialization
-        @TruffleBoundary
-        static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other) {
+        static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
@@ -428,10 +419,9 @@ public class EconomicMapStorage extends HashingStorage {
             return result;
         }
 
-        @Specialization
-        @TruffleBoundary
-        static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+        @Specialization(limit = "4")
+        static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other,
+                        @CachedLibrary("other") HashingStorageLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
@@ -479,130 +469,5 @@ public class EconomicMapStorage extends HashingStorage {
         }
         builder.append("})");
         return builder.toString();
-    }
-}
-
-final class PEMap<K, V> {
-    private final EconomicMap<K, V> map;
-
-    @TruffleBoundary
-    PEMap(int initialCapacity) {
-        this.map = EconomicMap.create(EconomicMapStorage.DEFAULT_EQIVALENCE, initialCapacity);
-    }
-
-    PEMap() {
-        this(4);
-    }
-
-    @TruffleBoundary
-    public V get(K key) {
-        return map.get(key);
-    }
-
-    @TruffleBoundary
-    public boolean containsKey(K key) {
-        return map.containsKey(key);
-    }
-
-    @TruffleBoundary
-    public int size() {
-        return map.size();
-    }
-
-    @TruffleBoundary
-    public boolean isEmpty() {
-        return map.isEmpty();
-    }
-
-    @TruffleBoundary
-    public Iterable<K> getKeys() {
-        return new KeysIterable<>(map.getKeys());
-    }
-
-    private static final class KeysIterable<K> implements Iterable<K> {
-        private final Iterable<K> keysIterable;
-
-        private KeysIterable(Iterable<K> keysIterable) {
-            this.keysIterable = keysIterable;
-        }
-
-        @TruffleBoundary
-        public Iterator<K> iterator() {
-            return new KeysIterator<>(keysIterable.iterator());
-        }
-    }
-
-    private static final class KeysIterator<K> implements Iterator<K> {
-        private final Iterator<K> keysIterator;
-
-        KeysIterator(Iterator<K> iter) {
-            this.keysIterator = iter;
-        }
-
-        @TruffleBoundary
-        public boolean hasNext() {
-            return keysIterator.hasNext();
-        }
-
-        @TruffleBoundary
-        public K next() {
-            return keysIterator.next();
-        }
-    }
-
-    @TruffleBoundary
-    public V put(K key, V value) {
-        return map.put(key, value);
-    }
-
-    @TruffleBoundary
-    public void clear() {
-        map.clear();
-    }
-
-    @TruffleBoundary
-    public V removeKey(K key) {
-        return map.removeKey(key);
-    }
-
-    @TruffleBoundary
-    public MapCursor<K, V> getEntries() {
-        return new EntriesMapCursor<>(map.getEntries());
-    }
-
-    @TruffleBoundary
-    public void putAll(PEMap<K, V> other) {
-        MapCursor<K, V> e = other.getEntries();
-        while (e.advance()) {
-            put(e.getKey(), e.getValue());
-        }
-    }
-
-    private static final class EntriesMapCursor<K, V> implements MapCursor<K, V> {
-        private final MapCursor<K, V> mapCursor;
-
-        public EntriesMapCursor(MapCursor<K, V> mapCursor) {
-            this.mapCursor = mapCursor;
-        }
-
-        @TruffleBoundary
-        public boolean advance() {
-            return mapCursor.advance();
-        }
-
-        @TruffleBoundary
-        public K getKey() {
-            return mapCursor.getKey();
-        }
-
-        @TruffleBoundary
-        public V getValue() {
-            return mapCursor.getValue();
-        }
-
-        @TruffleBoundary
-        public void remove() {
-            mapCursor.remove();
-        }
     }
 }

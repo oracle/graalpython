@@ -143,7 +143,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     @SuppressWarnings("unused")
     @ExportMessage
     @ImportStatic(PGuards.class)
-    public static class GetItemWithState {
+    static class GetItemWithState {
         @Specialization
         static Object string(DynamicObjectStorage self, String key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
@@ -165,7 +165,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object notString(DynamicObjectStorage self, Object key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "cachedShape.getKeyList().toArray()", dimensions = 1) Object[] keyList,
+                        @Exclusive @Cached(value = "cachedShape.getKeyList().toArray()", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
@@ -240,7 +240,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     @SuppressWarnings("unused")
     @ExportMessage
     @ImportStatic(PGuards.class)
-    public static class SetItemWithState {
+    static class SetItemWithState {
 
         @Specialization
         static HashingStorage string(DynamicObjectStorage self, String key, Object value, ThreadState state,
