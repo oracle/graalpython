@@ -3216,7 +3216,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         ref = getCurrentFrameRef.execute(null);
                     }
                     Pair<Reference, String> allocLocation = context.getCApiContext().traceFree(CApiContext.asPointer(ptr, lib), ref, null);
-                    if (traceNativeMemoryCalls) {
+                    if (traceNativeMemoryCalls && allocLocation != null) {
                         Reference left = allocLocation.getLeft();
                         PFrame pyFrame = null;
                         while (pyFrame == null && left != null) {
