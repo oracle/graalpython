@@ -1,6 +1,6 @@
 # Implementation Details
 
-## Python Global Thread State
+### Python Global Thread State
 
 In CPython, each stack frame is allocated on the heap, and there's a global
 thread state holding on to the chain of currently handled exceptions (e.g. if
@@ -80,7 +80,7 @@ exception. Unlike CPython we do not use a stack of currently handled exceptions,
 instead we utilize the call stack of Java by always passing the current exception
 and holding on to the last (if any) in a local variable.
 
-## Abstract Operations on Python Objects
+### Abstract Operations on Python Objects
 
 Many generic operations on Python objects in CPython are defined in the header
 files `abstract.c` and `abstract.h`. These operations are widely used and their

@@ -380,7 +380,7 @@ suite = {
             "description": "Graal.Python documentation files for the GraalVM",
             "layout": {
                 "README_GRAALPYTHON.md": "file:README.md",
-                "./": "file:doc",
+                "./": "file:docs",
             },
             "maven": False,
         },
