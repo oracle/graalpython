@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,12 @@ old_stat = stat
 @__builtin__
 def stat(filename, follow_symlinks=True):
     return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
+
+
+__dir_entry_old_stat = DirEntry.stat
+def __dir_entry_stat(self, follow_symlinks=True):
+    return stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
+DirEntry.stat = __dir_entry_stat
 
 
 @__builtin__

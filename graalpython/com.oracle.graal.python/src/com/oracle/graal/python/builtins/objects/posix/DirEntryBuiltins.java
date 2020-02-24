@@ -52,8 +52,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -150,22 +148,19 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfPositionalArgs = 1, doc = "return stat_result object for the entry; cached per entry")
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"$self", "follow_symlinks"}, doc = "return stat_result object for the entry; cached per entry")
     @GenerateNodeFactory
-    abstract static class StatNode extends PythonUnaryBuiltinNode {
-        private static final String STAT_RESULT = "__stat_result__";
+    abstract static class StatNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object test(VirtualFrame frame, PDirEntry self,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode,
+        Object test(VirtualFrame frame, PDirEntry self, Object followSymlinks,
                         @Cached("create()") PosixModuleBuiltins.StatNode statNode) {
-            Object stat_result = readNode.execute(self, STAT_RESULT);
-            if (stat_result == PNone.NO_VALUE) {
-                stat_result = statNode.execute(frame, self.getFile().getAbsoluteFile().getPath(), PNone.NO_VALUE);
-                writeNode.execute(self, STAT_RESULT, stat_result);
+            Object statResult = self.getCachedStatResult();
+            if (statResult == null) {
+                statResult = statNode.execute(frame, self.getFile().getAbsoluteFile().getPath(), followSymlinks);
+                self.setCachedStatResult(statResult);
             }
-            return stat_result;
+            return statResult;
         }
     }
 
