@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -302,7 +302,7 @@ public class ParserTestBase {
     }
 
     public File getTestFilesDir() {
-        String dataDirPath = System.getProperty("python.home");
+        String dataDirPath = System.getProperty("org.graalvm.language.python.home");
         dataDirPath += "/com.oracle.graal.python.test/testData/testFiles";
         File dataDir = new File(dataDirPath);
         assertTrue("The test files folder, was not found.", dataDir.exists());
@@ -320,7 +320,7 @@ public class ParserTestBase {
     }
 
     public File getGoldenDataDir() {
-        String dataDirPath = System.getProperty("python.home");
+        String dataDirPath = System.getProperty("org.graalvm.language.python.home");
         dataDirPath += "/com.oracle.graal.python.test/testData/goldenFiles";
         File dataDir = new File(dataDirPath);
         assertTrue("The golden files folder, was not found.", dataDir.exists());
