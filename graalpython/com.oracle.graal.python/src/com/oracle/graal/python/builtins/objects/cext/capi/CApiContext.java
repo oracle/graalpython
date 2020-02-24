@@ -45,7 +45,6 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,7 +77,7 @@ import com.oracle.truffle.api.nodes.Node;
 public final class CApiContext extends CExtContext {
 
     private final ReferenceQueue<Object> nativeObjectsQueue;
-    private final LinkedList<Object> stack = new LinkedList<>();
+    private final EscapedReferencesHeap stack = new EscapedReferencesHeap();
     private Map<Object, AllocInfo> allocatedNativeMemory;
 
     /** Container of pointers that have seen to be free'd. */
@@ -137,10 +136,12 @@ public final class CApiContext extends CExtContext {
 
     public static class NativeObjectReference extends PhantomReference<PythonAbstractNativeObject> {
         private final TruffleObject object;
+        final int id;
 
-        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q) {
+        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q, int id) {
             super(referent, q);
             this.object = referent.getPtr();
+            this.id = id;
         }
 
         public TruffleObject getObject() {
@@ -202,7 +203,8 @@ public final class CApiContext extends CExtContext {
     }
 
     public void createNativeReference(PythonAbstractNativeObject nativeObject) {
-        stack.push(new NativeObjectReference(nativeObject, nativeObjectsQueue));
+        int id = stack.reserve();
+        stack.set(new NativeObjectReference(nativeObject, nativeObjectsQueue, id));
     }
 
     @TruffleBoundary

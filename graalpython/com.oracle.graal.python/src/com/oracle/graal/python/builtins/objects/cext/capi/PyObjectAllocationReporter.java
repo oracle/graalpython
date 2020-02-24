@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;

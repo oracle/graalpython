@@ -64,8 +64,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.graalvm.collections.Pair;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
