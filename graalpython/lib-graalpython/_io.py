@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -543,6 +543,11 @@ sys.__stdout__ = sys.stdout
 sys.stderr = FileIO(2, mode='w', closefd=False)
 sys.stderr.name = "<stderr>"
 sys.__stderr__ = sys.stderr
+
+
+# PEP 578 stub
+def open_code(path):
+    return FileIO(path, 'rb')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
