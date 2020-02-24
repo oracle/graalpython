@@ -511,7 +511,7 @@ def CPyExtType(name, code, **kwargs):
         sizeof({name}Object),       /* tp_basicsize */
         0,                          /* tp_itemsize */
         0,                          /* tp_dealloc */
-        {tp_print},
+        {tp_vectorcall_offset},
         {tp_getattr},
         {tp_setattr},
         0,                          /* tp_reserved */

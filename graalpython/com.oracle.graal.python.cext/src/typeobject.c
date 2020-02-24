@@ -334,7 +334,6 @@ int PyType_Ready(PyTypeObject* cls) {
 
     // add special methods defined directly on the type structs
     ADD_SLOT_PRIMITIVE("__dealloc__", cls->tp_dealloc, -1);
-    ADD_SLOT_PRIMITIVE("__print__", cls->tp_print, -3);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
     // tp_getattr and tp_setattr are deprecated, and should be the same as
     // tp_getattro and tp_setattro
