@@ -299,7 +299,7 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
-PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs) {
+PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t nargs, PyObject *kwargs) {
 	PyObject* targs = PyTuple_New(nargs);
 	Py_ssize_t i;
 	for(i=0; i < nargs; i++) {

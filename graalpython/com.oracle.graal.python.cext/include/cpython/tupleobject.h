@@ -11,7 +11,8 @@ typedef struct {
     /* ob_item contains space for 'ob_size' elements.
        Items must normally not be NULL, except during construction when
        the tuple is not yet visible outside the function that builds it. */
-    PyObject *ob_item[1];
+    // Truffle change: PyObject *ob_item[1] doesn't work for us in Sulong
+    PyObject **ob_item;
 } PyTupleObject;
 
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject **, Py_ssize_t);
