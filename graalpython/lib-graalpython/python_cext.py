@@ -1354,6 +1354,13 @@ codetype = type(may_raise.__code__)
 
 @may_raise
 def PyCode_New(*args):
+    # Add posonlyargcount (2nd arg)
+    args = (args[0], 0) + args[1:]
+    return codetype(*args)
+
+
+@may_raise
+def PyCode_NewWithPosOnlyArgs(*args):
     return codetype(*args)
 
 
