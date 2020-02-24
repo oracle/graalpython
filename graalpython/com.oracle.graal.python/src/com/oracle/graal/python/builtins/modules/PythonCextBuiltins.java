@@ -3138,11 +3138,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         static boolean traceMem(PythonContext context) {
-            return PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
+            return context.getPythonOptions().traceNativeMemory();
         }
 
         static boolean traceCalls(PythonContext context) {
-            return PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
+            return context.getPythonOptions().traceNativeMemoryCalls();
         }
 
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
@@ -3203,8 +3203,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             TruffleLogger logger = PythonLanguage.getLogger();
             boolean isLoggable = logger.isLoggable(Level.FINE);
-            boolean traceNativeMemory = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
-            boolean traceNativeMemoryCalls = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls);
+            boolean traceNativeMemory = context.getPythonOptions().traceNativeMemory();
+            boolean traceNativeMemoryCalls = context.getPythonOptions().traceNativeMemoryCalls();
             if (isLoggable || traceNativeMemory) {
                 boolean isNullPtr = lib.isNull(ptr);
                 if (isLoggable && !isNullPtr) {
@@ -3212,7 +3212,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
                 if (traceNativeMemory && !isNullPtr) {
                     PFrame.Reference ref = null;
-                    if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
+                    if (context.getPythonOptions().traceNativeMemoryCalls()) {
                         ref = getCurrentFrameRef.execute(null);
                     }
                     Pair<Reference, String> allocLocation = context.getCApiContext().traceFree(CApiContext.asPointer(ptr, lib), ref, null);

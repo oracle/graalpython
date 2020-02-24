@@ -83,7 +83,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
                     @Cached(value = "getAllocationReporter(context)", allowUncached = true) AllocationReporter reporter) throws ArityException, UnsupportedTypeException {
         TruffleLogger logger = PythonLanguage.getLogger();
         boolean isLoggable = logger.isLoggable(Level.FINE);
-        boolean traceNativeMemory = PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory);
+        boolean traceNativeMemory = context.getPythonOptions().traceNativeMemory();
         boolean reportAllocation = reporter.isActive();
         if (isLoggable || traceNativeMemory || reportAllocation) {
             if (arguments.length != 2) {
@@ -101,7 +101,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
             }
             if (traceNativeMemory) {
                 PFrame.Reference ref = null;
-                if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemoryCalls)) {
+                if (context.getPythonOptions().traceNativeMemoryCalls()) {
                     ref = getCurrentFrameRef.execute(null);
                     ref.markAsEscaped();
                 }
