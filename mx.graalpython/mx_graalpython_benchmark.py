@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -298,7 +298,7 @@ class GraalPythonVm(GuestVm):
         if isinstance(self._extra_vm_args, list):
             vm_args += self._extra_vm_args
         vm_args += [
-            "-Dpython.home=%s" % join(SUITE.dir, "graalpython"),
+            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
         for a in args[:]:
