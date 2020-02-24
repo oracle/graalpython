@@ -50,8 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.graalvm.collections.Pair;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
@@ -81,10 +79,10 @@ public final class CApiContext extends CExtContext {
 
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private final LinkedList<Object> stack = new LinkedList<>();
-    private Map<Object, Pair<PFrame.Reference, String>> allocatedNativeMemory;
+    private Map<Object, AllocInfo> allocatedNativeMemory;
 
     /** Container of pointers that have seen to be free'd. */
-    private Map<Object, Pair<PFrame.Reference, String>> freedNativeMemory;
+    private Map<Object, AllocInfo> freedNativeMemory;
 
     private RootCallTarget referenceCleanerCallTarget;
 
@@ -213,14 +211,14 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Pair<PFrame.Reference, String> traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public AllocInfo traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
         if (freedNativeMemory == null) {
             freedNativeMemory = new HashMap<>();
         }
-        Pair<PFrame.Reference, String> allocatedValue = allocatedNativeMemory.remove(ptr);
+        AllocInfo allocatedValue = allocatedNativeMemory.remove(ptr);
         Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
         if (freedValue != null) {
             PythonLanguage.getLogger().severe(String.format("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
@@ -231,11 +229,11 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public void traceAlloc(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public void traceAlloc(Object ptr, PFrame.Reference curFrame, String clazzName, long size) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }
-        Object value = allocatedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+        Object value = allocatedNativeMemory.put(ptr, new AllocInfo(clazzName, curFrame, size));
         if (freedNativeMemory != null) {
             freedNativeMemory.remove(ptr);
         }
@@ -254,8 +252,9 @@ public final class CApiContext extends CExtContext {
 
     /**
      * Use this method to register memory that is known to be allocated (i.e. static variables like
-     * types). This is basically the same as {@link #traceAlloc(Object, PFrame.Reference, String)}
-     * but does not consider it to be an error if the memory is already allocated.
+     * types). This is basically the same as
+     * {@link #traceAlloc(Object, PFrame.Reference, String, long)} but does not consider it to be an
+     * error if the memory is already allocated.
      */
     @TruffleBoundary
     public void traceStaticMemory(Object ptr, PFrame.Reference curFrame, String clazzName) {
@@ -265,7 +264,7 @@ public final class CApiContext extends CExtContext {
         if (freedNativeMemory != null) {
             freedNativeMemory.remove(ptr);
         }
-        allocatedNativeMemory.put(ptr, Pair.create(curFrame, clazzName));
+        allocatedNativeMemory.put(ptr, new AllocInfo(curFrame, clazzName));
     }
 
     @TruffleBoundary
@@ -302,5 +301,21 @@ public final class CApiContext extends CExtContext {
             i++;
         }
         return indx;
+    }
+
+    public static final class AllocInfo {
+        public final String typeName;
+        public final PFrame.Reference allocationSite;
+        public final long size;
+
+        public AllocInfo(String typeName, PFrame.Reference allocationSite, long size) {
+            this.typeName = typeName;
+            this.allocationSite = allocationSite;
+            this.size = size;
+        }
+
+        public AllocInfo(PFrame.Reference allocationSite, String typeName) {
+            this(typeName, allocationSite, -1);
+        }
     }
 }

@@ -105,7 +105,7 @@ public class PyObjectAllocationReporter implements TruffleObject {
                     ref = getCurrentFrameRef.execute(null);
                     ref.markAsEscaped();
                 }
-                context.getCApiContext().traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null);
+                context.getCApiContext().traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null, objectSize);
             }
             if (reportAllocation) {
                 try {

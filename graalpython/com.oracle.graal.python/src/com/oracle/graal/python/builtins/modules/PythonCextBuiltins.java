@@ -144,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyObjectAllocationReporter;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
@@ -3205,29 +3206,32 @@ public class PythonCextBuiltins extends PythonBuiltins {
             boolean isLoggable = logger.isLoggable(Level.FINE);
             boolean traceNativeMemory = context.getPythonOptions().traceNativeMemory();
             boolean traceNativeMemoryCalls = context.getPythonOptions().traceNativeMemoryCalls();
-            if (isLoggable || traceNativeMemory) {
-                boolean isNullPtr = lib.isNull(ptr);
-                if (isLoggable && !isNullPtr) {
-                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
-                }
-                if (traceNativeMemory && !isNullPtr) {
+            if ((isLoggable || traceNativeMemory) && !lib.isNull(ptr)) {
+                if (traceNativeMemory) {
                     PFrame.Reference ref = null;
                     if (context.getPythonOptions().traceNativeMemoryCalls()) {
                         ref = getCurrentFrameRef.execute(null);
                     }
-                    Pair<Reference, String> allocLocation = context.getCApiContext().traceFree(CApiContext.asPointer(ptr, lib), ref, null);
-                    if (traceNativeMemoryCalls && allocLocation != null) {
-                        Reference left = allocLocation.getLeft();
-                        PFrame pyFrame = null;
-                        while (pyFrame == null && left != null) {
-                            pyFrame = left.getPyFrame();
-                            left = left.getCallerInfo();
-                        }
-                        if (pyFrame != null) {
-                            final PFrame f = pyFrame;
-                            PythonLanguage.getLogger().fine(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                    AllocInfo allocLocation = context.getCApiContext().traceFree(CApiContext.asPointer(ptr, lib), ref, null);
+                    if (allocLocation != null) {
+                        PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
+
+                        if (traceNativeMemoryCalls) {
+                            Reference left = allocLocation.allocationSite;
+                            PFrame pyFrame = null;
+                            while (pyFrame == null && left != null) {
+                                pyFrame = left.getPyFrame();
+                                left = left.getCallerInfo();
+                            }
+                            if (pyFrame != null) {
+                                final PFrame f = pyFrame;
+                                PythonLanguage.getLogger().fine(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                            }
                         }
                     }
+                } else {
+                    assert isLoggable;
+                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
             }
             return 0;
