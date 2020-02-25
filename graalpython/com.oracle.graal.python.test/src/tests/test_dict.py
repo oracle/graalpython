@@ -127,7 +127,8 @@ def test_init1():
         dict([("a", 1), ("b", 2)], [("c", 3), ("d", 4)])
         assert False, "expected TypeError"
     except TypeError as e:
-        assert "dict expected at most 1 arguments, got 2" == str(e), "invalid error message"
+        import re
+        assert re.match(r"dict expected at most 1 arguments?, got 2", str(e)), "invalid error message: %s" % e
 
 
 def test_init2():
