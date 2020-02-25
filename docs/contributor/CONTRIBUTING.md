@@ -8,7 +8,7 @@ merge your work.
 
 Please also take some time to review our [code of conduct](http://www.graalvm.org/community/conduct/) for contributors.
 
-##### Getting started
+### Getting started
 
 The first thing you want to do is to set up
 [mx](https://github.com/graalvm/mx.git). This is the build tool we use to
@@ -38,7 +38,7 @@ projects in these IDEs. If you use another editor with support for the [Eclipse
 language server](https://github.com/eclipse/eclipse.jdt.ls) we also had reports
 of useable development setups with that, but it's not something we support.
 
-##### Development layout
+### Development layout
 
 Besides the source code of the Python interpreter, we have some useful `mx`
 functions defined under the `mx.graalpython` directory. As you make changes, you
@@ -76,7 +76,7 @@ The C implementation and headers for our C API are in
 Python's source names. This folder also includes a `modules` folder for built-in
 modules that we have adapted from C Python.
 
-##### Debug options
+### Debug options
 
 The GraalVM implementation of Python provides proper debug options. It is possible to either debug the Python code, using Chrome debugger,   
 or the java code, using your preferred IDE.
