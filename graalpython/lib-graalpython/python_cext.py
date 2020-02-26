@@ -162,6 +162,15 @@ def PyDict_Copy(dictObj):
 
 @may_raise
 def PyDict_GetItem(dictObj, key):
+    # PyDict_GetItem suppresses all exceptions for historical reasons
+    try:
+        return dictObj.get(key, native_null)
+    except:
+        return native_null
+
+
+@may_raise
+def PyDict_GetItemWithError(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
     return dictObj.get(key, native_null)
