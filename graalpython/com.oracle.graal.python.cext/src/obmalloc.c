@@ -40,6 +40,13 @@
  */
 #include "capi.h"
 
+struct _PyTraceMalloc_Config _Py_tracemalloc_config = {
+  .initialized = 0,
+  .tracing = 0,
+  .max_nframe = 1,
+  .use_domain = 0
+};
+
 void* PyMem_Malloc(size_t size) {
     if (size > (size_t)PY_SSIZE_T_MAX) {
         return NULL;
