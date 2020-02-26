@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.truffle.api.TruffleFile;
 public class PDirEntry extends PythonBuiltinObject {
     private final TruffleFile file;
     private final String name;
+    private Object cachedStatResult;
 
     public PDirEntry(LazyPythonClass cls, String name, TruffleFile file) {
         super(cls);
@@ -60,5 +61,13 @@ public class PDirEntry extends PythonBuiltinObject {
 
     public String getName() {
         return name;
+    }
+
+    public Object getCachedStatResult() {
+        return cachedStatResult;
+    }
+
+    public void setCachedStatResult(Object cachedStatResult) {
+        this.cachedStatResult = cachedStatResult;
     }
 }
