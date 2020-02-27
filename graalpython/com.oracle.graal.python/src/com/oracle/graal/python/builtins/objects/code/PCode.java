@@ -81,7 +81,8 @@ public final class PCode extends PythonBuiltinObject {
     static final long FLAG_VAR_KW_ARGS = 0x8;
     static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
     static final long FLAG_GENERATOR = 0x20;
-    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's redundant anyway
+    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
+                                          // redundant anyway
 
     private final RootCallTarget callTarget;
     private final Signature signature;
@@ -250,7 +251,8 @@ public final class PCode extends PythonBuiltinObject {
                 } else if (node instanceof FunctionDefinitionNode) {
                     constants.add(new PCode(PythonBuiltinClassType.PCode, ((FunctionDefinitionNode) node).getCallTarget()));
                 } else if (node instanceof GeneratorExpressionNode) {
-                    // TODO: we do it this way here since we cannot deserialize generator expressions right now
+                    // TODO: we do it this way here since we cannot deserialize generator
+                    // expressions right now
                     constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
                 }
                 return true;
@@ -267,7 +269,8 @@ public final class PCode extends PythonBuiltinObject {
                 if (node instanceof GlobalNode) {
                     names.add(((GlobalNode) node).getAttributeId());
                 } else if (node instanceof GeneratorExpressionNode) {
-                    // TODO: since we do *not* add GeneratorExpressionNodes in #extractConstants, we need to find the names referenced in them here
+                    // TODO: since we do *not* add GeneratorExpressionNodes in #extractConstants, we
+                    // need to find the names referenced in them here
                     names.addAll(Arrays.asList(extractNames(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
                 }
                 return true;
