@@ -44,39 +44,18 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.EconomicSet;
-import org.graalvm.collections.Equivalence;
 import org.graalvm.collections.MapCursor;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.DictKey;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
+@SuppressWarnings("javadoc")
 /**
- * Implementation of a map with a memory-efficient structure that always preserves insertion order
- * when iterating over keys. Particularly efficient when number of entries is 0 or smaller equal
- * {@link #INITIAL_CAPACITY} or smaller 256.
- *
- * The key/value pairs are kept in an expanding flat object array with keys at even indices and
- * values at odd indices. If the map has smaller or equal to {@link #HASH_THRESHOLD} entries, there
- * is no additional hash data structure and comparisons are done via linear checking of the
- * key/value pairs. For the case where the equality check is particularly cheap (e.g., just an
- * object identity comparison), this limit below which the map is without an actual hash table is
- * higher and configured at {@link #HASH_THRESHOLD_IDENTITY_COMPARE}.
- *
- * When the hash table needs to be constructed, the field {@link #hashArray} becomes a new hash
- * array where an entry of 0 means no hit and otherwise denotes the entry number in the
- * {@link #entries} array. The hash array is interpreted as an actual byte array if the indices fit
- * within 8 bit, or as an array of short values if the indices fit within 16 bit, or as an array of
- * integer values in other cases.
- *
- * Hash collisions are handled by chaining a linked list of {@link CollisionLink} objects that take
- * the place of the values in the {@link #entries} array.
- *
- * Removing entries will put {@code null} into the {@link #entries} array. If the occupation of the
- * map falls below a specific threshold, the map will be compressed via the
- * {@link #maybeCompress(int)} method.
+ * Based on @see org.graalvm.collections.EconomicMapImpl
  */
-final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> {
+
+final class PEMap implements Iterable<DictKey> {
 
     /**
      * Initial number of key/value pair entries that is allocated in the first entries array.
@@ -97,12 +76,6 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
      * Number of entries above which a hash table is created.
      */
     private static final int HASH_THRESHOLD = 4;
-
-    /**
-     * Number of entries above which a hash table is created when equality can be checked with
-     * object identity.
-     */
-    private static final int HASH_THRESHOLD_IDENTITY_COMPARE = 8;
 
     /**
      * Maximum number of entries allowed in the map.
@@ -141,37 +114,28 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
     private byte[] hashArray;
 
     /**
-     * The strategy used for comparing keys or {@code null} for denoting special strategy
-     * {@link Equivalence#IDENTITY}.
-     */
-    private final Equivalence strategy;
-
-    /**
      * Intercept method for debugging purposes.
      */
     private static PEMap intercept(PEMap map) {
         return map;
     }
 
-    public static PEMap create(Equivalence strategy, boolean isSet) {
-        return intercept(new PEMap(strategy, isSet));
+    @TruffleBoundary
+    public static PEMap create(boolean isSet) {
+        return intercept(new PEMap(isSet));
     }
 
-    public static PEMap create(Equivalence strategy, int initialCapacity, boolean isSet) {
-        return intercept(new PEMap(strategy, initialCapacity, isSet));
+    @TruffleBoundary
+    public static PEMap create(int initialCapacity, boolean isSet) {
+        return intercept(new PEMap(initialCapacity, isSet));
     }
 
-    private PEMap(Equivalence strategy, boolean isSet) {
-        if (strategy == Equivalence.IDENTITY) {
-            this.strategy = null;
-        } else {
-            this.strategy = strategy;
-        }
+    private PEMap(boolean isSet) {
         this.isSet = isSet;
     }
 
-    private PEMap(Equivalence strategy, int initialCapacity, boolean isSet) {
-        this(strategy, isSet);
+    private PEMap(int initialCapacity, boolean isSet) {
+        this(isSet);
         init(initialCapacity);
     }
 
@@ -200,60 +164,62 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         final int next;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Object get(DictKey key) {
+    @TruffleBoundary
+    public Object get(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         Objects.requireNonNull(key);
 
-        int index = find(key);
+        int index = find(key, keylib, otherlib);
         if (index != -1) {
             return getValue(index);
         }
         return null;
     }
 
-    private int find(DictKey key) {
+    private int find(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         if (hasHashArray()) {
-            return findHash(key);
+            return findHash(key, keylib, otherlib);
         } else {
-            return findLinear(key);
+            return findLinear(key, keylib, otherlib);
         }
     }
 
-    private int findLinear(DictKey key) {
+    private int findLinear(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         for (int i = 0; i < totalEntries; i++) {
-            Object entryKey = entries[i << 1];
-            if (entryKey != null && compareKeys(key, entryKey)) {
+            DictKey entryKey = getKey(i);
+            if (entryKey != null && compareKeys(key, entryKey, keylib, otherlib)) {
                 return i;
             }
         }
         return -1;
     }
 
-    private boolean compareKeys(Object key, Object entryKey) {
-        if (key == entryKey) {
+    private static boolean compareKeys(DictKey key, DictKey other, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) { //
+        // Comparison as per CPython's dictobject.c#lookdict function. First
+        // check if the keys are identical, then check if the hashes are the
+        // same, and only if they are, also call the comparison function.
+        if (key.value == other.value) {
             return true;
         }
-        if (strategy != null && strategy != Equivalence.IDENTITY_WITH_SYSTEM_HASHCODE) {
-            if (strategy == Equivalence.DEFAULT) {
-                return key.equals(entryKey);
+        if (key.hash == other.hash) {
+            if (keylib != null && otherlib != null) {
+                return keylib.equals(key.value, other.value, otherlib);
             } else {
-                return strategy.equals(key, entryKey);
+                return key.value.equals(other.value);
             }
         }
         return false;
     }
 
-    private int findHash(DictKey key) {
+    private int findHash(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         int index = getHashArray(getHashIndex(key)) - 1;
         if (index != -1) {
-            Object entryKey = getKey(index);
-            if (compareKeys(key, entryKey)) {
+            DictKey entryKey = getKey(index);
+            if (compareKeys(key, entryKey, keylib, otherlib)) {
                 return index;
             } else {
                 Object entryValue = getRawValue(index);
                 if (entryValue instanceof CollisionLink) {
-                    return findWithCollision(key, (CollisionLink) entryValue);
+                    return findWithCollision(key, (CollisionLink) entryValue, keylib, otherlib);
                 }
             }
         }
@@ -261,15 +227,15 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         return -1;
     }
 
-    private int findWithCollision(DictKey key, CollisionLink initialEntryValue) {
+    private int findWithCollision(DictKey key, CollisionLink initialEntryValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         int index;
-        Object entryKey;
+        DictKey entryKey;
         CollisionLink entryValue = initialEntryValue;
         while (true) {
             CollisionLink collisionLink = entryValue;
             index = collisionLink.next;
             entryKey = getKey(index);
-            if (compareKeys(key, entryKey)) {
+            if (compareKeys(key, entryKey, keylib, otherlib)) {
                 return index;
             } else {
                 Object value = getRawValue(index);
@@ -310,12 +276,12 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         }
     }
 
-    private int findAndRemoveHash(Object key) {
+    private int findAndRemoveHash(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         int hashIndex = getHashIndex(key);
         int index = getHashArray(hashIndex) - 1;
         if (index != -1) {
-            Object entryKey = getKey(index);
-            if (compareKeys(key, entryKey)) {
+            DictKey entryKey = getKey(index);
+            if (compareKeys(key, entryKey, keylib, otherlib)) {
                 Object value = getRawValue(index);
                 int nextIndex = -1;
                 if (value instanceof CollisionLink) {
@@ -327,7 +293,7 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
             } else {
                 Object entryValue = getRawValue(index);
                 if (entryValue instanceof CollisionLink) {
-                    return findAndRemoveWithCollision(key, (CollisionLink) entryValue, index);
+                    return findAndRemoveWithCollision(key, (CollisionLink) entryValue, index, keylib, otherlib);
                 }
             }
         }
@@ -335,16 +301,16 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         return -1;
     }
 
-    private int findAndRemoveWithCollision(Object key, CollisionLink initialEntryValue, int initialIndexValue) {
+    private int findAndRemoveWithCollision(DictKey key, CollisionLink initialEntryValue, int initialIndexValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         int index;
-        Object entryKey;
+        DictKey entryKey;
         CollisionLink entryValue = initialEntryValue;
         int lastIndex = initialIndexValue;
         while (true) {
             CollisionLink collisionLink = entryValue;
             index = collisionLink.next;
             entryKey = getKey(index);
-            if (compareKeys(key, entryKey)) {
+            if (compareKeys(key, entryKey, keylib, otherlib)) {
                 Object value = getRawValue(index);
                 if (value instanceof CollisionLink) {
                     CollisionLink thisCollisionLink = (CollisionLink) value;
@@ -365,28 +331,18 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         }
     }
 
-    private int getHashIndex(Object key) {
-        int hash;
-        if (strategy != null && strategy != Equivalence.DEFAULT) {
-            if (strategy == Equivalence.IDENTITY_WITH_SYSTEM_HASHCODE) {
-                hash = System.identityHashCode(key);
-            } else {
-                hash = strategy.hashCode(key);
-            }
-        } else {
-            hash = key.hashCode();
-        }
+    private int getHashIndex(DictKey key) {
+        int hash = key.hashCode();
         hash = hash ^ (hash >>> 16);
         return hash & (getHashTableSize() - 1);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Object put(DictKey key, Object value) {
+    @TruffleBoundary
+    public Object put(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         if (key == null) {
             throw new UnsupportedOperationException("null not supported as key!");
         }
-        int index = find(key);
+        int index = find(key, keylib, otherlib);
         if (index != -1) {
             Object oldValue = getValue(index);
             setValue(index, value);
@@ -419,15 +375,20 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         return null;
     }
 
+    @TruffleBoundary
+    public void putAll(PEMap other) {
+        final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+        MapCursor<DictKey, Object> e = other.getEntries();
+        while (e.advance()) {
+            put(e.getKey(), e.getValue(), lib, lib);
+        }
+    }
+
     /**
      * Number of entries above which a hash table should be constructed.
      */
-    private int getHashThreshold() {
-        if (strategy == null || strategy == Equivalence.IDENTITY_WITH_SYSTEM_HASHCODE) {
-            return HASH_THRESHOLD_IDENTITY_COMPARE;
-        } else {
-            return HASH_THRESHOLD;
-        }
+    private static int getHashThreshold() {
+        return HASH_THRESHOLD;
     }
 
     private void grow() {
@@ -472,7 +433,7 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         int z = 0;
         int newNextIndex = remaining;
         for (int i = 0; i < totalEntries; ++i) {
-            Object key = getKey(i);
+            DictKey key = getKey(i);
             if (i == nextIndex) {
                 newNextIndex = z;
             }
@@ -529,14 +490,14 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
 
         hashArray = new byte[size];
         for (int i = 0; i < totalEntries; i++) {
-            Object entryKey = getKey(i);
+            DictKey entryKey = getKey(i);
             if (entryKey != null) {
                 putHashEntry(entryKey, i, false);
             }
         }
     }
 
-    private void putHashEntry(Object key, int entryIndex, boolean rehashOnCollision) {
+    private void putHashEntry(DictKey key, int entryIndex, boolean rehashOnCollision) {
         int hashIndex = getHashIndex(key);
         int oldIndex = getHashArray(hashIndex) - 1;
         if (oldIndex != -1 && rehashOnCollision) {
@@ -561,17 +522,15 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         }
     }
 
-    @Override
     public int size() {
         return totalEntries - deletedEntries;
     }
 
-    @Override
-    public boolean containsKey(DictKey key) {
-        return find(key) != -1;
+    @TruffleBoundary
+    public boolean containsKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+        return find(key, keylib, otherlib) != -1;
     }
 
-    @Override
     public void clear() {
         entries = null;
         hashArray = null;
@@ -582,17 +541,16 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         return hashArray != null;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Object removeKey(DictKey key) {
+    @TruffleBoundary
+    public Object removeKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
         if (key == null) {
             throw new UnsupportedOperationException("null not supported as key!");
         }
         int index;
         if (hasHashArray()) {
-            index = this.findAndRemoveHash(key);
+            index = this.findAndRemoveHash(key, keylib, otherlib);
         } else {
-            index = this.findLinear(key);
+            index = this.findLinear(key, keylib, otherlib);
         }
 
         if (index != -1) {
@@ -640,7 +598,7 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         return result;
     }
 
-    private abstract class SparseMapIterator<E> implements Iterator<E> {
+    private abstract class SparseMapIterator<E> implements Iterator<E> { //
 
         protected int current;
 
@@ -652,13 +610,14 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         @Override
         public void remove() {
             if (hasHashArray()) {
-                PEMap.this.findAndRemoveHash(getKey(current - 1));
+                final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                PEMap.this.findAndRemoveHash(getKey(current - 1), lib, lib);
             }
             current = PEMap.this.remove(current - 1);
         }
     }
 
-    @Override
+    @TruffleBoundary
     public Iterable<Object> getValues() {
         return new Iterable<Object>() {
             @Override
@@ -685,17 +644,15 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         };
     }
 
-    @Override
     public Iterable<DictKey> getKeys() {
         return this;
     }
 
-    @Override
     public boolean isEmpty() {
         return this.size() == 0;
     }
 
-    @Override
+    @TruffleBoundary
     public MapCursor<DictKey, Object> getEntries() {
         return new MapCursor<DictKey, Object>() {
             int current = -1;
@@ -714,13 +671,11 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
                 }
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             public DictKey getKey() {
-                return (DictKey) PEMap.this.getKey(current);
+                return PEMap.this.getKey(current);
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             public Object getValue() {
                 return PEMap.this.getValue(current);
@@ -729,30 +684,29 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
             @Override
             public void remove() {
                 if (hasHashArray()) {
-                    PEMap.this.findAndRemoveHash(PEMap.this.getKey(current));
+                    final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                    PEMap.this.findAndRemoveHash(PEMap.this.getKey(current), lib, lib);
                 }
                 current = PEMap.this.remove(current) - 1;
             }
         };
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
     public void replaceAll(BiFunction<? super DictKey, ? super Object, ? extends Object> function) {
         for (int i = 0; i < totalEntries; i++) {
-            Object entryKey = getKey(i);
+            DictKey entryKey = getKey(i);
             if (entryKey != null) {
-                Object newValue = function.apply((DictKey) entryKey, getValue(i));
+                Object newValue = function.apply(entryKey, getValue(i));
                 setValue(i, newValue);
             }
         }
     }
 
-    private Object getKey(int index) {
-        return entries[index << 1];
+    private DictKey getKey(int index) {
+        return (DictKey) entries[index << 1];
     }
 
-    private void setKey(int index, Object newValue) {
+    private void setKey(int index, DictKey newValue) {
         entries[index << 1] = newValue;
     }
 
@@ -806,11 +760,10 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
     @Override
     public Iterator<DictKey> iterator() {
         return new SparseMapIterator<DictKey>() {
-            @SuppressWarnings("unchecked")
             @Override
             public DictKey next() {
                 DictKey result;
-                while ((result = (DictKey) getKey(current++)) == null) {
+                while ((result = getKey(current++)) == null) {
                     // skip null entries
                 }
                 return result;
@@ -818,19 +771,16 @@ final class PEMap implements EconomicMap<DictKey, Object>, EconomicSet<DictKey> 
         };
     }
 
-    @Override
-    public boolean contains(DictKey element) {
-        return containsKey(element);
+    public boolean contains(DictKey element, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+        return containsKey(element, keylib, otherlib);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public boolean add(DictKey element) {
-        return put(element, element) == null;
+    public boolean add(DictKey element, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+        return put(element, element, keylib, otherlib) == null;
     }
 
-    @Override
-    public void remove(DictKey element) {
-        removeKey(element);
+    public void remove(DictKey element, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+        removeKey(element, keylib, otherlib);
     }
+
 }

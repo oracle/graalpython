@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 
 import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.Equivalence;
 import org.graalvm.collections.MapCursor;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
@@ -69,23 +68,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 @ExportLibrary(HashingStorageLibrary.class)
 public class EconomicMapStorage extends HashingStorage {
 
-    public static final Equivalence DEFAULT_EQIVALENCE = new Equivalence() {
-
-        @Override
-        public int hashCode(Object o) {
-            return Long.hashCode(o.hashCode());
-        }
-
-        @Override
-        public boolean equals(Object a, Object b) {
-            return (a == b) || (a != null && objectEquals(a, b));
-        }
-
-        private boolean objectEquals(Object a, Object b) {
-            return a.equals(b);
-        }
-    };
-
     public static EconomicMapStorage create() {
         return new EconomicMapStorage();
     }
@@ -108,26 +90,6 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            // Comparison as per CPython's dictobject.c#lookdict function. First
-            // check if the keys are identical, then check if the hashes are the
-            // same, and only if they are, also call the comparison function.
-            if (obj instanceof DictKey) {
-                DictKey other = (DictKey) obj;
-                if (value == other.value) {
-                    return true;
-                } else if (hash == other.hash) {
-                    final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
-                    return lib.equals(value, other.value, lib);
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-
-        @Override
         public int hashCode() {
             return (int) hash;
         }
@@ -136,7 +98,7 @@ public class EconomicMapStorage extends HashingStorage {
     private final PEMap map;
 
     private EconomicMapStorage(int initialCapacity) {
-        this.map = PEMap.create(EconomicMapStorage.DEFAULT_EQIVALENCE, initialCapacity, false);
+        this.map = PEMap.create(initialCapacity, false);
     }
 
     private EconomicMapStorage() {
@@ -148,13 +110,15 @@ public class EconomicMapStorage extends HashingStorage {
         this.map.putAll(original.map);
     }
 
+    @TruffleBoundary
     public EconomicMapStorage(EconomicMap<? extends Object, ? extends Object> map) {
         this(map.size());
+        final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
         MapCursor<? extends Object, ? extends Object> c = map.getEntries();
         while (c.advance()) {
             Object key = c.getKey();
             assert key instanceof Integer || key instanceof String;
-            this.map.put(new DictKey(key, key.hashCode()), c.getValue());
+            this.map.put(new DictKey(key, key.hashCode()), c.getValue(), lib, lib);
         }
     }
 
@@ -184,9 +148,10 @@ public class EconomicMapStorage extends HashingStorage {
     static class GetItemWithState {
 
         @Specialization
-        static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state) {
+        static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             DictKey newKey = new DictKey(key, key.hashCode());
-            return self.map.get(newKey);
+            return self.map.get(newKey, lib, lib);
         }
 
         @SuppressWarnings("unused")
@@ -194,18 +159,20 @@ public class EconomicMapStorage extends HashingStorage {
         static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+                        @Exclusive @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = EconomicMapStorage.toString(key, profile);
-            DictKey newKey = new DictKey(k, k.hashCode());
-            return self.map.get(newKey);
+            return getItemString(self, k, state, lib);
         }
 
         @Specialization(replaces = "getItemString", limit = "3")
         static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
-            return self.map.get(newKey);
+            final long h = self.getHashWithState(key, lib, state, gotState);
+            DictKey newKey = new DictKey(key, h);
+            return self.map.get(newKey, lib, otherlib);
         }
     }
 
@@ -215,9 +182,10 @@ public class EconomicMapStorage extends HashingStorage {
     static class SetItemWithState {
 
         @Specialization
-        static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state) {
+        static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             DictKey newKey = new DictKey(key, key.hashCode());
-            self.map.put(newKey, value);
+            self.map.put(newKey, value, lib, lib);
             return self;
         }
 
@@ -225,29 +193,30 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Exclusive @Cached GetLazyClassNode getClassNode) {
+                        @Exclusive @Cached GetLazyClassNode getClassNode,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = EconomicMapStorage.toString(key, profile);
-            DictKey newKey = new DictKey(k, k.hashCode());
-            self.map.put(newKey, value);
-            return self;
+            return setItemString(self, k, value, state, lib);
         }
 
         @Specialization(replaces = "setItemString", limit = "3")
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
-            self.map.put(newKey, value);
+            self.map.put(newKey, value, lib, otherlib);
             return self;
         }
     }
 
-    @ExportMessage(limit = "3")
+    @ExportMessage(limit = "2")
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
-        map.removeKey(newKey);
+        map.removeKey(newKey, lib, otherlib);
         return this;
     }
 
@@ -264,15 +233,18 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class AddAllToOther {
+
+        @TruffleBoundary
         @Specialization
         static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other) {
             other.map.putAll(self.map);
             return other;
         }
 
-        @Specialization
+        @TruffleBoundary
+        @Specialization(limit = "2")
         static HashingStorage generic(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary("other") HashingStorageLibrary lib) {
             HashingStorage result = other;
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
@@ -297,16 +269,17 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class EqualsWithState {
+        @TruffleBoundary
         @Specialization
         static boolean equalSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib1,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib2) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2) {
             if (self.map.size() != other.map.size()) {
                 return false;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                Object otherValue = other.map.get(cursor.getKey());
+                Object otherValue = other.map.get(cursor.getKey(), compareLib1, compareLib2);
                 if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
                     return false;
                 }
@@ -314,17 +287,19 @@ public class EconomicMapStorage extends HashingStorage {
             return true;
         }
 
+        @TruffleBoundary
         @Specialization
         static boolean equalGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary(limit = "5") HashingStorageLibrary lib,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib1,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary compareLib2) {
-            if (self.map.size() != lib.lengthWithState(other, state)) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary selflib,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary otherlib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2) {
+            if (self.map.size() != otherlib.lengthWithState(other, state)) {
                 return false;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                Object otherValue = lib.getItemWithState(self, cursor.getKey().value, state);
+                Object otherValue = selflib.getItemWithState(self, cursor.getKey().value, state);
                 if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
                     return false;
                 }
@@ -335,8 +310,10 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class CompareKeys {
+        @TruffleBoundary
         @Specialization
-        static int compareSameType(EconomicMapStorage self, EconomicMapStorage other) {
+        static int compareSameType(EconomicMapStorage self, EconomicMapStorage other,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             int size = self.map.size();
             int size2 = other.map.size();
             if (size > size2) {
@@ -344,7 +321,7 @@ public class EconomicMapStorage extends HashingStorage {
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (!other.map.containsKey(cursor.getKey())) {
+                if (!other.map.containsKey(cursor.getKey(), lib, lib)) {
                     return 1;
                 }
             }
@@ -355,6 +332,7 @@ public class EconomicMapStorage extends HashingStorage {
             }
         }
 
+        @TruffleBoundary
         @Specialization(limit = "4")
         static int compareGeneric(EconomicMapStorage self, HashingStorage other,
                         @CachedLibrary("other") HashingStorageLibrary lib) {
@@ -379,26 +357,30 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class Intersect {
+        @TruffleBoundary
         @Specialization
-        static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other) {
+        static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (other.map.containsKey(cursor.getKey())) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+                if (other.map.containsKey(cursor.getKey(), lib, lib)) {
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
                 }
             }
             return result;
         }
 
+        @TruffleBoundary
         @Specialization(limit = "4")
         static HashingStorage intersectGeneric(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary("other") HashingStorageLibrary lib) {
+                        @CachedLibrary("other") HashingStorageLibrary hlib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (lib.hasKey(other, cursor.getKey().value)) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+                if (hlib.hasKey(other, cursor.getKey().value)) {
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
                 }
             }
             return result;
@@ -407,26 +389,30 @@ public class EconomicMapStorage extends HashingStorage {
 
     @ExportMessage
     public static class Diff {
+        @TruffleBoundary
         @Specialization
-        static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other) {
+        static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (!other.map.containsKey(cursor.getKey())) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+                if (!other.map.containsKey(cursor.getKey(), lib, lib)) {
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
                 }
             }
             return result;
         }
 
+        @TruffleBoundary
         @Specialization(limit = "4")
         static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other,
-                        @CachedLibrary("other") HashingStorageLibrary lib) {
+                        @CachedLibrary("other") HashingStorageLibrary hlib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (!lib.hasKey(other, cursor.getKey().value)) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+                if (!hlib.hasKey(other, cursor.getKey().value)) {
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
                 }
             }
             return result;
