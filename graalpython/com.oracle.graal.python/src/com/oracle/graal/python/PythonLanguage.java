@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContextOptions;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -217,7 +218,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
         this.isWithThread = PythonOptions.isWithThread(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl(env));
-        final PythonContext context = new PythonContext(this, env, newCore);
+        final PythonContext context = new PythonContext(this, env, newCore, PythonContextOptions.fromOptionValues(env.getOptions()));
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
         return context;
     }

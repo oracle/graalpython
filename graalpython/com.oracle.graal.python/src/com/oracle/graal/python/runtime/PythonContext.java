@@ -223,12 +223,15 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
+    private final PythonContextOptions options;
+
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core, PythonContextOptions options) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(language);
+        this.options = options;
         if (env == null) {
             this.in = System.in;
             this.out = System.out;
@@ -375,6 +378,10 @@ public final class PythonContext {
         setEnv(newEnv);
         setupRuntimeInformation(true);
         core.postInitialize();
+    }
+
+    public boolean isJythonEmulated() {
+        return options.isJythonEmulated();
     }
 
     /**
