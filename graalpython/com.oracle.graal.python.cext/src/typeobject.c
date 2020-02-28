@@ -523,3 +523,7 @@ Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple) {
     cls->tp_basicsize = cur_offset;
     return cur_offset;
 }
+
+unsigned long PyType_GetFlags(struct _typeobject *type) {
+    return type->tp_flags;
+}
