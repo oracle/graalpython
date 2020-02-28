@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
@@ -90,6 +91,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -1588,6 +1590,49 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return result;
             }
             throw raise(TypeError, "__repr__ returned non-string (type %p)", obj);
+        }
+    }
+
+    // ascii(object)
+    @Builtin(name = ASCII, minNumOfPositionalArgs = 1)
+    @ImportStatic(PGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AsciiNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isString(obj)")
+        public Object asciiString(Object obj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            String str = castToJavaStringNode.execute(obj);
+            byte[] bytes = BytesUtils.unicodeEscape(str);
+            boolean hasSingleQuote = false;
+            boolean hasDoubleQuote = false;
+            for (int i = 0; i < bytes.length; i++) {
+                char c = (char) bytes[i];
+                hasSingleQuote |= c == '\'';
+                hasDoubleQuote |= c == '"';
+            }
+            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
+            char quote = useDoubleQuotes ? '"' : '\'';
+            StringBuilder sb = new StringBuilder(bytes.length + 2);
+            sb.append(quote);
+            for (int i = 0; i < bytes.length; i++) {
+                char c = (char) bytes[i];
+                if (c == '\'' && !useDoubleQuotes) {
+                    sb.append("\\'");
+                } else {
+                    sb.append(c);
+                }
+            }
+            sb.append(quote);
+            return sb.toString();
+        }
+
+        @Specialization(guards = "!isString(obj)")
+        public Object asciiGeneric(VirtualFrame frame, Object obj,
+                        @Cached ReprNode reprNode) {
+            String repr = (String) reprNode.execute(frame, obj);
+            byte[] bytes = BytesUtils.unicodeEscape(repr);
+            return new String(bytes);
         }
     }
 

@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
@@ -37,6 +38,8 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class BytesUtils {
+
+    static final byte[] hexdigits = "0123456789abcdef".getBytes();
 
     public static byte[] fromSize(PythonCore core, int size) {
         if (size < 0) {
@@ -225,6 +228,69 @@ public final class BytesUtils {
         for (int i = 0; i < sb.length(); i++) {
             bytes[i] = (byte) sb.charAt(i);
         }
+        return bytes;
+    }
+
+    @TruffleBoundary
+    public static byte[] unicodeEscape(String str) {
+        // Initial allocation of bytes for UCS4 strings needs 10 bytes per source character
+        // ('\U00xxxxxx')
+        byte[] bytes = new byte[str.length() * 10];
+        int j = 0;
+        for (int i = 0; i < str.length(); i++) {
+            int ch = str.codePointAt(i);
+            /* U+0000-U+00ff range */
+            if (ch < 0x100) {
+                if (ch >= ' ' && ch < 127) {
+                    if (ch != '\\') {
+                        /* Copy printable US ASCII as-is */
+                        bytes[j++] = (byte) ch;
+                    } else {
+                        /* Escape backslashes */
+                        bytes[j++] = '\\';
+                        bytes[j++] = '\\';
+                    }
+                } else if (ch == '\t') {
+                    /* Map special whitespace to '\t', \n', '\r' */
+                    bytes[j++] = '\\';
+                    bytes[j++] = 't';
+                } else if (ch == '\n') {
+                    bytes[j++] = '\\';
+                    bytes[j++] = 'n';
+                } else if (ch == '\r') {
+                    bytes[j++] = '\\';
+                    bytes[j++] = 'r';
+                } else {
+                    /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
+                    bytes[j++] = '\\';
+                    bytes[j++] = 'x';
+                    bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
+                    bytes[j++] = hexdigits[ch & 0x000F];
+                }
+            } else if (ch < 0x10000) {
+                /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
+                bytes[j++] = '\\';
+                bytes[j++] = 'u';
+                bytes[j++] = hexdigits[(ch >> 12) & 0x000F];
+                bytes[j++] = hexdigits[(ch >> 8) & 0x000F];
+                bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
+                bytes[j++] = hexdigits[ch & 0x000F];
+            } else {
+                /* U+010000-U+10ffff range: Map 21-bit characters to '\U00HHHHHH' */
+                /* Make sure that the first two digits are zero */
+                bytes[j++] = '\\';
+                bytes[j++] = 'U';
+                bytes[j++] = '0';
+                bytes[j++] = '0';
+                bytes[j++] = hexdigits[(ch >> 20) & 0x0000000F];
+                bytes[j++] = hexdigits[(ch >> 16) & 0x0000000F];
+                bytes[j++] = hexdigits[(ch >> 12) & 0x0000000F];
+                bytes[j++] = hexdigits[(ch >> 8) & 0x0000000F];
+                bytes[j++] = hexdigits[(ch >> 4) & 0x0000000F];
+                bytes[j++] = hexdigits[ch & 0x0000000F];
+            }
+        }
+        bytes = Arrays.copyOf(bytes, j);
         return bytes;
     }
 }
