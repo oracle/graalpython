@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToDoubleNode;
@@ -1970,14 +1972,23 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hypot", minNumOfPositionalArgs = 2)
+    @Builtin(name = "hypot", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
-    public abstract static class HypotNode extends PythonBinaryBuiltinNode {
+    public abstract static class HypotNode extends PythonVarargsBuiltinNode {
 
-        @Specialization
-        public double hypotDD(double x, double y) {
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization(guards = "arguments.length == 2")
+        public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached("create()") CastToDoubleNode xCastNode,
+                        @Cached("create()") CastToDoubleNode yCastNode) {
+            double x = xCastNode.execute(frame, arguments[0]);
+            double y = yCastNode.execute(frame, arguments[1]);
             double result = Math.hypot(x, y);
             if (Double.isInfinite(result) && Double.isFinite(x) && Double.isFinite(y)) {
                 throw raise(OverflowError, "math range error");
@@ -1986,50 +1997,45 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double hypotDL(double x, long y) {
-            return hypotDD(x, y);
-        }
+        public double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached("create()") CastToDoubleNode castNode) {
+            double max = 0.0;
+            boolean foundNan = false;
+            double[] coordinates = new double[arguments.length];
+            for (int i = 0; i < arguments.length; i++) {
+                double x = castNode.execute(frame, arguments[i]);
+                x = Math.abs(x);
+                if (Double.isNaN(x)) {
+                    foundNan = true;
+                }
+                if (x > max) {
+                    max = x;
+                }
+                coordinates[i] = x;
+            }
+            if (Double.isInfinite(max)) {
+                return max;
+            }
+            if (foundNan) {
+                return Double.NaN;
+            }
+            if (max == 0.0 || arguments.length <= 1) {
+                return max;
+            }
 
-        @Specialization
-        public double hypotLD(long x, double y) {
-            return hypotDD(x, y);
-        }
+            double csum = 1.0;
+            double oldcsum;
+            double frac = 0.0;
 
-        @Specialization
-        public double hypotLL(long x, long y) {
-            return hypotDD(x, y);
-        }
-
-        @Specialization
-        public double hypotDPI(double x, PInt y) {
-            return hypotDD(x, y.doubleValue());
-        }
-
-        @Specialization
-        public double hypotLPI(long x, PInt y) {
-            return hypotDD(x, y.doubleValue());
-        }
-
-        @Specialization
-        public double hypotPIPI(PInt x, PInt y) {
-            return hypotDD(x.doubleValue(), y.doubleValue());
-        }
-
-        @Specialization
-        public double hypotPID(PInt x, double y) {
-            return hypotDD(x.doubleValue(), y);
-        }
-
-        @Specialization
-        public double hypotPIL(PInt x, long y) {
-            return hypotDD(x.doubleValue(), y);
-        }
-
-        @Specialization(guards = "!isNumber(objectX) || !isNumber(objectY)")
-        public double hypotOO(VirtualFrame frame, Object objectX, Object objectY,
-                        @Cached("create()") CastToDoubleNode xCastNode,
-                        @Cached("create()") CastToDoubleNode yCastNode) {
-            return hypotDD(xCastNode.execute(frame, objectX), yCastNode.execute(frame, objectY));
+            for (int i = 0; i < arguments.length; i++) {
+                double x = coordinates[i];
+                x /= max;
+                x = x * x;
+                oldcsum = csum;
+                csum += x;
+                frac += (oldcsum - csum) + x;
+            }
+            return max * Math.sqrt(csum - 1.0 + frac);
         }
     }
 
