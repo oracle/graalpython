@@ -129,17 +129,21 @@ public class CastToIntegerFromIntNode extends Node {
         @Specialization(guards = "!isNumber(x)")
         Object fromObject(Object x, Function<Object, Byte> typeErrorHandler,
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
+                        @Cached LookupAndCallUnaryDynamicNode callIntNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            Object result = callIndexNode.executeObject(x, SpecialMethodNames.__INT__);
+            Object result = callIndexNode.executeObject(x, SpecialMethodNames.__INDEX__);
             if (result == PNone.NO_VALUE) {
-                if (typeErrorHandler != null) {
-                    return typeErrorHandler.apply(x);
-                } else {
-                    throw raiseNode.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                result = callIntNode.executeObject(x, SpecialMethodNames.__INT__);
+                if (result == PNone.NO_VALUE) {
+                    if (typeErrorHandler != null) {
+                        return typeErrorHandler.apply(x);
+                    } else {
+                        throw raiseNode.raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+                    }
                 }
             }
             if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-                throw raiseNode.raise(TypeError, " __int__ returned non-int (type %p)", result);
+                throw raiseNode.raise(TypeError, "__index__ returned non-int (type %p)", result);
             }
             return result;
         }
