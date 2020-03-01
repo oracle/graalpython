@@ -46,6 +46,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class EscapedReferencesHeap implements Iterable<NativeObjectReference> {
 
@@ -74,6 +75,7 @@ public final class EscapedReferencesHeap implements Iterable<NativeObjectReferen
         private final NativeObjectReference[] chunkArray = new NativeObjectReference[CHUNK_SIZE];
     }
 
+    @TruffleBoundary
     public int reserve() {
         int freeId = pop();
         if (freeId == -1) {
@@ -95,6 +97,7 @@ public final class EscapedReferencesHeap implements Iterable<NativeObjectReferen
         return pop();
     }
 
+    @TruffleBoundary
     public void set(NativeObjectReference ref) {
         int id = ref.id;
         int chunkIdx = id / CHUNK_SIZE;
@@ -104,6 +107,7 @@ public final class EscapedReferencesHeap implements Iterable<NativeObjectReferen
         chunks.get(chunkIdx).chunkArray[offset] = ref;
     }
 
+    @TruffleBoundary
     public boolean remove(NativeObjectReference ref) {
         int id = ref.id;
         int chunkIdx = id / CHUNK_SIZE;
@@ -120,6 +124,7 @@ public final class EscapedReferencesHeap implements Iterable<NativeObjectReferen
     }
 
     @Override
+    @TruffleBoundary
     public Iterator<NativeObjectReference> iterator() {
         return new EscapedReferencesHeapIterator();
     }
@@ -130,6 +135,7 @@ public final class EscapedReferencesHeap implements Iterable<NativeObjectReferen
         private int offset = 0;
 
         @Override
+        @TruffleBoundary
         public boolean hasNext() {
             if (chunkIdx < chunks.size() && offset < CHUNK_SIZE) {
                 Chunk chunk = chunks.get(chunkIdx);
@@ -139,6 +145,7 @@ public final class EscapedReferencesHeap implements Iterable<NativeObjectReferen
         }
 
         @Override
+        @TruffleBoundary
         public NativeObjectReference next() {
             if (chunkIdx < chunks.size()) {
                 Chunk chunk = chunks.get(chunkIdx);
