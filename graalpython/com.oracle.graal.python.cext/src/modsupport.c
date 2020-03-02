@@ -927,3 +927,12 @@ _PyArg_UnpackKeywords(PyObject *const *args, Py_ssize_t nargs,
 
     return buf;
 }
+
+// Taken from CPython 3.8 getargs.c
+void _PyArg_BadArgument(const char *fname, const char *displayname,
+                   const char *expected, PyObject *arg) {
+    PyErr_Format(PyExc_TypeError,
+                 "%.200s() %.200s must be %.50s, not %.50s",
+                 fname, displayname, expected,
+                 arg == Py_None ? "None" : arg->ob_type->tp_name);
+}
