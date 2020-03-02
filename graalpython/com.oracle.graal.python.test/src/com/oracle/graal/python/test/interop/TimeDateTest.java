@@ -40,19 +40,24 @@
  */
 package com.oracle.graal.python.test.interop;
 
-import com.oracle.graal.python.test.PythonTests;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+
+import com.oracle.graal.python.test.PythonTests;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.junit.After;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("all")
 public class TimeDateTest extends PythonTests {
 
     private ByteArrayOutputStream out;
