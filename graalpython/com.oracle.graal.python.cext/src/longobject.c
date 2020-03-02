@@ -365,3 +365,17 @@ int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int lit
 
 }
 
+// Taken from CPython 3.8.1
+int _PyLong_AsInt(PyObject *obj) {
+    int overflow;
+    long result = PyLong_AsLongAndOverflow(obj, &overflow);
+    if (overflow || result > INT_MAX || result < INT_MIN) {
+        /* XXX: could be cute and give a different
+           message for overflow == -1 */
+        PyErr_SetString(PyExc_OverflowError,
+                        "Python int too large to convert to C int");
+        return -1;
+    }
+    return (int)result;
+}
+
