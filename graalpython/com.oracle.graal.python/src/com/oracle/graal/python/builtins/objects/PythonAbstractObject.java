@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -495,7 +497,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public Object getMembers(boolean includeInternal,
                     @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
                     @Cached CastToListInteropNode castToList,
-                    @Cached GetClassNode getClass,
+                    @Shared("getClassThis") @Cached GetClassNode getClass,
                     @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
@@ -579,8 +581,69 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isInstantiable(
-                    @Cached TypeNodes.IsTypeNode isTypeNode) {
+                    @Shared("isTypeThis") @Cached TypeNodes.IsTypeNode isTypeNode) {
         return isTypeNode.execute(this);
+    }
+
+    @ExportMessage
+    public boolean isMetaObject(
+                    @Shared("isTypeThis") @Cached TypeNodes.IsTypeNode isTypeNode) {
+        return isTypeNode.execute(this);
+    }
+
+    @ExportMessage
+    public boolean isMetaInstance(Object instance,
+                    @Shared("isTypeThis") @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Exclusive @Cached GetLazyClassNode getClass,
+                    @Exclusive @Cached IsSubtypeNode isSubtype) throws UnsupportedMessageException {
+        if (!isTypeNode.execute(this)) {
+            throw UnsupportedMessageException.create();
+        }
+        if (this instanceof LazyPythonClass) {
+            return isSubtype.execute(getClass.execute(instance), (LazyPythonClass) this);
+        } else {
+            // TODO: (tfel) support subtype checking for native classes
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    public String getMetaSimpleName(
+                    @CachedLibrary("this") InteropLibrary lib,
+                    @Shared("nameCast") @Cached CastToJavaStringNode castStr,
+                    @Shared("isTypeThis") @Cached TypeNodes.IsTypeNode isTypeNode) throws UnsupportedMessageException {
+        if (!isTypeNode.execute(this)) {
+            throw UnsupportedMessageException.create();
+        }
+        try {
+            return castStr.execute(lib.readMember(this, __NAME__));
+        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+            return fallbackName();
+        }
+    }
+
+    @ExportMessage
+    public String getMetaQualifiedName(
+                    @CachedLibrary("this") InteropLibrary lib,
+                    @Shared("nameCast") @Cached CastToJavaStringNode castStr,
+                    @Shared("isTypeThis") @Cached TypeNodes.IsTypeNode isTypeNode) throws UnsupportedMessageException {
+        if (!isTypeNode.execute(this)) {
+            throw UnsupportedMessageException.create();
+        }
+        try {
+            return castStr.execute(lib.readMember(this, __QUALNAME__));
+        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+            return fallbackName();
+        }
+    }
+
+    private String fallbackName() {
+        CompilerDirectives.transferToInterpreter();
+        if (this instanceof LazyPythonClass) {
+            return ((LazyPythonClass) this).getName();
+        } else {
+            return "unknown-class";
+        }
     }
 
     @ExportMessage
@@ -1708,7 +1771,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public Class<? extends TruffleLanguage> getLanguage() {
+    public Class<? extends TruffleLanguage<?>> getLanguage() {
         return PythonLanguage.class;
     }
 
@@ -1753,5 +1816,16 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached(value = "context.getBuiltins()", uncached = "none()") PythonModule builtins) {
             return self.toString();
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean hasMetaObject() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass) {
+        return getClass.execute(this);
     }
 }

@@ -26,16 +26,15 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import org.graalvm.options.OptionDescriptors;
-import org.graalvm.options.OptionValues;
-
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -43,25 +42,18 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -69,6 +61,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropMap;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PFunctionArgsFinder;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -96,6 +89,9 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
+
+import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionValues;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -330,33 +326,34 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected boolean isObjectOfLanguage(Object object) {
-        return object instanceof PythonAbstractObject;
-    }
-
-    private boolean isForeignPrimitive(Object value) {
-        return value instanceof Float || value instanceof Short || value instanceof Character || value instanceof Byte;
-    }
-
-    @Override
-    protected Object findMetaObject(PythonContext context, Object value) {
-        if (value != null) {
-            if (value instanceof PythonObject) {
-                return ((PythonObject) value).asPythonClass();
-            } else if (PGuards.isNativeObject(value)) {
-                // TODO(fa): we could also use 'GetClassNode.getItSlowPath(value)' here
-                return null;
-            } else if (isForeignPrimitive(value)) {
-                // these only appear when inspecting foreign data structures
-                return null;
-            } else if (value instanceof PythonAbstractObject ||
-                            value instanceof Number ||
-                            value instanceof String ||
-                            value instanceof Boolean) {
-                return GetClassNode.getUncached().execute(value);
-            }
+    protected Object getLanguageView(PythonContext context, Object value) {
+        if (value instanceof PythonAbstractObject) {
+            return value;
         }
-        return null;
+        PythonObjectFactory uncached = PythonObjectFactory.getUncached();
+        if (value instanceof Byte) {
+            return uncached.createInt(PythonBuiltinClassType.PInt, (byte) value);
+        } else if (value instanceof Character) {
+            return uncached.createString(Character.toString((char) value));
+        } else if (value instanceof Short) {
+            return uncached.createInt(PythonBuiltinClassType.PInt, (short) value);
+        } else if (value instanceof Integer) {
+            return uncached.createInt(PythonBuiltinClassType.PInt, (int) value);
+        } else if (value instanceof Long) {
+            return uncached.createInt(PythonBuiltinClassType.PInt, (long) value);
+        } else if (value instanceof BigInteger) {
+            return uncached.createInt(PythonBuiltinClassType.PInt, (BigInteger) value);
+        } else if (value instanceof CharSequence) {
+            return uncached.createString(((CharSequence) value).toString());
+        } else if (value instanceof Float) {
+            return uncached.createFloat((float) value);
+        } else if (value instanceof Double) {
+            return uncached.createFloat((double) value);
+        } else if (value instanceof Object[]) {
+            return uncached.createTuple((Object[]) value);
+        } else {
+            return super.getLanguageView(context, value);
+        }
     }
 
     public String getHome() {
