@@ -448,7 +448,17 @@ public final class PCode extends PythonBuiltinObject {
     @Override
     @ExportMessage
     public SourceSection getSourceLocation() {
-        return getRootNode().getSourceSection();
+        RootNode rootNode = getRootNode();
+        if (rootNode instanceof PRootNode) {
+            return ((PRootNode) rootNode).getSourceSection();
+        } else {
+            return getForeignSourceSection(rootNode);
+        }
+    }
+
+    @TruffleBoundary
+    private static SourceSection getForeignSourceSection(RootNode rootNode) {
+        return rootNode.getSourceSection();
     }
 
     @Override

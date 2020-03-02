@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
@@ -207,7 +208,17 @@ public class PFunction extends PythonObject {
     @Override
     @ExportMessage
     public SourceSection getSourceLocation() {
-        return getCallTarget().getRootNode().getSourceSection();
+        RootNode rootNode = getCallTarget().getRootNode();
+        if (rootNode instanceof PRootNode) {
+            return ((PRootNode) rootNode).getSourceSection();
+        } else {
+            return getForeignSourceSection(rootNode);
+        }
+    }
+
+    @TruffleBoundary
+    private static SourceSection getForeignSourceSection(RootNode rootNode) {
+        return rootNode.getSourceSection();
     }
 
     @Override
