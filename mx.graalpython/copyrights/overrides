@@ -209,9 +209,6 @@ graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/runtim
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/runtime/SequenceStorageTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/runtime/SetAttributeDispatchTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/bm-ai.py,benchmarks.copyright
-graalpython/com.oracle.graal.python.test/src/tests/cpyext/clinic/posixmodule.c.h,python.copyright
-graalpython/com.oracle.graal.python.test/src/tests/cpyext/posixmodule.c,python.copyright
-graalpython/com.oracle.graal.python.test/src/tests/cpyext/posixmodule.h,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/list_tests.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/mandelbrot3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/nbody3.py,benchmarks.copyright
