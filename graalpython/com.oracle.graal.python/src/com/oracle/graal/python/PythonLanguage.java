@@ -459,56 +459,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return null;
     }
 
-    @Override
-    protected String toString(PythonContext context, Object value) {
-        if (isForeignPrimitive(value)) {
-            // these only appear when inspecting foreign data structures, so they shouldn't get
-            // processed by python code
-            return value.toString();
-        }
-        if (PythonOptions.getFlag(context, PythonOptions.UseReprForPrintString)) {
-            final PythonModule builtins = context.getBuiltins();
-            if (builtins != null) {
-                // may be null during initialization
-                Object reprAttribute = builtins.getAttribute(BuiltinNames.REPR);
-                if (reprAttribute instanceof PBuiltinMethod) {
-                    // may be false if e.g. someone accessed our builtins reflectively
-                    Object reprFunction = ((PBuiltinMethod) reprAttribute).getFunction();
-                    if (reprFunction instanceof PBuiltinFunction) {
-                        // may be false if our builtins were tampered with
-                        Object[] userArgs = PArguments.create(2);
-                        PArguments.setArgument(userArgs, 0, PNone.NONE);
-                        PArguments.setArgument(userArgs, 1, value);
-                        try {
-                            Object result = InvokeNode.invokeUncached((PBuiltinFunction) reprFunction, userArgs);
-                            if (result instanceof String) {
-                                return (String) result;
-                            } else if (result instanceof PString) {
-                                return ((PString) result).getValue();
-                            } else {
-                                // This is illegal for a repr implementation, we ignore the result.
-                                // At this point it's probably difficult to report this properly.
-                            }
-                        } catch (PException e) {
-                            // Fall through to default
-                        }
-                    }
-                }
-            }
-        }
-        // This is not a good place to report inconsistencies in any of the above conditions. Just
-        // return a String
-        if (value instanceof PythonAbstractObject) {
-            return ((PythonAbstractObject) value).toString();
-        } else if (value instanceof String) {
-            return (String) value;
-        } else if (value instanceof Number) {
-            return ((Number) value).toString();
-        } else {
-            return "not a Python object";
-        }
-    }
-
     @TruffleBoundary
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID);

@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -116,12 +117,17 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1694,5 +1700,58 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @TruffleBoundary
     private static boolean objectHasAttribute(Object object, Object field) {
         return ((PythonObject) object).getAttributeNames().contains(field);
+    }
+
+    @ExportMessage
+    public boolean hasLanguage() {
+        return true;
+    }
+
+    @ExportMessage
+    public Class<? extends TruffleLanguage> getLanguage() {
+        return PythonLanguage.class;
+    }
+
+    @ExportMessage
+    public static class ToDisplayString {
+        public static final boolean useRepr(PythonContext context) {
+            return PythonOptions.getFlag(context, PythonOptions.UseReprForPrintString);
+        }
+
+        @Specialization(guards = {"allowSideEffects", "builtins != null"}) // may be null during
+                                                                           // initialization
+        public static String builtin(PythonAbstractObject self, boolean allowSideEffects,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached(value = "context.getBuiltins()", allowUncached = true) PythonModule builtins,
+                        @Cached ReadAttributeFromObjectNode readStr,
+                        @Cached CallNode callNode,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached(value = "useRepr(context)", allowUncached = true) boolean useRepr) {
+            Object toStrAttr;
+            if (useRepr) {
+                toStrAttr = readStr.execute(builtins, BuiltinNames.REPR);
+            } else {
+                toStrAttr = readStr.execute(builtins, BuiltinNames.STR);
+            }
+            String result = castStr.execute(callNode.execute(toStrAttr, self));
+            if (result != null) {
+                return result;
+            } else {
+                return fallback(self, allowSideEffects, context, builtins);
+            }
+        }
+
+        public static final PythonModule none() {
+            return null;
+        }
+
+        @TruffleBoundary
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!allowSideEffects || builtins == null")
+        public static String fallback(PythonAbstractObject self, boolean allowSideEffects,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached(value = "context.getBuiltins()", uncached = "none()") PythonModule builtins) {
+            return self.toString();
+        }
     }
 }
