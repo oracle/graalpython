@@ -74,7 +74,9 @@ class PipImportHook:
                 real_spec = finder.find_spec(fullname, path, target=None)
                 if real_spec:
                     sys.meta_path.remove(PipImportHook)
-                    return _frozen_importlib.ModuleSpec(fullname, PipLoader(real_spec), is_package=False)
+                    spec = _frozen_importlib.ModuleSpec(fullname, PipLoader(real_spec), is_package=False, origin=real_spec.origin)
+                    spec.has_location = real_spec.has_location
+                    return spec
 
 
 sys.meta_path.insert(0, PipImportHook)
