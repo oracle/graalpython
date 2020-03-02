@@ -176,10 +176,10 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
 
+        @SuppressWarnings("unchecked")
         private ReferenceQueue<Object> getWeakReferenceQueue() {
             Object queueObject = readQueue.execute(getCore().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
             if (queueObject instanceof ReferenceQueue) {
-                @SuppressWarnings("unchecked")
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
