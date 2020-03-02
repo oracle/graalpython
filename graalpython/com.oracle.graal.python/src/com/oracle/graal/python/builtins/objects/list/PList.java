@@ -31,7 +31,10 @@ import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.source.SourceSection;
 
 public final class PList extends PMutableSequence {
     private final ListLiteralNode origin;
@@ -94,6 +97,7 @@ public final class PList extends PMutableSequence {
         }
     }
 
+    @Ignore
     @Override
     public final boolean equals(Object other) {
         if (!(other instanceof PList)) {
@@ -129,5 +133,18 @@ public final class PList extends PMutableSequence {
             return (PList) value;
         }
         throw new UnexpectedResultException(value);
+    }
+
+    @Override
+    @ExportMessage
+    public SourceSection getSourceLocation() {
+        ListLiteralNode node = getOrigin();
+        return node != null ? node.getSourceSection() : null;
+    }
+
+    @Override
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return getOrigin() != null && getOrigin().getSourceSection() != null;
     }
 }

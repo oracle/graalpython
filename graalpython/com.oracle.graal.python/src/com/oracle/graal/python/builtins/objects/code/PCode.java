@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -442,5 +443,17 @@ public final class PCode extends PythonBuiltinObject {
 
     public RootCallTarget getRootCallTarget() {
         return callTarget;
+    }
+
+    @Override
+    @ExportMessage
+    public SourceSection getSourceLocation() {
+        return getRootNode().getSourceSection();
+    }
+
+    @Override
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return true;
     }
 }

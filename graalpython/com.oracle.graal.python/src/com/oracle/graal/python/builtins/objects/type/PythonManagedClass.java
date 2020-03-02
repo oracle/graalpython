@@ -40,12 +40,20 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.source.SourceSection;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
@@ -238,4 +246,41 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return needsNativeAllocation;
     }
 
+    /*
+     * N.b.: (tfel): This method is used to cache the source section of the first defined attribute
+     * that has a source section. This isn't precisely the classes definition location, but it is
+     * close. We can safely cache this regardless of any later shape changes or redefinitions,
+     * because this is best-effort only anyway. If it is called early, it is very likely we're
+     * getting some location near the actual definition. If it is called late, and potentially after
+     * some monkey-patching, we'll get some other source location.
+     */
+    protected static SourceSection findSourceSection(PythonManagedClass self) {
+        DynamicObject storage = self.getStorage();
+        for (Object key : storage.getShape().getKeys()) {
+            if (key instanceof String) {
+                Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(storage, key);
+                InteropLibrary uncached = InteropLibrary.getFactory().getUncached();
+                if (uncached.hasSourceLocation(value)) {
+                    try {
+                        return uncached.getSourceLocation(value);
+                    } catch (UnsupportedMessageException e) {
+                        // should not happen due to hasSourceLocation check
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @ExportMessage
+    protected SourceSection getSourceLocation(
+                    @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) {
+        return section;
+    }
+
+    @ExportMessage
+    protected boolean hasSourceLocation(
+                    @Shared("src") @Cached(value = "findSourceSection(this)", allowUncached = true) SourceSection section) {
+        return section != null;
+    }
 }

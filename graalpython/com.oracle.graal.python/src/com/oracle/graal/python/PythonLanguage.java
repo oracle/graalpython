@@ -39,21 +39,14 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -88,7 +81,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.api.source.SourceSection;
 
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionValues;
@@ -426,34 +418,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             scopes.add(Scope.newBuilder(BuiltinNames.BUILTINS, scopeFromObject(context.getBuiltins())).build());
         }
         return scopes;
-    }
-
-    @Override
-    @TruffleBoundary
-    protected SourceSection findSourceLocation(PythonContext context, Object value) {
-        if (value instanceof PFunction) {
-            PFunction callable = (PFunction) value;
-            return callable.getCallTarget().getRootNode().getSourceSection();
-        } else if (value instanceof PMethod && ((PMethod) value).getFunction() instanceof PFunction) {
-            PFunction callable = (PFunction) ((PMethod) value).getFunction();
-            return callable.getCallTarget().getRootNode().getSourceSection();
-        } else if (value instanceof PCode) {
-            return ((PCode) value).getRootNode().getSourceSection();
-        } else if (value instanceof PythonManagedClass) {
-            for (String k : ((PythonManagedClass) value).getAttributeNames()) {
-                Object attrValue = ReadAttributeFromDynamicObjectNode.getUncached().execute(((PythonManagedClass) value).getStorage(), k);
-                SourceSection attrSourceLocation = findSourceLocation(context, attrValue);
-                if (attrSourceLocation != null) {
-                    return attrSourceLocation;
-                }
-            }
-        } else if (value instanceof PList) {
-            ListLiteralNode node = ((PList) value).getOrigin();
-            if (node != null) {
-                return node.getSourceSection();
-            }
-        }
-        return null;
     }
 
     @TruffleBoundary

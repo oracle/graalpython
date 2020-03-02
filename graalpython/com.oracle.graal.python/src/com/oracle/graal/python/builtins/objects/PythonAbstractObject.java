@@ -147,6 +147,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -1827,5 +1828,17 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass) {
         return getClass.execute(this);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public SourceSection getSourceLocation() {
+        return null;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean hasSourceLocation() {
+        return false;
     }
 }

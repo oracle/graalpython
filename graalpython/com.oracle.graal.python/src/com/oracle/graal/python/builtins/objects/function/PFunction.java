@@ -203,4 +203,16 @@ public class PFunction extends PythonObject {
     public boolean isCallable() {
         return true;
     }
+
+    @Override
+    @ExportMessage
+    public SourceSection getSourceLocation() {
+        return getCallTarget().getRootNode().getSourceSection();
+    }
+
+    @Override
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return true;
+    }
 }
