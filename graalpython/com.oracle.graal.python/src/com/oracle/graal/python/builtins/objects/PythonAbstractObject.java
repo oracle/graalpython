@@ -1230,22 +1230,22 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @TruffleBoundary
-    private ZoneId createZoneId(int utcDeltaInSeconds) {
+    private static ZoneId createZoneId(int utcDeltaInSeconds) {
         return ZoneId.ofOffset("UTC", ZoneOffset.ofTotalSeconds(utcDeltaInSeconds));
     }
 
     @TruffleBoundary
-    private ZoneId createZoneId(String zone) {
+    private static ZoneId createZoneId(String zone) {
         return ZoneId.of(zone);
     }
 
     @TruffleBoundary
-    private LocalTime createLocalTime(int hour, int min, int sec, int micro) {
+    private static LocalTime createLocalTime(int hour, int min, int sec, int micro) {
         return LocalTime.of(hour, min, sec, micro);
     }
 
     @TruffleBoundary
-    private LocalDate createLocalDate(int year, int month, int day) {
+    private static LocalDate createLocalDate(int year, int month, int day) {
         return LocalDate.of(year, month, day);
     }
 

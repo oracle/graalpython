@@ -664,6 +664,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         // the actual operation; will be overridden by subclasses
+        @SuppressWarnings("unused")
         protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("should not reach");
@@ -679,7 +680,7 @@ public class BytesBuiltins extends PythonBuiltins {
             return false;
         }
 
-        private byte[] getBytes(PythonObjectLibrary lib, Object object) {
+        private static byte[] getBytes(PythonObjectLibrary lib, Object object) {
             try {
                 return lib.getBufferBytes(object);
             } catch (UnsupportedMessageException e) {

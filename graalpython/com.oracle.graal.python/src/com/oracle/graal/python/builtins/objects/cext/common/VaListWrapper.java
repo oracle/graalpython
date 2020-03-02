@@ -64,6 +64,7 @@ public final class VaListWrapper implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     final long getArraySize() {
         return Long.MAX_VALUE;
     }
@@ -80,7 +81,7 @@ public final class VaListWrapper implements TruffleObject {
         if (index != pos) {
             throw InvalidArrayIndexException.create(index);
         }
-        Object res = callGetVaargNode.execute(nativeContext, "get_next_vaarg", new Object[]{vaListPtr, outVarPtrPtr});
+        callGetVaargNode.execute(nativeContext, "get_next_vaarg", new Object[]{vaListPtr, outVarPtrPtr});
         pos++;
         return outVarPtrPtr;
     }

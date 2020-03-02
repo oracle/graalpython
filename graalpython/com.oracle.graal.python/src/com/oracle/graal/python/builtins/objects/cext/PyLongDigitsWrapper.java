@@ -147,7 +147,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     }
 
     private static long byteAsULong(byte b) {
-        return ((long) b) & 0xFFL;
+        return 0xFFL & b;
     }
 
     public static long getUInt32(byte[] bytes, int index) {
@@ -203,7 +203,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     @ExportMessage
     abstract static class GetNativeType {
 
-        static Object callGetUInt32ArrayTypeIDUncached(PyLongDigitsWrapper digitsWrapper) {
+        static Object callGetUInt32ArrayTypeIDUncached(@SuppressWarnings("unused") PyLongDigitsWrapper digitsWrapper) {
             return PCallCapiFunction.getUncached().call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
         }
 

@@ -261,7 +261,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         }
 
         @ExplodeLoop
-        private void writeSlots(VirtualFrame frame, SequenceStorage storage, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
+        private static void writeSlots(VirtualFrame frame, SequenceStorage storage, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
             for (int i = 0; i < starredIndex; i++) {
                 Object value = getItemNode.execute(frame, storage, i);
                 slots[i].doWrite(frame, value);
@@ -269,7 +269,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         }
 
         @ExplodeLoop
-        private Object[] consumeStarredItems(VirtualFrame frame, SequenceStorage sequenceStorage, int starredLength, SequenceStorageNodes.GetItemNode getItemNode, int starredIndex) {
+        private static Object[] consumeStarredItems(VirtualFrame frame, SequenceStorage sequenceStorage, int starredLength, SequenceStorageNodes.GetItemNode getItemNode, int starredIndex) {
             Object[] array = new Object[starredLength];
             CompilerAsserts.partialEvaluationConstant(starredLength);
             for (int i = 0; i < starredLength; i++) {
@@ -279,7 +279,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         }
 
         @ExplodeLoop
-        private void performAssignmentsAfterStar(VirtualFrame frame, SequenceStorage sequenceStorage, int startPos, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
+        private static void performAssignmentsAfterStar(VirtualFrame frame, SequenceStorage sequenceStorage, int startPos, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
             for (int i = starredIndex + 1, pos = startPos; i < slots.length; i++, pos++) {
                 Object value = getItemNode.execute(frame, sequenceStorage, pos);
                 slots[i].doWrite(frame, value);

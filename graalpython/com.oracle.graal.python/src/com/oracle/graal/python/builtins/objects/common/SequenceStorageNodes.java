@@ -2565,7 +2565,7 @@ public abstract class SequenceStorageNodes {
             return times instanceof Integer;
         }
 
-        private int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonObjectLibrary lib) {
+        private static int toIndex(VirtualFrame frame, Object times, PRaiseNode raiseNode, PythonObjectLibrary lib) {
             if (lib.canBeIndex(times)) {
                 return lib.asSizeWithState(times, PArguments.getThreadState(frame));
             }
