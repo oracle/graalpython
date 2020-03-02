@@ -129,6 +129,10 @@
 #define Py_DECREF(o) 0
 #undef Py_INCREF
 #define Py_INCREF(o) 0
+#undef Py_XINCREF
+#define Py_XINCREF(o) 0
+#undef Py_XDECREF
+#define Py_XDECREF(o) 0
 
 /* 
  * #define Py_INCREF(op) (                         \
