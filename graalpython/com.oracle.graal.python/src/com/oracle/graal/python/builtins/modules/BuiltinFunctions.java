@@ -713,7 +713,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize"})
+    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize", "_feature_version"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
