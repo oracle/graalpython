@@ -279,7 +279,8 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         }
 
         @ExplodeLoop
-        private static void performAssignmentsAfterStar(VirtualFrame frame, SequenceStorage sequenceStorage, int startPos, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots, int starredIndex) {
+        private static void performAssignmentsAfterStar(VirtualFrame frame, SequenceStorage sequenceStorage, int startPos, SequenceStorageNodes.GetItemNode getItemNode, WriteNode[] slots,
+                        int starredIndex) {
             for (int i = starredIndex + 1, pos = startPos; i < slots.length; i++, pos++) {
                 Object value = getItemNode.execute(frame, sequenceStorage, pos);
                 slots[i].doWrite(frame, value);

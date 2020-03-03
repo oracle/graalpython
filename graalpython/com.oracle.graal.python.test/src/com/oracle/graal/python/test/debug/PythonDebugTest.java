@@ -424,7 +424,8 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugScope globalScope = session.getTopScope("python");
                 DebugValue intValue = globalScope.getDeclaredValue("a_int").getArray().get(0);
-                // Truffle will now use our language to get a Python view on the primitive object for inspection
+                // Truffle will now use our language to get a Python view on the primitive object
+                // for inspection
                 intValue.getMetaObject();
                 assertEquals("0", intValue.as(String.class));
                 DebugValue longValue = globalScope.getDeclaredValue("a_long").getArray().get(0);
