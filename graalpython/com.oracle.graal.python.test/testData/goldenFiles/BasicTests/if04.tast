@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                 ObjectLiteralNode SourceSection: [32,36]`None`
             ReadNameNodeGen SourceSection: [12,16]`func`
               Identifier: func
-            FunctionDefinitionNode Name: anonymous SourceSection: [42,53]`lambda a: a`
+            FunctionDefinitionNode Name: <lambda> SourceSection: [42,53]`lambda a: a`
               Arguments: None
               KwArguments: None
               Documentation: None
@@ -28,7 +28,7 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                 FreeVarsSlots: None
                 CellVarsSlots: None
               FunctionRootNode SourceSection: [42,53]`lambda a: a`
-                Name: anonymous
+                Name: <lambda>
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: a
                 CelVars: None

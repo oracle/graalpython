@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -184,6 +185,16 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             // n.b. we simulate that the primitive NaN is a singleton; this is required to make
             // 'nan = float("nan"); nan is nan' work
             return left == right || (Double.isNaN(left) && Double.isNaN(right));
+        }
+
+        @Specialization
+        boolean doSS(String left, String right) {
+            return left.equals(right);
+        }
+
+        @Specialization
+        boolean doPSPS(PString left, PString right) {
+            return left.getValue().equals(right.getValue());
         }
 
         @Specialization

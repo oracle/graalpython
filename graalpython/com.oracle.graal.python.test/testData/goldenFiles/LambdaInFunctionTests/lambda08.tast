@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                     BlockNode SourceSection: None
                     FunctionBodyNode SourceSection: [12,46]`lambda foo=bar, spaz...`
                       ExpressionStatementNode SourceSection: [12,46]`lambda foo=bar, spaz...`
-                        FunctionDefinitionNode Name: anonymous SourceSection: [12,46]`lambda foo=bar, spaz...`
+                        FunctionDefinitionNode Name: <lambda> SourceSection: [12,46]`lambda foo=bar, spaz...`
                           Arguments:
                             ReadGlobalOrBuiltinNodeGen SourceSection: [23,26]`bar`
                               Identifier: bar
@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,46]`def fn():↵  lam
                             FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12,46]`lambda foo=bar, spaz...`
-                            Name: anonymous
+                            Name: <lambda>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: foo, spaz
                             CelVars: None

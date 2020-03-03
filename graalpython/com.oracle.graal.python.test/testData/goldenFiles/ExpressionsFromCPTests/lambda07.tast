@@ -5,7 +5,7 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,17]`lambda foo=bar: 0
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,17]`lambda foo=bar: 0`
-    FunctionDefinitionNode Name: anonymous SourceSection: [0,17]`lambda foo=bar: 0`
+    FunctionDefinitionNode Name: <lambda> SourceSection: [0,17]`lambda foo=bar: 0`
       Arguments:
         ReadNameNodeGen SourceSection: [11,14]`bar`
           Identifier: bar
@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,17]`lambda foo=bar: 0
         FreeVarsSlots: None
         CellVarsSlots: None
       FunctionRootNode SourceSection: [0,17]`lambda foo=bar: 0`
-        Name: anonymous
+        Name: <lambda>
         Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
           Param Names: foo
         CelVars: None

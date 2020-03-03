@@ -298,7 +298,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           CallNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [2031,2050]`(lambda: (yield))()`
             CallNodeGen SourceSection: None
-            GeneratorFunctionDefinitionNode Name: anonymous SourceSection: None
+            GeneratorFunctionDefinitionNode Name: <lambda> SourceSection: None
               FrameDescriptor: 1 slots [<return_val>]
               Active Flags: 2
               For Nodes: 0
@@ -311,7 +311,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 FreeVarsSlots: None
                 CellVarsSlots: None
               FunctionRootNode SourceSection: [2032,2047]`lambda: (yield)`
-                Name: anonymous
+                Name: <lambda>
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None

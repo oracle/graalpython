@@ -8879,7 +8879,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 Identifier: <return_val>
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                                   Frame: [9,<return_val>,Illegal]
-                                                FunctionDefinitionNode Name: anonymous SourceSection: [30964,30990]`lambda f: register(c...`
+                                                FunctionDefinitionNode Name: <lambda> SourceSection: [30964,30990]`lambda f: register(c...`
                                                   Arguments: None
                                                   KwArguments: None
                                                   Documentation: None
@@ -8888,7 +8888,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     FreeVarsSlots: cls, , register, 
                                                     CellVarsSlots: None
                                                   FunctionRootNode SourceSection: [30964,30990]`lambda f: register(c...`
-                                                    Name: anonymous
+                                                    Name: <lambda>
                                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                       Param Names: f
                                                     CelVars: None

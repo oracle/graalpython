@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: LambdaType
         PythonCallNodeGen SourceSection: [403,421]`type(lambda: None)`
           CallNodeGen SourceSection: None
-          FunctionDefinitionNode Name: anonymous SourceSection: [408,420]`lambda: None`
+          FunctionDefinitionNode Name: <lambda> SourceSection: [408,420]`lambda: None`
             Arguments: None
             KwArguments: None
             Documentation: None
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [408,420]`lambda: None`
-              Name: anonymous
+              Name: <lambda>
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None

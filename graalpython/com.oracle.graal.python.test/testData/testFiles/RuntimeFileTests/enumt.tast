@@ -6205,7 +6205,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               CallNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
-                                                  FunctionDefinitionNode Name: anonymous SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
+                                                  FunctionDefinitionNode Name: <lambda> SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
                                                     Arguments: None
                                                     KwArguments: None
                                                     Documentation: None
@@ -6214,7 +6214,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       FreeVarsSlots: None
                                                       CellVarsSlots: None
                                                     FunctionRootNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
-                                                      Name: anonymous
+                                                      Name: <lambda>
                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                         Param Names: t
                                                       CelVars: None
@@ -6270,7 +6270,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 CallNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
-                                                    FunctionDefinitionNode Name: anonymous SourceSection: [25539,25553]`lambda t: t[0]`
+                                                    FunctionDefinitionNode Name: <lambda> SourceSection: [25539,25553]`lambda t: t[0]`
                                                       Arguments: None
                                                       KwArguments: None
                                                       Documentation: None
@@ -6279,7 +6279,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         FreeVarsSlots: None
                                                         CellVarsSlots: None
                                                       FunctionRootNode SourceSection: [25539,25553]`lambda t: t[0]`
-                                                        Name: anonymous
+                                                        Name: <lambda>
                                                         Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                           Param Names: t
                                                         CelVars: None
@@ -9963,7 +9963,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
-                            FunctionDefinitionNode Name: anonymous SourceSection: [34240,34259]`lambda m: m._value_`
+                            FunctionDefinitionNode Name: <lambda> SourceSection: [34240,34259]`lambda m: m._value_`
                               Arguments: None
                               KwArguments: None
                               Documentation: None
@@ -9972,7 +9972,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [34240,34259]`lambda m: m._value_`
-                                Name: anonymous
+                                Name: <lambda>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: m
                                 CelVars: None
