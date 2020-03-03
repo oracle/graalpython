@@ -121,3 +121,9 @@ def test_underscore_in_numbers():
     assert eval('0b1_1') == 0b11
     assert eval('0o1_7') == 0o17
     assert eval('0x1_f') == 0x1f
+
+
+def test_annotation_scope():
+    def foo(object: object):
+        pass
+    assert foo.__annotations__['object'] == object
