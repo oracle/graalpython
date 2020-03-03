@@ -3050,10 +3050,10 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class Return_stmtContext extends ParserRuleContext {
-		public TestlistContext testlist;
+		public Testlist_star_exprContext testlist_star_expr;
 		public TerminalNode RETURN() { return getToken(Python3Parser.RETURN, 0); }
-		public TestlistContext testlist() {
-			return getRuleContext(TestlistContext.class,0);
+		public Testlist_star_exprContext testlist_star_expr() {
+			return getRuleContext(Testlist_star_exprContext.class,0);
 		}
 		public Return_stmtContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -3074,11 +3074,11 @@ public class Python3Parser extends Parser {
 			setState(665);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STRING) | (1L << LAMBDA) | (1L << NOT) | (1L << NONE) | (1L << TRUE) | (1L << FALSE) | (1L << AWAIT) | (1L << NAME) | (1L << DECIMAL_INTEGER) | (1L << OCT_INTEGER) | (1L << HEX_INTEGER) | (1L << BIN_INTEGER) | (1L << FLOAT_NUMBER) | (1L << IMAG_NUMBER) | (1L << ELLIPSIS) | (1L << OPEN_PAREN) | (1L << OPEN_BRACK))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (ADD - 64)) | (1L << (MINUS - 64)) | (1L << (NOT_OP - 64)) | (1L << (OPEN_BRACE - 64)))) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STRING) | (1L << LAMBDA) | (1L << NOT) | (1L << NONE) | (1L << TRUE) | (1L << FALSE) | (1L << AWAIT) | (1L << NAME) | (1L << DECIMAL_INTEGER) | (1L << OCT_INTEGER) | (1L << HEX_INTEGER) | (1L << BIN_INTEGER) | (1L << FLOAT_NUMBER) | (1L << IMAG_NUMBER) | (1L << ELLIPSIS) | (1L << STAR) | (1L << OPEN_PAREN) | (1L << OPEN_BRACK))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (ADD - 64)) | (1L << (MINUS - 64)) | (1L << (NOT_OP - 64)) | (1L << (OPEN_BRACE - 64)))) != 0)) {
 				{
 				setState(662);
-				_localctx.testlist = testlist();
-				 value = _localctx.testlist.result; 
+				_localctx.testlist_star_expr = testlist_star_expr();
+				 value = _localctx.testlist_star_expr.result; 
 				}
 			}
 
@@ -8268,14 +8268,14 @@ public class Python3Parser extends Parser {
 	public static class Yield_exprContext extends ParserRuleContext {
 		public SSTNode result;
 		public TestContext test;
-		public TestlistContext testlist;
+		public Testlist_star_exprContext testlist_star_expr;
 		public TerminalNode YIELD() { return getToken(Python3Parser.YIELD, 0); }
 		public TerminalNode FROM() { return getToken(Python3Parser.FROM, 0); }
 		public TestContext test() {
 			return getRuleContext(TestContext.class,0);
 		}
-		public TestlistContext testlist() {
-			return getRuleContext(TestlistContext.class,0);
+		public Testlist_star_exprContext testlist_star_expr() {
+			return getRuleContext(Testlist_star_exprContext.class,0);
 		}
 		public Yield_exprContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -8322,6 +8322,7 @@ public class Python3Parser extends Parser {
 			case FLOAT_NUMBER:
 			case IMAG_NUMBER:
 			case ELLIPSIS:
+			case STAR:
 			case OPEN_PAREN:
 			case OPEN_BRACK:
 			case ADD:
@@ -8330,8 +8331,8 @@ public class Python3Parser extends Parser {
 			case OPEN_BRACE:
 				{
 				setState(1608);
-				_localctx.testlist = testlist();
-				 value = _localctx.testlist.result; 
+				_localctx.testlist_star_expr = testlist_star_expr();
+				 value = _localctx.testlist_star_expr.result; 
 				}
 				break;
 			case NEWLINE:
@@ -8659,23 +8660,23 @@ public class Python3Parser extends Parser {
 		"\7#\2\2\u0290\u0295\b\32\1\2\u0291\u0295\5\64\33\2\u0292\u0295\58\35\2"+
 		"\u0293\u0295\5\66\34\2\u0294\u028d\3\2\2\2\u0294\u028f\3\2\2\2\u0294\u0291"+
 		"\3\2\2\2\u0294\u0292\3\2\2\2\u0294\u0293\3\2\2\2\u0295\63\3\2\2\2\u0296"+
-		"\u0297\7\5\2\2\u0297\u029b\b\33\1\2\u0298\u0299\5\u0094K\2\u0299\u029a"+
-		"\b\33\1\2\u029a\u029c\3\2\2\2\u029b\u0298\3\2\2\2\u029b\u029c\3\2\2\2"+
-		"\u029c\u029d\3\2\2\2\u029d\u029e\b\33\1\2\u029e\65\3\2\2\2\u029f\u02a0"+
-		"\5\u00a4S\2\u02a0\u02a1\b\34\1\2\u02a1\67\3\2\2\2\u02a2\u02a3\b\35\1\2"+
-		"\u02a3\u02ac\7\6\2\2\u02a4\u02a5\5f\64\2\u02a5\u02aa\b\35\1\2\u02a6\u02a7"+
-		"\7\7\2\2\u02a7\u02a8\5f\64\2\u02a8\u02a9\b\35\1\2\u02a9\u02ab\3\2\2\2"+
-		"\u02aa\u02a6\3\2\2\2\u02aa\u02ab\3\2\2\2\u02ab\u02ad\3\2\2\2\u02ac\u02a4"+
-		"\3\2\2\2\u02ac\u02ad\3\2\2\2\u02ad\u02ae\3\2\2\2\u02ae\u02af\b\35\1\2"+
-		"\u02af9\3\2\2\2\u02b0\u02b3\5<\37\2\u02b1\u02b3\5> \2\u02b2\u02b0\3\2"+
-		"\2\2\u02b2\u02b1\3\2\2\2\u02b3;\3\2\2\2\u02b4\u02b5\7\b\2\2\u02b5\u02b6"+
-		"\5H%\2\u02b6=\3\2\2\2\u02b7\u02b8\7\7\2\2\u02b8\u02cd\b \1\2\u02b9\u02ba"+
-		"\7\61\2\2\u02ba\u02be\b \1\2\u02bb\u02bc\7\62\2\2\u02bc\u02be\b \1\2\u02bd"+
-		"\u02b9\3\2\2\2\u02bd\u02bb\3\2\2\2\u02be\u02c1\3\2\2\2\u02bf\u02bd\3\2"+
-		"\2\2\u02bf\u02c0\3\2\2\2\u02c0\u02c2\3\2\2\2\u02c1\u02bf\3\2\2\2\u02c2"+
-		"\u02c3\5D#\2\u02c3\u02c4\b \1\2\u02c4\u02ce\3\2\2\2\u02c5\u02c6\7\61\2"+
-		"\2\u02c6\u02ca\b \1\2\u02c7\u02c8\7\62\2\2\u02c8\u02ca\b \1\2\u02c9\u02c5"+
-		"\3\2\2\2\u02c9\u02c7\3\2\2\2\u02ca\u02cb\3\2\2\2\u02cb\u02c9\3\2\2\2\u02cb"+
+		"\u0297\7\5\2\2\u0297\u029b\b\33\1\2\u0298\u0299\5,\27\2\u0299\u029a\b"+
+		"\33\1\2\u029a\u029c\3\2\2\2\u029b\u0298\3\2\2\2\u029b\u029c\3\2\2\2\u029c"+
+		"\u029d\3\2\2\2\u029d\u029e\b\33\1\2\u029e\65\3\2\2\2\u029f\u02a0\5\u00a4"+
+		"S\2\u02a0\u02a1\b\34\1\2\u02a1\67\3\2\2\2\u02a2\u02a3\b\35\1\2\u02a3\u02ac"+
+		"\7\6\2\2\u02a4\u02a5\5f\64\2\u02a5\u02aa\b\35\1\2\u02a6\u02a7\7\7\2\2"+
+		"\u02a7\u02a8\5f\64\2\u02a8\u02a9\b\35\1\2\u02a9\u02ab\3\2\2\2\u02aa\u02a6"+
+		"\3\2\2\2\u02aa\u02ab\3\2\2\2\u02ab\u02ad\3\2\2\2\u02ac\u02a4\3\2\2\2\u02ac"+
+		"\u02ad\3\2\2\2\u02ad\u02ae\3\2\2\2\u02ae\u02af\b\35\1\2\u02af9\3\2\2\2"+
+		"\u02b0\u02b3\5<\37\2\u02b1\u02b3\5> \2\u02b2\u02b0\3\2\2\2\u02b2\u02b1"+
+		"\3\2\2\2\u02b3;\3\2\2\2\u02b4\u02b5\7\b\2\2\u02b5\u02b6\5H%\2\u02b6=\3"+
+		"\2\2\2\u02b7\u02b8\7\7\2\2\u02b8\u02cd\b \1\2\u02b9\u02ba\7\61\2\2\u02ba"+
+		"\u02be\b \1\2\u02bb\u02bc\7\62\2\2\u02bc\u02be\b \1\2\u02bd\u02b9\3\2"+
+		"\2\2\u02bd\u02bb\3\2\2\2\u02be\u02c1\3\2\2\2\u02bf\u02bd\3\2\2\2\u02bf"+
+		"\u02c0\3\2\2\2\u02c0\u02c2\3\2\2\2\u02c1\u02bf\3\2\2\2\u02c2\u02c3\5D"+
+		"#\2\u02c3\u02c4\b \1\2\u02c4\u02ce\3\2\2\2\u02c5\u02c6\7\61\2\2\u02c6"+
+		"\u02ca\b \1\2\u02c7\u02c8\7\62\2\2\u02c8\u02ca\b \1\2\u02c9\u02c5\3\2"+
+		"\2\2\u02c9\u02c7\3\2\2\2\u02ca\u02cb\3\2\2\2\u02cb\u02c9\3\2\2\2\u02cb"+
 		"\u02cc\3\2\2\2\u02cc\u02ce\3\2\2\2\u02cd\u02bf\3\2\2\2\u02cd\u02c9\3\2"+
 		"\2\2\u02ce\u02cf\3\2\2\2\u02cf\u02d0\7\b\2\2\u02d0\u02da\b \1\2\u02d1"+
 		"\u02db\7\63\2\2\u02d2\u02d3\7\64\2\2\u02d3\u02d4\5B\"\2\u02d4\u02d5\b"+
@@ -8964,25 +8965,25 @@ public class Python3Parser extends Parser {
 		"\2\2\u063f\u0640\3\2\2\2\u0640\u0641\bQ\1\2\u0641\u00a1\3\2\2\2\u0642"+
 		"\u0643\7(\2\2\u0643\u00a3\3\2\2\2\u0644\u0645\bS\1\2\u0645\u064d\7 \2"+
 		"\2\u0646\u0647\7\7\2\2\u0647\u0648\5f\64\2\u0648\u0649\bS\1\2\u0649\u064e"+
-		"\3\2\2\2\u064a\u064b\5\u0094K\2\u064b\u064c\bS\1\2\u064c\u064e\3\2\2\2"+
-		"\u064d\u0646\3\2\2\2\u064d\u064a\3\2\2\2\u064d\u064e\3\2\2\2\u064e\u064f"+
-		"\3\2\2\2\u064f\u0650\bS\1\2\u0650\u00a5\3\2\2\2\u00be\u00ad\u00b6\u00b8"+
-		"\u00c4\u00d3\u00dc\u00e5\u00f1\u00fb\u0105\u0111\u0114\u011c\u0122\u0124"+
-		"\u0126\u012a\u012c\u012e\u0130\u0137\u0140\u0146\u0148\u014a\u014e\u0150"+
-		"\u0152\u0159\u015f\u0161\u0163\u0167\u0169\u0171\u0177\u0183\u0185\u0190"+
-		"\u019a\u01a6\u01a9\u01b1\u01b7\u01b9\u01bb\u01bf\u01c1\u01c3\u01c5\u01cc"+
-		"\u01d5\u01db\u01dd\u01df\u01e3\u01e5\u01e7\u01ee\u01f4\u01f6\u01f8\u01fc"+
-		"\u01fe\u0208\u0210\u021a\u0221\u0225\u0232\u023c\u0247\u0255\u0259\u025d"+
-		"\u0265\u026f\u0278\u027c\u0280\u0282\u0285\u0294\u029b\u02aa\u02ac\u02b2"+
-		"\u02bd\u02bf\u02c9\u02cb\u02cd\u02da\u02e3\u02f0\u02f4\u02ff\u0307\u030e"+
-		"\u031a\u0328\u0334\u0341\u0347\u035d\u036a\u037b\u0389\u0390\u0392\u0399"+
-		"\u03a4\u03a6\u03b6\u03c1\u03cc\u03d0\u03dc\u03e1\u03e9\u03f0\u03fd\u040e"+
-		"\u0413\u041e\u0423\u042c\u0436\u043b\u0455\u0463\u046e\u0479\u0483\u048a"+
-		"\u0494\u049b\u04ab\u04b2\u04bc\u04c4\u04cc\u04cf\u04e0\u04e2\u04ed\u04f6"+
-		"\u0502\u0519\u0524\u0532\u0536\u0538\u053b\u0544\u054a\u0550\u0552\u0555"+
-		"\u055e\u0567\u056b\u056f\u057f\u0583\u0585\u0588\u0594\u05a3\u05b0\u05b4"+
-		"\u05b8\u05bc\u05c5\u05d1\u05db\u05df\u05e5\u05e9\u05f3\u0601\u0605\u0607"+
-		"\u0622\u0627\u0637\u063e\u064d";
+		"\3\2\2\2\u064a\u064b\5,\27\2\u064b\u064c\bS\1\2\u064c\u064e\3\2\2\2\u064d"+
+		"\u0646\3\2\2\2\u064d\u064a\3\2\2\2\u064d\u064e\3\2\2\2\u064e\u064f\3\2"+
+		"\2\2\u064f\u0650\bS\1\2\u0650\u00a5\3\2\2\2\u00be\u00ad\u00b6\u00b8\u00c4"+
+		"\u00d3\u00dc\u00e5\u00f1\u00fb\u0105\u0111\u0114\u011c\u0122\u0124\u0126"+
+		"\u012a\u012c\u012e\u0130\u0137\u0140\u0146\u0148\u014a\u014e\u0150\u0152"+
+		"\u0159\u015f\u0161\u0163\u0167\u0169\u0171\u0177\u0183\u0185\u0190\u019a"+
+		"\u01a6\u01a9\u01b1\u01b7\u01b9\u01bb\u01bf\u01c1\u01c3\u01c5\u01cc\u01d5"+
+		"\u01db\u01dd\u01df\u01e3\u01e5\u01e7\u01ee\u01f4\u01f6\u01f8\u01fc\u01fe"+
+		"\u0208\u0210\u021a\u0221\u0225\u0232\u023c\u0247\u0255\u0259\u025d\u0265"+
+		"\u026f\u0278\u027c\u0280\u0282\u0285\u0294\u029b\u02aa\u02ac\u02b2\u02bd"+
+		"\u02bf\u02c9\u02cb\u02cd\u02da\u02e3\u02f0\u02f4\u02ff\u0307\u030e\u031a"+
+		"\u0328\u0334\u0341\u0347\u035d\u036a\u037b\u0389\u0390\u0392\u0399\u03a4"+
+		"\u03a6\u03b6\u03c1\u03cc\u03d0\u03dc\u03e1\u03e9\u03f0\u03fd\u040e\u0413"+
+		"\u041e\u0423\u042c\u0436\u043b\u0455\u0463\u046e\u0479\u0483\u048a\u0494"+
+		"\u049b\u04ab\u04b2\u04bc\u04c4\u04cc\u04cf\u04e0\u04e2\u04ed\u04f6\u0502"+
+		"\u0519\u0524\u0532\u0536\u0538\u053b\u0544\u054a\u0550\u0552\u0555\u055e"+
+		"\u0567\u056b\u056f\u057f\u0583\u0585\u0588\u0594\u05a3\u05b0\u05b4\u05b8"+
+		"\u05bc\u05c5\u05d1\u05db\u05df\u05e5\u05e9\u05f3\u0601\u0605\u0607\u0622"+
+		"\u0627\u0637\u063e\u064d";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
