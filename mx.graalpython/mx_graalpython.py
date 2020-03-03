@@ -1439,6 +1439,8 @@ def checkout_find_version_for_graalvm(args):
             SUITE.vc.update(path, rev=parent)
         if not os.path.exists(suite):
             mx.log("Got to revision before suite, reverting to %s" % current_commit)
+            mx.vc.update(path, rev=current_commit)
+            return
         with open(suite) as f:
             contents = f.read()
             if not PY3:
