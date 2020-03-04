@@ -31,6 +31,7 @@ import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -136,9 +137,16 @@ public final class PList extends PMutableSequence {
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() {
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
         ListLiteralNode node = getOrigin();
-        return node != null ? node.getSourceSection() : null;
+        SourceSection result = null;
+        if (node != null) {
+            result = node.getSourceSection();
+        }
+        if (result == null) {
+            throw UnsupportedMessageException.create();
+        }
+        return result;
     }
 
     @ExportMessage

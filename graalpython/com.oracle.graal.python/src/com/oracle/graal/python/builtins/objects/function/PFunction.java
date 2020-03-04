@@ -43,6 +43,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -206,13 +207,25 @@ public class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() {
-        RootNode rootNode = getCallTarget().getRootNode();
-        if (rootNode instanceof PRootNode) {
-            return ((PRootNode) rootNode).getSourceSection();
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
+        SourceSection result = getSourceLocationDirect();
+        if (result == null) {
+            throw UnsupportedMessageException.create();
         } else {
-            return getForeignSourceSection(rootNode);
+            return result;
         }
+    }
+
+    @TruffleBoundary
+    private SourceSection getSourceLocationDirect() {
+        RootNode rootNode = getCallTarget().getRootNode();
+        SourceSection result;
+        if (rootNode instanceof PRootNode) {
+            result = ((PRootNode) rootNode).getSourceSection();
+        } else {
+            result = getForeignSourceSection(rootNode);
+        }
+        return result;
     }
 
     @TruffleBoundary
@@ -222,6 +235,6 @@ public class PFunction extends PythonObject {
 
     @ExportMessage
     public boolean hasSourceLocation() {
-        return true;
+        return getSourceLocationDirect() != null;
     }
 }

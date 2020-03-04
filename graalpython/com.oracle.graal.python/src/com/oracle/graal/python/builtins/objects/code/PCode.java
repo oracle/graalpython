@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -446,13 +447,24 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation() {
-        RootNode rootNode = getRootNode();
-        if (rootNode instanceof PRootNode) {
-            return ((PRootNode) rootNode).getSourceSection();
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
+        SourceSection result = readSourceLocation();
+        if (result != null) {
+            return result;
         } else {
-            return getForeignSourceSection(rootNode);
+            throw UnsupportedMessageException.create();
         }
+    }
+
+    private SourceSection readSourceLocation() {
+        RootNode rootNode = getRootNode();
+        SourceSection result;
+        if (rootNode instanceof PRootNode) {
+            result = ((PRootNode) rootNode).getSourceSection();
+        } else {
+            result = getForeignSourceSection(rootNode);
+        }
+        return result;
     }
 
     @TruffleBoundary
@@ -462,6 +474,6 @@ public final class PCode extends PythonBuiltinObject {
 
     @ExportMessage
     public boolean hasSourceLocation() {
-        return true;
+        return readSourceLocation() != null;
     }
 }
