@@ -33,9 +33,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -491,5 +494,27 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         } else {
             return 0;
         }
+    }
+
+    @ExportMessage
+    static boolean isMetaObject(@SuppressWarnings("unused") PythonBuiltinClassType self) {
+        return true;
+    }
+
+    @ExportMessage
+    static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
+                    @Cached GetLazyClassNode getClass,
+                    @Cached IsSubtypeNode isSubtype) {
+        return isSubtype.execute(getClass.execute(instance), self);
+    }
+
+    @ExportMessage
+    static String getMetaSimpleName(PythonBuiltinClassType self) {
+        return self.getName();
+    }
+
+    @ExportMessage
+    static String getMetaQualifiedName(PythonBuiltinClassType self) {
+        return self.getQualifiedName();
     }
 }
