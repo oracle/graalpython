@@ -305,12 +305,10 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class TextSignatureNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
             Object signature = readNode.execute(self, __TEXT_SIGNATURE__);
             if (signature == PNone.NO_VALUE) {
-                signature = getSignature(self.getSignature());
-                writeNode.execute(self, __TEXT_SIGNATURE__, signature);
+                throw raise(AttributeError, "'function' object has no attribute '__text_signature__'");
             }
             return signature;
         }
