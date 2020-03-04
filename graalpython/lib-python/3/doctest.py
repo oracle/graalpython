@@ -1328,13 +1328,13 @@ class DocTestRunner:
                 # Don't blink!  This is where the user's code gets run.
                 exec(compile(example.source, filename, "single",
                              compileflags, 1), test.globs)
-                self.debugger.set_continue() # ==== Example Finished ====
+                # self.debugger.set_continue() # ==== Example Finished ====
                 exception = None
             except KeyboardInterrupt:
                 raise
             except:
                 exception = sys.exc_info()
-                self.debugger.set_continue() # ==== Example Finished ====
+                # self.debugger.set_continue() # ==== Example Finished ====
 
             got = self._fakeout.getvalue()  # the actual output
             self._fakeout.truncate(0)
@@ -1457,11 +1457,12 @@ class DocTestRunner:
         # Note that the interactive output will go to *our*
         # save_stdout, even if that's not the real sys.stdout; this
         # allows us to write test cases for the set_trace behavior.
-        save_trace = sys.gettrace()
-        save_set_trace = pdb.set_trace
-        self.debugger = _OutputRedirectingPdb(save_stdout)
-        self.debugger.reset()
-        pdb.set_trace = self.debugger.set_trace
+        # Truffle change: disable tracing
+        # save_trace = sys.gettrace()
+        # save_set_trace = pdb.set_trace
+        # self.debugger = _OutputRedirectingPdb(save_stdout)
+        # self.debugger.reset()
+        # pdb.set_trace = self.debugger.set_trace
 
         # Patch linecache.getlines, so we can see the example's source
         # when we're inside the debugger.
@@ -1476,8 +1477,8 @@ class DocTestRunner:
             return self.__run(test, compileflags, out)
         finally:
             sys.stdout = save_stdout
-            pdb.set_trace = save_set_trace
-            sys.settrace(save_trace)
+            # pdb.set_trace = save_set_trace
+            # sys.settrace(save_trace)
             linecache.getlines = self.save_linecache_getlines
             sys.displayhook = save_displayhook
             if clear_globs:
