@@ -131,6 +131,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
@@ -147,7 +148,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -1777,11 +1777,8 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
+    @ImportStatic(PythonOptions.class)
     public static class ToDisplayString {
-        public static final boolean useRepr(PythonContext context) {
-            return PythonOptions.getFlag(context, PythonOptions.UseReprForPrintString);
-        }
-
         @Specialization(guards = {"allowSideEffects", "builtins != null"}) // may be null during
                                                                            // initialization
         public static String builtin(PythonAbstractObject self, boolean allowSideEffects,
@@ -1790,7 +1787,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached ReadAttributeFromObjectNode readStr,
                         @Cached CallNode callNode,
                         @Cached CastToJavaStringNode castStr,
-                        @Cached(value = "useRepr(context)", allowUncached = true) boolean useRepr) {
+                        @Cached(value = "getFlag(context, UseReprForPrintString)", allowUncached = true) boolean useRepr) {
             Object toStrAttr;
             if (useRepr) {
                 toStrAttr = readStr.execute(builtins, BuiltinNames.REPR);
