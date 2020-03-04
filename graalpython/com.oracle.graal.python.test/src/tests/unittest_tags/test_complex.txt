@@ -11,4 +11,3 @@
 *ComplexTest.test_plus_minus_0j
 *ComplexTest.test_repr_str
 *ComplexTest.test_richcompare
-*ComplexTest.test_truediv
