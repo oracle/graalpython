@@ -194,6 +194,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     private final String name;
     private final Shape instanceShape;
     private final String publicInModule;
+    private final String qualifiedName;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
@@ -201,6 +202,11 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PythonBuiltinClassType(String name, String publicInModule) {
         this.name = name;
         this.publicInModule = publicInModule;
+        if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
+            qualifiedName = publicInModule + "." + name;
+        } else {
+            qualifiedName = name;
+        }
         this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
     }
 
@@ -211,6 +217,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     @Override
     public String getName() {
         return name;
+    }
+
+    public String getQualifiedName() {
+        return qualifiedName;
     }
 
     public PythonBuiltinClassType getBase() {

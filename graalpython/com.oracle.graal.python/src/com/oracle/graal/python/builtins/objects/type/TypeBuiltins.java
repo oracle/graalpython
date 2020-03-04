@@ -76,9 +76,9 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
@@ -809,7 +809,7 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         String getName(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getName();
+            return cls.getQualifiedName();
         }
 
         @Specialization(guards = "isNoValue(value)")
