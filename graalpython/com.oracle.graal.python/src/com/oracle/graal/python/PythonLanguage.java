@@ -323,7 +323,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return value;
         }
         PythonObjectFactory uncached = PythonObjectFactory.getUncached();
-        if (value instanceof Byte) {
+        if (value instanceof Boolean) {
+            if ((boolean) value) {
+                return context.getCore().getTrue();
+            } else {
+                return context.getCore().getFalse();
+            }
+        } else if (value instanceof Byte) {
             return uncached.createInt(PythonBuiltinClassType.PInt, (byte) value);
         } else if (value instanceof Character) {
             return uncached.createString(Character.toString((char) value));
