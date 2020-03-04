@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.test.grammar;
 
-import com.oracle.graal.python.test.PythonTests;
 import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
 
 public class PositionalOnlyArgTests {
 
@@ -244,5 +245,13 @@ public class PositionalOnlyArgTests {
         String source = "x = lambda a, b, /, : a + b\n" +
                         "print(x(1, 2))";
         PythonTests.assertPrints("3\n", source);
+    }
+
+    @Test
+    public void postionalOnlyOverlapsWithKwargs() {
+        String source = "def f(a, b, /, **kwargs):" +
+                        "  print(a, b, kwargs.get('a'))\n" +
+                        "f(1, 2, a=3)";
+        PythonTests.assertPrints("1 2 3\n", source);
     }
 }
