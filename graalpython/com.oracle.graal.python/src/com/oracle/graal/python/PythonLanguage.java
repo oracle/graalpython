@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -34,7 +33,6 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -74,6 +72,12 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
@@ -319,38 +323,64 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected Object getLanguageView(PythonContext context, Object value) {
-        if (value instanceof PythonAbstractObject) {
-            return value;
-        }
-        PythonObjectFactory uncached = PythonObjectFactory.getUncached();
-        if (value instanceof Boolean) {
-            if ((boolean) value) {
-                return context.getCore().getTrue();
+        assert !(value instanceof PythonAbstractObject);
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        InteropLibrary interopLib = InteropLibrary.getFactory().getUncached(value);
+        try {
+            if (interopLib.isBoolean(value)) {
+                if (interopLib.asBoolean(value)) {
+                    return context.getCore().getTrue();
+                } else {
+                    return context.getCore().getFalse();
+                }
+            } else if (interopLib.isString(value)) {
+                return factory.createString(interopLib.asString(value));
+            } else if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
+                // TODO: (tfel) once the interop protocol allows us to
+                // distinguish fixed point from floating point reliably, we can
+                // remove this branch
+                return factory.createInt(interopLib.asLong(value));
+            } else if (value instanceof Float || value instanceof Double) {
+                // TODO: (tfel) once the interop protocol allows us to
+                // distinguish fixed point from floating point reliably, we can
+                // remove this branch
+                return factory.createFloat(interopLib.asDouble(value));
+            } else if (interopLib.fitsInLong(value)) {
+                return factory.createInt(interopLib.asLong(value));
+            } else if (interopLib.fitsInDouble(value)) {
+                return factory.createFloat(interopLib.asDouble(value));
             } else {
-                return context.getCore().getFalse();
+                return new ForeignLanguageView(value);
             }
-        } else if (value instanceof Byte) {
-            return uncached.createInt(PythonBuiltinClassType.PInt, (byte) value);
-        } else if (value instanceof Character) {
-            return uncached.createString(Character.toString((char) value));
-        } else if (value instanceof Short) {
-            return uncached.createInt(PythonBuiltinClassType.PInt, (short) value);
-        } else if (value instanceof Integer) {
-            return uncached.createInt(PythonBuiltinClassType.PInt, (int) value);
-        } else if (value instanceof Long) {
-            return uncached.createInt(PythonBuiltinClassType.PInt, (long) value);
-        } else if (value instanceof BigInteger) {
-            return uncached.createInt(PythonBuiltinClassType.PInt, (BigInteger) value);
-        } else if (value instanceof CharSequence) {
-            return uncached.createString(((CharSequence) value).toString());
-        } else if (value instanceof Float) {
-            return uncached.createFloat((float) value);
-        } else if (value instanceof Double) {
-            return uncached.createFloat((double) value);
-        } else if (value instanceof Object[]) {
-            return uncached.createTuple((Object[]) value);
-        } else {
-            return super.getLanguageView(context, value);
+        } catch (UnsupportedMessageException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")
+    static class ForeignLanguageView implements TruffleObject {
+        final Object delegate;
+
+        ForeignLanguageView(Object delegate) {
+            this.delegate = delegate;
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        String toDisplayString(boolean allowSideEffects,
+                        @CachedLibrary("this.delegate") InteropLibrary lib) {
+            return "<foreign '" + lib.toDisplayString(delegate, allowSideEffects) + "'>";
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasLanguage() {
+            return true;
+        }
+
+        @ExportMessage
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return PythonLanguage.class;
         }
     }
 
