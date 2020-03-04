@@ -39,7 +39,7 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PMethod extends PythonBuiltinObject {
 
-    private final Object function;
+    final Object function;
     private final Object self;
 
     public PMethod(LazyPythonClass cls, Object self, Object function) {
@@ -69,12 +69,12 @@ public final class PMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    protected SourceSection getSourceLocation(@CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+    protected SourceSection getSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) throws UnsupportedMessageException {
         return lib.getSourceLocation(function);
     }
 
     @ExportMessage
-    protected boolean hasSourceLocation(@CachedLibrary(limit = "1") InteropLibrary lib) {
+    protected boolean hasSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) {
         return lib.hasSourceLocation(function);
     }
 }
