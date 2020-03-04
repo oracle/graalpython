@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -75,8 +76,13 @@ public abstract class CastToDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    public double toDouble(PInt x) {
-        return x.doubleValue();
+    public double toDouble(PInt x,
+                    @Cached PRaiseNode raise) {
+        double value = x.doubleValue();
+        if (Double.isInfinite(value)) {
+            throw raise.raise(OverflowError, "int too large to convert to float");
+        }
+        return value;
     }
 
     @Specialization

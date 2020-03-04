@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW;
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
@@ -967,11 +968,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromPInt(LazyPythonClass cls, PInt arg) {
-            if (isPrimitiveFloat(cls)) {
-                return arg.doubleValue();
+        Object floatFromPInt(LazyPythonClass cls, PInt arg,
+                        @Cached PRaiseNode raise) {
+            double value = arg.doubleValue();
+            if (Double.isInfinite(value)) {
+                throw raise.raise(OverflowError, "int too large to convert to float");
             }
-            return factory().createFloat(cls, arg.doubleValue());
+            if (isPrimitiveFloat(cls)) {
+                return value;
+            }
+            return factory().createFloat(cls, value);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -2544,7 +2550,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             plen -= ipriv;
 
             if ((long) plen + nlen >= Integer.MAX_VALUE) {
-                throw raise(PythonBuiltinClassType.OverflowError, "private identifier too large to be mangled");
+                throw raise(OverflowError, "private identifier too large to be mangled");
             }
 
             /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
