@@ -2295,8 +2295,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetLazyClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached HashingStorageNodes.GetItemNode getClasscellNode,
-                        @Cached HashingStorageNodes.DelItemNode delClasscellNode,
+                        @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached HashingStorageNodes.GetItemNode getItemNode,
+                        @Cached HashingStorageNodes.DelItemNode delItemNode,
+                        @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
 
@@ -2315,7 +2317,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass);
 
-                // TODO: Call __set_name__ on all descriptors in a newly generated type
+                for (Object key : namespace.keys()) {
+                    Object member = getItemNode.execute(frame, namespace.getDictStorage(), key);
+                    Object setName = getSetNameNode.execute(member);
+                    if (setName != PNone.NO_VALUE) {
+                        callSetNameNode.execute(frame, setName, member, newType, key);
+                    }
+                }
 
                 // Call __init_subclass__ on the parent of a newly generated type
                 SuperObject superObject = factory().createSuperObject(PythonBuiltinClassType.Super);
@@ -2336,14 +2344,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // set __class__ cell contents
-                Object classcell = getClasscellNode.execute(frame, namespace.getDictStorage(), __CLASSCELL__);
+                Object classcell = getItemNode.execute(frame, namespace.getDictStorage(), __CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         raise(TypeError, "__classcell__ must be a cell");
                     }
-                    delClasscellNode.execute(frame, namespace, namespace.getDictStorage(), __CLASSCELL__);
+                    delItemNode.execute(frame, namespace, namespace.getDictStorage(), __CLASSCELL__);
                 }
 
                 return newType;
