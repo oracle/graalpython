@@ -39,6 +39,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1984,9 +1985,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "arguments.length == 2")
-        public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
                         @Cached("create()") CastToDoubleNode xCastNode,
                         @Cached("create()") CastToDoubleNode yCastNode) {
+            if (keywords.length != 0) {
+                throw raise(PythonBuiltinClassType.TypeError, "hypot() takes no keyword arguments");
+            }
             double x = xCastNode.execute(frame, arguments[0]);
             double y = yCastNode.execute(frame, arguments[1]);
             double result = Math.hypot(x, y);
@@ -1997,8 +2001,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        public double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
                         @Cached("create()") CastToDoubleNode castNode) {
+            if (keywords.length != 0) {
+                throw raise(PythonBuiltinClassType.TypeError, "hypot() takes no keyword arguments");
+            }
             double max = 0.0;
             boolean foundNan = false;
             double[] coordinates = new double[arguments.length];
