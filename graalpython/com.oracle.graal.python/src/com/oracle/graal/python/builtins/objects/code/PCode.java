@@ -445,7 +445,6 @@ public final class PCode extends PythonBuiltinObject {
         return callTarget;
     }
 
-    @Override
     @ExportMessage
     public SourceSection getSourceLocation() {
         RootNode rootNode = getRootNode();
@@ -461,7 +460,6 @@ public final class PCode extends PythonBuiltinObject {
         return rootNode.getSourceSection();
     }
 
-    @Override
     @ExportMessage
     public boolean hasSourceLocation() {
         return true;

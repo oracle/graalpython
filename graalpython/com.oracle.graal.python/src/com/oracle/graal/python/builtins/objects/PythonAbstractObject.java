@@ -1829,16 +1829,4 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass) {
         return getClass.execute(this);
     }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public SourceSection getSourceLocation() {
-        return null;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean hasSourceLocation() {
-        return false;
-    }
 }

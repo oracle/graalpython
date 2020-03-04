@@ -205,7 +205,6 @@ public class PFunction extends PythonObject {
         return true;
     }
 
-    @Override
     @ExportMessage
     public SourceSection getSourceLocation() {
         RootNode rootNode = getCallTarget().getRootNode();
@@ -221,7 +220,6 @@ public class PFunction extends PythonObject {
         return rootNode.getSourceSection();
     }
 
-    @Override
     @ExportMessage
     public boolean hasSourceLocation() {
         return true;
