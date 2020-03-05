@@ -245,6 +245,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @SuppressWarnings("unused")
         boolean operator(String self, String other) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("should not be reached");
@@ -509,6 +510,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         // the actual operation; will be overridden by subclasses
+        @SuppressWarnings("unused")
         protected boolean doIt(String text, String substr, int start, int stop) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("should not reach");
@@ -828,7 +830,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
-        PDict doDict(Object from, Object to, Object z) {
+        PDict doFail(Object from, Object to, Object z) {
             throw raise(PythonBuiltinClassType.TypeError, "if you give only one argument to maketrans it must be a dict");
         }
     }
@@ -1317,8 +1319,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = {"doStringString", "doStringNone"})
         static String doGeneric(Object self, Object chars,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castCharsNode) {
+                        @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "strip", self);
             if (PGuards.isPNone(chars)) {
                 return doStringNone(selfStr, PNone.NO_VALUE);

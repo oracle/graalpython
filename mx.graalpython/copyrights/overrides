@@ -265,6 +265,8 @@ graalpython/com.oracle.graal.python.test/src/tests/test_yield_from.py,python.cop
 graalpython/com.oracle.graal.python.test/src/tests/test_zipimport.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_zlib.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/try-test.py,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Lexer.java,python3antlr.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/PythonLanguage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/Builtin.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/CoreFunctions.java,zippy.copyright

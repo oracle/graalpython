@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ImportCAPISymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
@@ -58,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -88,7 +91,7 @@ import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(ReferenceLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;
@@ -272,5 +275,49 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         static boolean doOther(PythonAbstractNativeObject receiver, Object other) {
             return false;
         }
+    }
+
+    @ExportMessage
+    boolean isMetaObject(
+                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType) {
+        return isType.execute(this);
+    }
+
+    @ExportMessage
+    boolean isMetaInstance(Object instance,
+                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
+                    @Cached GetLazyClassNode getClass,
+                    @Cached IsSubtypeNode isSubtype) throws UnsupportedMessageException {
+        if (!isType.execute(this)) {
+            throw UnsupportedMessageException.create();
+        }
+        return isSubtype.execute(getClass.execute(instance), this);
+    }
+
+    @ExportMessage
+    String getMetaSimpleName(
+                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
+                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode) throws UnsupportedMessageException {
+        return getSimpleName(getMetaQualifiedName(isType, getTpNameNode));
+    }
+
+    @TruffleBoundary
+    private static String getSimpleName(String fqname) {
+        int firstDot = fqname.indexOf('.');
+        if (firstDot != -1) {
+            return fqname.substring(firstDot + 1);
+        }
+        return fqname;
+    }
+
+    @ExportMessage
+    String getMetaQualifiedName(
+                    @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
+                    @Shared("getTypeMember") @Cached GetTypeMemberNode getTpNameNode) throws UnsupportedMessageException {
+        if (!isType.execute(this)) {
+            throw UnsupportedMessageException.create();
+        }
+        // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+        return (String) getTpNameNode.execute(this, NativeMemberNames.TP_NAME);
     }
 }

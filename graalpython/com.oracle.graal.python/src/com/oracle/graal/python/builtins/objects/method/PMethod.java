@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,13 +29,17 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PMethod extends PythonBuiltinObject {
 
-    private final Object function;
+    final Object function;
     private final Object self;
 
     public PMethod(LazyPythonClass cls, Object self, Object function) {
@@ -62,5 +66,15 @@ public final class PMethod extends PythonBuiltinObject {
     @SuppressWarnings("static-method")
     public boolean isCallable() {
         return true;
+    }
+
+    @ExportMessage
+    protected SourceSection getSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.getSourceLocation(function);
+    }
+
+    @ExportMessage
+    protected boolean hasSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) {
+        return lib.hasSourceLocation(function);
     }
 }

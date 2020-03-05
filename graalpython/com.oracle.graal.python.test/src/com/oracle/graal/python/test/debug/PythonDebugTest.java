@@ -424,8 +424,8 @@ public class PythonDebugTest {
             expectSuspended((SuspendedEvent event) -> {
                 DebugScope globalScope = session.getTopScope("python");
                 DebugValue intValue = globalScope.getDeclaredValue("a_int").getArray().get(0);
-                // It's up to Truffle to decide which language it uses for inspection of primitives,
-                // we should be fine as long as this doesn't throw an exception
+                // Truffle will now use our language to get a Python view on the primitive object
+                // for inspection
                 intValue.getMetaObject();
                 assertEquals("0", intValue.as(String.class));
                 DebugValue longValue = globalScope.getDeclaredValue("a_long").getArray().get(0);
@@ -445,7 +445,7 @@ public class PythonDebugTest {
                 assertEquals("0.0", doubleValue.as(String.class));
                 DebugValue charValue = globalScope.getDeclaredValue("a_char").getArray().get(0);
                 charValue.getMetaObject();
-                assertEquals("\0", charValue.as(String.class));
+                assertEquals("'\\x00'", charValue.as(String.class));
             });
         }
     }

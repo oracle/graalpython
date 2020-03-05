@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,9 +33,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -194,6 +197,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     private final String name;
     private final Shape instanceShape;
     private final String publicInModule;
+    private final String qualifiedName;
 
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
@@ -201,6 +205,11 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PythonBuiltinClassType(String name, String publicInModule) {
         this.name = name;
         this.publicInModule = publicInModule;
+        if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
+            qualifiedName = publicInModule + "." + name;
+        } else {
+            qualifiedName = name;
+        }
         this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
     }
 
@@ -211,6 +220,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     @Override
     public String getName() {
         return name;
+    }
+
+    public String getQualifiedName() {
+        return qualifiedName;
     }
 
     public PythonBuiltinClassType getBase() {
@@ -481,5 +494,27 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         } else {
             return 0;
         }
+    }
+
+    @ExportMessage
+    static boolean isMetaObject(@SuppressWarnings("unused") PythonBuiltinClassType self) {
+        return true;
+    }
+
+    @ExportMessage
+    static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
+                    @Cached GetLazyClassNode getClass,
+                    @Cached IsSubtypeNode isSubtype) {
+        return isSubtype.execute(getClass.execute(instance), self);
+    }
+
+    @ExportMessage
+    static String getMetaSimpleName(PythonBuiltinClassType self) {
+        return self.getName();
+    }
+
+    @ExportMessage
+    static String getMetaQualifiedName(PythonBuiltinClassType self) {
+        return self.getQualifiedName();
     }
 }

@@ -354,14 +354,14 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_Y")
-        static ParserState doBufferR(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doBufferR(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
-                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode argToSulongNode,
+                        @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
@@ -373,12 +373,12 @@ public abstract class CExtParseArgumentsNode {
             } else {
                 // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
                 // 'get_buffer_r' and output the buffer's data pointer
-                Object destDataPtr = getVaArgNode.execute(varargs, state.outIndex);
+                getVaArgNode.execute(varargs, state.outIndex);
                 if (isLookahead(format, format_idx, '#')) {
                     /* format_idx++; */
                     // 'y#'
                     // TODO(fa) additionally store size
-                    Object pybufferPtr = getVaArgNode.execute(varargs, state.outIndex);
+                    getVaArgNode.execute(varargs, state.outIndex);
                     state = state.incrementOutIndex();
                 }
             }
@@ -386,7 +386,7 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "isCStringSpecifier(c)")
-        static ParserState doCString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doCString(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
@@ -394,16 +394,16 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached StringLenNode stringLenNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
+                        @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             boolean z = c == FORMAT_LOWER_Z;
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
                 // 's*' or 'z*'
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    Object pybuffer = getVaArgNode.execute(varargs, state.outIndex);
+                    getVaArgNode.execute(varargs, state.outIndex);
                     // TODO(fa) create Py_buffer
                 }
             } else if (isLookahead(format, format_idx, '#')) {
@@ -846,17 +846,18 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_O")
-        static ParserState doObject(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doObject(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached(value = "createTJ(state)", uncached = "getUncachedTJ(state)") CExtToJavaNode typeToJavaNode,
-                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
+                        @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode typeToJavaNode,
+                        @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode toNativeNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (isLookahead(format, format_idx, '!')) {
                 /* format_idx++; */

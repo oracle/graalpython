@@ -1321,6 +1321,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return nodeFactory.createDestructuringAssignment(rhs, temps, starredIndex, statements);
     }
 
+    @SuppressWarnings("unused")
     private SourceSection createSourceSectionFromBlock(StatementNode body) {
         int bodyStart = -1;
         int bodyEnd = -1;
@@ -1337,7 +1338,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return createSourceSection(bodyStart, bodyEnd);
     }
 
-    private FunctionBodyNode createFunctionBody(StatementNode body) {
+    private static FunctionBodyNode createFunctionBody(StatementNode body) {
         FunctionBodyNode functionBody;
         if (body instanceof BlockNode) {
             functionBody = FunctionBodyNode.create(((BlockNode) body).getStatements());

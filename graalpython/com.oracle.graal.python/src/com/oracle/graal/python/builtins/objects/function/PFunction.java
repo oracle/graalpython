@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
@@ -42,6 +43,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -202,5 +204,37 @@ public class PFunction extends PythonObject {
     @ExportMessage
     public boolean isCallable() {
         return true;
+    }
+
+    @ExportMessage
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
+        SourceSection result = getSourceLocationDirect();
+        if (result == null) {
+            throw UnsupportedMessageException.create();
+        } else {
+            return result;
+        }
+    }
+
+    @TruffleBoundary
+    private SourceSection getSourceLocationDirect() {
+        RootNode rootNode = getCallTarget().getRootNode();
+        SourceSection result;
+        if (rootNode instanceof PRootNode) {
+            result = ((PRootNode) rootNode).getSourceSection();
+        } else {
+            result = getForeignSourceSection(rootNode);
+        }
+        return result;
+    }
+
+    @TruffleBoundary
+    private static SourceSection getForeignSourceSection(RootNode rootNode) {
+        return rootNode.getSourceSection();
+    }
+
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return getSourceLocationDirect() != null;
     }
 }

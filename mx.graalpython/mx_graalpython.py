@@ -1421,34 +1421,39 @@ def checkout_find_version_for_graalvm(args):
     path = args[0]
     projectname = os.path.basename(args[0])
     suite = os.path.join(path, "mx.%s" % projectname, "suite.py")
+    basedir = os.path.dirname(suite)
+    while not os.path.isdir(os.path.join(basedir, ".git")):
+        basedir = os.path.dirname(basedir)
+    suite = os.path.relpath(suite, start=basedir)
+    mx.log("Using %s to find revision" % suite)
     other_version = ""
     for i in SUITE.suite_imports:
         if i.name == "sulong":
             needed_version = i.version
             break
-    current_commit = SUITE.vc.tip(path)
+    current_commit = SUITE.vc.tip(path).strip()
+    current_revision = "HEAD"
     mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
     while needed_version != other_version:
         if other_version:
-            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", "HEAD"]).split()
+            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", current_revision]).split()
             if not parent:
-                mx.log("Got to oldest revision before finding appropriate commit, reverting to %s" % current_commit)
-                mx.vc.update(path, rev=current_commit)
+                mx.log("Got to oldest revision before finding appropriate commit, using %s" % current_commit)
                 return
-            parent = parent[0]
-            SUITE.vc.update(path, rev=parent)
-        with open(suite) as f:
-            contents = f.read()
-            if not PY3:
-                contents = contents.decode()
-            d = {}
+            current_revision = parent[0]
+        contents = SUITE.vc.git_command(path, ["show", "%s:%s" % (current_revision, suite)])
+        d = {}
+        try:
             exec(contents, d, d)
-            suites = d["suite"]["imports"]["suites"]
-            for suitedict in suites:
-                if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
-                    other_version = suitedict.get("version", "")
-                    if other_version:
-                        break
+        except:
+            mx.log("suite.py no longer parseable, falling back to %s" % current_commit)
+            return
+        suites = d["suite"]["imports"]["suites"]
+        for suitedict in suites:
+            if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
+                other_version = suitedict.get("version", "")
+                if other_version:
+                    break
 
 
 # ----------------------------------------------------------------------------------------------------------------------

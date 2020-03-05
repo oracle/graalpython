@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,8 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -442,5 +444,36 @@ public final class PCode extends PythonBuiltinObject {
 
     public RootCallTarget getRootCallTarget() {
         return callTarget;
+    }
+
+    @ExportMessage
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
+        SourceSection result = readSourceLocation();
+        if (result != null) {
+            return result;
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    private SourceSection readSourceLocation() {
+        RootNode rootNode = getRootNode();
+        SourceSection result;
+        if (rootNode instanceof PRootNode) {
+            result = ((PRootNode) rootNode).getSourceSection();
+        } else {
+            result = getForeignSourceSection(rootNode);
+        }
+        return result;
+    }
+
+    @TruffleBoundary
+    private static SourceSection getForeignSourceSection(RootNode rootNode) {
+        return rootNode.getSourceSection();
+    }
+
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return readSourceLocation() != null;
     }
 }
