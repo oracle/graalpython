@@ -199,7 +199,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final char TYPE_LONG = 'l';
     private static final char TYPE_PINT = 'L';
     private static final char TYPE_STRING = 's';
-    // private final static char TYPE_INTERNED = 't';
+    private static final char TYPE_INTERNED = 't';
     // private final static char TYPE_STRINGREF = 'R';
     private static final char TYPE_BYTESLIKE = 'b';
     private static final char TYPE_TUPLE = '(';
@@ -212,6 +212,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final char TYPE_FROZENSET = '>';
     private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
     private static final int CURRENT_VERSION = 1;
+
+    static final class InternedString {
+        public final String string;
+
+        private InternedString(String string) {
+            this.string = string;
+        }
+    }
 
     private abstract static class PNodeWithState extends PNodeWithContext {
         @Child private PythonObjectFactory objectFactory;
@@ -375,6 +383,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        void handleInternedString(InternedString v, int version, DataOutputStream buffer) {
+            writeByte(TYPE_INTERNED, version, buffer);
+            writeString(v.string, version, buffer);
+        }
+
+        @Specialization
         void handleBytesLike(VirtualFrame frame, PIBytesLike v, int version, DataOutputStream buffer,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             writeByte(TYPE_BYTESLIKE, version, buffer);
@@ -440,7 +454,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             getRecursiveNode().execute(frame, factory().createTuple(c.getVarnames() == null ? new Object[0] : c.getVarnames()), version, buffer);
             getRecursiveNode().execute(frame, factory().createTuple(c.getFreeVars() == null ? new Object[0] : c.getFreeVars()), version, buffer);
             getRecursiveNode().execute(frame, factory().createTuple(c.getCellVars() == null ? new Object[0] : c.getCellVars()), version, buffer);
-            getRecursiveNode().execute(frame, c.getFilename(), version, buffer);
+            getRecursiveNode().execute(frame, new InternedString(c.getFilename()), version, buffer);
             getRecursiveNode().execute(frame, c.getName(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
@@ -568,6 +582,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             String text = new String(data, index, len);
             index += len;
             return text;
+        }
+
+        private String readInternedString() {
+            return readString().intern();
         }
 
         private byte[] readBytes() {
@@ -715,6 +733,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return readDouble();
                 case TYPE_STRING:
                     return readString();
+                case TYPE_INTERNED:
+                    return readInternedString();
                 case TYPE_BYTESLIKE:
                     return readBytesLike();
                 case TYPE_TUPLE: {
