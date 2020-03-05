@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -120,6 +120,11 @@ public final class PCode extends PythonBuiltinObject {
         } else {
             this.signature = Signature.createVarArgsAndKwArgsOnly();
         }
+    }
+
+    public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring) {
+        this(cls, callTarget);
+        this.codestring = codestring;
     }
 
     public PCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
@@ -418,6 +423,10 @@ public final class PCode extends PythonBuiltinObject {
 
     public boolean isGenerator() {
         return (getFlags() & FLAG_GENERATOR) > 0;
+    }
+
+    public static boolean isModule(int flags) {
+        return (flags & FLAG_MODULE) > 0;
     }
 
     static boolean takesVarArgs(int flags) {

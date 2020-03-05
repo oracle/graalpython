@@ -57,6 +57,8 @@ tokens { INDENT, DEDENT }
     tokens.offer(t);
   }
 
+  int codePointDelta = 0; // keeps the lenght of code points that have more chars that one. 
+
   @Override
   public Token nextToken() {
     Token next = super.nextToken();
@@ -89,7 +91,55 @@ tokens { INDENT, DEDENT }
       this.lastToken = next;
     }
 
-    return tokens.isEmpty() ? next : tokens.poll();
+    Token result = tokens.isEmpty() ? next : tokens.poll();
+    // The code below handle situation, when in the source code is used unicode of various length (bigger then XFFFF)
+    // Lexer works with CodePointStream (antlr class) that is able to count positions 
+    // of the text with such codepoints. For example if there is code:
+    // `a = '𝔘𝔫𝔦𝔠𝔬𝔡𝔢'`
+    // then the range of the string literal (from CodePoiintStream) is [4, 13],
+    // but the java string substring(4,13)  returns `'𝔘𝔫𝔦𝔠`, because every
+    // the letter is represented with code point of lenght 2. The problem is 
+    // that we don't work in python implementation with code point stream, 
+    // but just with the strings. So the lexer converts the ranges of tokens 
+    // to the "string" representation. 
+    if (result.getType() != Python3Parser.EOF) {
+        // get the text from CodePointStream
+        String text = result.getText();
+        int len = text.length();
+        int delta = 0;
+        // find if there is code point and how big is
+        if (result.getType() != NEWLINE) {
+            // we don't have to check the new line token
+            for (int i = 0; i < len; i++) {
+                // check if there is a codepoint with char count bigger then 1
+                int codePoint = Character.codePointAt(text, i);
+                delta += Character.charCount(codePoint);
+            }
+            delta = delta - len;
+        }
+        if (codePointDelta > 0 || delta > 0) { // until codePointDelta is zerou, we don't have to change the tokens. 
+            CommonToken ctoken = (CommonToken) result;
+            if (delta > 0) {
+                // the token text contains a code point with more chars than 1
+                if (codePointDelta > 0) {
+                    // set the new start of the token, if this is not the first token with a code point
+                    ctoken.setStartIndex(ctoken.getStartIndex() + codePointDelta);
+                }
+                // increse the codePointDelta with the char length of the code points in the text
+                codePointDelta += delta;
+            } else {
+                // we have to shift all the tokens if there is a code point with more bytes. 
+                ctoken.setStartIndex(result.getStartIndex() + codePointDelta);
+            }
+            // correct the end offset
+            ctoken.setStopIndex(ctoken.getStopIndex() + codePointDelta);
+            // TODO this is not nice. This expect the current implementation
+            // of CommonToken, is done in the way that reads the text from CodePointStream until
+            // the private field text is not set. 
+            ctoken.setText(text);
+        }
+    }
+    return result;
   }
 
   private Token createDedent() {
@@ -404,7 +454,7 @@ funcdef
 ;
 
 parameters returns [ArgDefListBuilder result]
-:       { ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
+:       { ArgDefListBuilder args = new ArgDefListBuilder(); }
 	'(' typedargslist[args]? ')'
         { $result = args; }
 ;
@@ -476,7 +526,7 @@ kwargsparameter [ArgDefListBuilder args]
 
 varargslist returns [ArgDefListBuilder result]
 :
-	{ ArgDefListBuilder args = new ArgDefListBuilder(factory.getScopeEnvironment()); }
+	{ ArgDefListBuilder args = new ArgDefListBuilder(); }
 	(
             vdefparameter[args] ( ',' vdefparameter[args] )* ',' '/' {args.markPositionalOnlyIndex();}
                 ((',' vdefparameter[args] (',' vdefparameter[args])* )?
@@ -968,7 +1018,7 @@ test_nocond returns [SSTNode result]
 lambdef returns [SSTNode result]
 :
 	
-	'lambda'
+	l = 'lambda'
 	{ ArgDefListBuilder args = null; }
 	(
 		varargslist { args = $varargslist.result; }
@@ -988,7 +1038,7 @@ lambdef returns [SSTNode result]
 
 lambdef_nocond returns [SSTNode result]
 :
-	'lambda'
+	l = 'lambda'
 	{ ArgDefListBuilder args = null; }
 	(
 		varargslist { args = $varargslist.result;}
@@ -1350,7 +1400,7 @@ dictmaker returns [SSTNode result]
             { 
                 SSTNode value; 
                 SSTNode name;
-                ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.DictComp);
+                ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.DictComp);
                 generator.setHasAnnotations(true);
                 
             }
@@ -1407,7 +1457,7 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
                     case PSet: scopeKind = ScopeInfo.ScopeKind.SetComp; break;
                     default: scopeKind = ScopeInfo.ScopeKind.GenExp;
                 }
-                ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), scopeKind); 
+                ScopeInfo generator = scopeEnvironment.pushScope("generator", scopeKind); 
                 generator.setHasAnnotations(true);
             }
             (
@@ -1493,7 +1543,7 @@ arglist returns [ArgListBuilder result]
 
 argument [ArgListBuilder args] returns [SSTNode result]
 :               {
-                    ScopeInfo generator = scopeEnvironment.pushScope("generator"+_localctx.getStart().getStartIndex(), ScopeInfo.ScopeKind.GenExp); 
+                    ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.GenExp); 
                     generator.setHasAnnotations(true);
                 }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,38 +38,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.runtime;
 
-package com.oracle.graal.python.parser.sst;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 
-public class NumberLiteralSSTNode extends SSTNode {
-    protected final String value;
-    protected final int start;
-    protected final int base;
-    protected boolean negative;
+public interface PythonCodeSerializer {
+    public byte[] serialize(Source source);
 
-    public NumberLiteralSSTNode(String value, int start, int base, int startIndex, int endIndex) {
-        super(startIndex, endIndex);
-        this.value = value.indexOf('_') == -1 ? value : value.replaceAll("_", "");
-        this.start = start;
-        this.base = base;
-    }
-
-    public NumberLiteralSSTNode(String value, boolean negative, int start, int base, int startIndex, int endIndex) {
-        this(value, start, base, startIndex, endIndex);
-        this.negative = negative;
-    }
-
-    public boolean isNegative() {
-        return negative;
-    }
-
-    public void setIsNegative(boolean isNegative) {
-        this.negative = isNegative;
-    }
-
-    @Override
-    public <T> T accept(SSTreeVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
+    public RootNode deserialize(TruffleFile tFile, byte[] data);
 }

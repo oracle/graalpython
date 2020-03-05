@@ -230,6 +230,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return globalScope;
     }
 
+    public void setGlobalScope(ScopeInfo info) {
+        globalScope = info;
+        currentScope = info;
+    }
+
     public boolean isNonlocal(String name) {
         assert name != null : "name is null!";
         return currentScope.isExplicitNonlocalVariable(name);

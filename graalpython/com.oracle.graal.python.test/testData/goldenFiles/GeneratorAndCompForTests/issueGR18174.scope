@@ -3,12 +3,12 @@ Scope: []
     FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
-    Scope: generator13
+    Scope: generator
         Kind: ListComp
         FrameDescriptor: [a, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: generator1
+    Scope: generator
         Kind: ListComp
         FrameDescriptor: [b, <return_val>]
         CellVars: Empty

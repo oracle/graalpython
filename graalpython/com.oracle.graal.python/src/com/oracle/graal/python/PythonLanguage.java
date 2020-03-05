@@ -526,7 +526,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                         // contents, but as a first approximation, we compare the content lengths.
                         // We override the contents of the source builder with the given source
                         // regardless.
-                        if (src.length() == truffleFile.size()) {
+                        if (src.length() == truffleFile.size() || src.getBytes().length == truffleFile.size()) {
                             sourceBuilder = Source.newBuilder(ID, truffleFile);
                             sourceBuilder.content(src);
                         }

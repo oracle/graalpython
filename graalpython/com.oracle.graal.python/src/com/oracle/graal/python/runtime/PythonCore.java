@@ -74,6 +74,8 @@ public interface PythonCore extends ParserErrorCallback {
 
     public PythonParser getParser();
 
+    public PythonCodeSerializer getSerializer();
+
     public PythonObjectFactory factory();
 
     public void setContext(PythonContext context);

@@ -13,7 +13,7 @@ Scope: []
         FrameDescriptor: [lappend, c, literals, pattern, groupindex, this, groups, index, source, literal, s, sget, isoctal, addgroup, name, <return_val>]
         CellVars: [groups, literal, literals, pattern, s]
         FreeVars: Empty
-        Scope: generator38862
+        Scope: generator
             Kind: ListComp
             FrameDescriptor: [s, <return_val>]
             CellVars: Empty

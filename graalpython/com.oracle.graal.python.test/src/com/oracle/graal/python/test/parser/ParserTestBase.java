@@ -251,7 +251,7 @@ public class ParserTestBase {
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
     }
 
-    private String printTreeToString(Node node) {
+    protected String printTreeToString(Node node) {
         ParserTreePrinter visitor = new ParserTreePrinter();
         visitor.printFormatStringLiteralDetail = printFormatStringLiteralValues;
         node.accept(visitor);
@@ -270,6 +270,10 @@ public class ParserTestBase {
         }
         String expected = readFile(goldenFile);
 
+        assertDescriptionMatches(actual, expected, goldenFile.getName());
+    }
+
+    protected void assertDescriptionMatches(String actual, String expected, String name) throws IOException {
         final String expectedTrimmed = expected.trim();
         final String actualTrimmed = actual.trim();
 
@@ -288,7 +292,7 @@ public class ParserTestBase {
 
             // There are some diffrerences between expected and actual content --> Test failed
 
-            assertTrue("Not matching goldenfile: " + goldenFile.getName() + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
+            assertTrue("Not matching results: " + (name == null ? "" : name) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified), false);
         }
     }
 

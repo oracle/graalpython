@@ -1,11 +1,11 @@
-ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.py - To...`
+ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.py - To...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: `functools.py - Tools...`
-  InnerRootNode SourceSection: [0,32198]`"""functools.py - To...`
-    ExpressionWithSideEffects SourceSection: [0,32198]`"""functools.py - To...`
+  InnerRootNode SourceSection: [0,32199]`"""functools.py - To...`
+    ExpressionWithSideEffects SourceSection: [0,32199]`"""functools.py - To...`
       ExpressionStatementNode SourceSection: [0,75]`"""functools.py - To...`
         StringLiteralNode SourceSection: [0,75]`"""functools.py - To...`
       WriteNameNodeGen SourceSection: [445,647]`__all__ = ['update_w...`
@@ -8562,7 +8562,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
         Expression:
           EmptyNode SourceSection: None
         SideEffect:
-          WriteNameNodeGen SourceSection: [29187,32198]`def singledispatch(f...`
+          WriteNameNodeGen SourceSection: [29187,32199]`def singledispatch(f...`
             Identifier: singledispatch
             FunctionDefinitionNode Name: singledispatch SourceSection: None
               Arguments: None
@@ -8572,7 +8572,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
-              FunctionRootNode SourceSection: [29187,32198]`def singledispatch(f...`
+              FunctionRootNode SourceSection: [29187,32199]`def singledispatch(f...`
                 Name: singledispatch
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: func
@@ -8583,8 +8583,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: cache_token, , dispatch, , dispatch_cache, , register, , registry, 
-                InnerRootNode SourceSection: [29187,32198]`def singledispatch(f...`
-                  ReturnTargetNode SourceSection: [29187,32198]`def singledispatch(f...`
+                InnerRootNode SourceSection: [29187,32199]`def singledispatch(f...`
+                  ReturnTargetNode SourceSection: [29187,32199]`def singledispatch(f...`
                     Body: BlockNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: func

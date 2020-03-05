@@ -13,7 +13,7 @@ Scope: []
             FrameDescriptor: [elem, nonpositive, self, <return_val>, __class__]
             CellVars: Empty
             FreeVars: [__class__]
-            Scope: generator74
+            Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [elem, count, <>temp2, <>temp3, <return_val>]
                 CellVars: Empty

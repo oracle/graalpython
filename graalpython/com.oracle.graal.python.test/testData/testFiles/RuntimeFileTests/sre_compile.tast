@@ -223,7 +223,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             PythonCallNodeGen SourceSection: [2187,2216]`tuple(j for j in t i...`
                               CallNodeGen SourceSection: None
                               GeneratorExpressionNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                Name: generator2184.<locals>.<genexp>:sre_compile:62
+                                Name: generator.<locals>.<genexp>:sre_compile:62
                                 FrameDescriptor: 3 slots [j, i, <return_val>]
                                 Enclosing
                                   FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -232,7 +232,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: true
                                 FunctionRootNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                  Name: generator2184.<locals>.<genexp>:sre_compile:62
+                                  Name: generator.<locals>.<genexp>:sre_compile:62
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: i

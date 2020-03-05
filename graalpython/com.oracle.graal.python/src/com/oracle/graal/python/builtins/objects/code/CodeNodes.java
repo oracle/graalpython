@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020 Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -63,12 +62,14 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -77,6 +78,8 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import java.nio.charset.Charset;
+import java.util.function.Supplier;
 
 public abstract class CodeNodes {
 
@@ -144,6 +147,7 @@ public abstract class CodeNodes {
                     } else {
                         throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
                     }
+                    callTarget = Truffle.getRuntime().createCallTarget(rootNode);
                 } else {
                     MaterializedFrame frame = null;
                     if (freevars.length > 0) {
@@ -156,10 +160,33 @@ public abstract class CodeNodes {
                             frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
                         }
                     }
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build(), frame);
-                    assert rootNode instanceof ModuleRootNode;
+
+                    Supplier<CallTarget> createCode = () -> {
+                        Source source = null;
+                        if (filename != null && !filename.isEmpty()) {
+                            PythonContext context = getContextRef().get();
+                            TruffleFile tFile = context.getEnv().getInternalTruffleFile(filename);
+                            try {
+                                if (tFile.exists()) {
+                                    return Truffle.getRuntime().createCallTarget(core.getSerializer().deserialize(tFile, codestring));
+                                }
+                            } catch (SecurityException e) {
+                                // just ignore
+                            }
+                        }
+                        if (source == null) {
+                            source = Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build();
+                        }
+                        return Truffle.getRuntime().createCallTarget((RootNode) core.getParser().parse(ParserMode.File, core, source, null));
+                    };
+
+                    if (core.isInitialized()) {
+                        callTarget = (RootCallTarget) createCode.get();
+                    } else {
+                        callTarget = (RootCallTarget) core.getLanguage().cacheCode(filename, createCode);
+                    }
                 }
-                callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+
             } else {
                 callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(PythonLanguage.getCurrent()) {
                     @Override

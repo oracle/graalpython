@@ -472,7 +472,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             assert !ctxt.isInitialized() : "this can only be called during initialization";
             final CallTarget ct = lang.cacheCode(moduleFile, () -> null);
             if (ct == null) {
-                throw raise(NotImplementedError, "cannot cache something we haven't cached before");
+                throw raise(NotImplementedError, "cannot cache something we haven't loaded before. Module file: %s", moduleFile);
             }
             return cacheWithModulePath(modulename, modulepath, lang, ct);
         }

@@ -721,7 +721,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.functionScope);
         Signature signature = node.argBuilder.getSignature();
-        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes());
+        StatementNode argumentNodes = nodeFactory.createBlock(node.argBuilder.getArgumentNodes(scopeEnvironment));
 
         StatementNode body;
         GeneratorFactorySSTVisitor generatorFactory = null;
@@ -910,7 +910,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         /**
          * Parameters
          */
-        StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes());
+        StatementNode argumentNodes = nodeFactory.createBlock(node.args == null ? new StatementNode[0] : node.args.getArgumentNodes(scopeEnvironment));
         Signature signature = node.args == null ? Signature.EMPTY : node.args.getSignature();
 
         /**
