@@ -147,16 +147,16 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         dists += extra_dists
 
     if not os.environ.get("CI"):
+        graalpython_args.insert(0, "--llvm.enableLVI=true")
         # Try eagerly to include tools for convenience when running Python
         if not mx.suite("tools", fatalIfMissing=False):
             SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
         if mx.suite("tools", fatalIfMissing=False):
-            if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
-                # CHROMEINSPECTOR was built, put it on the classpath
-                dists.append('CHROMEINSPECTOR')
-                graalpython_args.insert(0, "--llvm.enableLVI=true")
+            for tool in ["CHROMEINSPECTOR", "TRUFFLE_COVERAGE"]:
+                if os.path.exists(mx.suite("tools").dependency(tool).path):
+                    dists.append(tool)
             else:
-                mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
+                mx.logv("%s was not built, not including it automatically" % tool)
 
     graalpython_args.insert(0, '--experimental-options=true')
 
