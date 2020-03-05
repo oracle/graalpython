@@ -159,6 +159,14 @@ INTEROP_BENCHMARKS = {
     'image-magix-java': ITER_10 + ['10000'],
 }
 
+_INTEROP_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.interop.'
+INTEROP_JAVA_BENCHMARKS = {
+    'euler31': [_INTEROP_JAVA_PACKAGE + 'PyEuler31'] + MESO_BENCHMARKS['euler31'],
+    'euler11': [_INTEROP_JAVA_PACKAGE + 'PyEuler11'] + MESO_BENCHMARKS['euler11'],
+    'nbody3': [_INTEROP_JAVA_PACKAGE + 'PyNbody'] + MESO_BENCHMARKS['nbody3'],
+    'fannkuchredux3': [_INTEROP_JAVA_PACKAGE + 'PyFannkuchredux'] + MESO_BENCHMARKS['fannkuchredux3'],
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # the benchmarks
@@ -170,4 +178,8 @@ BENCHMARKS = {
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
+}
+
+JBENCHMARKS = {
+    "pyjava": [INTEROP_JAVA_BENCHMARKS],
 }
