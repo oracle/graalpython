@@ -1224,7 +1224,7 @@ def python_coverage(args):
     if args.jacoco:
         jacoco_args = [
             '--jacoco-whitelist-package', 'com.oracle.graal.python',
-            '--jacoco-exclude-annotation', '@GeneratedBy',
+            # '--jacoco-exclude-annotation', '@GeneratedBy',
         ]
         mx.run_mx(jacoco_args + [
             '--strict-compliance',
