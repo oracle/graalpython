@@ -449,15 +449,34 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(c.getStacksize(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
             writeBytes(c.getCodestring() == null ? new byte[0] : c.getCodestring(), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getConstants() == null ? new Object[0] : c.getConstants()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getNames() == null ? new Object[0] : c.getNames()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getVarnames() == null ? new Object[0] : c.getVarnames()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getFreeVars() == null ? new Object[0] : c.getFreeVars()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getCellVars() == null ? new Object[0] : c.getCellVars()), version, buffer);
+            getRecursiveNode().execute(frame, internStrings(c.getConstants()), version, buffer);
+            getRecursiveNode().execute(frame, internStrings(c.getNames()), version, buffer);
+            getRecursiveNode().execute(frame, internStrings(c.getVarnames()), version, buffer);
+            getRecursiveNode().execute(frame, internStrings(c.getFreeVars()), version, buffer);
+            getRecursiveNode().execute(frame, internStrings(c.getCellVars()), version, buffer);
             getRecursiveNode().execute(frame, new InternedString(c.getFilename()), version, buffer);
-            getRecursiveNode().execute(frame, c.getName(), version, buffer);
+            getRecursiveNode().execute(frame, new InternedString(c.getName()), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
+        }
+
+        private PTuple internStrings(Object[] values) {
+            Object[] interned;
+            if (values == null) {
+                interned = new Object[0];
+            } else {
+                interned = new Object[values.length];
+                for (int i = 0; i < interned.length; i++) {
+                    if (values[i] instanceof String) {
+                        interned[i] = new InternedString((String) values[i]);
+                    } else if (values[i] instanceof PString) {
+                        interned[i] = new InternedString(((PString) values[i]).getValue());
+                    } else {
+                        interned[i] = values[i];
+                    }
+                }
+            }
+            return factory().createTuple(interned);
         }
 
         @Specialization
