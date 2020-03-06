@@ -1247,7 +1247,7 @@ def python_coverage(args):
             'coverage-upload',
         ])
     if args.truffle:
-        executable = python_gvm(["sandboxed"])
+        executable = python_gvm()
         variants = [
             {},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
