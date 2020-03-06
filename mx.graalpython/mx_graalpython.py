@@ -1221,31 +1221,31 @@ def python_coverage(args):
     parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
     args = parser.parse_args(args)
 
-    if args.jacoco:
-        jacoco_args = [
-            '--jacoco-whitelist-package', 'com.oracle.graal.python',
-            # '--jacoco-exclude-annotation', '@GeneratedBy',
-        ]
-        mx.run_mx(jacoco_args + [
-            '--strict-compliance',
-            '--dynamicimports', '/compiler',
-            '--primary', 'gate',
-            '-B=--force-deprecation-as-warning-for-dependencies',
-            '--strict-mode',
-            '--tags', 'python-unittest,python-tagged-unittest,python-junit',
-            '--jacocout', 'html',
-        ])
-        if mx.get_env("SONAR_HOST_URL", None):
-            mx.run_mx(jacoco_args + [
-                'sonarqube-upload',
-                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
-                '-Dsonar.projectKey=com.oracle.graalvm.python',
-                '-Dsonar.projectName=GraalVM - Python',
-                '--exclude-generated',
-            ])
-        mx.run_mx(jacoco_args + [
-            'coverage-upload',
-        ])
+    # if args.jacoco:
+    #     jacoco_args = [
+    #         '--jacoco-whitelist-package', 'com.oracle.graal.python',
+    #         # '--jacoco-exclude-annotation', '@GeneratedBy',
+    #     ]
+    #     mx.run_mx(jacoco_args + [
+    #         '--strict-compliance',
+    #         '--dynamicimports', '/compiler',
+    #         '--primary', 'gate',
+    #         '-B=--force-deprecation-as-warning-for-dependencies',
+    #         '--strict-mode',
+    #         '--tags', 'python-unittest,python-tagged-unittest,python-junit',
+    #         '--jacocout', 'html',
+    #     ])
+    #     if mx.get_env("SONAR_HOST_URL", None):
+    #         mx.run_mx(jacoco_args + [
+    #             'sonarqube-upload',
+    #             '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
+    #             '-Dsonar.projectKey=com.oracle.graalvm.python',
+    #             '-Dsonar.projectName=GraalVM - Python',
+    #             '--exclude-generated',
+    #         ])
+    #     mx.run_mx(jacoco_args + [
+    #         'coverage-upload',
+    #     ])
     if args.truffle:
         executable = python_gvm()
         variants = [
@@ -1259,13 +1259,15 @@ def python_coverage(args):
             },
         ]
         outputlcov = "coverage.lcov"
-        os.unlink(outputlcov)
+        if os.path.exists(outputlcov):
+            os.unlink(outputlcov)
         cmdargs = ["lcov", "-o", outputlcov]
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", repr(kwds))
             for pattern in ["py"]:
                 outfile = os.path.join(SUITE.dir, "coverage_%s_%s.lcov" % (variant_str, pattern))
-                os.unlink(outfile)
+                if os.path.exists(outfile):
+                    os.unlink(outfile)
                 extra_args = [
                     "--coverage",
                     "--coverage.TrackInternal",
