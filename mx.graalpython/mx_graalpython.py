@@ -25,6 +25,7 @@
 from __future__ import print_function
 
 import contextlib
+import datetime
 import glob
 import json
 import os
@@ -378,6 +379,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
 
     args += [_graalpytest_driver(), "-v"]
     args += testfiles
+    mx.logv(" ".join([python_binary] + args))
     return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
@@ -1212,9 +1214,87 @@ def mx_post_parse_cmd_line(namespace):
 
 
 def python_coverage(args):
-    "Generate coverage report running args"
-    mx.run_mx(['--jacoco=on', '--jacoco-whitelist-package=com.oracle.graal.python'] + args)
-    mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
+    "Generate coverage report for our unittests"
+    parser = ArgumentParser(prog='mx python-coverage')
+    parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
+    parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
+    parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
+    args = parser.parse_args(args)
+
+    if args.jacoco:
+        jacoco_args = [
+            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+            '--jacoco-exclude-annotation', '@GeneratedBy',
+        ]
+        mx.run_mx(jacoco_args + [
+            '--strict-compliance',
+            '--dynamicimports', '/compiler',
+            '--primary', 'gate',
+            '-B=--force-deprecation-as-warning-for-dependencies',
+            '--strict-mode',
+            '--tags', 'python-unittest,python-tagged-unittest,python-junit',
+            '--jacocout', 'html',
+        ])
+        if mx.get_env("SONAR_HOST_URL", None):
+            mx.run_mx(jacoco_args + [
+                'sonarqube-upload',
+                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
+                '-Dsonar.projectKey=com.oracle.graalvm.python',
+                '-Dsonar.projectName=GraalVM - Python',
+                '--exclude-generated',
+            ])
+        mx.run_mx(jacoco_args + [
+            'coverage-upload',
+        ])
+    if args.truffle:
+        executable = python_gvm(["sandboxed"])
+        variants = [
+            {},
+            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+            # {"args": ["--llvm.managed"]},
+            {
+                "args": ["-v", "--python.WithThread=true", "--python.CAPI=" + _get_capi_home()],
+                "paths": ["test_tagged_unittests.py"],
+                "tagged": True
+            },
+        ]
+        outputlcov = "coverage.lcov"
+        os.unlink(outputlcov)
+        cmdargs = ["lcov", "-o", outputlcov]
+        for kwds in variants:
+            variant_str = re.sub(r"[^a-zA-Z]", "_", repr(kwds))
+            for pattern in ["py"]:
+                outfile = os.path.join(SUITE.dir, "coverage_%s_%s.lcov" % (variant_str, pattern))
+                os.unlink(outfile)
+                extra_args = [
+                    "--coverage",
+                    "--coverage.TrackInternal",
+                    "--coverage.FilterFile=*.%s" % pattern,
+                    "--coverage.Output=lcov",
+                    "--coverage.OutputFile=%s" % outfile,
+                ]
+                kwds["args"] = extra_args + kwds.get("args", [])
+                if kwds.pop("tagged", False):
+                    with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                        with _dev_pythonhome_context():
+                            run_python_unittests(executable, **kwds)
+                else:
+                    run_python_unittests(executable, **kwds)
+                cmdargs += ["-a", outfile]
+        mx.run(cmdargs)
+        primary = mx.primary_suite()
+        info = primary.vc.parent_info(primary.dir)
+        rev = primary.vc.parent(primary.dir)
+        coverage_dir = '{}-truffle-coverage_{}_{}'.format(
+            primary.name,
+            datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
+            rev[:7],
+        )
+        mx.run(["genhtml", "-o", coverage_dir, outputlcov])
+        if args.truffle_upload_url:
+            if not args.truffle_upload_url.endswith("/"):
+                args.truffle_upload_url = args.truffle_upload_url + "/"
+            mx.run(["scp", "-r", coverage_dir, args.truffle_upload_url])
 
 
 def python_build_watch(args):
@@ -1487,6 +1567,6 @@ mx.update_commands(SUITE, {
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],
-    'python-coverage': [python_coverage, '[gate-tag]'],
+    'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
 })
