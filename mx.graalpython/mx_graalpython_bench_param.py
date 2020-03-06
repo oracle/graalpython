@@ -29,10 +29,10 @@ import mx
 _graalpython_suite = mx.suite('graalpython')
 
 py = ".py"
-_BASE_PATH = os.path.join(_graalpython_suite.dir, 'graalpython', 'benchmarks', 'src')
+_BASE_PATH = os.path.join(_graalpython_suite.dir, 'graalpython', 'com.oracle.graal.python.benchmarks', 'python')
 HARNESS_PATH = os.path.join(_BASE_PATH, 'harness.py')
 
-PATH_BENCH = os.path.join(_BASE_PATH, 'benchmarks')
+PATH_BENCH = os.path.join(_BASE_PATH, 'com.oracle.graal.python.benchmarks')
 PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
