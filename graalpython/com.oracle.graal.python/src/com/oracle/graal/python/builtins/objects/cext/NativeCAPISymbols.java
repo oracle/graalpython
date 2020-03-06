@@ -99,6 +99,8 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_FREE = "PyTruffle_Free";
     public static final String FUN_INCREF = "Py_IncRef";
     public static final String FUN_DECREF = "Py_DecRef";
+    public static final String FUN_ADDREF = "PyTruffle_ADDREF";
+    public static final String FUN_SUBREF = "PyTruffle_SUBREF";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

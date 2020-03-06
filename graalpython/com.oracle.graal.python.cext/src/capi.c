@@ -388,6 +388,25 @@ void PyTruffle_DECREF(PyObject* obj) {
 	Py_DECREF(obj);
 }
 
+/** to be used from Java code only; calls DECREF */
+Py_ssize_t PyTruffle_ADDREF(PyObject* obj, Py_ssize_t value) {
+	return (obj->ob_refcnt += value);
+}
+
+/** to be used from Java code only; calls DECREF */
+Py_ssize_t PyTruffle_SUBREF(PyObject* obj, Py_ssize_t value) {
+    Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
+    if (new_value == 0) {
+        _Py_Dealloc(obj);
+    }
+#ifdef Py_REF_DEBUG
+    else if (new_value < 0) {
+        _Py_NegativeRefcount(filename, lineno, op);
+    }
+#endif
+    return new_value;
+}
+
 typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;

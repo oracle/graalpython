@@ -99,12 +99,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     public final TruffleObject object;
 
-    public PythonAbstractNativeObject(TruffleObject object, CApiContext nativeContext) {
+    public PythonAbstractNativeObject(TruffleObject object) {
         this.object = object;
-        // during initialization of the C API, we do not yet have a C API context
-        if (nativeContext != null) {
-            nativeContext.createNativeReference(this);
-        }
     }
 
     public int compareTo(Object o) {
@@ -336,6 +332,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             throw UnsupportedMessageException.create();
         }
         // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-        return (String) getTpNameNode.execute(this, NativeMemberNames.TP_NAME);
+        return (String) getTpNameNode.execute(this, NativeMember.TP_NAME);
     }
 }

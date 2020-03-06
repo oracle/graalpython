@@ -136,6 +136,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -758,18 +759,18 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObject(object, getClassNode, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static PythonAbstractNativeObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached RefCntNode incRefNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                // TODO(fa): is it possible to avoid the downcall and do it on the C-side already?
-                incRefNode.inc(object);
-                return new PythonAbstractNativeObject(object, cApiContext);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, addRefCntNode);
             }
-            return new PythonAbstractNativeObject(object, null);
+            return new PythonAbstractNativeObject(object);
         }
 
     }
@@ -782,12 +783,15 @@ public abstract class CExtNodes {
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return new PythonAbstractNativeObject(object, cApiContext);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, addRefCntNode, true);
             }
-            return new PythonAbstractNativeObject(object, null);
+            return new PythonAbstractNativeObject(object);
         }
     }
 
@@ -803,7 +807,7 @@ public abstract class CExtNodes {
             // be used in the user value space but might be passed-through
 
             // do not modify reference count at all; this is for non-'PyObject*' pointers
-            return new PythonAbstractNativeObject(object, null);
+            return new PythonAbstractNativeObject(object);
         }
 
     }
@@ -2649,7 +2653,82 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
+    public abstract static class AddRefCntNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(AddRefCntNode.class);
+
+        public abstract Object execute(Object object, long value);
+
+        @Specialization
+        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
+            nativeWrapper.setRefCount(nativeWrapper.getRefCount() + value);
+            return nativeWrapper;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
+        static Object doNativeObject(Object object, long value,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callAddRefCntNode,
+                        @Cached GetEngineFlagNode getTraceMemFlagNode,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            if (!lib.isNull(object) && context.getCApiContext() != null) {
+                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
+                    checkAccess(object, lib, context);
+                }
+                callAddRefCntNode.call(NativeCAPISymbols.FUN_ADDREF, object, value);
+            }
+            return object;
+        }
+
+        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
+            Object ptrVal = CApiContext.asPointer(object, lib);
+            if (!context.getCApiContext().isAllocated(ptrVal)) {
+                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
+            }
+        }
+
+    }
+
+    @GenerateUncached
+    @ImportStatic(CApiGuards.class)
+    public abstract static class SubRefCntNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
+
+        public abstract Object execute(Object object, long value);
+
+        @Specialization
+        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
+            nativeWrapper.setRefCount(nativeWrapper.getRefCount() - value);
+            return nativeWrapper;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
+        static Object doNativeObject(Object object, long value,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callAddRefCntNode,
+                        @Cached GetEngineFlagNode getTraceMemFlagNode,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            if (!lib.isNull(object) && context.getCApiContext() != null) {
+                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
+                    checkAccess(object, lib, context);
+                }
+                callAddRefCntNode.call(NativeCAPISymbols.FUN_SUBREF, object, value);
+            }
+            return object;
+        }
+
+        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
+            Object ptrVal = CApiContext.asPointer(object, lib);
+            if (!context.getCApiContext().isAllocated(ptrVal)) {
+                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
+            }
+        }
+
+    }
+
+    @GenerateUncached
+    @ImportStatic(CApiGuards.class)
     public abstract static class RefCntNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(RefCntNode.class);
 
         /**
          * Do not use directly! Use {@link #inc(Object)} or {@link #dec(Object)};
@@ -2689,7 +2768,7 @@ public abstract class CExtNodes {
         private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
             Object ptrVal = CApiContext.asPointer(object, lib);
             if (!context.getCApiContext().isAllocated(ptrVal)) {
-                PythonLanguage.getLogger().severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
+                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
             }
         }
 

@@ -40,19 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.Equivalence;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.RefCntNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.SubRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -73,12 +77,16 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public final class CApiContext extends CExtContext {
 
+    public static final long REFERENCE_COUNT_MARKER = (1L<<32);
+
     private final ReferenceQueue<Object> nativeObjectsQueue;
-    private final EscapedReferencesHeap stack = new EscapedReferencesHeap();
     private Map<Object, AllocInfo> allocatedNativeMemory;
+    private final EconomicMap<Object, NativeObjectReference> nativeObjectWrapperMap;
 
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, AllocInfo> freedNativeMemory;
@@ -88,6 +96,7 @@ public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
+        nativeObjectWrapperMap = EconomicMap.create(new ReferenceEquivalenceStrategy());
 
         context.registerAsyncAction(() -> {
             Reference<? extends Object> reference = null;
@@ -134,23 +143,40 @@ public final class CApiContext extends CExtContext {
         return referenceCleanerCallTarget;
     }
 
-    public static class NativeObjectReference extends PhantomReference<PythonAbstractNativeObject> {
-        private final TruffleObject object;
-        final int id;
+    private static final class ReferenceEquivalenceStrategy extends Equivalence {
+        private final ReferenceLibrary referenceLibrary = ReferenceLibrary.getFactory().getUncached();
 
-        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q, int id) {
-            super(referent, q);
-            this.object = referent.getPtr();
-            this.id = id;
+        @Override
+        public boolean equals(Object a, Object b) {
+            return referenceLibrary.isSame(a, b);
         }
 
-        public TruffleObject getObject() {
-            return object;
+        @Override
+        @TruffleBoundary
+        public int hashCode(Object o) {
+            return o.hashCode();
         }
     }
 
-    public ReferenceQueue<Object> getNativeObjectsQueue() {
-        return nativeObjectsQueue;
+    public static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
+        final int id;
+
+        private final TruffleObject ptrObject;
+        private boolean resurrect;
+
+        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q, int id) {
+            super(referent, q);
+            this.ptrObject = referent.getPtr();
+            this.id = id;
+        }
+
+        public TruffleObject getPtrObject() {
+            return ptrObject;
+        }
+
+        public void markAsResurrected() {
+            resurrect = true;
+        }
     }
 
     /**
@@ -159,17 +185,17 @@ public final class CApiContext extends CExtContext {
     private static final class CApiReferenceCleanerRootNode extends PRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr"}, new String[0]);
 
-        @Child private RefCntNode refCntNode;
+        @Child private SubRefCntNode refCntNode;
 
         protected CApiReferenceCleanerRootNode(TruffleLanguage<?> language) {
             super(language);
-            refCntNode = RefCntNodeGen.create();
+            refCntNode = SubRefCntNodeGen.create();
         }
 
         @Override
         public Object execute(VirtualFrame frame) {
             Object pointerObject = PArguments.getArgument(frame, 0);
-            return refCntNode.dec(pointerObject);
+            return refCntNode.execute(pointerObject, REFERENCE_COUNT_MARKER);
         }
 
         @Override
@@ -195,16 +221,55 @@ public final class CApiContext extends CExtContext {
 
         @Override
         public void execute(VirtualFrame frame, Node location, PythonContext context) {
-            context.getCApiContext().stack.remove(nativeObjectReference);
-            Object[] pArguments = PArguments.create(1);
-            PArguments.setArgument(pArguments, 0, nativeObjectReference.object);
-            GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
+            if (!nativeObjectReference.resurrect) {
+                TruffleObject ptrObject = nativeObjectReference.getPtrObject();
+
+                context.getCApiContext().nativeObjectWrapperMap.removeKey(ptrObject);
+                Object[] pArguments = PArguments.create(1);
+                PArguments.setArgument(pArguments, 0, ptrObject);
+                GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
+            }
         }
     }
 
-    public void createNativeReference(PythonAbstractNativeObject nativeObject) {
-        int id = stack.reserve();
-        stack.set(new NativeObjectReference(nativeObject, nativeObjectsQueue, id));
+    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile resurrectProfile, AddRefCntNode addRefCntNode) {
+        return getPythonNativeObject(nativePtr, newRefProfile, resurrectProfile, addRefCntNode, false);
+    }
+
+    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile resurrectProfile, AddRefCntNode addRefCntNode, boolean steal) {
+        CompilerAsserts.partialEvaluationConstant(addRefCntNode);
+
+        NativeObjectReference ref = getRef(nativePtr);
+        PythonAbstractNativeObject nativeObject;
+
+        // If there is no mapping, we need to create a new one.
+        if (newRefProfile.profile(ref == null)) {
+            nativeObject = createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
+        } else {
+            nativeObject = ref.get();
+            if (resurrectProfile.profile(nativeObject == null)) {
+                // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
+                // mapping. Therefore, we need to cancel the cleaner action and set a new native
+                // object reference.
+                ref.markAsResurrected();
+                nativeObject = new PythonAbstractNativeObject(nativePtr);
+                nativeObjectWrapperMap.put(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, 0));
+            }
+        }
+        return nativeObject;
+    }
+
+    private PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal) {
+        CompilerAsserts.partialEvaluationConstant(steal);
+        addRefCntNode.execute(nativePtr, steal ? REFERENCE_COUNT_MARKER - 1 : REFERENCE_COUNT_MARKER);
+        PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(nativePtr);
+        nativeObjectWrapperMap.put(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, 0));
+        return nativeObject;
+    }
+
+    @TruffleBoundary
+    private NativeObjectReference getRef(TruffleObject nativePtr) {
+        return nativeObjectWrapperMap.get(nativePtr);
     }
 
     @TruffleBoundary
@@ -289,9 +354,8 @@ public final class CApiContext extends CExtContext {
         int i = 0;
         List<Integer> indx = new ArrayList<>();
         InteropLibrary lib = InteropLibrary.getFactory().getUncached();
-        for (Object ref : stack) {
-            NativeObjectReference nor = (NativeObjectReference) ref;
-            Object obj = nor.object;
+        for (NativeObjectReference nor : nativeObjectWrapperMap.getValues()) {
+            Object obj = nor.ptrObject;
 
             try {
                 if (lib.isPointer(obj) && lib.asPointer(obj) == l) {
