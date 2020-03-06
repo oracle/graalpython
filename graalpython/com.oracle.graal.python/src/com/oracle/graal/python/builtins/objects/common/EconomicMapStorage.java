@@ -115,10 +115,11 @@ public class EconomicMapStorage extends HashingStorage {
         this(map.size());
         final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
         MapCursor<? extends Object, ? extends Object> c = map.getEntries();
+        ConditionProfile findProfile = ConditionProfile.createBinaryProfile();
         while (c.advance()) {
             Object key = c.getKey();
             assert key instanceof Integer || key instanceof String;
-            this.map.put(new DictKey(key, key.hashCode()), c.getValue(), lib, lib);
+            this.map.put(new DictKey(key, key.hashCode()), c.getValue(), lib, lib, findProfile);
         }
     }
 
@@ -149,30 +150,33 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization
         static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             DictKey newKey = new DictKey(key, key.hashCode());
-            return self.map.get(newKey, lib, lib);
+            return self.map.get(newKey, lib, lib, findProfile);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, getClassNode)"})
         static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Exclusive @Cached GetLazyClassNode getClassNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = EconomicMapStorage.toString(key, profile);
-            return getItemString(self, k, state, lib);
+            return getItemString(self, k, state, findProfile, lib);
         }
 
         @Specialization(replaces = "getItemString", limit = "3")
         static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             final long h = self.getHashWithState(key, lib, state, gotState);
             DictKey newKey = new DictKey(key, h);
-            return self.map.get(newKey, lib, otherlib);
+            return self.map.get(newKey, lib, otherlib, findProfile);
         }
     }
 
@@ -183,29 +187,32 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization
         static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             DictKey newKey = new DictKey(key, key.hashCode());
-            self.map.put(newKey, value, lib, lib);
+            self.map.put(newKey, value, lib, lib, findProfile);
             return self;
         }
 
         @Specialization(guards = {"!isNativeString(key)", "isBuiltinString(key, isBuiltinClassProfile, getClassNode)"})
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Exclusive @Cached GetLazyClassNode getClassNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = EconomicMapStorage.toString(key, profile);
-            return setItemString(self, k, value, state, lib);
+            return setItemString(self, k, value, state, findProfile, lib);
         }
 
         @Specialization(replaces = "setItemString", limit = "3")
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
-            self.map.put(newKey, value, lib, otherlib);
+            self.map.put(newKey, value, lib, otherlib, findProfile);
             return self;
         }
     }
@@ -272,6 +279,7 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static boolean equalSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2) {
             if (self.map.size() != other.map.size()) {
@@ -279,7 +287,7 @@ public class EconomicMapStorage extends HashingStorage {
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                Object otherValue = other.map.get(cursor.getKey(), compareLib1, compareLib2);
+                Object otherValue = other.map.get(cursor.getKey(), compareLib1, compareLib2, findProfile);
                 if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
                     return false;
                 }
@@ -313,6 +321,7 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static int compareSameType(EconomicMapStorage self, EconomicMapStorage other,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             int size = self.map.size();
             int size2 = other.map.size();
@@ -321,7 +330,7 @@ public class EconomicMapStorage extends HashingStorage {
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (!other.map.containsKey(cursor.getKey(), lib, lib)) {
+                if (!other.map.containsKey(cursor.getKey(), lib, lib, findProfile)) {
                     return 1;
                 }
             }
@@ -360,12 +369,13 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (other.map.containsKey(cursor.getKey(), lib, lib)) {
-                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
+                if (other.map.containsKey(cursor.getKey(), lib, lib, findProfile)) {
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib, findProfile);
                 }
             }
             return result;
@@ -374,13 +384,14 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization(limit = "4")
         static HashingStorage intersectGeneric(EconomicMapStorage self, HashingStorage other,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary("other") HashingStorageLibrary hlib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
                 if (hlib.hasKey(other, cursor.getKey().value)) {
-                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib, findProfile);
                 }
             }
             return result;
@@ -392,12 +403,13 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
-                if (!other.map.containsKey(cursor.getKey(), lib, lib)) {
-                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
+                if (!other.map.containsKey(cursor.getKey(), lib, lib, findProfile)) {
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib, findProfile);
                 }
             }
             return result;
@@ -406,13 +418,14 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization(limit = "4")
         static HashingStorage diffGeneric(EconomicMapStorage self, HashingStorage other,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @CachedLibrary("other") HashingStorageLibrary hlib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (cursor.advance()) {
                 if (!hlib.hasKey(other, cursor.getKey().value)) {
-                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib);
+                    result.map.put(cursor.getKey(), cursor.getValue(), lib, lib, findProfile);
                 }
             }
             return result;

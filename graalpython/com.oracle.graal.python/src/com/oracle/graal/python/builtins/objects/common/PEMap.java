@@ -49,6 +49,7 @@ import org.graalvm.collections.MapCursor;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.DictKey;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @SuppressWarnings("javadoc")
 /**
@@ -120,12 +121,10 @@ final class PEMap implements Iterable<DictKey> {
         return map;
     }
 
-    @TruffleBoundary
     public static PEMap create(boolean isSet) {
         return intercept(new PEMap(isSet));
     }
 
-    @TruffleBoundary
     public static PEMap create(int initialCapacity, boolean isSet) {
         return intercept(new PEMap(initialCapacity, isSet));
     }
@@ -164,19 +163,18 @@ final class PEMap implements Iterable<DictKey> {
         final int next;
     }
 
-    @TruffleBoundary
-    public Object get(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    public Object get(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
         Objects.requireNonNull(key);
 
-        int index = find(key, keylib, otherlib);
+        int index = find(key, keylib, otherlib, findProfile);
         if (index != -1) {
             return getValue(index);
         }
         return null;
     }
 
-    private int find(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
-        if (hasHashArray()) {
+    private int find(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
+        if (findProfile.profile(hasHashArray())) {
             return findHash(key, keylib, otherlib);
         } else {
             return findLinear(key, keylib, otherlib);
@@ -337,12 +335,11 @@ final class PEMap implements Iterable<DictKey> {
         return hash & (getHashTableSize() - 1);
     }
 
-    @TruffleBoundary
-    public Object put(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    public Object put(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
         if (key == null) {
             throw new UnsupportedOperationException("null not supported as key!");
         }
-        int index = find(key, keylib, otherlib);
+        int index = find(key, keylib, otherlib, findProfile);
         if (index != -1) {
             Object oldValue = getValue(index);
             setValue(index, value);
@@ -379,8 +376,9 @@ final class PEMap implements Iterable<DictKey> {
     public void putAll(PEMap other) {
         final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
         MapCursor<DictKey, Object> e = other.getEntries();
+        ConditionProfile findProfile = ConditionProfile.createBinaryProfile();
         while (e.advance()) {
-            put(e.getKey(), e.getValue(), lib, lib);
+            put(e.getKey(), e.getValue(), lib, lib, findProfile);
         }
     }
 
@@ -526,9 +524,8 @@ final class PEMap implements Iterable<DictKey> {
         return totalEntries - deletedEntries;
     }
 
-    @TruffleBoundary
-    public boolean containsKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
-        return find(key, keylib, otherlib) != -1;
+    public boolean containsKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
+        return find(key, keylib, otherlib, findProfile) != -1;
     }
 
     public void clear() {
@@ -770,17 +767,4 @@ final class PEMap implements Iterable<DictKey> {
             }
         };
     }
-
-    public boolean contains(DictKey element, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
-        return containsKey(element, keylib, otherlib);
-    }
-
-    public boolean add(DictKey element, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
-        return put(element, element, keylib, otherlib) == null;
-    }
-
-    public void remove(DictKey element, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
-        removeKey(element, keylib, otherlib);
-    }
-
 }
