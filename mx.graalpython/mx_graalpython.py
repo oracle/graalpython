@@ -1215,37 +1215,39 @@ def mx_post_parse_cmd_line(namespace):
 
 def python_coverage(args):
     "Generate coverage report for our unittests"
+    os.system("which lcov")
+    os.system("which genhtml")
     parser = ArgumentParser(prog='mx python-coverage')
     parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
     parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
     parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
     args = parser.parse_args(args)
 
-    # if args.jacoco:
-    #     jacoco_args = [
-    #         '--jacoco-whitelist-package', 'com.oracle.graal.python',
-    #         # '--jacoco-exclude-annotation', '@GeneratedBy',
-    #     ]
-    #     mx.run_mx(jacoco_args + [
-    #         '--strict-compliance',
-    #         '--dynamicimports', '/compiler',
-    #         '--primary', 'gate',
-    #         '-B=--force-deprecation-as-warning-for-dependencies',
-    #         '--strict-mode',
-    #         '--tags', 'python-unittest,python-tagged-unittest,python-junit',
-    #         '--jacocout', 'html',
-    #     ])
-    #     if mx.get_env("SONAR_HOST_URL", None):
-    #         mx.run_mx(jacoco_args + [
-    #             'sonarqube-upload',
-    #             '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
-    #             '-Dsonar.projectKey=com.oracle.graalvm.python',
-    #             '-Dsonar.projectName=GraalVM - Python',
-    #             '--exclude-generated',
-    #         ])
-    #     mx.run_mx(jacoco_args + [
-    #         'coverage-upload',
-    #     ])
+    if args.jacoco:
+        jacoco_args = [
+            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+            # '--jacoco-exclude-annotation', '@GeneratedBy',
+        ]
+        mx.run_mx(jacoco_args + [
+            '--strict-compliance',
+            '--dynamicimports', '/compiler',
+            '--primary', 'gate',
+            '-B=--force-deprecation-as-warning-for-dependencies',
+            '--strict-mode',
+            '--tags', 'python-unittest,python-tagged-unittest,python-junit',
+            '--jacocout', 'html',
+        ])
+        if mx.get_env("SONAR_HOST_URL", None):
+            mx.run_mx(jacoco_args + [
+                'sonarqube-upload',
+                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
+                '-Dsonar.projectKey=com.oracle.graalvm.python',
+                '-Dsonar.projectName=GraalVM - Python',
+                '--exclude-generated',
+            ])
+        mx.run_mx(jacoco_args + [
+            'coverage-upload',
+        ])
     if args.truffle:
         executable = python_gvm()
         variants = [
@@ -1261,7 +1263,7 @@ def python_coverage(args):
         outputlcov = "coverage.lcov"
         if os.path.exists(outputlcov):
             os.unlink(outputlcov)
-        cmdargs = ["lcov", "-o", outputlcov]
+        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", repr(kwds))
             for pattern in ["py"]:
@@ -1292,7 +1294,7 @@ def python_coverage(args):
             datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
             rev[:7],
         )
-        mx.run(["genhtml", "-o", coverage_dir, outputlcov])
+        mx.run(["/usr/bin/env", "genhtml", "-o", coverage_dir, outputlcov])
         if args.truffle_upload_url:
             if not args.truffle_upload_url.endswith("/"):
                 args.truffle_upload_url = args.truffle_upload_url + "/"
