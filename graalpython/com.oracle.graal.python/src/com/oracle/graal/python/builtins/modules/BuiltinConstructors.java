@@ -2187,7 +2187,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
+                        @SuppressWarnings("unused") @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             return factory().createFunction("<lambda>", getTypeName(cls), code, globals, null);
         }
 
@@ -2212,7 +2212,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @ExplodeLoop
-        private PCell[] getClosure(Object[] closure) {
+        private static PCell[] getClosure(Object[] closure) {
             assert closure != null;
             PCell[] cells = new PCell[closure.length];
             for (int i = 0; i < closure.length; i++) {

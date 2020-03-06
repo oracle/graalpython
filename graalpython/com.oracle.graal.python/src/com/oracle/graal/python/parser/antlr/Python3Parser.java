@@ -28,7 +28,7 @@
 // Checkstyle: stop
 // JaCoCo Exclude
 //@formatter:off
-// Generated from /home/tim/Dev/graalpython/graalpython/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4 by ANTLR 4.7.2
+// Generated from graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4 by ANTLR 4.7.2
 package com.oracle.graal.python.parser.antlr;
 
 import com.oracle.graal.python.builtins.objects.PEllipsis;
