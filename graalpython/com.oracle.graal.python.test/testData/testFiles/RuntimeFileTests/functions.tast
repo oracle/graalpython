@@ -290,7 +290,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                           ReadLocalVariableNode SourceSection: [2414,2418]`func`
                             Frame: [0,func,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          FunctionDefinitionNode Name: anonymous SourceSection: [2444,2455]`lambda a: a`
+                          FunctionDefinitionNode Name: <lambda> SourceSection: [2444,2455]`lambda a: a`
                             Arguments: None
                             KwArguments: None
                             Documentation: None
@@ -299,7 +299,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                               FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [2444,2455]`lambda a: a`
-                              Name: anonymous
+                              Name: <lambda>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: a
                               CelVars: None

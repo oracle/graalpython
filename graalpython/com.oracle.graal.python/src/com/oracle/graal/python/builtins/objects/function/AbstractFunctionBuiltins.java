@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction})
 public class AbstractFunctionBuiltins extends PythonBuiltins {
@@ -166,9 +167,27 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
-        Object getGlobals(PFunction self) {
+        Object getGlobals(PFunction self,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached("createBinaryProfile()") ConditionProfile moduleGlobals,
+                        @Cached("createBinaryProfile()") ConditionProfile moduleHasNoDict) {
             // see the make_globals_function from lib-graalpython/functions.py
-            return self.getGlobals();
+            PythonObject globals = self.getGlobals();
+            if (moduleGlobals.profile(globals instanceof PythonModule)) {
+                PHashingCollection dict = lib.getDict(globals);
+                if (moduleHasNoDict.profile(dict == null)) {
+                    dict = factory().createDictFixedStorage(globals);
+                    try {
+                        lib.setDict(globals, dict);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException(e);
+                    }
+                }
+                return dict;
+            } else {
+                return globals;
+            }
         }
 
         @SuppressWarnings("unused")

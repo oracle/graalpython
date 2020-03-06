@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -93,9 +93,7 @@ def test_code_attributes():
     assert code.co_flags & (1 << 5)
     assert not code.co_flags & (1 << 2)
     assert not code.co_flags & (1 << 3)
-    if sys.implementation.name == 'graalpython':
-        assert code.co_code.decode().strip() == wrapper().__truffle_source__.strip()
-    # assert code.co_consts
+    assert {'set()', 'expected TypeError'}.issubset(code.co_consts)
     # assert set(code.co_names) == {'set', 'TypeError', 'print'}
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
     assert code.co_filename.endswith("test_code.py")
@@ -155,9 +153,7 @@ def test_module_code():
         assert code.co_nlocals == 0
         # assert code.co_stacksize == 0
         # assert code.co_flags == 0
-        if sys.implementation.name == 'graalpython':
-            assert code.co_code.decode().strip() == source.strip()
-        # assert code.co_consts == tuple()
+        assert {'PACKAGE DOC', 'after importing moduleY'}.issubset(set(code.co_consts))
         # assert set(code.co_names) == set()
         assert set(code.co_varnames) == set()
         assert code.co_filename.endswith("__init__.py")
@@ -169,9 +165,10 @@ def test_module_code():
         assert code.co_cellvars == tuple()
 
 
-def test_get_globals():
-    import sys
-    code = wrapper.__code__
-    if sys.implementation.name == 'graalpython':
-        from __graalpython__ import current_global_code_variables
-        assert set(current_global_code_variables(code)) == {'a_global'}
+# def test_codestring():
+#     def foo():
+#         pass
+#
+#     ct = type(foo.__code__)
+#     del foo
+#     ct(2, 0, 0, 128, 0, b"lambda a,b: a+b", tuple(), ("a", "b"), tuple(), "hello.py", "<lambda>", 0, b"", tuple(), tuple())

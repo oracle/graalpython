@@ -5,7 +5,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,34]`lambda foo=bar, spaz...`
-    FunctionDefinitionNode Name: anonymous SourceSection: [0,34]`lambda foo=bar, spaz...`
+    FunctionDefinitionNode Name: <lambda> SourceSection: [0,34]`lambda foo=bar, spaz...`
       Arguments:
         ReadNameNodeGen SourceSection: [11,14]`bar`
           Identifier: bar
@@ -23,7 +23,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
         FreeVarsSlots: None
         CellVarsSlots: None
       FunctionRootNode SourceSection: [0,34]`lambda foo=bar, spaz...`
-        Name: anonymous
+        Name: <lambda>
         Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
           Param Names: foo, spaz
         CelVars: None

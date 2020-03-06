@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class BooleanLiteralNode extends LiteralNode {
+public final class BooleanLiteralNode extends SimpleLiteralNode {
 
     private final boolean value;
 
@@ -42,6 +42,11 @@ public final class BooleanLiteralNode extends LiteralNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        return value;
+    }
+
+    @Override
+    public Object getValue() {
         return value;
     }
 }

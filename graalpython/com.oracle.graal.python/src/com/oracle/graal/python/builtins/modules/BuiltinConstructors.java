@@ -202,6 +202,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -2178,9 +2179,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
+        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
+            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+        }
+
+        @Specialization
+        public PFunction function(LazyPythonClass cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
+                        @SuppressWarnings("unused") PNone closure,
+                        @SuppressWarnings("unused") @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
+            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, null);
+        }
+
+        @Specialization
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code, globals, (PCell[]) getObjectArrayNode.execute(closure));
+            return factory().createFunction(name, getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2194,7 +2208,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(LazyPythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, (PCell[]) getObjectArrayNode.execute(closure));
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, getClosure(getObjectArrayNode.execute(closure)));
+        }
+
+        @ExplodeLoop
+        private static PCell[] getClosure(Object[] closure) {
+            assert closure != null;
+            PCell[] cells = new PCell[closure.length];
+            for (int i = 0; i < closure.length; i++) {
+                assert closure[i] instanceof PCell;
+                cells[i] = (PCell) closure[i];
+            }
+            return cells;
         }
 
         @Fallback
@@ -2983,6 +3008,35 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
                             getStringArg(filename), getStringArg(name), firstlineno,
+                            lnotabBytes);
+        }
+
+        @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
+        Object call(VirtualFrame frame, LazyPythonClass cls, Object argcount, Object kwonlyargcount,
+                        Object nlocals, Object stacksize, Object flags,
+                        Object codestring, PTuple constants, PTuple names,
+                        PTuple varnames, Object filename, Object name,
+                        Object firstlineno, Object lnotab,
+                        PTuple freevars, PTuple cellvars,
+                        @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
+                        @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary objectLibrary,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
+            byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
+            byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
+
+            Object[] constantsArr = getObjectArrayNode.execute(constants);
+            Object[] namesArr = getObjectArrayNode.execute(names);
+            Object[] varnamesArr = getObjectArrayNode.execute(varnames);
+            Object[] freevarsArr = getObjectArrayNode.execute(freevars);
+            Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
+
+            return createCodeNode.execute(frame, cls, objectLibrary.asSize(argcount), objectLibrary.asSize(kwonlyargcount),
+                            objectLibrary.asSize(nlocals), objectLibrary.asSize(stacksize), objectLibrary.asSize(flags),
+                            codeBytes, constantsArr, namesArr,
+                            varnamesArr, freevarsArr, cellcarsArr,
+                            getStringArg(filename), getStringArg(name), objectLibrary.asSize(firstlineno),
                             lnotabBytes);
         }
 

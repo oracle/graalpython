@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
@@ -903,8 +904,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(LambdaSSTNode node) {
-
-        String funcname = "anonymous";
+        String funcname = LAMBDA_NAME;
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.functionScope);
         /**
