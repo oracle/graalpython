@@ -226,7 +226,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
 
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallNoArg(callable);
+        return PyObject_CallObject(callable, NULL);
     }
 
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
@@ -245,7 +245,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
     PyObject* args;
 
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallNoArg(callable);
+        return PyObject_CallObject(callable, NULL);
     }
 
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);

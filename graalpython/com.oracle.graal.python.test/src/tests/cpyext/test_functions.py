@@ -160,9 +160,20 @@ class TestPyObject(CPyExtTestCase):
         lambda args: args[0](args[2], args[3]),
         lambda: (
             (sum, "Oi", [], 10),
+            (sum, "Oi", [], 10),
         ),
         arguments=["PyObject* callable", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OsOi",
+    )
+    test_PyObject_CallFunction0 = CPyExtFunction(
+        lambda args: args[0](),
+        lambda: (
+            (list, ""),
+            (bool, ""),
+        ),
+        arguments=["PyObject* callable", "const char* fmt"],
+        argspec="Os",
+        callfunction="PyObject_CallFunction",
     )
 
     class MyObject():
