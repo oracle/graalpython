@@ -158,16 +158,16 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    public static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
-        final int id;
+    static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
 
-        private final TruffleObject ptrObject;
-        private boolean resurrect;
+        final TruffleObject ptrObject;
+        boolean resurrect;
+        long managedRefCount;
 
-        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q, int id) {
+        public NativeObjectReference(PythonAbstractNativeObject referent, ReferenceQueue<? super PythonAbstractNativeObject> q, long managedRefCount) {
             super(referent, q);
             this.ptrObject = referent.getPtr();
-            this.id = id;
+            this.managedRefCount = managedRefCount;
         }
 
         public TruffleObject getPtrObject() {
@@ -183,7 +183,7 @@ public final class CApiContext extends CExtContext {
      * Simple root node that executes a reference decrease.
      */
     private static final class CApiReferenceCleanerRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, new String[0]);
 
         @Child private SubRefCntNode refCntNode;
 
@@ -195,7 +195,8 @@ public final class CApiContext extends CExtContext {
         @Override
         public Object execute(VirtualFrame frame) {
             Object pointerObject = PArguments.getArgument(frame, 0);
-            return refCntNode.execute(pointerObject, REFERENCE_COUNT_MARKER);
+            Long managedRefCount = (Long) PArguments.getArgument(frame, 1);
+            return refCntNode.execute(pointerObject, managedRefCount);
         }
 
         @Override
@@ -225,8 +226,9 @@ public final class CApiContext extends CExtContext {
                 TruffleObject ptrObject = nativeObjectReference.getPtrObject();
 
                 context.getCApiContext().nativeObjectWrapperMap.removeKey(ptrObject);
-                Object[] pArguments = PArguments.create(1);
+                Object[] pArguments = PArguments.create(2);
                 PArguments.setArgument(pArguments, 0, ptrObject);
+                PArguments.setArgument(pArguments, 1, nativeObjectReference.managedRefCount);
                 GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
             }
         }
@@ -238,6 +240,7 @@ public final class CApiContext extends CExtContext {
 
     public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile resurrectProfile, AddRefCntNode addRefCntNode, boolean steal) {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
+        CompilerAsserts.partialEvaluationConstant(steal);
 
         NativeObjectReference ref = getRef(nativePtr);
         PythonAbstractNativeObject nativeObject;
@@ -253,17 +256,21 @@ public final class CApiContext extends CExtContext {
                 // object reference.
                 ref.markAsResurrected();
                 nativeObject = new PythonAbstractNativeObject(nativePtr);
-                nativeObjectWrapperMap.put(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, 0));
+
+                ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount);
+                nativeObjectWrapperMap.put(nativePtr, ref);
+            }
+            if(steal) {
+                ref.managedRefCount++;
             }
         }
         return nativeObject;
     }
 
     private PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal) {
-        CompilerAsserts.partialEvaluationConstant(steal);
-        addRefCntNode.execute(nativePtr, steal ? REFERENCE_COUNT_MARKER - 1 : REFERENCE_COUNT_MARKER);
+        addRefCntNode.execute(nativePtr, REFERENCE_COUNT_MARKER);
         PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(nativePtr);
-        nativeObjectWrapperMap.put(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, 0));
+        nativeObjectWrapperMap.put(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, steal ? REFERENCE_COUNT_MARKER  + 1: REFERENCE_COUNT_MARKER));
         return nativeObject;
     }
 
