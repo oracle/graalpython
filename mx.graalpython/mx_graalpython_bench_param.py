@@ -161,6 +161,7 @@ INTEROP_BENCHMARKS = {
 
 _INTEROP_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.interop.'
 INTEROP_JAVA_BENCHMARKS = {
+    'richards3': [_INTEROP_JAVA_PACKAGE + 'PyRichards'] + MESO_BENCHMARKS['richards3'],
     'euler31': [_INTEROP_JAVA_PACKAGE + 'PyEuler31'] + MESO_BENCHMARKS['euler31'],
     'euler11': [_INTEROP_JAVA_PACKAGE + 'PyEuler11'] + MESO_BENCHMARKS['euler11'],
     'nbody3': [_INTEROP_JAVA_PACKAGE + 'PyNbody'] + MESO_BENCHMARKS['nbody3'],

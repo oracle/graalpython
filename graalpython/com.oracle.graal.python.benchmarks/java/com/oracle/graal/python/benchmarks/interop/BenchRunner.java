@@ -106,6 +106,14 @@ public class BenchRunner {
         new Runner(opt, new BenchOutputFormat(System.out, VerboseMode.SILENT, benchName)).run();
     }
 
+    protected static Value get(Value a, int i) {
+        return a.getArrayElement(i);
+    }
+
+    protected static void set(Value a, int i, Object v) {
+        a.setArrayElement(i, v);
+    }
+
     protected static double getd(Value a, int i) {
         return a.getArrayElement(i).asDouble();
     }
