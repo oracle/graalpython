@@ -709,15 +709,17 @@ class UrlParseTestCase(unittest.TestCase):
 
     def test_portseparator(self):
         # Issue 754016 makes changes for port separator ':' from scheme separator
-        self.assertEqual(urllib.parse.urlparse("path:80"),
-                ('','','path:80','','',''))
+        self.assertEqual(urllib.parse.urlparse("http:80"), ('http','','80','','',''))
+        self.assertEqual(urllib.parse.urlparse("https:80"), ('https','','80','','',''))
+        self.assertEqual(urllib.parse.urlparse("path:80"), ('path','','80','','',''))
         self.assertEqual(urllib.parse.urlparse("http:"),('http','','','','',''))
         self.assertEqual(urllib.parse.urlparse("https:"),('https','','','','',''))
         self.assertEqual(urllib.parse.urlparse("http://www.python.org:80"),
                 ('http','www.python.org:80','','','',''))
         # As usual, need to check bytes input as well
-        self.assertEqual(urllib.parse.urlparse(b"path:80"),
-                (b'',b'',b'path:80',b'',b'',b''))
+        self.assertEqual(urllib.parse.urlparse(b"http:80"), (b'http',b'',b'80',b'',b'',b''))
+        self.assertEqual(urllib.parse.urlparse(b"https:80"), (b'https',b'',b'80',b'',b'',b''))
+        self.assertEqual(urllib.parse.urlparse(b"path:80"), (b'path',b'',b'80',b'',b'',b''))
         self.assertEqual(urllib.parse.urlparse(b"http:"),(b'http',b'',b'',b'',b'',b''))
         self.assertEqual(urllib.parse.urlparse(b"https:"),(b'https',b'',b'',b'',b'',b''))
         self.assertEqual(urllib.parse.urlparse(b"http://www.python.org:80"),
@@ -945,6 +947,16 @@ class UrlParseTestCase(unittest.TestCase):
         self.assertEqual(p2.scheme, 'tel')
         self.assertEqual(p2.path, '+31641044153')
 
+    def test_port_casting_failure_message(self):
+        message = "Port could not be cast to integer value as 'oracle'"
+        p1 = urllib.parse.urlparse('http://Server=sde; Service=sde:oracle')
+        with self.assertRaisesRegex(ValueError, message):
+            p1.port
+
+        p2 = urllib.parse.urlsplit('http://Server=sde; Service=sde:oracle')
+        with self.assertRaisesRegex(ValueError, message):
+            p2.port
+
     def test_telurl_params(self):
         p1 = urllib.parse.urlparse('tel:123-4;phone-context=+1-650-516')
         self.assertEqual(p1.scheme, 'tel')
@@ -1020,7 +1032,7 @@ class Utility_Tests(unittest.TestCase):
     # In Python 2 this test class was in test_urllib.
 
     def test_splittype(self):
-        splittype = urllib.parse.splittype
+        splittype = urllib.parse._splittype
         self.assertEqual(splittype('type:opaquestring'), ('type', 'opaquestring'))
         self.assertEqual(splittype('opaquestring'), (None, 'opaquestring'))
         self.assertEqual(splittype(':opaquestring'), (None, ':opaquestring'))
@@ -1028,7 +1040,7 @@ class Utility_Tests(unittest.TestCase):
         self.assertEqual(splittype('type:opaque:string'), ('type', 'opaque:string'))
 
     def test_splithost(self):
-        splithost = urllib.parse.splithost
+        splithost = urllib.parse._splithost
         self.assertEqual(splithost('//www.example.org:80/foo/bar/baz.html'),
                          ('www.example.org:80', '/foo/bar/baz.html'))
         self.assertEqual(splithost('//www.example.org:80'),
@@ -1057,7 +1069,7 @@ class Utility_Tests(unittest.TestCase):
                          ('example.net', '/file#'))
 
     def test_splituser(self):
-        splituser = urllib.parse.splituser
+        splituser = urllib.parse._splituser
         self.assertEqual(splituser('User:Pass@www.python.org:080'),
                          ('User:Pass', 'www.python.org:080'))
         self.assertEqual(splituser('@www.python.org:080'),
@@ -1072,7 +1084,7 @@ class Utility_Tests(unittest.TestCase):
     def test_splitpasswd(self):
         # Some of the password examples are not sensible, but it is added to
         # confirming to RFC2617 and addressing issue4675.
-        splitpasswd = urllib.parse.splitpasswd
+        splitpasswd = urllib.parse._splitpasswd
         self.assertEqual(splitpasswd('user:ab'), ('user', 'ab'))
         self.assertEqual(splitpasswd('user:a\nb'), ('user', 'a\nb'))
         self.assertEqual(splitpasswd('user:a\tb'), ('user', 'a\tb'))
@@ -1088,7 +1100,7 @@ class Utility_Tests(unittest.TestCase):
         self.assertEqual(splitpasswd(':ab'), ('', 'ab'))
 
     def test_splitport(self):
-        splitport = urllib.parse.splitport
+        splitport = urllib.parse._splitport
         self.assertEqual(splitport('parrot:88'), ('parrot', '88'))
         self.assertEqual(splitport('parrot'), ('parrot', None))
         self.assertEqual(splitport('parrot:'), ('parrot', None))
@@ -1099,7 +1111,7 @@ class Utility_Tests(unittest.TestCase):
         self.assertEqual(splitport(':88'), ('', '88'))
 
     def test_splitnport(self):
-        splitnport = urllib.parse.splitnport
+        splitnport = urllib.parse._splitnport
         self.assertEqual(splitnport('parrot:88'), ('parrot', 88))
         self.assertEqual(splitnport('parrot'), ('parrot', -1))
         self.assertEqual(splitnport('parrot', 55), ('parrot', 55))
@@ -1113,7 +1125,7 @@ class Utility_Tests(unittest.TestCase):
     def test_splitquery(self):
         # Normal cases are exercised by other tests; ensure that we also
         # catch cases with no port specified (testcase ensuring coverage)
-        splitquery = urllib.parse.splitquery
+        splitquery = urllib.parse._splitquery
         self.assertEqual(splitquery('http://python.org/fake?foo=bar'),
                          ('http://python.org/fake', 'foo=bar'))
         self.assertEqual(splitquery('http://python.org/fake?foo=bar?'),
@@ -1123,7 +1135,7 @@ class Utility_Tests(unittest.TestCase):
         self.assertEqual(splitquery('?foo=bar'), ('', 'foo=bar'))
 
     def test_splittag(self):
-        splittag = urllib.parse.splittag
+        splittag = urllib.parse._splittag
         self.assertEqual(splittag('http://example.com?foo=bar#baz'),
                          ('http://example.com?foo=bar', 'baz'))
         self.assertEqual(splittag('http://example.com?foo=bar#'),
@@ -1135,7 +1147,7 @@ class Utility_Tests(unittest.TestCase):
                          ('http://example.com?foo=bar#baz', 'boo'))
 
     def test_splitattr(self):
-        splitattr = urllib.parse.splitattr
+        splitattr = urllib.parse._splitattr
         self.assertEqual(splitattr('/path;attr1=value1;attr2=value2'),
                          ('/path', ['attr1=value1', 'attr2=value2']))
         self.assertEqual(splitattr('/path;'), ('/path', ['']))
@@ -1146,7 +1158,7 @@ class Utility_Tests(unittest.TestCase):
     def test_splitvalue(self):
         # Normal cases are exercised by other tests; test pathological cases
         # with no key/value pairs. (testcase ensuring coverage)
-        splitvalue = urllib.parse.splitvalue
+        splitvalue = urllib.parse._splitvalue
         self.assertEqual(splitvalue('foo=bar'), ('foo', 'bar'))
         self.assertEqual(splitvalue('foo='), ('foo', ''))
         self.assertEqual(splitvalue('=bar'), ('', 'bar'))
@@ -1154,14 +1166,95 @@ class Utility_Tests(unittest.TestCase):
         self.assertEqual(splitvalue('foo=bar=baz'), ('foo', 'bar=baz'))
 
     def test_to_bytes(self):
-        result = urllib.parse.to_bytes('http://www.python.org')
+        result = urllib.parse._to_bytes('http://www.python.org')
         self.assertEqual(result, 'http://www.python.org')
-        self.assertRaises(UnicodeError, urllib.parse.to_bytes,
+        self.assertRaises(UnicodeError, urllib.parse._to_bytes,
                           'http://www.python.org/medi\u00e6val')
 
     def test_unwrap(self):
-        url = urllib.parse.unwrap('<URL:type://host/path>')
-        self.assertEqual(url, 'type://host/path')
+        for wrapped_url in ('<URL:scheme://host/path>', '<scheme://host/path>',
+                            'URL:scheme://host/path', 'scheme://host/path'):
+            url = urllib.parse.unwrap(wrapped_url)
+            self.assertEqual(url, 'scheme://host/path')
+
+
+class DeprecationTest(unittest.TestCase):
+
+    def test_splittype_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splittype('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splittype() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splithost_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splithost('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splithost() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splituser_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splituser('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splituser() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splitpasswd_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splitpasswd('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splitpasswd() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splitport_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splitport('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splitport() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splitnport_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splitnport('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splitnport() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splitquery_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splitquery('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splitquery() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splittag_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splittag('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splittag() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splitattr_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splitattr('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splitattr() is deprecated as of 3.8, '
+                         'use urllib.parse.urlparse() instead')
+
+    def test_splitvalue_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.splitvalue('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.splitvalue() is deprecated as of 3.8, '
+                         'use urllib.parse.parse_qsl() instead')
+
+    def test_to_bytes_deprecation(self):
+        with self.assertWarns(DeprecationWarning) as cm:
+            urllib.parse.to_bytes('')
+        self.assertEqual(str(cm.warning),
+                         'urllib.parse.to_bytes() is deprecated as of 3.8')
 
 
 if __name__ == "__main__":

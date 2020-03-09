@@ -489,8 +489,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
                         expected=('mon', 'tue', 'wed', 'thur'))
         self.checkParam(self.combo, 'values', ('mon', 'tue', 'wed', 'thur'))
         self.checkParam(self.combo, 'values', (42, 3.14, '', 'any string'))
-        self.checkParam(self.combo, 'values', '',
-                        expected='' if get_tk_patchlevel() < (8, 5, 10) else ())
+        self.checkParam(self.combo, 'values', '')
 
         self.combo['values'] = ['a', 1, 'c']
 
@@ -1245,12 +1244,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
                         expected=('mon', 'tue', 'wed', 'thur'))
         self.checkParam(self.spin, 'values', ('mon', 'tue', 'wed', 'thur'))
         self.checkParam(self.spin, 'values', (42, 3.14, '', 'any string'))
-        self.checkParam(
-            self.spin,
-            'values',
-            '',
-            expected='' if get_tk_patchlevel() < (8, 5, 10) else ()
-        )
+        self.checkParam(self.spin, 'values', '')
 
         self.spin['values'] = ['a', 1, 'c']
 
@@ -1308,8 +1302,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
         self.checkParam(widget, 'columns', 'a b c',
                         expected=('a', 'b', 'c'))
         self.checkParam(widget, 'columns', ('a', 'b', 'c'))
-        self.checkParam(widget, 'columns', (),
-                        expected='' if get_tk_patchlevel() < (8, 5, 10) else ())
+        self.checkParam(widget, 'columns', '')
 
     def test_displaycolumns(self):
         widget = self.create()
@@ -1747,27 +1740,6 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
         self.tv.selection_toggle((c1, c3))
         self.assertEqual(self.tv.selection(), (c3, item2))
 
-        if sys.version_info >= (3, 8):
-            import warnings
-            warnings.warn(
-                'Deprecated API of Treeview.selection() should be removed')
-        self.tv.selection_set()
-        self.assertEqual(self.tv.selection(), ())
-        with self.assertWarns(DeprecationWarning):
-            self.tv.selection('set', (c1, item2))
-        self.assertEqual(self.tv.selection(), (c1, item2))
-        with self.assertWarns(DeprecationWarning):
-            self.tv.selection('add', (c1, item1))
-        self.assertEqual(self.tv.selection(), (item1, c1, item2))
-        with self.assertWarns(DeprecationWarning):
-            self.tv.selection('remove', (item1, c3))
-        self.assertEqual(self.tv.selection(), (c1, item2))
-        with self.assertWarns(DeprecationWarning):
-            self.tv.selection('toggle', (c1, c3))
-        self.assertEqual(self.tv.selection(), (c3, item2))
-        with self.assertWarns(DeprecationWarning):
-            selection = self.tv.selection(None)
-        self.assertEqual(selection, (c3, item2))
 
     def test_set(self):
         self.tv['columns'] = ['A', 'B']

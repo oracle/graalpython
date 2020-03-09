@@ -1,10 +1,8 @@
-from test.support import check_warnings
 import cgi
 import os
 import sys
 import tempfile
 import unittest
-import warnings
 from collections import namedtuple
 from io import StringIO, BytesIO
 from test import support
@@ -162,15 +160,6 @@ Content-Length: 3
         self.assertRaises(TypeError, cgi.FieldStorage, "foo", "bar")
         fs = cgi.FieldStorage(headers={'content-type':'text/plain'})
         self.assertRaises(TypeError, bool, fs)
-
-    def test_escape(self):
-        # cgi.escape() is deprecated.
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', r'cgi\.escape',
-                                     DeprecationWarning)
-            self.assertEqual("test &amp; string", cgi.escape("test & string"))
-            self.assertEqual("&lt;test string&gt;", cgi.escape("<test string>"))
-            self.assertEqual("&quot;test string&quot;", cgi.escape('"test string"', True))
 
     def test_strict(self):
         for orig, expect in parse_strict_test_cases:
@@ -363,6 +352,23 @@ Larry
         self.assertEqual(fs.list[0].name, 'submit-name')
         self.assertEqual(fs.list[0].value, 'Larry')
 
+    def test_field_storage_multipart_no_content_length(self):
+        fp = BytesIO(b"""--MyBoundary
+Content-Disposition: form-data; name="my-arg"; filename="foo"
+
+Test
+
+--MyBoundary--
+""")
+        env = {
+            "REQUEST_METHOD": "POST",
+            "CONTENT_TYPE": "multipart/form-data; boundary=MyBoundary",
+            "wsgi.input": fp,
+        }
+        fields = cgi.FieldStorage(fp, environ=env)
+
+        self.assertEqual(len(fields["my-arg"].file.read()), 5)
+
     def test_fieldstorage_as_context_manager(self):
         fp = BytesIO(b'x' * 10)
         env = {'REQUEST_METHOD': 'PUT'}
@@ -502,20 +508,6 @@ this is the content of the fake file
         })
         v = gen_result(data, environ)
         self.assertEqual(result, v)
-
-    def test_deprecated_parse_qs(self):
-        # this func is moved to urllib.parse, this is just a sanity check
-        with check_warnings(('cgi.parse_qs is deprecated, use urllib.parse.'
-                             'parse_qs instead', DeprecationWarning)):
-            self.assertEqual({'a': ['A1'], 'B': ['B3'], 'b': ['B2']},
-                             cgi.parse_qs('a=A1&b=B2&B=B3'))
-
-    def test_deprecated_parse_qsl(self):
-        # this func is moved to urllib.parse, this is just a sanity check
-        with check_warnings(('cgi.parse_qsl is deprecated, use urllib.parse.'
-                             'parse_qsl instead', DeprecationWarning)):
-            self.assertEqual([('a', 'A1'), ('b', 'B2'), ('B', 'B3')],
-                             cgi.parse_qsl('a=A1&b=B2&B=B3'))
 
     def test_parse_header(self):
         self.assertEqual(

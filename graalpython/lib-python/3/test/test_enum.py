@@ -1,6 +1,7 @@
 import enum
 import inspect
 import pydoc
+import sys
 import unittest
 import threading
 from collections import OrderedDict
@@ -10,10 +11,6 @@ from pickle import dumps, loads, PicklingError, HIGHEST_PROTOCOL
 from test import support
 from datetime import timedelta
 
-try:
-    import threading
-except ImportError:
-    threading = None
 
 # for pickle tests
 try:
@@ -341,10 +338,10 @@ class TestEnum(unittest.TestCase):
     def test_contains(self):
         Season = self.Season
         self.assertIn(Season.AUTUMN, Season)
-        with self.assertWarns(DeprecationWarning):
-            self.assertNotIn(3, Season)
-        with self.assertWarns(DeprecationWarning):
-            self.assertNotIn('AUTUMN', Season)
+        with self.assertRaises(TypeError):
+            3 in Season
+        with self.assertRaises(TypeError):
+            'AUTUMN' in Season
 
         val = Season(3)
         self.assertIn(val, Season)
@@ -352,11 +349,6 @@ class TestEnum(unittest.TestCase):
         class OtherEnum(Enum):
             one = 1; two = 2
         self.assertNotIn(OtherEnum.two, Season)
-
-    def test_member_contains(self):
-        self.assertRaises(TypeError, lambda: 'test' in self.Season.AUTUMN)
-        self.assertRaises(TypeError, lambda: 3 in self.Season.AUTUMN)
-        self.assertRaises(TypeError, lambda: 'AUTUMN' in self.Season.AUTUMN)
 
     def test_comparisons(self):
         Season = self.Season
@@ -1944,19 +1936,19 @@ class TestFlag(unittest.TestCase):
     class Perm(Flag):
         R, W, X = 4, 2, 1
 
-    class Color(Flag):
-        BLACK = 0
-        RED = 1
-        GREEN = 2
-        BLUE = 4
-        PURPLE = RED|BLUE
-
     class Open(Flag):
         RO = 0
         WO = 1
         RW = 2
         AC = 3
         CE = 1<<19
+
+    class Color(Flag):
+        BLACK = 0
+        RED = 1
+        GREEN = 2
+        BLUE = 4
+        PURPLE = RED|BLUE
 
     def test_str(self):
         Perm = self.Perm
@@ -2165,14 +2157,14 @@ class TestFlag(unittest.TestCase):
         Color = self.Color
         self.assertFalse(Color.BLACK in Open)
         self.assertFalse(Open.RO in Color)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse('BLACK' in Color)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse('RO' in Open)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse(1 in Color)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse(1 in Open)
+        with self.assertRaises(TypeError):
+            'BLACK' in Color
+        with self.assertRaises(TypeError):
+            'RO' in Open
+        with self.assertRaises(TypeError):
+            1 in Color
+        with self.assertRaises(TypeError):
+            1 in Open
 
     def test_member_contains(self):
         Perm = self.Perm
@@ -2328,19 +2320,19 @@ class TestIntFlag(unittest.TestCase):
         W = 1 << 1
         R = 1 << 2
 
-    class Color(IntFlag):
-        BLACK = 0
-        RED = 1
-        GREEN = 2
-        BLUE = 4
-        PURPLE = RED|BLUE
-
     class Open(IntFlag):
         RO = 0
         WO = 1
         RW = 2
         AC = 3
         CE = 1<<19
+
+    class Color(IntFlag):
+        BLACK = 0
+        RED = 1
+        GREEN = 2
+        BLUE = 4
+        PURPLE = RED|BLUE
 
     def test_type(self):
         Perm = self.Perm
@@ -2611,20 +2603,20 @@ class TestIntFlag(unittest.TestCase):
         self.assertEqual(len(Thing), 0, Thing)
 
     def test_contains(self):
-        Color = self.Color
         Open = self.Open
+        Color = self.Color
         self.assertTrue(Color.GREEN in Color)
         self.assertTrue(Open.RW in Open)
         self.assertFalse(Color.GREEN in Open)
         self.assertFalse(Open.RW in Color)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse('GREEN' in Color)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse('RW' in Open)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse(2 in Color)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse(2 in Open)
+        with self.assertRaises(TypeError):
+            'GREEN' in Color
+        with self.assertRaises(TypeError):
+            'RW' in Open
+        with self.assertRaises(TypeError):
+            2 in Color
+        with self.assertRaises(TypeError):
+            2 in Open
 
     def test_member_contains(self):
         Perm = self.Perm
@@ -2645,8 +2637,8 @@ class TestIntFlag(unittest.TestCase):
         self.assertFalse(R in WX)
         self.assertFalse(W in RX)
         self.assertFalse(X in RW)
-        with self.assertWarns(DeprecationWarning):
-            self.assertFalse('swallow' in RW)
+        with self.assertRaises(TypeError):
+            self.assertFalse('test' in RW)
 
     def test_bool(self):
         Perm = self.Perm
@@ -2833,7 +2825,7 @@ class Color(enum.Enum)
  |      The value of the Enum member.
  |\x20\x20
  |  ----------------------------------------------------------------------
- |  Data descriptors inherited from enum.EnumMeta:
+ |  Readonly properties inherited from enum.EnumMeta:
  |\x20\x20
  |  __members__
  |      Returns a mapping of member name->value.
@@ -2968,7 +2960,7 @@ CONVERT_TEST_NAME_F = 5
 
 class TestIntEnumConvert(unittest.TestCase):
     def test_convert_value_lookup_priority(self):
-        test_type = enum.IntEnum._convert(
+        test_type = enum.IntEnum._convert_(
                 'UnittestConvert',
                 ('test.test_enum', '__main__')[__name__=='__main__'],
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
@@ -2978,7 +2970,7 @@ class TestIntEnumConvert(unittest.TestCase):
         self.assertEqual(test_type(5).name, 'CONVERT_TEST_NAME_A')
 
     def test_convert(self):
-        test_type = enum.IntEnum._convert(
+        test_type = enum.IntEnum._convert_(
                 'UnittestConvert',
                 ('test.test_enum', '__main__')[__name__=='__main__'],
                 filter=lambda x: x.startswith('CONVERT_TEST_'))
@@ -2993,6 +2985,24 @@ class TestIntEnumConvert(unittest.TestCase):
         self.assertEqual([name for name in dir(test_type)
                           if name[0:2] not in ('CO', '__')],
                          [], msg='Names other than CONVERT_TEST_* found.')
+
+    @unittest.skipUnless(sys.version_info[:2] == (3, 8),
+                         '_convert was deprecated in 3.8')
+    def test_convert_warn(self):
+        with self.assertWarns(DeprecationWarning):
+            enum.IntEnum._convert(
+                'UnittestConvert',
+                ('test.test_enum', '__main__')[__name__=='__main__'],
+                filter=lambda x: x.startswith('CONVERT_TEST_'))
+
+    @unittest.skipUnless(sys.version_info >= (3, 9),
+                         '_convert was removed in 3.9')
+    def test_convert_raise(self):
+        with self.assertRaises(AttributeError):
+            enum.IntEnum._convert(
+                'UnittestConvert',
+                ('test.test_enum', '__main__')[__name__=='__main__'],
+                filter=lambda x: x.startswith('CONVERT_TEST_'))
 
 
 if __name__ == '__main__':

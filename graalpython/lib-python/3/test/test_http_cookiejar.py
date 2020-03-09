@@ -6,6 +6,7 @@ import test.support
 import time
 import unittest
 import urllib.request
+import pathlib
 
 from http.cookiejar import (time2isoz, http2time, iso2time, time2netscape,
      parse_ns_headers, join_header_words, split_header_words, Cookie,
@@ -122,6 +123,13 @@ class DateTimeTests(unittest.TestCase):
                               "http2time(%s) is not None\n"
                               "http2time(test) %s" % (test, http2time(test)))
 
+    def test_http2time_redos_regression_actually_completes(self):
+        # LOOSE_HTTP_DATE_RE was vulnerable to malicious input which caused catastrophic backtracking (REDoS).
+        # If we regress to cubic complexity, this test will take a very long time to succeed.
+        # If fixed, it should complete within a fraction of a second.
+        http2time("01 Jan 1970{}00:00:00 GMT!".format(" " * 10 ** 5))
+        http2time("01 Jan 1970 00:00:00{}GMT!".format(" " * 10 ** 5))
+
     def test_iso2time(self):
         def parse_date(text):
             return time.gmtime(iso2time(text))[:6]
@@ -178,6 +186,12 @@ class DateTimeTests(unittest.TestCase):
             ]:
             self.assertIsNone(iso2time(test),
                               "iso2time(%r)" % test)
+
+    def test_iso2time_performance_regression(self):
+        # If ISO_DATE_RE regresses to quadratic complexity, this test will take a very long time to succeed.
+        # If fixed, it should complete within a fraction of a second.
+        iso2time('1994-02-03{}14:15:29 -0100!'.format(' '*10**6))
+        iso2time('1994-02-03 14:15:29{}-0100!'.format(' '*10**6))
 
 
 class HeaderTests(unittest.TestCase):
@@ -313,6 +327,30 @@ def _interact(cookiejar, url, set_cookie_hdrs, hdr_name):
 
 
 class FileCookieJarTests(unittest.TestCase):
+    def test_constructor_with_str(self):
+        filename = test.support.TESTFN
+        c = LWPCookieJar(filename)
+        self.assertEqual(c.filename, filename)
+
+    def test_constructor_with_path_like(self):
+        filename = pathlib.Path(test.support.TESTFN)
+        c = LWPCookieJar(filename)
+        self.assertEqual(c.filename, os.fspath(filename))
+
+    def test_constructor_with_none(self):
+        c = LWPCookieJar(None)
+        self.assertIsNone(c.filename)
+
+    def test_constructor_with_other_types(self):
+        class A:
+            pass
+
+        for type_ in (int, float, A):
+            with self.subTest(filename=type_):
+                with self.assertRaises(TypeError):
+                    instance = type_()
+                    c = LWPCookieJar(filename=instance)
+
     def test_lwp_valueless_cookie(self):
         # cookies with no value should be saved and loaded consistently
         filename = test.support.TESTFN
@@ -560,6 +598,15 @@ class CookieTests(unittest.TestCase):
         # if expires is in future, keep cookie...
         c = CookieJar()
         future = time2netscape(time.time()+3600)
+
+        with test.support.check_no_warnings(self):
+            headers = [f"Set-Cookie: FOO=BAR; path=/; expires={future}"]
+            req = urllib.request.Request("http://www.coyote.com/")
+            res = FakeResponse(headers, "http://www.coyote.com/")
+            cookies = c.make_cookies(res, req)
+            self.assertEqual(len(cookies), 1)
+            self.assertEqual(time2netscape(cookies[0].expires), future)
+
         interact_netscape(c, "http://www.acme.com/", 'spam="bar"; expires=%s' %
                           future)
         self.assertEqual(len(c), 1)
@@ -1035,6 +1082,61 @@ class CookieTests(unittest.TestCase):
                 self.assertTrue(
                     c._cookies["www.acme.com"]["/"]["foo2"].secure,
                     "secure cookie registered non-secure")
+
+    def test_secure_block(self):
+        pol = DefaultCookiePolicy()
+        c = CookieJar(policy=pol)
+
+        headers = ["Set-Cookie: session=narf; secure; path=/"]
+        req = urllib.request.Request("https://www.acme.com/")
+        res = FakeResponse(headers, "https://www.acme.com/")
+        c.extract_cookies(res, req)
+        self.assertEqual(len(c), 1)
+
+        req = urllib.request.Request("https://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertTrue(req.has_header("Cookie"))
+
+        req = urllib.request.Request("http://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertFalse(req.has_header("Cookie"))
+
+        # secure websocket protocol
+        req = urllib.request.Request("wss://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertTrue(req.has_header("Cookie"))
+
+        # non-secure websocket protocol
+        req = urllib.request.Request("ws://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertFalse(req.has_header("Cookie"))
+
+    def test_custom_secure_protocols(self):
+        pol = DefaultCookiePolicy(secure_protocols=["foos"])
+        c = CookieJar(policy=pol)
+
+        headers = ["Set-Cookie: session=narf; secure; path=/"]
+        req = urllib.request.Request("https://www.acme.com/")
+        res = FakeResponse(headers, "https://www.acme.com/")
+        c.extract_cookies(res, req)
+        self.assertEqual(len(c), 1)
+
+        # test https removed from secure protocol list
+        req = urllib.request.Request("https://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertFalse(req.has_header("Cookie"))
+
+        req = urllib.request.Request("http://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertFalse(req.has_header("Cookie"))
+
+        req = urllib.request.Request("foos://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertTrue(req.has_header("Cookie"))
+
+        req = urllib.request.Request("foo://www.acme.com/")
+        c.add_cookie_header(req)
+        self.assertFalse(req.has_header("Cookie"))
 
     def test_quote_cookie_value(self):
         c = CookieJar(policy=DefaultCookiePolicy(rfc2965=True))

@@ -25,6 +25,7 @@ from . import futures
 from . import protocols
 from . import sslproto
 from . import transports
+from . import trsock
 from .log import logger
 
 
@@ -37,6 +38,11 @@ def _test_selector_event(selector, fd, event):
         return False
     else:
         return bool(key.events & event)
+
+
+def _check_ssl_socket(sock):
+    if ssl is not None and isinstance(sock, ssl.SSLSocket):
+        raise TypeError("Socket cannot be of type SSLSocket")
 
 
 class BaseSelectorEventLoop(base_events.BaseEventLoop):
@@ -171,7 +177,7 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
                     self.call_exception_handler({
                         'message': 'socket.accept() out of system resource',
                         'exception': exc,
-                        'socket': sock,
+                        'socket': trsock.TransportSocket(sock),
                     })
                     self._remove_reader(sock.fileno())
                     self.call_later(constants.ACCEPT_RETRY_DELAY,
@@ -208,12 +214,14 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
 
             try:
                 await waiter
-            except:
+            except BaseException:
                 transport.close()
                 raise
+                # It's now up to the protocol to handle the connection.
 
-            # It's now up to the protocol to handle the connection.
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             if self._debug:
                 context = {
                     'message':
@@ -345,29 +353,35 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         The maximum amount of data to be received at once is specified by
         nbytes.
         """
+        _check_ssl_socket(sock)
         if self._debug and sock.gettimeout() != 0:
             raise ValueError("the socket must be non-blocking")
+        try:
+            return sock.recv(n)
+        except (BlockingIOError, InterruptedError):
+            pass
         fut = self.create_future()
-        self._sock_recv(fut, None, sock, n)
+        fd = sock.fileno()
+        self.add_reader(fd, self._sock_recv, fut, sock, n)
+        fut.add_done_callback(
+            functools.partial(self._sock_read_done, fd))
         return await fut
 
-    def _sock_recv(self, fut, registered_fd, sock, n):
+    def _sock_read_done(self, fd, fut):
+        self.remove_reader(fd)
+
+    def _sock_recv(self, fut, sock, n):
         # _sock_recv() can add itself as an I/O callback if the operation can't
         # be done immediately. Don't use it directly, call sock_recv().
-        if registered_fd is not None:
-            # Remove the callback early.  It should be rare that the
-            # selector says the fd is ready but the call still returns
-            # EAGAIN, and I am willing to take a hit in that case in
-            # order to simplify the common case.
-            self.remove_reader(registered_fd)
-        if fut.cancelled():
+        if fut.done():
             return
         try:
             data = sock.recv(n)
         except (BlockingIOError, InterruptedError):
-            fd = sock.fileno()
-            self.add_reader(fd, self._sock_recv, fut, fd, sock, n)
-        except Exception as exc:
+            return  # try again next time
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             fut.set_exception(exc)
         else:
             fut.set_result(data)
@@ -378,30 +392,33 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         The received data is written into *buf* (a writable buffer).
         The return value is the number of bytes written.
         """
+        _check_ssl_socket(sock)
         if self._debug and sock.gettimeout() != 0:
             raise ValueError("the socket must be non-blocking")
+        try:
+            return sock.recv_into(buf)
+        except (BlockingIOError, InterruptedError):
+            pass
         fut = self.create_future()
-        self._sock_recv_into(fut, None, sock, buf)
+        fd = sock.fileno()
+        self.add_reader(fd, self._sock_recv_into, fut, sock, buf)
+        fut.add_done_callback(
+            functools.partial(self._sock_read_done, fd))
         return await fut
 
-    def _sock_recv_into(self, fut, registered_fd, sock, buf):
+    def _sock_recv_into(self, fut, sock, buf):
         # _sock_recv_into() can add itself as an I/O callback if the operation
         # can't be done immediately. Don't use it directly, call
         # sock_recv_into().
-        if registered_fd is not None:
-            # Remove the callback early.  It should be rare that the
-            # selector says the FD is ready but the call still returns
-            # EAGAIN, and I am willing to take a hit in that case in
-            # order to simplify the common case.
-            self.remove_reader(registered_fd)
-        if fut.cancelled():
+        if fut.done():
             return
         try:
             nbytes = sock.recv_into(buf)
         except (BlockingIOError, InterruptedError):
-            fd = sock.fileno()
-            self.add_reader(fd, self._sock_recv_into, fut, fd, sock, buf)
-        except Exception as exc:
+            return  # try again next time
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             fut.set_exception(exc)
         else:
             fut.set_result(nbytes)
@@ -415,42 +432,55 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         raised, and there is no way to determine how much data, if any, was
         successfully processed by the receiving end of the connection.
         """
+        _check_ssl_socket(sock)
         if self._debug and sock.gettimeout() != 0:
             raise ValueError("the socket must be non-blocking")
-        fut = self.create_future()
-        if data:
-            self._sock_sendall(fut, None, sock, data)
-        else:
-            fut.set_result(None)
-        return await fut
-
-    def _sock_sendall(self, fut, registered_fd, sock, data):
-        if registered_fd is not None:
-            self.remove_writer(registered_fd)
-        if fut.cancelled():
-            return
-
         try:
             n = sock.send(data)
         except (BlockingIOError, InterruptedError):
             n = 0
-        except Exception as exc:
+
+        if n == len(data):
+            # all data sent
+            return
+
+        fut = self.create_future()
+        fd = sock.fileno()
+        fut.add_done_callback(
+            functools.partial(self._sock_write_done, fd))
+        # use a trick with a list in closure to store a mutable state
+        self.add_writer(fd, self._sock_sendall, fut, sock,
+                        memoryview(data), [n])
+        return await fut
+
+    def _sock_sendall(self, fut, sock, view, pos):
+        if fut.done():
+            # Future cancellation can be scheduled on previous loop iteration
+            return
+        start = pos[0]
+        try:
+            n = sock.send(view[start:])
+        except (BlockingIOError, InterruptedError):
+            return
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             fut.set_exception(exc)
             return
 
-        if n == len(data):
+        start += n
+
+        if start == len(view):
             fut.set_result(None)
         else:
-            if n:
-                data = data[n:]
-            fd = sock.fileno()
-            self.add_writer(fd, self._sock_sendall, fut, fd, sock, data)
+            pos[0] = start
 
     async def sock_connect(self, sock, address):
         """Connect to a remote socket at address.
 
         This method is a coroutine.
         """
+        _check_ssl_socket(sock)
         if self._debug and sock.gettimeout() != 0:
             raise ValueError("the socket must be non-blocking")
 
@@ -473,18 +503,20 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
             # becomes writable to be notified when the connection succeed or
             # fails.
             fut.add_done_callback(
-                functools.partial(self._sock_connect_done, fd))
+                functools.partial(self._sock_write_done, fd))
             self.add_writer(fd, self._sock_connect_cb, fut, sock, address)
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             fut.set_exception(exc)
         else:
             fut.set_result(None)
 
-    def _sock_connect_done(self, fd, fut):
+    def _sock_write_done(self, fd, fut):
         self.remove_writer(fd)
 
     def _sock_connect_cb(self, fut, sock, address):
-        if fut.cancelled():
+        if fut.done():
             return
 
         try:
@@ -495,7 +527,9 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         except (BlockingIOError, InterruptedError):
             # socket is still registered, the callback will be retried later
             pass
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             fut.set_exception(exc)
         else:
             fut.set_result(None)
@@ -508,6 +542,7 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         object usable to send and receive data on the connection, and address
         is the address bound to the socket on the other end of the connection.
         """
+        _check_ssl_socket(sock)
         if self._debug and sock.gettimeout() != 0:
             raise ValueError("the socket must be non-blocking")
         fut = self.create_future()
@@ -518,14 +553,16 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         fd = sock.fileno()
         if registered:
             self.remove_reader(fd)
-        if fut.cancelled():
+        if fut.done():
             return
         try:
             conn, address = sock.accept()
             conn.setblocking(False)
         except (BlockingIOError, InterruptedError):
             self.add_reader(fd, self._sock_accept, fut, True, sock)
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             fut.set_exception(exc)
         else:
             fut.set_result((conn, address))
@@ -577,7 +614,7 @@ class _SelectorTransport(transports._FlowControlMixin,
 
     def __init__(self, loop, sock, protocol, extra=None, server=None):
         super().__init__(extra, loop)
-        self._extra['socket'] = sock
+        self._extra['socket'] = trsock.TransportSocket(sock)
         try:
             self._extra['sockname'] = sock.getsockname()
         except OSError:
@@ -652,10 +689,9 @@ class _SelectorTransport(transports._FlowControlMixin,
             self._loop._remove_writer(self._sock_fd)
             self._loop.call_soon(self._call_connection_lost, None)
 
-    def __del__(self):
+    def __del__(self, _warn=warnings.warn):
         if self._sock is not None:
-            warnings.warn(f"unclosed transport {self!r}", ResourceWarning,
-                          source=self)
+            _warn(f"unclosed transport {self!r}", ResourceWarning, source=self)
             self._sock.close()
 
     def _fatal_error(self, exc, message='Fatal error on transport'):
@@ -774,7 +810,9 @@ class _SelectorSocketTransport(_SelectorTransport):
             buf = self._protocol.get_buffer(-1)
             if not len(buf):
                 raise RuntimeError('get_buffer() returned an empty buffer')
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(
                 exc, 'Fatal error: protocol.get_buffer() call failed.')
             return
@@ -783,7 +821,9 @@ class _SelectorSocketTransport(_SelectorTransport):
             nbytes = self._sock.recv_into(buf)
         except (BlockingIOError, InterruptedError):
             return
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(exc, 'Fatal read error on socket transport')
             return
 
@@ -793,7 +833,9 @@ class _SelectorSocketTransport(_SelectorTransport):
 
         try:
             self._protocol.buffer_updated(nbytes)
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(
                 exc, 'Fatal error: protocol.buffer_updated() call failed.')
 
@@ -804,7 +846,9 @@ class _SelectorSocketTransport(_SelectorTransport):
             data = self._sock.recv(self.max_size)
         except (BlockingIOError, InterruptedError):
             return
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(exc, 'Fatal read error on socket transport')
             return
 
@@ -814,7 +858,9 @@ class _SelectorSocketTransport(_SelectorTransport):
 
         try:
             self._protocol.data_received(data)
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(
                 exc, 'Fatal error: protocol.data_received() call failed.')
 
@@ -824,7 +870,9 @@ class _SelectorSocketTransport(_SelectorTransport):
 
         try:
             keep_open = self._protocol.eof_received()
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(
                 exc, 'Fatal error: protocol.eof_received() call failed.')
             return
@@ -860,7 +908,9 @@ class _SelectorSocketTransport(_SelectorTransport):
                 n = self._sock.send(data)
             except (BlockingIOError, InterruptedError):
                 pass
-            except Exception as exc:
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except BaseException as exc:
                 self._fatal_error(exc, 'Fatal write error on socket transport')
                 return
             else:
@@ -883,7 +933,9 @@ class _SelectorSocketTransport(_SelectorTransport):
             n = self._sock.send(self._buffer)
         except (BlockingIOError, InterruptedError):
             pass
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._loop._remove_writer(self._sock_fd)
             self._buffer.clear()
             self._fatal_error(exc, 'Fatal write error on socket transport')
@@ -959,7 +1011,9 @@ class _SelectorDatagramTransport(_SelectorTransport):
             pass
         except OSError as exc:
             self._protocol.error_received(exc)
-        except Exception as exc:
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except BaseException as exc:
             self._fatal_error(exc, 'Fatal read error on datagram transport')
         else:
             self._protocol.datagram_received(data, addr)
@@ -996,7 +1050,9 @@ class _SelectorDatagramTransport(_SelectorTransport):
             except OSError as exc:
                 self._protocol.error_received(exc)
                 return
-            except Exception as exc:
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except BaseException as exc:
                 self._fatal_error(
                     exc, 'Fatal write error on datagram transport')
                 return
@@ -1019,7 +1075,9 @@ class _SelectorDatagramTransport(_SelectorTransport):
             except OSError as exc:
                 self._protocol.error_received(exc)
                 return
-            except Exception as exc:
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except BaseException as exc:
                 self._fatal_error(
                     exc, 'Fatal write error on datagram transport')
                 return
