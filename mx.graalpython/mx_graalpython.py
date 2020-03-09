@@ -1021,6 +1021,11 @@ def import_python_sources(args):
     8. You should push the python-import branch using:
 
            git push origin python-import:python-import
+
+    NOTE: Your changes, untracked files and ignored files will be stashed for the
+    duration this operation. If you abort this script, you can recover them by
+    moving back to your branch and using git stash pop. It is recommended that you
+    close your IDE during the operation.
     """.format(mapping))
     raw_input("Got it?")
 
@@ -1031,11 +1036,9 @@ def import_python_sources(args):
         pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
 
     # move to orphaned branch with sources
-    if SUITE.vc.isDirty(SUITE.dir):
-        mx.abort("Working dir must be clean")
-    tip = SUITE.vc.tip(SUITE.dir).strip()
+    SUITE.vc.git_command(SUITE.dir, ["stash", "--all"])
     SUITE.vc.git_command(SUITE.dir, ["checkout", "python-import"])
-    SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
+    assert not SUITE.vc.isDirty(SUITE.dir)
     shutil.rmtree("graalpython")
 
     # re-copy lib-python
@@ -1088,8 +1091,9 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    SUITE.vc.update(SUITE.dir, rev=tip)
+    SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
     SUITE.vc.git_command(SUITE.dir, ["merge", "python-import"])
+    SUITE.vc.git_command(SUITE.dir, ["stash", "pop"])
 
 
 # ----------------------------------------------------------------------------------------------------------------------
