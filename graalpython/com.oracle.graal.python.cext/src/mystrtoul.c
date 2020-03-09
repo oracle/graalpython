@@ -4,7 +4,6 @@
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 
-
 #include "Python.h"
 
 #if defined(__sgi) && !defined(_SGI_MP_SOURCE)

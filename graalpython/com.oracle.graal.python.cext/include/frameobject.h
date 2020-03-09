@@ -3,7 +3,6 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
 /* Frame object interface */
 
 #ifndef Py_LIMITED_API

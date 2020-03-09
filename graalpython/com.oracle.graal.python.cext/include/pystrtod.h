@@ -3,7 +3,6 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
 #ifndef Py_STRTOD_H
 #define Py_STRTOD_H
 

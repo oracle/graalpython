@@ -13,12 +13,6 @@ extern "C" {
 #endif
 
 #ifndef Py_LIMITED_API
-/* (tfel): commented out, because we don't want to provide the _PyInitError
- * struct right now
- *
- * PyAPI_FUNC(_PyInitError) _PyImportZip_Init(void);
- */
-
 PyMODINIT_FUNC PyInit__imp(void);
 #endif /* !Py_LIMITED_API */
 PyAPI_FUNC(long) PyImport_GetMagicNumber(void);
