@@ -133,19 +133,6 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {
     __res__ = PyTruffle_Arg_ParseTupleAndKeywords((__args__), NULL, polyglot_from_string((__fmt__), SRC_CS), NULL, polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
 
 
-#define CallParseStackAndKeywordsWithPolyglotArgs(__res__, __offset__, __args__, __nargs__, __kwds__, __fmt__, __kwdnames__) \
-    int __poly_argc = polyglot_get_arg_count() - (__offset__); \
-    void **__poly_args = truffle_managed_malloc(sizeof(void*) * __poly_argc); \
-    int __kwdnames_cnt = 0; \
-    for (int i = 0; i < __poly_argc; i++) { \
-        __poly_args[i] = polyglot_get_arg(i + (__offset__)); \
-    } \
-    if((__kwdnames__) != NULL) { \
-    	for (; (__kwdnames__)[__kwdnames_cnt] != NULL ; __kwdnames_cnt++); \
-    } \
-    __res__ = PyTruffle_Arg_ParseTupleAndKeywords(polyglot_from_PyObjectPtr_array((__args__), (__nargs__)), (__kwds__), polyglot_from_string((__fmt__), SRC_CS), polyglot_from_CharPtr_array(__kwdnames__, __kwdnames_cnt), polyglot_from_OutVarPtr_array((OutVarPtr*)__poly_args, __poly_argc));
-
-
 #define CallParseStackWithPolyglotArgs(__res__, __offset__, __args__, __nargs__, __fmt__) \
     int __poly_argc = polyglot_get_arg_count() - (__offset__); \
     void **__poly_args = truffle_managed_malloc(sizeof(void*) * __poly_argc); \
@@ -225,18 +212,6 @@ int PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, const char* format, ...)
 NO_INLINE
 int _PyArg_ParseStack_SizeT(PyObject **args, Py_ssize_t nargs, const char* format, ...) {
 	CallParseStackWithPolyglotArgs(int result, 3, args, nargs, format);
-    return result;
-}
-
-NO_INLINE
-int _PyArg_ParseStackAndKeywords(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-	CallParseStackAndKeywordsWithPolyglotArgs(int result, 4, args, nargs, native_to_java_slim(kwnames), parser->format, parser->keywords);
-    return result;
-}
-
-NO_INLINE
-int _PyArg_ParseStackAndKeywords_SizeT(PyObject *const *args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-	CallParseStackAndKeywordsWithPolyglotArgs(int result, 4, args, nargs, native_to_java_slim(kwnames), parser->format, parser->keywords);
     return result;
 }
 
