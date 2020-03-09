@@ -970,18 +970,18 @@ def import_python_sources(args):
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
     parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
-    parser.add_argument('--msg', action='store', help='Message for import update commit', required=True)
+    parser.add_argument('--python-version', action='store', help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
 
     python_sources = args.cpython
     pypy_sources = args.pypy
-    import_version = args.msg
+    import_version = args.python_version
 
     print("""
     So you think you want to update the inlined sources? Here is how it will go:
 
     1. We'll first check the copyrights check overrides file to identify the
-       files taken from CPython and we'll remember that list. There's a mapping
+       files taken from CPython or PyPy and we'll remember that list. There's a mapping
        for files that were renamed, currently this includes:
        \t{0!r}\n
 
@@ -996,7 +996,7 @@ def import_python_sources(args):
        now.
 
     4. We'll merge the python-import branch back into HEAD. Because these share
-       a common ancestroy, git will try to preserve our patches to files, that
+       a common ancestor, git will try to preserve our patches to files, that
        is, copyright headers and any other source patches.
 
     5. !IMPORTANT! If files were inlined from CPython during normal development
@@ -1018,6 +1018,9 @@ def import_python_sources(args):
        python-import.
 
     7. Run the tests and fix any remaining issues.
+    8. You should push the python-import branch using:
+
+           git push origin python-import:python-import
     """.format(mapping))
     raw_input("Got it?")
 
@@ -1085,9 +1088,6 @@ def import_python_sources(args):
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    answer = raw_input("Should we push python-import (y/N)? ")
-    if answer and answer in "Yy":
-        SUITE.vc.git_command(SUITE.dir, ["push", "origin", "python-import:python-import"])
     SUITE.vc.update(SUITE.dir, rev=tip)
     SUITE.vc.git_command(SUITE.dir, ["merge", "python-import"])
 
