@@ -954,11 +954,11 @@ def import_python_sources(args):
 
     # mappings for files that are renamed
     mapping = {
-        "_memoryview.c": "memoryobject.c",
-        "_cpython_sre.c": "_sre.c",
-        "_cpython_unicodedata.c": "unicodedata.c",
-        "_bz2.c": "_bz2module.c",
-        "_mmap.c": "mmapmodule.c",
+        "memoryobject.c": "_memoryview.c",
+        "_sre.c": "_cpython_sre.c",
+        "unicodedata.c": "_cpython_unicodedata.c",
+        "_bz2module.c": "_bz2.c",
+        "mmapmodule.c": "_mmap.c",
     }
     extra_pypy_files = [
         "graalpython/lib-python/3/_md5.py",
@@ -1029,8 +1029,6 @@ def import_python_sources(args):
     """.format(mapping))
     raw_input("Got it?")
 
-    cpy_files = []
-    pypy_files = []
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
         pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
@@ -1044,48 +1042,32 @@ def import_python_sources(args):
     # re-copy lib-python
     shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
 
-    for inlined_file in pypy_files + extra_pypy_files:
-        original_file = None
-        name = os.path.basename(inlined_file)
-        name = mapping.get(name, name)
-        if inlined_file.endswith(".py"):
-            # these files don't need to be updated, they inline some unittest code only
-            if name.startswith("test_") or name.endswith("_tests.py"):
-                original_file = inlined_file
-            else:
-                for root, _, files in os.walk(pypy_sources):
-                    if os.path.basename(name) in files:
-                        original_file = os.path.join(root, name)
-                        try:
-                            os.makedirs(os.path.dirname(inlined_file))
-                        except:
-                            pass
-                        shutil.copy(original_file, inlined_file)
-                        break
-        if original_file is None:
-            mx.warn("Could not update %s - original file not found" % inlined_file)
+    def copy_inlined_files(inlined_files, source_directory):
+        inlined_files = [
+            # test files don't need to be updated, they inline some unittest code only
+            f for f in inlined_files if re.search(r'\.(py|c|h)$', f) and not re.search(r'/test_|_tests\.py$', f)
+        ]
+        for dirpath, _, filenames in os.walk(source_directory):
+            for filename in filenames:
+                original_file = os.path.join(dirpath, filename)
+                comparable_file = os.path.join(dirpath, mapping.get(filename, filename))
+                # Find the longest suffix match
+                inlined_file = max(inlined_files, key=lambda f: len(os.path.commonprefix([''.join(reversed(f)), ''.join(reversed(comparable_file))])))
+                if os.path.basename(inlined_file) != os.path.basename(comparable_file):
+                    continue
+                try:
+                    os.makedirs(os.path.dirname(inlined_file))
+                except OSError:
+                    pass
+                shutil.copy(original_file, inlined_file)
+                inlined_files.remove(inlined_file)
+                if not inlined_files:
+                    return
+        for remaining_file in inlined_files:
+            mx.warn("Could not update %s - original file not found" % remaining_file)
 
-    for inlined_file in cpy_files:
-        # C files are mostly just copied
-        original_file = None
-        name = os.path.basename(inlined_file)
-        name = mapping.get(name, name)
-        if inlined_file.endswith(".h") or inlined_file.endswith(".c"):
-            for root, _, files in os.walk(python_sources):
-                if os.path.basename(name) in files:
-                    original_file = os.path.join(root, name)
-                    try:
-                        os.makedirs(os.path.dirname(inlined_file))
-                    except:
-                        pass
-                    shutil.copy(original_file, inlined_file)
-                    break
-        elif inlined_file.endswith(".py"):
-            # these files don't need to be updated, they inline some unittest code only
-            if name.startswith("test_") or name.endswith("_tests.py"):
-                original_file = inlined_file
-        if original_file is None:
-            mx.warn("Could not update %s - original file not found" % inlined_file)
+    copy_inlined_files(pypy_files + extra_pypy_files, pypy_sources)
+    copy_inlined_files(cpy_files, python_sources)
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
