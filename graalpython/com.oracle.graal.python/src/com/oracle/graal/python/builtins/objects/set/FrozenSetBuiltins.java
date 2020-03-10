@@ -251,14 +251,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PSet left, PBaseSet right,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             HashingStorage intersectedStorage = union(leftLib, left.getDictStorage(), right.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
         @Specialization(limit = "1")
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PBaseSet right,
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             HashingStorage intersectedStorage = union(leftLib, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
@@ -293,14 +293,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class SubNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "1")
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right,
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PSet left, PBaseSet right,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = lib.diff(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
 
         @Specialization(limit = "1")
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PBaseSet right,
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = lib.diff(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
@@ -384,7 +384,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage left, Object right);
 
         @Specialization(limit = "1")
-        HashingStorage doHashingCollection(VirtualFrame frame, EconomicMapStorage selfStorage, PHashingCollection other,
+        HashingStorage doHashingCollection(@SuppressWarnings("unused") VirtualFrame frame, EconomicMapStorage selfStorage, PHashingCollection other,
                         @CachedLibrary("selfStorage") HashingStorageLibrary lib) {
             return lib.union(selfStorage, other.getDictStorage());
         }

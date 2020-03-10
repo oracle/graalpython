@@ -655,14 +655,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
                             nlocals, stacksize, flags, codestring, constants, names,
-                            varnames, freevars, cellvars, filename, name, firstlineno, lnotab, lib);
+                            varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
 
-        private PDict readDict(int depth) {
+        private PDict readDict(int depth, HashingStorageLibrary lib) {
             int len = readInt();
             HashingStorage store = PDict.createNewStorage(false, len);
             PDict dict = factory().createDict(store);
-            HashingStorageLibrary lib = HashingStorageLibrary.getUncached();
             for (int i = 0; i < len; i++) {
                 Object key = readObject(depth + 1, lib);
                 if (key == null) {
@@ -780,7 +779,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return factory().createTuple(items);
                 }
                 case TYPE_DICT:
-                    return readDict(depth);
+                    return readDict(depth, lib);
                 case TYPE_LIST:
                     return readList(depth, lib);
                 case TYPE_SET:

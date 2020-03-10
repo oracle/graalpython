@@ -2983,8 +2983,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
                         @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) throws UnsupportedMessageException {
+                        @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
             byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
             byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
 
@@ -2999,7 +2998,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
                             getStringArg(filename), getStringArg(name), firstlineno,
-                            lnotabBytes, lib);
+                            lnotabBytes);
         }
 
         @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
