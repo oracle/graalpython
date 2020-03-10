@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToDoubleNode;
+import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -84,17 +84,18 @@ public class LockBuiltins extends PythonBuiltins {
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
-        private @Child CastToDoubleNode castToDoubleNode;
+        private @Child
+        CoerceToDoubleNode coerceToDoubleNode;
         private @Child CoerceToBooleanNode castToBooleanNode;
         private @CompilationFinal ConditionProfile isBlockingProfile = ConditionProfile.createBinaryProfile();
         private @CompilationFinal ConditionProfile defaultTimeoutProfile = ConditionProfile.createBinaryProfile();
 
-        private CastToDoubleNode getCastToDoubleNode() {
-            if (castToDoubleNode == null) {
+        private CoerceToDoubleNode getCoerceToDoubleNode() {
+            if (coerceToDoubleNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToDoubleNode = insert(CastToDoubleNode.create());
+                coerceToDoubleNode = insert(CoerceToDoubleNode.create());
             }
-            return castToDoubleNode;
+            return coerceToDoubleNode;
         }
 
         private CoerceToBooleanNode getCastToBooleanNode() {
@@ -111,7 +112,7 @@ public class LockBuiltins extends PythonBuiltins {
             boolean isBlocking = (blocking instanceof PNone) ? DEFAULT_BLOCKING : getCastToBooleanNode().executeBoolean(frame, blocking);
             double timeoutSeconds = UNSET_TIMEOUT;
             if (!(timeout instanceof PNone)) {
-                timeoutSeconds = getCastToDoubleNode().execute(frame, timeout);
+                timeoutSeconds = getCoerceToDoubleNode().execute(frame, timeout);
 
                 if (timeoutSeconds != UNSET_TIMEOUT) {
                     if (!isBlocking) {

@@ -61,13 +61,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToDoubleNode extends PNodeWithContext {
+public abstract class CoerceToDoubleNode extends PNodeWithContext {
     @Child private LookupAndCallUnaryNode callFloatNode;
 
     public abstract double execute(VirtualFrame frame, Object x);
 
-    public static CastToDoubleNode create() {
-        return CastToDoubleNodeGen.create();
+    public static CoerceToDoubleNode create() {
+        return CoerceToDoubleNodeGen.create();
     }
 
     @Specialization

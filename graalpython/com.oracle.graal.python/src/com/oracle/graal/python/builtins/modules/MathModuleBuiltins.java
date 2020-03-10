@@ -60,7 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToDoubleNode;
+import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -137,7 +137,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public double doGeneral(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertToFloat) {
             return count(convertToFloat.execute(frame, value));
         }
     }
@@ -267,7 +267,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(value)"})
         public Object ceil(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloat,
+                        @Cached("create()") CoerceToDoubleNode convertToFloat,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
             Object result = dispatchCeil.executeObject(frame, value);
             if (result == PNone.NO_VALUE) {
@@ -331,8 +331,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(magnitude) || !isNumber(sign)")
         public double copySignOO(VirtualFrame frame, Object magnitude, Object sign,
-                        @Cached("create()") CastToDoubleNode castMagnitudeNode,
-                        @Cached("create()") CastToDoubleNode castSignNode) {
+                        @Cached("create()") CoerceToDoubleNode castMagnitudeNode,
+                        @Cached("create()") CoerceToDoubleNode castSignNode) {
             return copySignDD(castMagnitudeNode.execute(frame, magnitude), castSignNode.execute(frame, sign));
         }
     }
@@ -585,7 +585,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNumber(value)"})
         public Object floor(VirtualFrame frame, Object value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
-                        @Cached("create()") CastToDoubleNode castNode,
+                        @Cached("create()") CoerceToDoubleNode castNode,
                         @Cached("create()") FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(frame, value);
             if (PNone.NO_VALUE == result) {
@@ -680,8 +680,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(left) || !isNumber(right)"})
         public double fmodLO(VirtualFrame frame, Object left, Object right,
-                        @Cached("create()") CastToDoubleNode castLeftNode,
-                        @Cached("create()") CastToDoubleNode castRightNode,
+                        @Cached("create()") CoerceToDoubleNode castLeftNode,
+                        @Cached("create()") CoerceToDoubleNode castRightNode,
                         @Cached("createBinaryProfile()") ConditionProfile infProfile,
                         @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
             return fmodDD(castLeftNode.execute(frame, left), castRightNode.execute(frame, right), infProfile, zeroProfile);
@@ -768,7 +768,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public PTuple frexpO(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertToFloat) {
             return frexpD(convertToFloat.execute(frame, value));
         }
     }
@@ -795,7 +795,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertToFloat) {
             return isNan(convertToFloat.execute(frame, value));
         }
     }
@@ -808,10 +808,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         private static final double DEFAULT_REL = 1e-09;
         private static final double DEFAULT_ABS = 0.0;
 
-        @Child private CastToDoubleNode castANode;
-        @Child private CastToDoubleNode castBNode;
-        @Child private CastToDoubleNode castRelNode;
-        @Child private CastToDoubleNode castAbsNode;
+        @Child private CoerceToDoubleNode castANode;
+        @Child private CoerceToDoubleNode castBNode;
+        @Child private CoerceToDoubleNode castRelNode;
+        @Child private CoerceToDoubleNode castAbsNode;
 
         private boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol) {
             double diff;
@@ -883,10 +883,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public boolean isClose(VirtualFrame frame, Object a, Object b, Object rel_tol, Object abs_tol) {
             if (castAbsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castANode = insert(CastToDoubleNode.create());
-                castBNode = insert(CastToDoubleNode.create());
-                castRelNode = insert(CastToDoubleNode.create());
-                castAbsNode = insert(CastToDoubleNode.create());
+                castANode = insert(CoerceToDoubleNode.create());
+                castBNode = insert(CoerceToDoubleNode.create());
+                castRelNode = insert(CoerceToDoubleNode.create());
+                castAbsNode = insert(CoerceToDoubleNode.create());
             }
             double a_value = castANode.execute(frame, a);
             double b_value = castBNode.execute(frame, b);
@@ -986,7 +986,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return exceptInfinity(Math.scalb(dm, makeInt(exp)), dm);
         }
 
-        @Child private CastToDoubleNode castNode;
+        @Child private CoerceToDoubleNode castNode;
         @Child private LdexpNode recursiveNode;
 
         @Fallback
@@ -994,7 +994,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (PGuards.isInteger(exp) || PGuards.isPInt(exp) || (exp instanceof Boolean)) {
                 if (recursiveNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    castNode = insert(CastToDoubleNode.create());
+                    castNode = insert(CoerceToDoubleNode.create());
                     recursiveNode = insert(LdexpNode.create());
                 }
                 return recursiveNode.execute(frame, castNode.execute(frame, mantissa), exp);
@@ -1040,7 +1040,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         PTuple modfO(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloatNode) {
+                        @Cached("create()") CoerceToDoubleNode convertToFloatNode) {
             return modfD(convertToFloatNode.execute(frame, value));
         }
     }
@@ -1055,7 +1055,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         double doIt(VirtualFrame frame, Object iterable,
                         @Cached GetIteratorNode getIterator,
                         @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
-                        @Cached CastToDoubleNode toFloat,
+                        @Cached CoerceToDoubleNode toFloat,
                         @Cached IsBuiltinClassProfile stopProfile) {
             Object iterator = getIterator.executeWith(frame, iterable);
             return fsum(frame, iterator, next, toFloat, stopProfile);
@@ -1071,7 +1071,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
          */
-        private double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next, CastToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
+        private double fsum(VirtualFrame frame, Object iterator, LookupAndCallUnaryNode next, CoerceToDoubleNode toFloat, IsBuiltinClassProfile stopProfile) {
             double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
             double xsave;
             int i, j, n = 0, arayLength = 32;
@@ -1427,7 +1427,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertToFloat) {
             return isfinite(convertToFloat.execute(frame, value));
         }
     }
@@ -1455,7 +1455,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode convertToFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertToFloat) {
             return isinf(convertToFloat.execute(frame, value));
         }
     }
@@ -1466,22 +1466,22 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LogNode extends PythonBinaryBuiltinNode {
 
-        @Child private CastToDoubleNode valueCastNode;
-        @Child private CastToDoubleNode baseCastNode;
+        @Child private CoerceToDoubleNode valueCastNode;
+        @Child private CoerceToDoubleNode baseCastNode;
         @Child private LogNode recLogNode;
 
-        private CastToDoubleNode getValueCastNode() {
+        private CoerceToDoubleNode getValueCastNode() {
             if (valueCastNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueCastNode = insert(CastToDoubleNode.create());
+                valueCastNode = insert(CoerceToDoubleNode.create());
             }
             return valueCastNode;
         }
 
-        private CastToDoubleNode getBaseCastNode() {
+        private CoerceToDoubleNode getBaseCastNode() {
             if (baseCastNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                baseCastNode = insert(CastToDoubleNode.create());
+                baseCastNode = insert(CoerceToDoubleNode.create());
             }
             return baseCastNode;
         }
@@ -1770,7 +1770,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public double fabs(VirtualFrame frame, Object value,
-                        @Cached("create()") CastToDoubleNode castValueNode) {
+                        @Cached("create()") CoerceToDoubleNode castValueNode) {
             return fabs(castValueNode.execute(frame, value));
         }
     }
@@ -1871,8 +1871,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(left)||!isNumber(right)"})
         double pow(VirtualFrame frame, Object left, Object right,
-                        @Cached("create()") CastToDoubleNode convertLeftFloat,
-                        @Cached("create()") CastToDoubleNode convertRightFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertLeftFloat,
+                        @Cached("create()") CoerceToDoubleNode convertRightFloat) {
             return pow(convertLeftFloat.execute(frame, left), convertRightFloat.execute(frame, right));
         }
     }
@@ -1945,8 +1945,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(left) || !isNumber(right)")
         double atan2(VirtualFrame frame, Object left, Object right,
-                        @Cached("create()") CastToDoubleNode convertLeftFloat,
-                        @Cached("create()") CastToDoubleNode convertRightFloat) {
+                        @Cached("create()") CoerceToDoubleNode convertLeftFloat,
+                        @Cached("create()") CoerceToDoubleNode convertRightFloat) {
             return atan2DD(convertLeftFloat.execute(frame, left), convertRightFloat.execute(frame, right));
         }
     }
@@ -1986,8 +1986,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "arguments.length == 2")
         public double hypot2(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
-                        @Cached("create()") CastToDoubleNode xCastNode,
-                        @Cached("create()") CastToDoubleNode yCastNode) {
+                        @Cached("create()") CoerceToDoubleNode xCastNode,
+                        @Cached("create()") CoerceToDoubleNode yCastNode) {
             if (keywords.length != 0) {
                 throw raise(PythonBuiltinClassType.TypeError, "hypot() takes no keyword arguments");
             }
@@ -2002,7 +2002,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double hypotGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords,
-                        @Cached("create()") CastToDoubleNode castNode) {
+                        @Cached("create()") CoerceToDoubleNode castNode) {
             if (keywords.length != 0) {
                 throw raise(PythonBuiltinClassType.TypeError, "hypot() takes no keyword arguments");
             }

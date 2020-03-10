@@ -172,7 +172,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToDoubleNode;
+import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -498,8 +498,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private GetLazyClassNode getClassNode;
         private IsBuiltinClassProfile isComplexTypeProfile;
         private BranchProfile errorProfile;
-        private CastToDoubleNode castRealNode;
-        private CastToDoubleNode castImagNode;
+        private CoerceToDoubleNode castRealNode;
+        private CoerceToDoubleNode castImagNode;
         private IsBuiltinClassProfile profile;
         private LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode callComplexFunc;
 
@@ -525,18 +525,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return errorProfile;
         }
 
-        private CastToDoubleNode getCastRealNode() {
+        private CoerceToDoubleNode getCastRealNode() {
             if (castRealNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castRealNode = insert(CastToDoubleNode.create());
+                castRealNode = insert(CoerceToDoubleNode.create());
             }
             return castRealNode;
         }
 
-        private CastToDoubleNode getCastImagNode() {
+        private CoerceToDoubleNode getCastImagNode() {
             if (castImagNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castImagNode = insert(CastToDoubleNode.create());
+                castImagNode = insert(CoerceToDoubleNode.create());
             }
             return castImagNode;
         }
