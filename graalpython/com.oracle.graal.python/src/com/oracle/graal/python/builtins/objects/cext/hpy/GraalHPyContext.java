@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCheckBuiltinType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyClose;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
@@ -127,6 +128,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LIST_APPEND("ctx_List_Append"),
         CTX_DICT_NEW("ctx_Dict_New"),
         CTX_DICT_SETITEM("ctx_Dict_SetItem"),
+        CTX_DICT_GETITEM("ctx_Dict_GetItem"),
+
         CTX_FROMPYOBJECT("ctx_FromPyObject"),
         CTX_ASPYOBJECT("ctx_AsPyObject"),
         CTX_CALLREALFUNCTIONFROMTRAMPOLINE("ctx_CallRealFunctionFromTrampoline");
@@ -322,6 +325,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_NUMBER_ADD.ordinal()] = new GraalHPyNumberAdd();
         members[HPyContextMembers.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
         members[HPyContextMembers.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
+        members[HPyContextMembers.CTX_DICT_GETITEM.ordinal()] = new GraalHPyDictGetItem();
         members[HPyContextMembers.CTX_LIST_NEW.ordinal()] = new GraalHPyListNew();
         members[HPyContextMembers.CTX_LIST_APPEND.ordinal()] = new GraalHPyListAppend();
         members[HPyContextMembers.CTX_FLOAT_FROMDOUBLE.ordinal()] = new GraalHPyFloatFromDouble();

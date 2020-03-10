@@ -324,6 +324,36 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyDictGetItem extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached HashingStorageNodes.GetItemInteropNode getItemNode,
+                        @Cached("createClassProfile()") ValueProfile profile,
+                        @Cached PRaiseNativeNode raiseNode,
+                       @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object left = profile.profile(dictAsPythonObjectNode.execute(context, arguments[1]));
+            if (!PGuards.isDict(left)) {
+                return raiseNode.raiseIntWithoutFrame(-1, SystemError, "bad internal call");
+            }
+            PDict dict = (PDict) left;
+            Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
+            try {
+                return asHandleNode.execute(getItemNode.executeWithGlobalState(dict.getDictStorage(), key));
+            } catch (PException e) {
+                return context.getNullHandle();
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyListNew extends GraalHPyContextFunction {
 
         @ExportMessage
