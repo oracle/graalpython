@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromUnsignedLongLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyParseArgs;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8String;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
@@ -113,7 +112,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
         CTX_LONG_ASLONG("ctx_Long_AsLong"),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
-        CTX_ARG_PARSE("ctx_Arg_Parse"),
         CTX_NUMBER_ADD("ctx_Number_Add"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_BYTES_CHECK("ctx_Bytes_Check"),
@@ -318,7 +316,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
         members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
-        members[HPyContextMembers.CTX_ARG_PARSE.ordinal()] = new GraalHPyParseArgs();
         members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = new GraalHPyLongFromLong();
         members[HPyContextMembers.CTX_LONG_FROMLONGLONG.ordinal()] = new GraalHPyLongFromLong();
         members[HPyContextMembers.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = new GraalHPyLongFromUnsignedLongLong();
@@ -343,8 +340,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @TruffleBoundary(allowInlining = true)
     private int allocateHandle() {
         int freeItem = freeStack.pop();
-        if(freeItem != -1) {
-            assert 0 <= freeItem  && freeItem < hpyHandleTable.length;
+        if (freeItem != -1) {
+            assert 0 <= freeItem && freeItem < hpyHandleTable.length;
             assert hpyHandleTable[freeItem] == null;
             return freeItem;
         }
@@ -403,7 +400,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return hpyNullHandle;
     }
 
-
     private static final class HandleStack {
         private int[] handles;
         private int top = 0;
@@ -413,14 +409,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
 
         void push(int i) {
-            if(top >= handles.length) {
+            if (top >= handles.length) {
                 handles = Arrays.copyOf(handles, handles.length * 2);
             }
             handles[top++] = i;
         }
 
         int pop() {
-            if(top <= 0) {
+            if (top <= 0) {
                 return -1;
             }
             return handles[--top];

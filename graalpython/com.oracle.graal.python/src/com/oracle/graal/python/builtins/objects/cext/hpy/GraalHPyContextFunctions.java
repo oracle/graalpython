@@ -220,72 +220,6 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyParseArgs extends GraalHPyContextFunction {
-
-        /**
-         * {@code int (*ctx_Arg_Parse)(HPyContext ctx, HPy *args, HPy_ssize_t nargs, const char *fmt, va_list _vl);}
-         */
-        @ExportMessage(limit = "1")
-        Object execute(Object[] arguments,
-                        @Cached HPyAsContextNode asContextNode,
-                        @Cached PCallHPyFunction callFromHPyArrayNode,
-                        @Cached PCallHPyFunction callFromStringNode,
-                        @Cached PCallHPyFunction callMallocOutVarPtr,
-                        @CachedLibrary(limit = "1") InteropLibrary argsArrayLib,
-                        @CachedLibrary(limit = "1") InteropLibrary arrayWrapperLib,
-                        @Cached HPyAsPythonObjectNode argAsHandleNode,
-                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
-                        @Cached CastToJavaStringNode castToStringNode,
-                        @Cached CastToJavaIntNode castToJavaLongNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) throws ArityException {
-            if (arguments.length != 5) {
-                throw ArityException.create(5, arguments.length);
-            }
-            try {
-                GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
-
-                // convert 'HPy *args' array to a PTuple
-                Object argsArray;
-                int n = castToJavaLongNode.execute(arguments[2]);
-                if (!arrayWrapperLib.hasArrayElements(arguments[1])) {
-                    argsArray = callFromHPyArrayNode.call(nativeContext, GRAAL_HPY_FROM_HPY_ARRAY, arguments[1], (long) n);
-                } else {
-                    argsArray = arguments[1];
-                    assert arrayWrapperLib.getArraySize(argsArray) >= n;
-                }
-                Object[] args = new Object[n];
-                for (int i = 0; i < args.length; i++) {
-                    args[i] = argAsHandleNode.execute(nativeContext, argsArrayLib.readArrayElement(argsArray, i));
-                }
-                PTuple argv = factory.createTuple(args);
-
-                // read format string from a 'const char *'
-                String format = castToStringNode.execute(callFromStringNode.call(nativeContext, GRAAL_HPY_FROM_STRING, arguments[3]));
-                String functionName = null;
-
-                // separate format string from function name
-                int colonIdx = format.indexOf(":");
-                if (functionNameProfile.profile(colonIdx != -1)) {
-                    // extract function name
-                    // use 'colonIdx+1' because we do not want to include the colon
-                    functionName = format.substring(colonIdx + 1);
-
-                    // trim off function name
-                    format = format.substring(0, colonIdx);
-                }
-
-                VaListWrapper varargs = new VaListWrapper(nativeContext, arguments[4], callMallocOutVarPtr.call(nativeContext, GRAAL_HPY_ALLOCATE_OUTVAR));
-                return parseTupleAndKeywordsNode.execute(functionName, argv, null, format, null, varargs, nativeContext);
-            } catch (ArithmeticException | InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                return raiseNode.raise(SystemError, "error when reading native argument stack: %m", e);
-            }
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyLongFromLong extends GraalHPyContextFunction {
 
         @ExportMessage
@@ -494,10 +428,10 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
-                        @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNode) throws ArityException {
+                       @Cached HPyAsContextNode asContextNode,
+                       @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                       @Cached IsSubtypeNode isSubtypeNode,
+                       @Cached PRaiseNativeNode raiseNode) throws ArityException {
             if (arguments.length != 3) {
                 throw ArityException.create(3, arguments.length);
             }
