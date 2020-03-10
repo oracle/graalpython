@@ -53,7 +53,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNodeFactory.DynamicNodeGen;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNodeFactory.DynamicNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -64,13 +64,13 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
-public class CastToIntegerFromIntNode extends Node {
+public class CoerceToIntegerNode extends Node {
 
     @Child private Dynamic dynamicNode;
 
     private final Function<Object, Byte> typeErrorHandler;
 
-    public CastToIntegerFromIntNode(Function<Object, Byte> typeErrorHandler) {
+    public CoerceToIntegerNode(Function<Object, Byte> typeErrorHandler) {
         super();
         this.typeErrorHandler = typeErrorHandler;
     }
@@ -83,12 +83,12 @@ public class CastToIntegerFromIntNode extends Node {
         return dynamicNode.execute(x, typeErrorHandler);
     }
 
-    public static CastToIntegerFromIntNode create() {
-        return new CastToIntegerFromIntNode(null);
+    public static CoerceToIntegerNode create() {
+        return new CoerceToIntegerNode(null);
     }
 
-    public static CastToIntegerFromIntNode create(Function<Object, Byte> typeErrorHandler) {
-        return new CastToIntegerFromIntNode(typeErrorHandler);
+    public static CoerceToIntegerNode create(Function<Object, Byte> typeErrorHandler) {
+        return new CoerceToIntegerNode(typeErrorHandler);
     }
 
     @GenerateUncached

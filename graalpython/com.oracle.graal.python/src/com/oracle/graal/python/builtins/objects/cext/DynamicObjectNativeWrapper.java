@@ -130,7 +130,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1000,7 +1000,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         Object doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") String key, Object value,
-                        @Cached CastToIntegerFromIntNode.Dynamic castToIntNode,
+                        @Cached CoerceToIntegerNode.Dynamic castToIntNode,
                         @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {

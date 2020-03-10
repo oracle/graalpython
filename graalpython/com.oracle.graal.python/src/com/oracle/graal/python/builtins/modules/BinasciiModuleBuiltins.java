@@ -69,7 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -183,7 +183,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class B2aBase64Node extends PythonBinaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArray;
-        @Child private CastToIntegerFromIntNode castToIntNode;
+        @Child private CoerceToIntegerNode castToIntNode;
         @Child private B2aBase64Node recursiveNode;
 
         private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
@@ -194,10 +194,10 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return toByteArray;
         }
 
-        private CastToIntegerFromIntNode getCastToIntNode() {
+        private CoerceToIntegerNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }
