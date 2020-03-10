@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -147,7 +148,7 @@ public abstract class GraalHPyContextFunctions {
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyClose extends GraalHPyContextFunction {
-        @ExportMessage(limit = "1")
+        @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyEnsureHandleNode ensureHandleNode) throws ArityException {
@@ -603,5 +604,23 @@ public abstract class GraalHPyContextFunctions {
             return raiseNode.raiseIntWithoutFrame(-1, TypeError, "expected bytes, %p found", object);
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyIsTrue extends GraalHPyContextFunction {
+
+        @ExportMessage
+        int execute(Object[] arguments,
+                       @Cached HPyAsContextNode asContextNode,
+                       @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                       @CachedLibrary(limit = "3") PythonObjectLibrary lib) throws ArityException {
+            if (arguments.length != 2) {
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object object = asPythonObjectNode.execute(context, arguments[1]);
+            return lib.isTrue(object) ? 1 : 0;
+        }
+    }
+
 
 }
