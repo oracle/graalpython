@@ -544,7 +544,7 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public Iterator<Object> values(@CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+    public Iterator<Object> values(@CachedLibrary("this") HashingStorageLibrary lib) {
         return new ValuesIterator(this, lib);
     }
 
@@ -565,7 +565,7 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public Iterator<DictEntry> entries(@CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+    public Iterator<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
         return new EntriesIterator(this, lib);
     }
 
