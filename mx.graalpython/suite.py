@@ -130,9 +130,9 @@ suite = {
 
         "perf.benchmarks": {
             "type": "python",
-            "path": 'graalpython/benchmarks',
+            "path": 'graalpython/com.oracle.graal.python.benchmarks',
             "source": [
-                "src"
+                "python"
             ],
         },
 
@@ -220,6 +220,24 @@ suite = {
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
             "testProject": True,
+        },
+
+        # GRAALPYTHON BENCH
+        "com.oracle.graal.python.benchmarks": {
+            "subDir": "graalpython",
+            "sourceDirs": ["java"],
+            "dependencies": [
+                "com.oracle.graal.python",
+                "sdk:GRAAL_SDK",
+                "mx:JMH_1_21"
+            ],
+            "jacoco": "exclude",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "8+",
+            "annotationProcessors" : ["mx:JMH_1_21"],
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated" : True,
+            "testProject" : True,
         },
 
         "com.oracle.graal.python.tck": {
@@ -342,6 +360,20 @@ suite = {
             ],
             "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
+        },
+
+        "GRAALPYTHON_BENCH" : {
+            "description": "java python interop benchmarks",
+            "dependencies" : ["com.oracle.graal.python.benchmarks"],
+            "exclude": ["mx:JMH_1_21"],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON-LAUNCHER",
+                "sdk:GRAAL_SDK",
+            ],
+            "sourcesPath": "graalpython.bench.src.zip",
+            "testDistribution" : True,
+            "maven": False,
         },
 
         "GRAALPYTHON_TCK": {

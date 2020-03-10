@@ -242,9 +242,9 @@ public class PythonTests {
     }
 
     public static File getBenchFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "benchmarks", "src");
+        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.benchmarks", "python");
         if (!Files.isDirectory(path)) {
-            throw new RuntimeException("Unable to locate benchmarks/src/");
+            throw new RuntimeException("Unable to locate com.oracle.graal.python.benchmarks/python/");
         }
 
         Path fullPath = Paths.get(path.toString(), filename.toString());
