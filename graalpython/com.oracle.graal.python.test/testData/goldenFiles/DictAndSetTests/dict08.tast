@@ -5,22 +5,22 @@ ModuleRootNode Name: <module 'dict08'> SourceSection: [0,30]`{1:2, **{}, 3:4, **
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,30]`{1:2, **{}, 3:4, **{...`
-    DictConcatNode SourceSection: [0,30]`{1:2, **{}, 3:4, **{...`
-      DictLiteralNode SourceSection: None
+    DictConcatNodeGen SourceSection: [0,30]`{1:2, **{}, 3:4, **{...`
+      DictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [1,2]`1`
           Value: 1
         IntegerLiteralNode SourceSection: [3,4]`2`
           Value: 2
-      DictLiteralNode SourceSection: [8,10]`{}`
+      DictLiteralNodeGen SourceSection: [8,10]`{}`
         PythonObjectFactoryNodeGen SourceSection: None
-      DictLiteralNode SourceSection: None
+      DictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [12,13]`3`
           Value: 3
         IntegerLiteralNode SourceSection: [14,15]`4`
           Value: 4
-      DictLiteralNode SourceSection: [19,29]`{5:6, 7:8}`
+      DictLiteralNodeGen SourceSection: [19,29]`{5:6, 7:8}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [20,21]`5`
           Value: 5

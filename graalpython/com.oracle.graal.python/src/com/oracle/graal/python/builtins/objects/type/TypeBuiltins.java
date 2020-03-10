@@ -549,7 +549,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             } else if (dict instanceof PDict) {
                 // this is the case for types defined in native code
-                dict = factory().createMappingproxy(new DynamicObjectStorage.PythonObjectHybridDictStorage(self.getStorage()));
+                dict = factory().createMappingproxy(new DynamicObjectStorage(self.getStorage()));
             }
             assert dict instanceof PMappingproxy;
             return dict;

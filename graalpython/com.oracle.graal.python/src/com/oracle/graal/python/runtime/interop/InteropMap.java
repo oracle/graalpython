@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,11 @@
 package com.oracle.graal.python.runtime.interop;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -92,8 +94,10 @@ public final class InteropMap implements TruffleObject {
     @TruffleBoundary
     public static InteropMap fromPDict(PDict dict) {
         Map<String, Object> map = new HashMap<>();
-        for (DictEntry s : dict.getDictStorage().entries()) {
-            map.put(s.getKey().toString(), s.getValue());
+        Iterator<HashingStorage.DictEntry> iter = HashingStorageLibrary.getUncached().entries(dict.getDictStorage());
+        while (iter.hasNext()) {
+            HashingStorage.DictEntry e = iter.next();
+            map.put(e.getKey().toString(), e.getValue());
         }
         return new InteropMap(map);
     }

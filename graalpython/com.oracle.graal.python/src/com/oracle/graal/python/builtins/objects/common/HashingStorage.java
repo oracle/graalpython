@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,61 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@ExportLibrary(HashingStorageLibrary.class)
 public abstract class HashingStorage {
-
-    public static class UnmodifiableStorageException extends ControlFlowException {
-        private static final long serialVersionUID = 9102544480293222401L;
-
-        protected static final UnmodifiableStorageException INSTANCE = new UnmodifiableStorageException();
-    }
-
     @ValueType
-    public static class DictEntry {
+    public static final class DictEntry {
         public final Object key;
         public final Object value;
 
@@ -81,159 +110,495 @@ public abstract class HashingStorage {
         public Object getValue() {
             return value;
         }
-
     }
 
-    public abstract static class Equivalence extends PNodeWithContext {
-        public abstract int hashCode(Object o);
+    @ImportStatic({SpecialMethodNames.class, PGuards.class})
+    public abstract static class InitNode extends Node implements IndirectCallNode {
 
-        public abstract boolean equals(Object left, Object right);
+        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
+        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
 
+        @Override
+        public Assumption needNotPassFrameAssumption() {
+            return dontNeedCallerFrame;
+        }
+
+        @Override
+        public Assumption needNotPassExceptionAssumption() {
+            return dontNeedExceptionState;
+        }
+
+        public abstract HashingStorage execute(VirtualFrame frame, Object mapping, PKeyword[] kwargs);
+
+        @Child private GetNextNode nextNode;
+        @Child private LookupInheritedAttributeNode lookupKeysAttributeNode;
+
+        protected boolean isEmpty(PKeyword[] kwargs) {
+            return kwargs.length == 0;
+        }
+
+        @Specialization(guards = {"isNoValue(iterable)", "isEmpty(kwargs)"})
+        HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            return new EmptyStorage();
+        }
+
+        @Specialization(guards = {"isNoValue(iterable)", "!isEmpty(kwargs)"})
+        HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
+            return new KeywordsStorage(kwargs);
+        }
+
+        protected static boolean isPDict(Object o) {
+            return o instanceof PHashingCollection;
+        }
+
+        protected boolean hasKeysAttribute(Object o) {
+            if (lookupKeysAttributeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create(KEYS));
+            }
+            return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "isEmpty(kwargs)")
+        HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
+            return lib.copy(getDictStorageNode.execute(dictLike));
+        }
+
+        @Specialization(guards = "!isEmpty(kwargs)")
+        HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                        @Cached("create()") HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
+            Object state = IndirectCallContext.enter(frame, context, this);
+            try {
+                HashingStorage iterableDictStorage = getDictStorageNode.execute(iterable);
+                HashingStorage dictStorage = lib.copy(iterableDictStorage);
+                return lib.addAllToOther(new KeywordsStorage(kwargs), dictStorage);
+            } finally {
+                IndirectCallContext.exit(frame, context, state);
+            }
+        }
+
+        @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
+        HashingStorage doMapping(VirtualFrame frame, Object mapping, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
+                        @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            // That call must work since 'hasKeysAttribute' checks if it has the 'keys' attribute
+            // before.
+            Object keysIterable = callKeysNode.executeObject(frame, mapping);
+            Object keysIt = getIteratorNode.executeWith(frame, keysIterable);
+            while (true) {
+                try {
+                    Object keyObj = getNextNode().execute(frame, keysIt);
+                    Object valueObj = callGetItemNode.executeObject(frame, mapping, keyObj);
+
+                    curStorage = lib.setItem(curStorage, keyObj, valueObj);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+            }
+            if (kwargs.length > 0) {
+                curStorage = lib.addAllToOther(new KeywordsStorage(kwargs), curStorage);
+            }
+            return curStorage;
+        }
+
+        private GetNextNode getNextNode() {
+            if (nextNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nextNode = insert(GetNextNode.create());
+            }
+            return nextNode;
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
+        HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Cached PRaiseNode raise,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") FastConstructListNode createListNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached("create()") SequenceNodes.LenNode seqLenNode,
+                        @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached("create()") IsBuiltinClassProfile isTypeErrorProfile) {
+
+            Object it = getIterator.executeWith(frame, iterable);
+
+            ArrayList<PSequence> elements = new ArrayList<>();
+            boolean isStringKey = false;
+            try {
+                while (true) {
+                    Object next = getNextNode().execute(frame, it);
+                    PSequence element = null;
+                    int len = 1;
+                    element = createListNode.execute(next);
+                    assert element != null;
+                    // This constructs a new list using the builtin type. So, the object cannot
+                    // be subclassed and we can directly call 'len()'.
+                    len = seqLenNode.execute(element);
+
+                    if (lengthTwoProfile.profile(len != 2)) {
+                        throw raise.raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", arrayListSize(elements), len);
+                    }
+
+                    // really check for Java String since PString can be subclassed
+                    isStringKey = isStringKey || getItemNode.executeObject(frame, element, 0) instanceof String;
+
+                    arrayListAdd(elements, element);
+                }
+            } catch (PException e) {
+                if (isTypeErrorProfile.profileException(e, TypeError)) {
+                    throw raise.raise(TypeError, "cannot convert dictionary update sequence element #%d to a sequence", arrayListSize(elements));
+                } else {
+                    e.expectStopIteration(errorProfile);
+                }
+            }
+
+            HashingStorage storage = PDict.createNewStorage(isStringKey, arrayListSize(elements) + kwargs.length);
+            for (int j = 0; j < arrayListSize(elements); j++) {
+                PSequence element = arrayListGet(elements, j);
+                Object key = getItemNode.executeObject(frame, element, 0);
+                Object value = getItemNode.executeObject(frame, element, 1);
+                storage = lib.setItem(storage, key, value);
+            }
+            if (kwargs.length > 0) {
+                storage = lib.addAllToOther(new KeywordsStorage(kwargs), storage);
+            }
+            return storage;
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static PSequence arrayListGet(ArrayList<PSequence> elements, int j) {
+            return elements.get(j);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static boolean arrayListAdd(ArrayList<PSequence> elements, PSequence element) {
+            return elements.add(element);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static int arrayListSize(ArrayList<PSequence> elements) {
+            return elements.size();
+        }
+
+        public static InitNode create() {
+            return InitNodeGen.create();
+        }
     }
 
-    static final Equivalence DEFAULT_EQIVALENCE = new Equivalence() {
+    @ExportMessage
+    int length() {
+        throw new AbstractMethodError("HashingStorage.length");
+    }
 
-        @Override
-        public int hashCode(Object o) {
-            return Long.hashCode(o.hashCode());
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    Object getItemWithState(Object key, ThreadState state) {
+        throw new AbstractMethodError("HashingStorage.getItem");
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    HashingStorage setItemWithState(Object key, Object value, ThreadState state) {
+        throw new AbstractMethodError("HashingStorage.setItemWithState");
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    HashingStorage delItemWithState(Object key, ThreadState state) {
+        throw new AbstractMethodError("HashingStorage.delItemWithState");
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
+        throw new AbstractMethodError("HashingStorage.injectInto");
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    HashingStorage clear() {
+        throw new AbstractMethodError("HashingStorage.clear");
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    HashingStorage copy() {
+        throw new AbstractMethodError("HashingStorage.copy");
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    @ExportMessage
+    Iterator<Object> keys() {
+        throw new AbstractMethodError("HashingStorage.keys");
+    }
+
+    @GenerateUncached
+    protected abstract static class AddToOtherInjectNode extends InjectIntoNode {
+        @Specialization
+        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            HashingStorage self = accumulator[0];
+            HashingStorage other = accumulator[1];
+            return new HashingStorage[]{self, lib.setItem(other, key, lib.getItem(self, key))};
         }
+    }
 
-        @Override
-        public boolean equals(Object a, Object b) {
-            return (a == b) || (a != null && objectEquals(a, b));
-        }
+    @ExportMessage
+    public HashingStorage addAllToOther(HashingStorage other,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @Cached AddToOtherInjectNode injectNode) {
+        return libSelf.injectInto(this, new HashingStorage[]{this, other}, injectNode)[1];
+    }
 
-        @TruffleBoundary
-        private boolean objectEquals(Object a, Object b) {
-            return a.equals(b);
-        }
-    };
-
-    private static class EqualsRootNode extends RootNode {
-        @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
-
-        protected EqualsRootNode() {
-            super(PythonLanguage.getCurrent());
-            Truffle.getRuntime().createCallTarget(this);
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            Object[] args = frame.getArguments();
-            return callEqNode.executeWith(frame, args[0], args[1]);
-        }
-
-        @Override
-        public SourceSection getSourceSection() {
-            return null;
-        }
-
-        @Override
-        public boolean isCloningAllowed() {
+    @ExportMessage
+    public boolean equalsWithState(HashingStorage other, ThreadState state,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        if (this == other) {
             return true;
         }
-    }
-
-    public static class SlowPathEquivalence extends Equivalence {
-        private final EqualsRootNode eqRootNode = new EqualsRootNode();
-
-        @Override
-        public int hashCode(Object o) {
-            long hash = PythonObjectLibrary.getUncached().hash(o);
-            return Long.hashCode(hash);
-        }
-
-        @Override
-        public boolean equals(Object a, Object b) {
-            return (boolean) eqRootNode.getCallTarget().call(a, b);
-        }
-
-    }
-
-    static SlowPathEquivalence slowPathEquivalence = null;
-
-    protected static <T> Iterable<T> wrapJavaIterable(Iterable<T> values) {
-        return new Iterable<T>() {
-
-            @TruffleBoundary
-            public Iterator<T> iterator() {
-                return new WrappedIterator<>(values.iterator());
+        if (gotState.profile(state != null)) {
+            if (lib.lengthWithState(this, state) == lib.lengthWithState(other, state)) {
+                return lib.compareEntriesWithState(this, other, state) == 0;
             }
-        };
+        } else {
+            if (lib.length(this) == lib.length(other)) {
+                return lib.compareEntries(this, other) == 0;
+            }
+        }
+        return false;
+
     }
 
-    private static class WrappedIterator<T> implements Iterator<T> {
-        private final Iterator<T> delegate;
+    @GenerateUncached
+    protected abstract static class HasKeyNodeForSubsetKeys extends InjectIntoNode {
+        @Specialization
+        HashingStorage[] doit(HashingStorage[] other, Object key,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            if (!lib.hasKey(other[0], key)) {
+                throw AbortIteration.INSTANCE;
+            }
+            return other;
+        }
+    }
 
-        protected WrappedIterator(Iterator<T> delegate) {
-            this.delegate = delegate;
+    private static final class AbortIteration extends ControlFlowException {
+        private static final long serialVersionUID = 1L;
+        private static final AbortIteration INSTANCE = new AbortIteration();
+    }
+
+    @ExportMessage
+    public int compareKeys(HashingStorage other,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Cached HasKeyNodeForSubsetKeys hasKeyNode) {
+        if (this == other) {
+            return 0;
+        }
+        int otherLen = lib.length(other);
+        int selfLen = lib.length(this);
+        if (selfLen > otherLen) {
+            return 1;
+        }
+        try {
+            lib.injectInto(this, new HashingStorage[]{other}, hasKeyNode);
+        } catch (AbortIteration e) {
+            return 1;
+        }
+        if (selfLen == otherLen) {
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+
+    @GenerateUncached
+    protected abstract static class TestKeyValueEqual extends InjectIntoNode {
+        @Specialization
+        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @Cached PRaiseNode raise,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary hashLib,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            HashingStorage self = accumulator[0];
+            HashingStorage other = accumulator[1];
+            Object otherValue = lib.getItem(other, key);
+            if (otherValue == null) {
+                throw AbortIteration.INSTANCE;
+            }
+            Object selfValue = lib.getItem(self, key);
+            if (selfValue == null) {
+                throw raise.raise(PythonBuiltinClassType.RuntimeError, "dictionary changed during comparison operation");
+            }
+            if (hashLib.equals(selfValue, otherValue, hashLib)) {
+                return new HashingStorage[]{self, other};
+            } else {
+                throw AbortIteration.INSTANCE;
+            }
+        }
+    }
+
+    @ExportMessage
+    public int compareEntriesWithState(HashingStorage other, ThreadState state,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Cached TestKeyValueEqual testNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        if (this == other) {
+            return 0;
+        }
+        int otherLen, selfLen;
+        if (gotState.profile(state != null)) {
+            otherLen = lib.lengthWithState(other, state);
+            selfLen = lib.lengthWithState(this, state);
+        } else {
+            otherLen = lib.length(other);
+            selfLen = lib.length(this);
+        }
+        if (selfLen > otherLen) {
+            return 1;
+        }
+        try {
+            lib.injectInto(this, new HashingStorage[]{this, other}, testNode);
+        } catch (AbortIteration e) {
+            return 1;
+        }
+        if (selfLen == otherLen) {
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+
+    @GenerateUncached
+    protected abstract static class IntersectInjectionNode extends InjectIntoNode {
+        @Specialization
+        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            HashingStorage other = accumulator[0];
+            HashingStorage output = accumulator[1];
+            Object value = lib.getItem(other, key);
+            if (value != null) {
+                output = lib.setItem(output, key, value);
+            }
+            return new HashingStorage[]{other, output};
+        }
+    }
+
+    @ExportMessage
+    public HashingStorage intersect(HashingStorage other,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @Cached IntersectInjectionNode injectNode) {
+        HashingStorage newStore = EconomicMapStorage.create();
+        return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
+    }
+
+    @GenerateUncached
+    protected abstract static class DiffInjectNode extends InjectIntoNode {
+        @Specialization
+        HashingStorage[] doit(HashingStorage[] accumulator, Object key,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            HashingStorage self = accumulator[0];
+            HashingStorage other = accumulator[1];
+            HashingStorage output = accumulator[2];
+            if (!lib.hasKey(other, key)) {
+                output = lib.setItem(output, key, lib.getItem(self, key));
+            }
+            return new HashingStorage[]{self, other, output};
+        }
+    }
+
+    @ExportMessage
+    public HashingStorage xor(HashingStorage other,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Exclusive @Cached DiffInjectNode injectNode) {
+        // could also be done with lib.union(lib.diff(self, other),
+        // lib.diff(other, self)), but that uses one more iteration.
+        HashingStorage newStore = EconomicMapStorage.create();
+        // add all keys in self that are not in other
+        newStore = lib.injectInto(this, new HashingStorage[]{this, other, newStore}, injectNode)[2];
+        // add all keys in other that are not in self
+        return lib.injectInto(other, new HashingStorage[]{other, this, newStore}, injectNode)[2];
+    }
+
+    @ExportMessage
+    public HashingStorage union(HashingStorage other,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+        HashingStorage newStore = lib.copy(this);
+        return lib.addAllToOther(other, newStore);
+    }
+
+    @ExportMessage
+    public HashingStorage diff(HashingStorage other,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                    @Exclusive @Cached DiffInjectNode diffNode) {
+        HashingStorage newStore = EconomicMapStorage.create();
+        return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
+    }
+
+    @ExportMessage
+    public Iterator<Object> values(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new ValuesIterator(this, lib);
+    }
+
+    private static final class ValuesIterator implements Iterator<Object> {
+        private final Iterator<DictEntry> entriesIterator;
+
+        ValuesIterator(HashingStorage self, HashingStorageLibrary lib) {
+            this.entriesIterator = new EntriesIterator(self, lib);
         }
 
-        @TruffleBoundary
         public boolean hasNext() {
-            return delegate.hasNext();
+            return entriesIterator.hasNext();
         }
 
-        @TruffleBoundary
-        public T next() {
-            return delegate.next();
-        }
-
-    }
-
-    public static Equivalence getSlowPathEquivalence(Object key) {
-        if (key instanceof String) {
-            return DEFAULT_EQIVALENCE;
-        }
-        return PythonLanguage.getContext().getSlowPathEquivalence();
-    }
-
-    public abstract int length();
-
-    public void addAll(HashingStorage other) {
-        addAll(other, DEFAULT_EQIVALENCE);
-    }
-
-    @TruffleBoundary
-    public void addAll(HashingStorage other, Equivalence eq) {
-        for (DictEntry e : other.entries()) {
-            setItem(e.getKey(), e.getValue(), eq);
+        public Object next() {
+            return entriesIterator.next().getValue();
         }
     }
 
-    public abstract boolean hasKey(Object key, Equivalence eq);
+    @ExportMessage
+    public Iterator<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new EntriesIterator(this, lib);
+    }
 
-    public abstract Object getItem(Object key, Equivalence eq);
+    private static final class EntriesIterator implements Iterator<DictEntry> {
+        private final Iterator<Object> keysIterator;
+        private final HashingStorage self;
+        private final HashingStorageLibrary lib;
 
-    public abstract void setItem(Object key, Object value, Equivalence eq);
-
-    public abstract boolean remove(Object key, Equivalence eq);
-
-    public abstract Iterable<Object> keys();
-
-    @TruffleBoundary
-    private Object[] iteratorAsArray(Iterable<Object> iterable) {
-        Object[] items = new Object[this.length()];
-        int i = 0;
-        for (Object item : iterable) {
-            items[i++] = item;
+        EntriesIterator(HashingStorage self, HashingStorageLibrary lib) {
+            this.self = self;
+            this.lib = lib;
+            this.keysIterator = lib.keys(self);
         }
-        return items;
+
+        public boolean hasNext() {
+            return keysIterator.hasNext();
+        }
+
+        public DictEntry next() {
+            Object key = keysIterator.next();
+            Object value = lib.getItem(self, key);
+            return new DictEntry(key, value);
+        }
     }
 
-    public Object[] keysAsArray() {
-        return iteratorAsArray(keys());
+    protected long getHash(Object key, PythonObjectLibrary lib) {
+        return lib.hash(key);
     }
 
-    public abstract Iterable<Object> values();
-
-    public Object[] valuesAsArray() {
-        return iteratorAsArray(values());
+    protected long getHashWithState(Object key, PythonObjectLibrary lib, ThreadState state, ConditionProfile gotState) {
+        if (gotState.profile(state == null)) {
+            return getHash(key, lib);
+        }
+        return lib.hashWithState(key, state);
     }
-
-    public abstract Iterable<DictEntry> entries();
-
-    public abstract void clear();
-
-    public abstract HashingStorage copy(Equivalence eq);
 }

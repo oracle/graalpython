@@ -106,7 +106,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ListLiteralNode SourceSection: [886,890]`[{}]`
-                                          DictLiteralNode SourceSection: [887,889]`{}`
+                                          DictLiteralNodeGen SourceSection: [887,889]`{}`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -456,7 +456,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       Identifier: d
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,d,Illegal]
-                                      DictLiteralNode SourceSection: [1549,1551]`{}`
+                                      DictLiteralNodeGen SourceSection: [1549,1551]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ElseNode SourceSection: [1560,1692]`for mapping in rever...`
                                       ForNode SourceSection: None
@@ -1008,7 +1008,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         Identifier: m
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,m,Illegal]
-                                        DictLiteralNode SourceSection: [2625,2627]`{}`
+                                        DictLiteralNodeGen SourceSection: [2625,2627]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [2636,2672]`return self.__class_...`
@@ -1742,7 +1742,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                       ReadLocalVariableNode SourceSection: [4686,4690]`self`
                                         Frame: [2,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      DictLiteralNode SourceSection: [4698,4700]`{}`
+                                      DictLiteralNodeGen SourceSection: [4698,4700]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     IfNode SourceSection: [4709,4768]`if dict is not None:...`
                                       NotNodeGen SourceSection: [4712,4728]`dict is not None`
@@ -2374,7 +2374,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [5681,5685]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            DictLiteralNode SourceSection: [5693,5695]`{}`
+                                            DictLiteralNodeGen SourceSection: [5693,5695]`{}`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [5708,5727]`c = copy.copy(self)`
                                             Identifier: c

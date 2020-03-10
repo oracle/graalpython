@@ -66,7 +66,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -794,10 +794,10 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "!isNoValue(to)")
-        PDict doString(VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
+        PDict doString(@SuppressWarnings("unused") VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
-                        @Cached SetItemNode setItemNode) {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
 
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
@@ -805,12 +805,12 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, "the first two maketrans arguments must have equal length");
             }
 
-            PDict translation = factory().createDict();
-            HashingStorage storage = translation.getDictStorage();
+            HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
+            PDict translation = factory().createDict(storage);
             for (int i = 0; i < fromStr.length(); i++) {
                 int key = fromStr.charAt(i);
                 int value = toStr.charAt(i);
-                storage = setItemNode.execute(frame, storage, key, value);
+                storage = lib.setItem(storage, key, value);
             }
             translation.setDictStorage(storage);
 

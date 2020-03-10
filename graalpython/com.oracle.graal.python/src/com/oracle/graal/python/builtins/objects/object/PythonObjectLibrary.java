@@ -214,7 +214,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public long hashWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
-            throw new AbstractMethodError();
+            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
         }
         return hash(receiver);
     }

@@ -41,7 +41,8 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -56,6 +57,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class ReadNameNode extends ExpressionNode implements ReadNode, AccessNameNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNode;
@@ -83,11 +85,14 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         return getReadGlobalNode().execute(frame);
     }
 
-    @Specialization(guards = "hasLocalsDict(frame)")
+    protected static HashingStorage getStorage(VirtualFrame frame) {
+        return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
+    }
+
+    @Specialization(guards = "hasLocalsDict(frame)", limit = "1")
     protected Object readFromLocalsDict(VirtualFrame frame,
-                    @Cached("create()") HashingStorageNodes.GetItemNode getItem) {
-        PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
-        Object result = getItem.execute(frame, frameLocals.getDictStorage(), attributeId);
+                    @CachedLibrary(value = "getStorage(frame)") HashingStorageLibrary hlib) {
+        Object result = hlib.getItem(getStorage(frame), attributeId);
         if (result == null) {
             return getReadGlobalNode().execute(frame);
         } else {

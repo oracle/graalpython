@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,8 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -418,7 +417,7 @@ public abstract class TypeNodes {
                 private final PDict dict = (PDict) tpSubclasses;
 
                 public int size() {
-                    return dict.getDictStorage().length();
+                    return HashingStorageLibrary.getUncached().length(dict.getDictStorage());
                 }
 
                 public boolean isEmpty() {
@@ -426,23 +425,18 @@ public abstract class TypeNodes {
                 }
 
                 public boolean contains(Object o) {
-                    HashingStorage s = dict.getDictStorage();
-                    Equivalence equiv = HashingStorage.getSlowPathEquivalence(o);
-                    for (Object val : s.values()) {
-                        if (equiv.equals(o, val)) {
-                            return true;
-                        }
-                    }
-                    return false;
+                    return HashingStorageLibrary.getUncached().hasKey(dict.getDictStorage(), o);
                 }
 
                 @SuppressWarnings("unchecked")
                 public Iterator<PythonAbstractClass> iterator() {
-                    return (Iterator<PythonAbstractClass>) dict.getDictStorage().values();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new UnsupportedOperationException();
                 }
 
                 public Object[] toArray() {
-                    return dict.getDictStorage().valuesAsArray();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new UnsupportedOperationException();
                 }
 
                 public <T> T[] toArray(T[] a) {

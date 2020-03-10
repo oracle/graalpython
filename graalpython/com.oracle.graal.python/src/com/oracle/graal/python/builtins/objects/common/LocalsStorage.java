@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,17 +44,33 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@ExportLibrary(HashingStorageLibrary.class)
 public class LocalsStorage extends HashingStorage {
-
     /* This won't be the real (materialized) frame but a clone of it. */
-    private final MaterializedFrame frame;
+    protected final MaterializedFrame frame;
     private int len = -1;
 
     public LocalsStorage(FrameDescriptor fd) {
@@ -63,6 +79,10 @@ public class LocalsStorage extends HashingStorage {
 
     public LocalsStorage(MaterializedFrame frame) {
         this.frame = frame;
+    }
+
+    public MaterializedFrame getFrame() {
+        return frame;
     }
 
     private Object getValue(FrameSlot slot) {
@@ -76,105 +96,191 @@ public class LocalsStorage extends HashingStorage {
         return null;
     }
 
-    public MaterializedFrame getFrame() {
-        return frame;
-    }
-
     @Override
-    public void addAll(HashingStorage other, Equivalence eq) {
-        throw UnmodifiableStorageException.INSTANCE;
-    }
-
-    @Override
-    @TruffleBoundary
-    public Object getItem(Object key, Equivalence eq) {
-        assert eq == DEFAULT_EQIVALENCE;
-        if (!FrameSlotIDs.isUserFrameSlot(key)) {
-            return null;
-        }
-        FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(key);
-        return getValue(slot);
-    }
-
-    @Override
-    public void setItem(Object key, Object value, Equivalence eq) {
-        throw UnmodifiableStorageException.INSTANCE;
-    }
-
-    @Override
-    public Iterable<Object> keys() {
-        return new Iterable<Object>() {
-
-            public Iterator<Object> iterator() {
-                return new KeysIterator();
-            }
-        };
-    }
-
-    @Override
-    @TruffleBoundary
-    public boolean hasKey(Object key, Equivalence eq) {
-        assert eq == DEFAULT_EQIVALENCE;
-        if (!FrameSlotIDs.isUserFrameSlot(key)) {
-            return false;
-        }
-        // Deleting variables from a frame means to write 'null' into the slot. So we also need to
-        // check the value.
-        return frame.getFrameDescriptor().findFrameSlot(key) != null && getItem(key, eq) != null;
-    }
-
-    @Override
-    @TruffleBoundary
+    @ExportMessage
     public int length() {
         if (len == -1) {
-            len = frame.getFrameDescriptor().getSize();
-            for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
-                Object identifier = slot.getIdentifier();
-                if (!FrameSlotIDs.isUserFrameSlot(identifier) || frame.getValue(slot) == null) {
-                    len--;
-                }
-            }
+            CompilerDirectives.transferToInterpreter();
+            calculateLength();
         }
         return len;
     }
 
-    @Override
-    public boolean remove(Object key, Equivalence eq) {
-        throw UnmodifiableStorageException.INSTANCE;
-    }
-
-    @Override
     @TruffleBoundary
-    public Iterable<Object> values() {
-        return new Iterable<Object>() {
-
-            public Iterator<Object> iterator() {
-                return new ValuesIterator();
+    private void calculateLength() {
+        len = frame.getFrameDescriptor().getSize();
+        for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
+            Object identifier = slot.getIdentifier();
+            if (!FrameSlotIDs.isUserFrameSlot(identifier) || frame.getValue(slot) == null) {
+                len--;
             }
-        };
+        }
     }
 
-    @Override
-    @TruffleBoundary
-    public Iterable<DictEntry> entries() {
-        return new Iterable<DictEntry>() {
+    @SuppressWarnings("unused")
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class GetItemWithState {
+        @Specialization(guards = {"key == cachedKey", "desc == self.frame.getFrameDescriptor()"}, limit = "3", assumptions = "desc.getVersion()")
+        static Object getItemCached(LocalsStorage self, String key, ThreadState state,
+                        @Cached("key") String cachedKey,
+                        @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
+                        @Cached("desc.findFrameSlot(key)") FrameSlot slot) {
+            return self.getValue(slot);
+        }
 
-            public Iterator<DictEntry> iterator() {
-                return new ItemsIterator();
+        @Specialization(replaces = "getItemCached")
+        static Object string(LocalsStorage self, String key, ThreadState state) {
+            if (!FrameSlotIDs.isUserFrameSlot(key)) {
+                return null;
             }
-        };
+            FrameSlot slot = findSlot(self, key);
+            return self.getValue(slot);
+        }
+
+        @Specialization(guards = "isBuiltinString(key, profile)")
+        static Object pstring(LocalsStorage self, PString key, ThreadState state,
+                        @Cached IsBuiltinClassProfile profile) {
+            return string(self, key.getValue(), state);
+        }
+
+        @Specialization(guards = "!isBuiltinString(key, profile)")
+        static Object notString(LocalsStorage self, Object key, ThreadState state,
+                        @Cached IsBuiltinClassProfile profile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
+            long hash = self.getHashWithState(key, lib, state, gotState);
+            for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
+                Object currentKey = slot.getIdentifier();
+                if (currentKey instanceof String) {
+                    long keyHash;
+                    if (gotState.profile(state != null)) {
+                        keyHash = lib.hashWithState(currentKey, state);
+                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
+                            return self.getValue(slot);
+                        }
+                    } else {
+                        keyHash = lib.hash(currentKey);
+                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
+                            return self.getValue(slot);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        @TruffleBoundary
+        private static FrameSlot findSlot(LocalsStorage self, Object key) {
+            return self.frame.getFrameDescriptor().findFrameSlot(key);
+        }
+    }
+
+    @ExportMessage
+    HashingStorage setItemWithState(Object key, Object value, ThreadState state,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        HashingStorage result = generalize(lib);
+        if (gotState.profile(state != null)) {
+            return lib.setItemWithState(result, key, value, state);
+        } else {
+            return lib.setItem(result, key, value);
+        }
+    }
+
+    @ExportMessage
+    HashingStorage delItemWithState(Object key, ThreadState state,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        HashingStorage result = generalize(lib);
+        if (gotState.profile(state != null)) {
+            return lib.delItemWithState(result, key, state);
+        } else {
+            return lib.delItem(result, key);
+        }
+    }
+
+    private HashingStorage generalize(HashingStorageLibrary lib) {
+        HashingStorage result = EconomicMapStorage.create(length());
+        result = lib.addAllToOther(this, result);
+        return result;
     }
 
     @Override
-    @TruffleBoundary
-    public void clear() {
-        throw UnmodifiableStorageException.INSTANCE;
+    @ExportMessage
+    public HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
+        bailout();
+        HashingStorage[] result = firstValue;
+        for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
+            Object value = getValue(slot);
+            if (value != null) {
+                result = node.execute(result, slot.getIdentifier());
+            }
+        }
+        return result;
+    }
+
+    private static void bailout() {
+        CompilerDirectives.bailout("Generic loop over frame storage cannot be compiled");
+    }
+
+    @ExportMessage
+    static class AddAllToOther {
+        protected static FrameSlot[] getSlots(FrameDescriptor desc) {
+            return desc.getSlots().toArray(new FrameSlot[0]);
+        }
+
+        @Specialization(guards = {"desc == self.frame.getFrameDescriptor()"}, limit = "1", assumptions = "desc.getVersion()")
+        @ExplodeLoop
+        static HashingStorage cached(LocalsStorage self, HashingStorage other,
+                        @CachedLibrary("other") HashingStorageLibrary lib,
+                        @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
+                        @Exclusive @Cached(value = "getSlots(desc)", dimensions = 1) FrameSlot[] slots) {
+            HashingStorage result = other;
+            for (int i = 0; i < slots.length; i++) {
+                FrameSlot slot = slots[i];
+                Object value = self.getValue(slot);
+                if (value != null) {
+                    result = lib.setItem(result, slot.getIdentifier(), value);
+                }
+            }
+            return result;
+        }
+
+        @Specialization(replaces = "cached", limit = "1")
+        static HashingStorage generic(LocalsStorage self, HashingStorage other,
+                        @CachedLibrary("other") HashingStorageLibrary lib) {
+            bailout();
+            HashingStorage result = other;
+            FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());
+            for (int i = 0; i < slots.length; i++) {
+                FrameSlot slot = slots[i];
+                Object value = self.getValue(slot);
+                if (value != null) {
+                    result = lib.setItem(result, slot.getIdentifier(), value);
+                }
+            }
+            return result;
+        }
     }
 
     @Override
-    public HashingStorage copy(Equivalence eq) {
-        assert eq == DEFAULT_EQIVALENCE;
+    @ExportMessage
+    public HashingStorage clear() {
+        return EconomicMapStorage.create();
+    }
+
+    @Override
+    @ExportMessage
+    public HashingStorage copy() {
         return new LocalsStorage(frame);
+    }
+
+    @Override
+    @ExportMessage
+    public Iterator<Object> keys() {
+        return new KeysIterator();
     }
 
     private abstract class LocalsIterator<T> implements Iterator<T> {
@@ -235,23 +341,6 @@ public class LocalsStorage extends HashingStorage {
         @TruffleBoundary
         public Object next() {
             return nextSlot().getIdentifier();
-        }
-    }
-
-    private class ValuesIterator extends LocalsIterator<Object> {
-        @Override
-        @TruffleBoundary
-        public Object next() {
-            return getValue(nextSlot());
-        }
-    }
-
-    private class ItemsIterator extends LocalsIterator<DictEntry> {
-        @Override
-        @TruffleBoundary
-        public DictEntry next() {
-            FrameSlot slot = nextSlot();
-            return new DictEntry(slot.getIdentifier(), getValue(slot));
         }
     }
 }

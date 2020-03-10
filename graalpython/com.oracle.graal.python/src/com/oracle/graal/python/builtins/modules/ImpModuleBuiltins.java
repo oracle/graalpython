@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,10 +64,12 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -112,6 +114,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -367,12 +370,24 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "is_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
+
+        protected boolean isWithinContext() {
+            return getContext() != null && getContext().isInitialized();
+        }
+
+        protected HashingStorage getStorage() {
+            return isWithinContext() ? getContext().getImportedModules().getDictStorage() : null;
+        }
+
         @Specialization
         public int run(VirtualFrame frame, String name,
-                        @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hasKeyLib,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(frame, getContext().getImportedModules().getDictStorage(), name)) {
+            } else if (isWithinContext() && hasFrame.profile(frame != null) && hasKeyLib.hasKeyWithState(getStorage(), name, PArguments.getThreadState(frame))) {
+                return -1;
+            } else if (isWithinContext() && hasKeyLib.hasKey(getStorage(), name)) {
                 return -1;
             } else {
                 return 0;

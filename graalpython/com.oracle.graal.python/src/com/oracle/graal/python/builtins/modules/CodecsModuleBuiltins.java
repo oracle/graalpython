@@ -64,9 +64,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -86,6 +89,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
@@ -670,24 +674,31 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CharmapBuildNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
-        Object lookup(String chars) {
-            Map<Integer, Integer> charmap = createMap(chars);
-            return factory().createDict(charmap);
-        }
-
-        @TruffleBoundary
-        private static Map<Integer, Integer> createMap(String chars) {
-            Map<Integer, Integer> charmap = new HashMap<>();
+        Object lookup(String chars,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            HashingStorage store = PDict.createNewStorage(false, chars.length());
+            PDict dict = factory().createDict(store);
             int pos = 0;
             int num = 0;
 
             while (pos < chars.length()) {
-                int charid = Character.codePointAt(chars, pos);
-                charmap.put(charid, num);
-                pos += Character.charCount(charid);
+                int charid = codePointAt(chars, pos);
+                store = lib.setItem(store, charid, num);
+                pos += charCount(charid);
                 num++;
             }
-            return charmap;
+            dict.setDictStorage(store);
+            return dict;
+        }
+
+        @TruffleBoundary
+        private static int charCount(int charid) {
+            return Character.charCount(charid);
+        }
+
+        @TruffleBoundary
+        private static int codePointAt(String chars, int pos) {
+            return Character.codePointAt(chars, pos);
         }
     }
 }

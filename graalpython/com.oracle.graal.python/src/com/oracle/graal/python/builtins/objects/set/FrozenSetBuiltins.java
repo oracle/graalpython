@@ -39,9 +39,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 
+import java.util.Iterator;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -50,9 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -61,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
@@ -72,23 +69,17 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -103,19 +94,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object iter(PBaseSet self) {
-            return factory().createBaseSetIterator(self);
+        @Specialization(limit = "1")
+        public Object iter(PBaseSet self,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()));
         }
     }
 
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         public int len(PBaseSet self,
-                        @Cached HashingStorageNodes.LenNode lenNode) {
-            return lenNode.execute(self.getDictStorage());
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return lib.length(self.getDictStorage());
         }
     }
 
@@ -123,10 +115,17 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
+        @Specialization(limit = "1")
         public Object reduce(PBaseSet self,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("create()") GetLazyClassNode getClass) {
-            PTuple contents = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
+            int len = lib.length(self.getDictStorage());
+            Iterator<Object> keys = lib.keys(self.getDictStorage());
+            Object[] keysArray = new Object[len];
+            for (int i = 0; keys.hasNext(); i++) {
+                keysArray[i] = keys.next();
+            }
+            PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
             return factory().createTuple(new Object[]{getClass.execute(self), contents, PNone.NONE});
         }
     }
@@ -134,10 +133,15 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean doSetSameType(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
-            return equalsNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(self.getDictStorage(), other.getDictStorage(), PArguments.getThreadState(frame)) == 0;
+            } else {
+                return lib.compareKeys(self.getDictStorage(), other.getDictStorage()) == 0;
+            }
         }
 
         @Fallback
@@ -147,72 +151,72 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
+    protected static HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str, HashingStorageLibrary lib, ConditionProfile hasFrame) {
+        HashingStorage storage = EconomicMapStorage.create(PString.length(str));
+        for (int i = 0; i < PString.length(str); i++) {
+            String key = PString.valueOf(PString.charAt(str, i));
+            if (hasFrame.profile(frame != null)) {
+                lib.setItemWithState(storage, key, PNone.NONE, PArguments.getThreadState(frame));
+            } else {
+                lib.setItem(storage, key, PNone.NONE);
+            }
+        }
+        return storage;
+    }
+
     @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.IntersectNode intersectNode;
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
 
-        private HashingStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
-            return setItemNode;
+        protected static HashingStorage intersect(HashingStorageLibrary lib, HashingStorage left, HashingStorage right) {
+            return lib.intersect(left, right);
         }
 
-        private HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str) {
-            HashingStorage storage = EconomicMapStorage.create(PString.length(str), true);
-            for (int i = 0; i < PString.length(str); i++) {
-                String key = PString.valueOf(PString.charAt(str, i));
-                getSetItemNode().execute(frame, storage, key, PNone.NO_VALUE);
-            }
-            return storage;
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, String right,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return factory().createSet(intersect(leftLib, left.getDictStorage(), getStringAsHashingStorage(frame, right, lib, hasFrame)));
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, String right) {
-            return factory().createSet(getIntersectNode().execute(frame, left.getDictStorage(), getStringAsHashingStorage(frame, right)));
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, String right,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return factory().createFrozenSet(intersect(leftLib, left.getDictStorage(), getStringAsHashingStorage(frame, right, lib, hasFrame)));
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, String right) {
-            return factory().createFrozenSet(getIntersectNode().execute(frame, left.getDictStorage(), getStringAsHashingStorage(frame, right)));
-        }
-
-        private HashingStorageNodes.IntersectNode getIntersectNode() {
-            if (intersectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                intersectNode = insert(HashingStorageNodes.IntersectNode.create());
-            }
-            return intersectNode;
-        }
-
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right) {
-            HashingStorage intersectedStorage = getIntersectNode().execute(frame, left.getDictStorage(), right.getDictStorage());
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PSet left, PBaseSet right,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
+            HashingStorage intersectedStorage = intersect(leftLib, left.getDictStorage(), right.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PBaseSet right) {
-            HashingStorage intersectedStorage = getIntersectNode().execute(frame, left.getDictStorage(), right.getDictStorage());
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
+            HashingStorage intersectedStorage = intersect(leftLib, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PDictView right,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             PSet rightSet = constructSetNode.executeWith(frame, right);
-            HashingStorage intersectedStorage = getIntersectNode().execute(frame, left.getDictStorage(), rightSet.getDictStorage());
+            HashingStorage intersectedStorage = intersect(leftLib, left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PDictView right,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             PSet rightSet = constructSetNode.executeWith(frame, right);
-            HashingStorage intersectedStorage = getIntersectNode().execute(frame, left.getDictStorage(), rightSet.getDictStorage());
+            HashingStorage intersectedStorage = intersect(leftLib, left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
@@ -225,69 +229,56 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class OrNode extends PythonBinaryBuiltinNode {
-        @Node.Child private HashingStorageNodes.UnionNode unionNode;
-        @Node.Child private HashingStorageNodes.SetItemNode setItemNode;
 
-        private HashingStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
-            return setItemNode;
+        protected static HashingStorage union(HashingStorageLibrary lib, HashingStorage left, HashingStorage right) {
+            return lib.union(left, right);
         }
 
-        private HashingStorage getStringAsHashingStorage(VirtualFrame frame, String str) {
-            HashingStorage storage = EconomicMapStorage.create(PString.length(str), true);
-            for (int i = 0; i < PString.length(str); i++) {
-                String key = PString.valueOf(PString.charAt(str, i));
-                getSetItemNode().execute(frame, storage, key, PNone.NO_VALUE);
-            }
-            return storage;
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, String right,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return factory().createSet(union(leftLib, left.getDictStorage(), getStringAsHashingStorage(frame, right, lib, hasFrame)));
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, String right) {
-            return factory().createSet(getUnionNode().execute(frame, left.getDictStorage(), getStringAsHashingStorage(frame, right)));
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, String right,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return factory().createFrozenSet(union(leftLib, left.getDictStorage(), getStringAsHashingStorage(frame, right, lib, hasFrame)));
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, String right) {
-            return factory().createFrozenSet(getUnionNode().execute(frame, left.getDictStorage(), getStringAsHashingStorage(frame, right)));
-        }
-
-        private HashingStorageNodes.UnionNode getUnionNode() {
-            if (unionNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                unionNode = insert(HashingStorageNodes.UnionNode.create());
-            }
-            return unionNode;
-        }
-
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right) {
-            HashingStorage intersectedStorage = getUnionNode().execute(frame, left.getDictStorage(), right.getDictStorage());
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PSet left, PBaseSet right,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
+            HashingStorage intersectedStorage = union(leftLib, left.getDictStorage(), right.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PBaseSet right) {
-            HashingStorage intersectedStorage = getUnionNode().execute(frame, left.getDictStorage(), right.getDictStorage());
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
+            HashingStorage intersectedStorage = union(leftLib, left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PDictView right,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             PSet rightSet = constructSetNode.executeWith(frame, right);
-            HashingStorage intersectedStorage = getUnionNode().execute(frame, left.getDictStorage(), rightSet.getDictStorage());
+            HashingStorage intersectedStorage = union(leftLib, left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PDictView right,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
             PSet rightSet = constructSetNode.executeWith(frame, right);
-            HashingStorage intersectedStorage = getUnionNode().execute(frame, left.getDictStorage(), rightSet.getDictStorage());
+            HashingStorage intersectedStorage = union(leftLib, left.getDictStorage(), rightSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
@@ -300,25 +291,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.DiffNode diffNode;
 
-        private HashingStorageNodes.DiffNode getDiffNode() {
-            if (diffNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                diffNode = insert(HashingStorageNodes.DiffNode.create());
-            }
-            return diffNode;
-        }
-
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PSet left, PBaseSet right) {
-            HashingStorage storage = getDiffNode().execute(frame, left.getDictStorage(), right.getDictStorage());
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PSet left, PBaseSet right,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = lib.diff(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
 
-        @Specialization
-        PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, PBaseSet right) {
-            HashingStorage storage = getDiffNode().execute(frame, left.getDictStorage(), right.getDictStorage());
+        @Specialization(limit = "1")
+        PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, PBaseSet right,
+                        @CachedLibrary("left.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage storage = lib.diff(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
 
@@ -331,10 +315,15 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean contains(VirtualFrame frame, PBaseSet self, Object key,
-                        @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
-            return containsKeyNode.execute(frame, self.getDictStorage(), key);
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.hasKeyWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
+            } else {
+                return lib.hasKey(self.getDictStorage(), key);
+            }
         }
     }
 
@@ -365,22 +354,22 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         PBaseSet doCached(VirtualFrame frame, PBaseSet self, Object[] args,
                         @Cached("args.length") int len,
-                        @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
-            PBaseSet result = create(self, copyNode.execute(frame, self.getDictStorage()));
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < len; i++) {
-                getBinaryUnionNode().execute(frame, result, result.getDictStorage(), args[i]);
+                result = getBinaryUnionNode().execute(frame, result, args[i]);
             }
-            return result;
+            return create(self, result);
         }
 
-        @Specialization(replaces = "doCached")
+        @Specialization(replaces = "doCached", limit = "1")
         PBaseSet doGeneric(VirtualFrame frame, PBaseSet self, Object[] args,
-                        @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
-            PBaseSet result = create(self, copyNode.execute(frame, self.getDictStorage()));
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            HashingStorage result = lib.copy(self.getDictStorage());
             for (int i = 0; i < args.length; i++) {
-                getBinaryUnionNode().execute(frame, result, result.getDictStorage(), args[i]);
+                result = getBinaryUnionNode().execute(frame, result, args[i]);
             }
-            return result;
+            return create(self, result);
         }
 
         private PBaseSet create(PBaseSet left, HashingStorage storage) {
@@ -391,65 +380,38 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class BinaryUnionNode extends PNodeWithContext implements IndirectCallNode {
-        @Child private Equivalence equivalenceNode;
-        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+    abstract static class BinaryUnionNode extends PNodeWithContext {
+        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage left, Object right);
 
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return dontNeedCallerFrame;
+        @Specialization(limit = "1")
+        HashingStorage doHashingCollection(@SuppressWarnings("unused") VirtualFrame frame, EconomicMapStorage selfStorage, PHashingCollection other,
+                        @CachedLibrary("selfStorage") HashingStorageLibrary lib) {
+            return lib.union(selfStorage, other.getDictStorage());
         }
 
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return dontNeedExceptionState;
-        }
-
-        public abstract PBaseSet execute(VirtualFrame frame, PBaseSet container, HashingStorage left, Object right);
-
-        protected Equivalence getEquivalence() {
-            if (equivalenceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                equivalenceNode = insert(new PythonEquivalence());
-            }
-            return equivalenceNode;
-        }
-
-        @Specialization
-        PBaseSet doHashingCollection(VirtualFrame frame, PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                for (Object key : other.getDictStorage().keys()) {
-                    selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
-            }
-            return container;
-        }
-
-        @Specialization
-        PBaseSet doIterable(VirtualFrame frame, PBaseSet container, HashingStorage dictStorage, Object iterable,
+        @Specialization(limit = "1")
+        HashingStorage doIterable(VirtualFrame frame, HashingStorage dictStorage, Object iterable,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode next,
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
 
             HashingStorage curStorage = dictStorage;
             Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {
-                Object value;
+                Object key;
                 try {
-                    value = next.execute(frame, iterator);
+                    key = next.execute(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
-                    container.setDictStorage(curStorage);
-                    return container;
+                    return curStorage;
                 }
-                curStorage = setItemNode.execute(frame, curStorage, value, PNone.NO_VALUE);
+                if (hasFrame.profile(frame != null)) {
+                    curStorage = lib.setItemWithState(curStorage, key, PNone.NONE, PArguments.getThreadState(frame));
+                } else {
+                    curStorage = lib.setItem(curStorage, key, PNone.NONE);
+                }
             }
         }
 
@@ -461,36 +423,56 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = "issubset", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsSubsetNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean isSubSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
-            return isSubsetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(self.getDictStorage(), other.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
+            } else {
+                return lib.compareKeys(self.getDictStorage(), other.getDictStorage()) <= 0;
+            }
         }
 
-        @Specialization(replaces = "isSubSet")
+        @Specialization(replaces = "isSubSet", limit = "1")
         boolean isSubSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Cached HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            return isSubsetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(self.getDictStorage(), otherSet.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
+            } else {
+                return lib.compareKeys(self.getDictStorage(), otherSet.getDictStorage()) <= 0;
+            }
         }
     }
 
     @Builtin(name = "issuperset", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsSupersetNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean isSuperSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
-            return isSupersetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(other.getDictStorage(), self.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
+            } else {
+                return lib.compareKeys(other.getDictStorage(), self.getDictStorage()) <= 0;
+            }
         }
 
-        @Specialization(replaces = "isSuperSet")
+        @Specialization(replaces = "isSuperSet", limit = "1")
         boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @Cached HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             PSet otherSet = constructSetNode.executeWith(frame, other);
-            return isSupersetNode.execute(frame, self.getDictStorage(), otherSet.getDictStorage());
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(otherSet.getDictStorage(), self.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
+            } else {
+                return lib.compareKeys(otherSet.getDictStorage(), self.getDictStorage()) <= 0;
+            }
         }
 
     }
@@ -500,8 +482,13 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doLE(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
-            return isSubsetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(self.getDictStorage(), other.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
+            } else {
+                return lib.compareKeys(self.getDictStorage(), other.getDictStorage()) <= 0;
+            }
         }
 
         @Fallback
@@ -514,10 +501,15 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean doGE(VirtualFrame frame, PBaseSet self, PBaseSet other,
-                        @Cached HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
-            return isSupersetNode.execute(frame, self.getDictStorage(), other.getDictStorage());
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.compareKeysWithState(other.getDictStorage(), self.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
+            } else {
+                return lib.compareKeys(other.getDictStorage(), self.getDictStorage()) <= 0;
+            }
         }
 
         @Fallback
@@ -621,15 +613,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return self.getHash();
         }
 
-        @Specialization(guards = {"self.getHash() == HASH_UNSET"})
+        @Specialization(guards = {"self.getHash() == HASH_UNSET"}, limit = "1")
         public long computeHash(VirtualFrame frame, PFrozenSet self,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib,
                         @Cached("createBinaryProfile()") ConditionProfile gotFrame,
-                        @Cached HashingStorageNodes.LenNode getLen,
-                        @Cached HashingStorageNodes.GetItemNode getItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
             HashingStorage storage = self.getDictStorage();
-            int len = getLen.execute(storage);
+            int len = hlib.length(storage);
             long m1 = 0x72e8ef4d;
             long m2 = 0x10dcd;
             long c1 = 0x3611c3e3;
@@ -640,13 +631,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             if (gotFrame.profile(frame != null)) {
                 threadState = PArguments.getThreadState(frame);
             }
-            for (Object key : storage.keys()) {
-                Object value = getItemNode.execute(frame, storage, key);
+            Iterator<Object> keys = hlib.keys(storage);
+            while (keys.hasNext()) {
+                Object key = keys.next();
                 long tmp;
                 if (gotFrame.profile(frame != null)) {
-                    tmp = lib.hashWithState(value, threadState);
+                    tmp = lib.hashWithState(hlib.getItemWithState(storage, key, threadState), threadState);
                 } else {
-                    tmp = lib.hash(value);
+                    tmp = lib.hash(hlib.getItem(storage, key));
                 }
                 hash ^= shuffleBits(tmp);
             }

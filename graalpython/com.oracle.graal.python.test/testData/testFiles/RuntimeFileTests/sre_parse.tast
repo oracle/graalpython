@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
         Identifier: _REPEATCODES
         PythonCallNodeGen SourceSection: [680,715]`frozenset({MIN_REPEA...`
           CallNodeGen SourceSection: None
-          SetLiteralNode SourceSection: [690,714]`{MIN_REPEAT, MAX_REP...`
+          SetLiteralNodeGen SourceSection: [690,714]`{MIN_REPEAT, MAX_REP...`
             PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [691,701]`MIN_REPEAT`
               Identifier: MIN_REPEAT
@@ -66,7 +66,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
         Identifier: _UNITCODES
         PythonCallNodeGen SourceSection: [729,788]`frozenset({ANY, RANG...`
           CallNodeGen SourceSection: None
-          SetLiteralNode SourceSection: [739,787]`{ANY, RANGE, IN, LIT...`
+          SetLiteralNodeGen SourceSection: [739,787]`{ANY, RANGE, IN, LIT...`
             PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [740,743]`ANY`
               Identifier: ANY
@@ -84,7 +84,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             Identifier: frozenset
       WriteNameNodeGen SourceSection: [790,1066]`ESCAPES = {↵    r"\a...`
         Identifier: ESCAPES
-        DictLiteralNode SourceSection: [800,1066]`{↵    r"\a": (LITERA...`
+        DictLiteralNodeGen SourceSection: [800,1066]`{↵    r"\a": (LITERA...`
           PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [806,811]`r"\a"`
           StringLiteralNode SourceSection: [839,844]`r"\b"`
@@ -168,7 +168,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1068,1544]`CATEGORIES = {↵    r...`
         Identifier: CATEGORIES
-        DictLiteralNode SourceSection: [1081,1544]`{↵    r"\A": (AT, AT...`
+        DictLiteralNodeGen SourceSection: [1081,1544]`{↵    r"\A": (AT, AT...`
           PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [1087,1092]`r"\A"`
           StringLiteralNode SourceSection: [1143,1148]`r"\b"`
@@ -278,7 +278,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1546,1813]`FLAGS = {↵    # stan...`
         Identifier: FLAGS
-        DictLiteralNode SourceSection: [1554,1813]`{↵    # standard fla...`
+        DictLiteralNodeGen SourceSection: [1554,1813]`{↵    # standard fla...`
           PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [1581,1584]`"i"`
           StringLiteralNode SourceSection: [1611,1614]`"L"`
@@ -462,7 +462,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadLocalVariableNode SourceSection: [2100,2104]`self`
                                         Frame: [0,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      DictLiteralNode SourceSection: [2117,2119]`{}`
+                                      DictLiteralNodeGen SourceSection: [2117,2119]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     SetAttributeNodeGen SourceSection: [2128,2153]`self.groupwidths = [...`
                                       Attribute: groupwidths

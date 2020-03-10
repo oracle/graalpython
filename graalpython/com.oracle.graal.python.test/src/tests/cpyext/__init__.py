@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -415,7 +415,7 @@ class CPyExtFunctionOutVars(CPyExtFunction):
                     fargs["resultvarlocations"] = ", ".join("&" + arg.rpartition(" ")[2] for arg in fargs["resultvars"])
         if "resulttype" not in fargs:
                     fargs["resulttype"] = "void*"
-        if len(fargs["resultvarlocations"]):
+        if len(fargs["resultvarlocations"]) and not fargs["resultvarlocations"].startswith(","):
             fargs["resultvarlocations"] = ", " + fargs["resultvarlocations"]
         self._insert(fargs, "customcode", "")
         super(CPyExtFunctionOutVars, self).create_module(name)
