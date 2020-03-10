@@ -477,6 +477,23 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrOccurred extends GraalHPyContextFunction {
+
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNode) throws ArityException {
+            if (arguments.length != 1) {
+                throw ArityException.create(1, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            return context.getContext().getCurrentException() != null ? 1 : 0;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyUnicodeAsUTF8String extends GraalHPyContextFunction {
 
         @ExportMessage
