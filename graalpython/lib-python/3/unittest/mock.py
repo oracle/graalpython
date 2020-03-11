@@ -48,6 +48,8 @@ _safe_super = super
 def _is_async_obj(obj):
     if _is_instance_mock(obj) and not isinstance(obj, AsyncMock):
         return False
+    if hasattr(obj, '__func__'):
+        obj = getattr(obj, '__func__')
     return asyncio.iscoroutinefunction(obj) or inspect.isawaitable(obj)
 
 
@@ -825,6 +827,10 @@ class NonCallableMock(Base):
             if child is None or isinstance(child, _SpecState):
                 break
             else:
+                # If an autospecced object is attached using attach_mock the
+                # child would be a function with mock object as attribute from
+                # which signature has to be derived.
+                child = _extract_mock(child)
                 children = child._mock_children
                 sig = child._spec_signature
 
@@ -2709,7 +2715,7 @@ def _must_skip(spec, entry, is_type):
             continue
         if isinstance(result, (staticmethod, classmethod)):
             return False
-        elif isinstance(getattr(result, '__get__', None), MethodWrapperTypes):
+        elif isinstance(result, FunctionTypes):
             # Normal method => skip if looked up on type
             # (if looked up on instance, self is already skipped)
             return is_type
@@ -2737,10 +2743,6 @@ FunctionTypes = (
     type(create_autospec),
     # instance method
     type(ANY.__eq__),
-)
-
-MethodWrapperTypes = (
-    type(ANY.__eq__.__get__),
 )
 
 

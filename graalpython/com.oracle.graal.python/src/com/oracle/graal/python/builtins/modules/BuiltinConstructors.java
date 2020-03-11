@@ -2322,7 +2322,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     DictEntry entry = it.next();
                     Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
-                        callSetNameNode.execute(frame, setName, entry.key, newType, entry.value);
+                        callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
                     }
                 }
 
