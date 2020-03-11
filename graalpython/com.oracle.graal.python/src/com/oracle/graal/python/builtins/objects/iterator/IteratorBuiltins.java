@@ -47,7 +47,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -156,12 +155,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPSequence()")
         public Object next(VirtualFrame frame, PSequenceIterator self,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached("createClassProfile()") ValueProfile sequenceProfile,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
-            PSequence sequence = sequenceProfile.profile(self.getPSequence());
-            SequenceStorage s = getStorageNode.execute(sequence);
+            SequenceStorage s = getStorage.execute(self.getPSequence());
             if (!self.isExhausted() && self.index < lenNode.execute(s)) {
                 return getItemNode.execute(frame, s, self.index++);
             }
