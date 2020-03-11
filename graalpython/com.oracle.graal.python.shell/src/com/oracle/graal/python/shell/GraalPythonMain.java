@@ -667,10 +667,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             } else if (e.isExit()) {
                                 // usually from quit
                                 throw new ExitException(e.getExitStatus());
-                            } else if (e.isHostException() || e.isInternalError()) {
+                            } else if (e.isHostException()) {
                                 // we continue the repl even though the system may be broken
                                 lastStatus = 1;
                                 System.out.println(e.getMessage());
+                            } else if (e.isInternalError()) {
+                                System.err.println("An internal error occurred:");
+                                printPythonLikeStackTrace(e);
+
+                                // we continue the repl even though the system may be broken
+                                lastStatus = 1;
                             } else if (e.isGuestException()) {
                                 // drop through to continue REPL and remember last eval was an error
                                 lastStatus = 1;
