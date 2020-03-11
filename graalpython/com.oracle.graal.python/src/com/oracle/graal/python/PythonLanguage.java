@@ -113,7 +113,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String NAME = "Python";
     public static final int MAJOR = 3;
     public static final int MINOR = 8;
-    public static final int MICRO = 1;
+    public static final int MICRO = 2;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
 
     public static final String MIME_TYPE = "text/x-python";
