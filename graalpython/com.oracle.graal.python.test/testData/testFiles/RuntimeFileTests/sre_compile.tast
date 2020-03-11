@@ -36,7 +36,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
         StringLiteralNode SourceSection: [349,370]`"SRE module mismatch...`
       WriteNameNodeGen SourceSection: [372,411]`_LITERAL_CODES = {LI...`
         Identifier: _LITERAL_CODES
-        SetLiteralNode SourceSection: [389,411]`{LITERAL, NOT_LITERA...`
+        SetLiteralNodeGen SourceSection: [389,411]`{LITERAL, NOT_LITERA...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [390,397]`LITERAL`
             Identifier: LITERAL
@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Identifier: NOT_LITERAL
       WriteNameNodeGen SourceSection: [412,463]`_REPEATING_CODES = {...`
         Identifier: _REPEATING_CODES
-        SetLiteralNode SourceSection: [431,463]`{REPEAT, MIN_REPEAT,...`
+        SetLiteralNodeGen SourceSection: [431,463]`{REPEAT, MIN_REPEAT,...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [432,438]`REPEAT`
             Identifier: REPEAT
@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Identifier: MAX_REPEAT
       WriteNameNodeGen SourceSection: [464,499]`_SUCCESS_CODES = {SU...`
         Identifier: _SUCCESS_CODES
-        SetLiteralNode SourceSection: [481,499]`{SUCCESS, FAILURE}`
+        SetLiteralNodeGen SourceSection: [481,499]`{SUCCESS, FAILURE}`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [482,489]`SUCCESS`
             Identifier: SUCCESS
@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Identifier: FAILURE
       WriteNameNodeGen SourceSection: [500,536]`_ASSERT_CODES = {ASS...`
         Identifier: _ASSERT_CODES
-        SetLiteralNode SourceSection: [516,536]`{ASSERT, ASSERT_NOT}...`
+        SetLiteralNodeGen SourceSection: [516,536]`{ASSERT, ASSERT_NOT}...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [517,523]`ASSERT`
             Identifier: ASSERT
@@ -75,7 +75,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Op: __or__
           ReadNameNodeGen SourceSection: [551,565]`_LITERAL_CODES`
             Identifier: _LITERAL_CODES
-          SetLiteralNode SourceSection: [568,577]`{ANY, IN}`
+          SetLiteralNodeGen SourceSection: [568,577]`{ANY, IN}`
             PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [569,572]`ANY`
               Identifier: ANY
@@ -3903,7 +3903,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       Identifier: comps
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [18,comps,Illegal]
-                      DictLiteralNode SourceSection: [14180,14182]`{}`
+                      DictLiteralNodeGen SourceSection: [14180,14182]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14187,14211]`mapping = bytearray(...`
                       Identifier: mapping

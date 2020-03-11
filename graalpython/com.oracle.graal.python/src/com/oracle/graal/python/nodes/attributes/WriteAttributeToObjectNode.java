@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -126,12 +126,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached HashingStorageNodes.SetItemNode setItemNode,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
         handlePythonClass(isClassProfile, object, key);
         PHashingCollection dict = lib.getDict(object);
         HashingStorage dictStorage = getDictStorage.execute(dict);
-        HashingStorage hashingStorage = setItemNode.execute(null, dictStorage, key, value);
+        HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
             dict.setDictStorage(hashingStorage);

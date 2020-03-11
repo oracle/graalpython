@@ -48,10 +48,11 @@ import mx_sdk
 import mx_subst
 import mx_urlrewrites
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
-    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
+    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
+    PythonInteropBenchmarkSuite
 
 
 if not sys.modules.get("__main__"):
@@ -1180,6 +1181,8 @@ def _register_vms(namespace):
 def _register_bench_suites(namespace):
     for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
+    for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
+        mx_benchmark.add_bm_suite(java_bench_suite)
 
 
 def mx_post_parse_cmd_line(namespace):

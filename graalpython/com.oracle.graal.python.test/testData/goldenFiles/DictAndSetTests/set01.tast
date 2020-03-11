@@ -5,7 +5,7 @@ ModuleRootNode Name: <module 'set01'> SourceSection: [0,3]`{2}`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,3]`{2}`
-    SetLiteralNode SourceSection: [0,3]`{2}`
+    SetLiteralNodeGen SourceSection: [0,3]`{2}`
       PythonObjectFactoryNodeGen SourceSection: None
       IntegerLiteralNode SourceSection: [1,2]`2`
         Value: 2

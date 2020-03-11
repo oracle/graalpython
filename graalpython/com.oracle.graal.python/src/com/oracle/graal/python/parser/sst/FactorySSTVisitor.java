@@ -102,7 +102,6 @@ import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
-import com.oracle.graal.python.nodes.literal.SetLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
@@ -460,7 +459,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 result = nodeFactory.createListLiteral(getCollectionItems(node.values));
                 break;
             case PSet:
-                result = new SetLiteralNode(getCollectionItems(node.values));
+                result = nodeFactory.createSetLiteral(getCollectionItems(node.values));
                 break;
             case PDict:
                 if (node.values.length == 0) {

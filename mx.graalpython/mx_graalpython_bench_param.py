@@ -29,10 +29,10 @@ import mx
 _graalpython_suite = mx.suite('graalpython')
 
 py = ".py"
-_BASE_PATH = os.path.join(_graalpython_suite.dir, 'graalpython', 'benchmarks', 'src')
+_BASE_PATH = os.path.join(_graalpython_suite.dir, 'graalpython', 'com.oracle.graal.python.benchmarks', 'python')
 HARNESS_PATH = os.path.join(_BASE_PATH, 'harness.py')
 
-PATH_BENCH = os.path.join(_BASE_PATH, 'benchmarks')
+PATH_BENCH = os.path.join(_BASE_PATH, 'com.oracle.graal.python.benchmarks')
 PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
@@ -159,6 +159,15 @@ INTEROP_BENCHMARKS = {
     'image-magix-java': ITER_10 + ['10000'],
 }
 
+_INTEROP_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.interop.'
+INTEROP_JAVA_BENCHMARKS = {
+    'richards3': [_INTEROP_JAVA_PACKAGE + 'PyRichards'] + MESO_BENCHMARKS['richards3'],
+    'euler31': [_INTEROP_JAVA_PACKAGE + 'PyEuler31'] + MESO_BENCHMARKS['euler31'],
+    'euler11': [_INTEROP_JAVA_PACKAGE + 'PyEuler11'] + MESO_BENCHMARKS['euler11'],
+    'nbody3': [_INTEROP_JAVA_PACKAGE + 'PyNbody'] + MESO_BENCHMARKS['nbody3'],
+    'fannkuchredux3': [_INTEROP_JAVA_PACKAGE + 'PyFannkuchredux'] + MESO_BENCHMARKS['fannkuchredux3'],
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # the benchmarks
@@ -170,4 +179,8 @@ BENCHMARKS = {
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
     "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
+}
+
+JBENCHMARKS = {
+    "pyjava": [INTEROP_JAVA_BENCHMARKS],
 }

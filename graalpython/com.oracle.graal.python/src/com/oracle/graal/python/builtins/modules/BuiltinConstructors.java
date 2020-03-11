@@ -71,6 +71,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -89,21 +90,22 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
@@ -145,19 +147,19 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -172,16 +174,16 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.CoerceToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1163,7 +1165,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozenset(VirtualFrame frame, LazyPythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
-                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
+                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
             }
             return frozenSet;
         }
@@ -1178,7 +1180,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return frozenSet;
@@ -2272,8 +2274,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode slotLenNode;
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.AppendNode appendNode;
-        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
-        @Child private HashingStorageNodes.GetItemNode getDictItemNode;
         @Child private CExtNodes.PCallCapiFunction callAddNativeSlotsNode;
         @Child private CExtNodes.ToSulongNode toSulongNode;
         @Child private ReadCallerFrameNode readCallerFrameNode;
@@ -2293,11 +2293,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object type(VirtualFrame frame, LazyPythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached GetLazyClassNode getMetaclassNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary nslib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary glib,
+                        @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
-                        @Cached HashingStorageNodes.GetItemNode getItemNode,
-                        @Cached HashingStorageNodes.DelItemNode delItemNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
@@ -2315,13 +2316,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib);
 
-                for (Object key : namespace.keys()) {
-                    Object member = getItemNode.execute(frame, namespace.getDictStorage(), key);
-                    Object setName = getSetNameNode.execute(member);
+                for (Iterator<DictEntry> it = nslib.entries(namespace.getDictStorage()); it.hasNext();) {
+                    DictEntry entry = it.next();
+                    Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
-                        callSetNameNode.execute(frame, setName, member, newType, key);
+                        callSetNameNode.execute(frame, setName, entry.key, newType, entry.value);
                     }
                 }
 
@@ -2336,7 +2337,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(frame, globals);
+                        String moduleName = getModuleNameFromGlobals(globals, glib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2344,14 +2345,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // set __class__ cell contents
-                Object classcell = getItemNode.execute(frame, namespace.getDictStorage(), __CLASSCELL__);
+                Object classcell = nslib.getItem(namespace.getDictStorage(), __CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         raise(TypeError, "__classcell__ must be a cell");
                     }
-                    delItemNode.execute(frame, namespace, namespace.getDictStorage(), __CLASSCELL__);
+                    if (nslib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
+                        HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __CLASSCELL__);
+                        if (newStore != namespace.getDictStorage()) {
+                            updatedStorage.enter();
+                            namespace.setDictStorage(newStore);
+                        }
+                    }
                 }
 
                 return newType;
@@ -2360,12 +2367,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private String getModuleNameFromGlobals(VirtualFrame frame, PythonObject globals) {
+        private String getModuleNameFromGlobals(PythonObject globals, HashingStorageLibrary hlib) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, __NAME__);
             } else if (globals instanceof PDict) {
-                nameAttr = ensureGetDictItemNode().execute(frame, ((PDict) globals).getDictStorage(), __NAME__);
+                nameAttr = hlib.getItem(((PDict) globals).getDictStorage(), __NAME__);
             } else {
                 CompilerDirectives.transferToInterpreter();
                 throw new IllegalStateException("invalid globals object");
@@ -2374,7 +2381,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @SuppressWarnings("try")
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass) {
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, LazyPythonClass metaclass, HashingStorageLibrary nslib) {
 
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
@@ -2476,7 +2483,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PythonContext context = getContextRef().get();
                 Object state = ForeignCallContext.enter(frame, context, this);
                 try {
-                    PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace);
+                    PTuple newSlots = copySlots(name, slotList, slotlen, addDict, false, namespace, nslib);
                     pythonClass.setAttribute(__SLOTS__, newSlots);
                     if (basesArray.length > 1) {
                         // TODO: tfel - check if secondary bases provide weakref or dict when we
@@ -2496,7 +2503,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace) {
+        private PTuple copySlots(String className, SequenceStorage slotList, int slotlen, boolean add_dict, boolean add_weak, PDict namespace, HashingStorageLibrary nslib) {
             SequenceStorage newSlots = new ObjectSequenceStorage(slotlen - PInt.intValue(add_dict) - PInt.intValue(add_weak));
             int j = 0;
             for (int i = 0; i < slotlen; i++) {
@@ -2516,7 +2523,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (getContainsKeyNode().execute(null, namespace.getDictStorage(), slotName)) {
+                if (nslib.hasKey(namespace.getDictStorage(), slotName)) {
                     throw raise(PythonBuiltinClassType.ValueError, "%s in __slots__ conflicts with class variable", slotName);
                 }
                 j++;
@@ -2563,14 +2570,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
             return "_" + privateobj.substring(ipriv) + ident;
-        }
-
-        private HashingStorageNodes.ContainsKeyNode getContainsKeyNode() {
-            if (containsKeyNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                containsKeyNode = insert(HashingStorageNodes.ContainsKeyNode.create());
-            }
-            return containsKeyNode;
         }
 
         private SequenceStorageNodes.GetItemNode getSlotItemNode() {
@@ -2702,14 +2701,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
             return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
-        }
-
-        private HashingStorageNodes.GetItemNode ensureGetDictItemNode() {
-            if (getDictItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDictItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getDictItemNode;
         }
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
@@ -3113,7 +3104,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
         Object doMapping(VirtualFrame frame, LazyPythonClass klass, PythonObject obj,
-                        @Cached("create()") HashingStorageNodes.InitNode initNode,
+                        @Cached("create()") HashingStorage.InitNode initNode,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
         }

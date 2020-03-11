@@ -8,7 +8,7 @@ ModuleRootNode Name: <module 'list05'> SourceSection: [0,15]`[*{2}, 3, *[4]]`
     ListLiteralNode SourceSection: [0,15]`[*{2}, 3, *[4]]`
       StarredExpressionNode SourceSection: None
         CastToListExpressionNodeGen SourceSection: None
-          SetLiteralNode SourceSection: [2,5]`{2}`
+          SetLiteralNodeGen SourceSection: [2,5]`{2}`
             PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [3,4]`2`
               Value: 2

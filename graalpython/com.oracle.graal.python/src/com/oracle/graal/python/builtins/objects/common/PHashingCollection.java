@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import java.util.Iterator;
+
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -57,14 +59,26 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
     public abstract int size();
 
     public Iterable<Object> items() {
-        return getDictStorage().values();
+        return new Iterable<Object>() {
+            public Iterator<Object> iterator() {
+                return HashingStorageLibrary.getUncached().values(getDictStorage());
+            }
+        };
     }
 
     public Iterable<Object> keys() {
-        return getDictStorage().keys();
+        return new Iterable<Object>() {
+            public Iterator<Object> iterator() {
+                return HashingStorageLibrary.getUncached().keys(getDictStorage());
+            }
+        };
     }
 
     public Iterable<DictEntry> entries() {
-        return getDictStorage().entries();
+        return new Iterable<DictEntry>() {
+            public Iterator<DictEntry> iterator() {
+                return HashingStorageLibrary.getUncached().entries(getDictStorage());
+            }
+        };
     }
 }

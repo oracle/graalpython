@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -70,3 +70,14 @@ def test_base():
     #
     # C = type('C', (B, int), {'spam': lambda self: 'spam%s' % self})
     # assert C.__base__ == int
+
+
+def test_namespace_with_non_string_keys():
+    class MyStr(str):
+        pass
+
+    A = type('A', (), {
+        MyStr("x"): 42
+    })
+    assert A.x == 42
+    assert any(type(k) == MyStr for k in A.__dict__.keys())

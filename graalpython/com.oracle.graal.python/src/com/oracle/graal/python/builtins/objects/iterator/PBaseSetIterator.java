@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import java.util.Iterator;
+
 import com.oracle.graal.python.builtins.objects.dict.PJavaIteratorIterator;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -32,8 +34,8 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 public final class PBaseSetIterator extends PJavaIteratorIterator<Object> {
     private final PBaseSet set;
 
-    public PBaseSetIterator(LazyPythonClass clazz, PBaseSet set) {
-        super(clazz, set.getDictStorage().keys().iterator());
+    public PBaseSetIterator(LazyPythonClass clazz, PBaseSet set, Iterator<Object> iterator) {
+        super(clazz, iterator);
         this.set = set;
     }
 

@@ -5,22 +5,22 @@ ModuleRootNode Name: <module 'dict11'> SourceSection: [0,52]`{**{"a": "hello", "
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,52]`{**{"a": "hello", "b...`
-    DictConcatNode SourceSection: [0,52]`{**{"a": "hello", "b...`
-      DictLiteralNode SourceSection: None
+    DictConcatNodeGen SourceSection: [0,52]`{**{"a": "hello", "b...`
+      DictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
-      DictLiteralNode SourceSection: [3,31]`{"a": "hello", "b": ...`
+      DictLiteralNodeGen SourceSection: [3,31]`{"a": "hello", "b": ...`
         PythonObjectFactoryNodeGen SourceSection: None
         StringLiteralNode SourceSection: [4,7]`"a"`
         StringLiteralNode SourceSection: [18,21]`"b"`
         StringLiteralNode SourceSection: [9,16]`"hello"`
         StringLiteralNode SourceSection: [23,30]`"world"`
-      DictLiteralNode SourceSection: None
+      DictLiteralNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [33,34]`1`
           Value: 1
         IntegerLiteralNode SourceSection: [35,36]`2`
           Value: 2
-      DictLiteralNode SourceSection: [41,51]`{3:4, 5:6}`
+      DictLiteralNodeGen SourceSection: [41,51]`{3:4, 5:6}`
         PythonObjectFactoryNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [42,43]`3`
           Value: 3

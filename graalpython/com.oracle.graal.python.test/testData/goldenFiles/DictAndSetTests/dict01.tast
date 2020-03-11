@@ -5,5 +5,5 @@ ModuleRootNode Name: <module 'dict01'> SourceSection: [0,2]`{}`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,2]`{}`
-    DictLiteralNode SourceSection: [0,2]`{}`
+    DictLiteralNodeGen SourceSection: [0,2]`{}`
       PythonObjectFactoryNodeGen SourceSection: None

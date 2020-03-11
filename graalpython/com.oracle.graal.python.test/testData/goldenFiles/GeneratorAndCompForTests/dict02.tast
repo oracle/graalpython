@@ -105,7 +105,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
       SideEffect:
         WriteNameNodeGen SourceSection: [0,48]`dict1 = {'a': 1, 'b'...`
           Identifier: dict1
-          DictLiteralNode SourceSection: [8,48]`{'a': 1, 'b': 2, 'c'...`
+          DictLiteralNodeGen SourceSection: [8,48]`{'a': 1, 'b': 2, 'c'...`
             PythonObjectFactoryNodeGen SourceSection: None
             StringLiteralNode SourceSection: [9,12]`'a'`
             StringLiteralNode SourceSection: [17,20]`'b'`

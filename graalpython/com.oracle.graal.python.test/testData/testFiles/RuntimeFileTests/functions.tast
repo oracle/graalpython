@@ -501,7 +501,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4894]`# Copyright (c
                       Identifier: ns
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [6,ns,Illegal]
-                      DictLiteralNode SourceSection: [2956,2958]`{}`
+                      DictLiteralNodeGen SourceSection: [2956,2958]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [2963,2971]`func(ns)`
                       PythonCallNodeGen SourceSection: [2963,2971]`func(ns)`

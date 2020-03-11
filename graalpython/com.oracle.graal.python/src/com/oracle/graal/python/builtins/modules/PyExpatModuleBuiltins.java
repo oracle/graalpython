@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.Equivalence;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -138,8 +139,8 @@ public class PyExpatModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("model", model);
 
         PythonModule errors = core.factory().createPythonModule("pyexpat.errors");
-        Map<String, Integer> codes = new HashMap<>();
-        Map<Integer, String> messages = new HashMap<>();
+        EconomicMap<String, Object> codes = EconomicMap.create(Equivalence.DEFAULT, ErrorConstant.values().length);
+        EconomicMap<Integer, Object> messages = EconomicMap.create(Equivalence.DEFAULT, ErrorConstant.values().length);
         for (ErrorConstant c : ErrorConstant.values()) {
             errors.setAttribute(c.name(), c.message);
             codes.put(c.message, c.ordinal() + 1);
