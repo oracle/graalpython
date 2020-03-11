@@ -84,8 +84,7 @@ public class LockBuiltins extends PythonBuiltins {
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
-        private @Child
-        CoerceToDoubleNode coerceToDoubleNode;
+        private @Child CoerceToDoubleNode coerceToDoubleNode;
         private @Child CoerceToBooleanNode castToBooleanNode;
         private @CompilationFinal ConditionProfile isBlockingProfile = ConditionProfile.createBinaryProfile();
         private @CompilationFinal ConditionProfile defaultTimeoutProfile = ConditionProfile.createBinaryProfile();
