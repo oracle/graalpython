@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrSetString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatFromDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetAttr;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListNew;
@@ -122,6 +123,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_OBJECT_ISTRUE("ctx_Object_IsTrue"),
         CTX_GETATTR("ctx_GetAttr"),
         CTX_GETATTR_S("ctx_GetAttr_s"),
+        CTX_HASATTR("ctx_HasAttr"),
+        CTX_HASATTR_S("ctx_HasAttr_s"),
         CTX_BYTES_CHECK("ctx_Bytes_Check"),
         CTX_BYTES_SIZE("ctx_Bytes_Size"),
         CTX_BYTES_GET_SIZE("ctx_Bytes_GET_SIZE"),
@@ -349,6 +352,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
         members[HPyContextMembers.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(false);
         members[HPyContextMembers.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(true);
+        members[HPyContextMembers.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(false);
+        members[HPyContextMembers.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(true);
         return members;
     }
 

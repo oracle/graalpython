@@ -654,4 +654,39 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyHasAttr extends GraalHPyContextFunction {
+
+        private final boolean coerceCString;
+
+        public GraalHPyHasAttr(boolean coerceCString) {
+            this.coerceCString = coerceCString;
+        }
+
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PInteropGetAttributeNode getAttributeNode) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
+            Object key;
+            if (coerceCString) {
+                key = fromCharPointerNode.execute(arguments[2]);
+            } else {
+                key = keyAsPythonObjectNode.execute(context, arguments[2]);
+            }
+            try {
+                Object attr = getAttributeNode.execute(receiver, key);
+                return attr != PNone.NO_VALUE ? 1 : 0;
+            } catch (PException e) {
+                return 0;
+            }
+        }
+    }
 }
