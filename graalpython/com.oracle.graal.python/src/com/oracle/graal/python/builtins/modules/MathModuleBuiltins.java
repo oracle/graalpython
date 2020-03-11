@@ -1993,11 +1993,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
             double x = xCastNode.execute(frame, arguments[0]);
             double y = yCastNode.execute(frame, arguments[1]);
-            double result = Math.hypot(x, y);
-            if (Double.isInfinite(result) && Double.isFinite(x) && Double.isFinite(y)) {
-                throw raise(OverflowError, "math range error");
-            }
-            return result;
+            return Math.hypot(x, y);
         }
 
         @Specialization
