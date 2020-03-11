@@ -111,6 +111,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -192,7 +193,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Exclusive @Cached PInteropSubscriptAssignNode setItemNode,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode writeNode,
@@ -231,18 +232,18 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public Object readMember(String key,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached CallNode callGetattributeNode,
+                    @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Shared("toForeign") @Cached PTypeToForeignNode toForeign,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) throws UnknownIdentifierException {
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) throws UnknownIdentifierException {
         String attrKey = getAttributeKey.execute(key);
         Object attrGetattribute = null;
         if (attrKey != null) {
             try {
                 attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
-                return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, this, attrKey));
+                return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, attrKey));
             } catch (PException e) {
                 // pass, we might be reading an item that starts with "@"
             }
@@ -257,7 +258,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             if (attrGetattribute == null) {
                 attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
             }
-            return toForeign.executeConvert(callGetattributeNode.execute(null, attrGetattribute, this, key));
+            return toForeign.executeConvert(callGetattributeNode.executeObject(attrGetattribute, this, key));
         } catch (PException e) {
             // pass
         }
@@ -444,7 +445,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     public Object invokeMember(String member, Object[] arguments,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached CallNode callGetattributeNode,
+                    @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileGetattribute,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileMember,
@@ -455,7 +456,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             if (profileGetattribute.profile(attrGetattribute == PNone.NO_VALUE)) {
                 throw UnknownIdentifierException.create(member);
             }
-            memberObj = callGetattributeNode.execute(null, attrGetattribute, this, member);
+            memberObj = callGetattributeNode.executeObject(attrGetattribute, this, member);
             if (profileMember.profile(memberObj == PNone.NO_VALUE)) {
                 throw UnknownIdentifierException.create(member);
             }
@@ -484,7 +485,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
                     @Cached CastToListInteropNode castToList,
                     @Shared("getClassThis") @Cached GetClassNode getClass,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode) {
@@ -523,7 +524,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public void removeMember(String member,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
@@ -681,7 +682,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                     @Exclusive @Cached LookupAttributeInMRONode.Dynamic getIterNode,
                     @Shared("hasGetItemNode") @Cached LookupAttributeInMRONode.Dynamic getGetItemNode,
                     @Exclusive @Cached LookupAttributeInMRONode.Dynamic hasNextNode,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileIter,
                     @Shared("getItemProfile") @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile profileNext) {
@@ -1438,7 +1439,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         int access(Object object, String fieldName,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary dataModelLibrary,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
@@ -1617,14 +1618,14 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         @Specialization
         Object doSpecialObject(Object primary, Object index,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Cached CallNode callGetItemNode,
+                        @Cached CallBinaryMethodNode callGetItemNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             Object attrGetItem = lookupGetItemNode.execute(primary, __GETITEM__);
             if (profile.profile(attrGetItem == PNone.NO_VALUE)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, primary);
             }
-            return callGetItemNode.execute(null, attrGetItem, primary, index);
+            return callGetItemNode.executeObject(attrGetItem, primary, index);
         }
 
         public static PInteropSubscriptNode create() {
@@ -1766,7 +1767,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @GenerateUncached
     public abstract static class PInteropGetAttributeNode extends Node {
 
-        public abstract Object execute(Object object, String attrName);
+        public abstract Object execute(Object object, Object attrName);
 
         @Specialization
         static Object doIt(Object object, String attrName,
@@ -1788,14 +1789,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                 throw pe;
             }
         }
-
-        public static PInteropGetAttributeNode create() {
-            return PythonAbstractObjectFactory.PInteropGetAttributeNodeGen.create();
-        }
-
-        public static PInteropGetAttributeNode getUncached() {
-            return PythonAbstractObjectFactory.PInteropGetAttributeNodeGen.getUncached();
-        }
     }
 
     /*
@@ -1808,14 +1801,14 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         public abstract void execute(PythonAbstractObject primary, Object key, Object value) throws UnsupportedMessageException;
 
         @Specialization
-        public void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
+        static void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
                         @Cached PInteropGetAttributeNode getAttributeNode,
-                        @Cached CallNode callSetItemNode,
+                        @Cached CallBinaryMethodNode callSetItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) throws UnsupportedMessageException {
 
             Object attrSetitem = getAttributeNode.execute(primary, __SETITEM__);
             if (profile.profile(attrSetitem != PNone.NO_VALUE)) {
-                callSetItemNode.execute(null, attrSetitem, key, value);
+                callSetItemNode.executeObject(attrSetitem, key, value);
             } else {
                 throw UnsupportedMessageException.create();
             }
@@ -1842,13 +1835,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         @Specialization
         public void doSpecialObject(PythonAbstractObject primary, String attrName, Object value,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached CallNode callSetAttrNode,
+                        @Cached CallTernaryMethodNode callSetAttrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
             Object attrGetattribute = lookupSetAttrNode.execute(primary, SpecialMethodNames.__SETATTR__);
             if (profile.profile(attrGetattribute != PNone.NO_VALUE)) {
                 try {
-                    callSetAttrNode.execute(null, attrGetattribute, primary, attrName, value);
+                    callSetAttrNode.execute(attrGetattribute, primary, attrName, value);
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing
@@ -1880,11 +1873,11 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         @Specialization
         public void doSpecialObject(PythonAbstractObject primary, Object key,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached CallNode callSetAttrNode,
+                        @Cached CallBinaryMethodNode callSetAttrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile) throws UnsupportedMessageException {
             Object attrDelattr = lookupSetAttrNode.execute(primary, __DELITEM__);
             if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
-                callSetAttrNode.execute(null, attrDelattr, primary, key);
+                callSetAttrNode.executeObject(attrDelattr, primary, key);
             } else {
                 throw UnsupportedMessageException.create();
             }
@@ -1911,13 +1904,13 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         @Specialization
         public void doSpecialObject(PythonAbstractObject primary, String attrName,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
-                        @Cached CallNode callSetAttrNode,
+                        @Cached CallBinaryMethodNode callSetAttrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
             Object attrDelattr = lookupSetAttrNode.execute(primary, SpecialMethodNames.__DELATTR__);
             if (profile.profile(attrDelattr != PNone.NO_VALUE)) {
                 try {
-                    callSetAttrNode.execute(null, attrDelattr, primary, attrName);
+                    callSetAttrNode.executeObject(attrDelattr, primary, attrName);
                 } catch (PException e) {
                     e.expectAttributeError(attrErrorProfile);
                     // TODO(fa) not accurate; distinguish between read-only and non-existing

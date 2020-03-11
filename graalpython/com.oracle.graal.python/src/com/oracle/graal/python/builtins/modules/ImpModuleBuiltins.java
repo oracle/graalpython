@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -565,9 +565,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
             // sys.implementation.cache_tag
-            String cacheTag = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "cache_tag");
+            String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");
             // sys.implementation._multiarch
-            String multiArch = (String) PInteropGetAttributeNode.getUncached().execute(implementationObj, "_multiarch");
+            String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
 
             Env env = ctxt.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);
