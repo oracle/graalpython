@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_DOC;
@@ -86,8 +87,11 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -650,7 +654,6 @@ public abstract class GraalHPyContextFunctions {
                 transformExceptionToNativeNode.execute(null, e);
                 return context.getNullHandle();
             }
-
         }
     }
 
@@ -689,4 +692,60 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPySetAttr extends GraalHPyContextFunction {
+
+        private final boolean coerceCString;
+
+        public GraalHPySetAttr(boolean coerceCString) {
+            this.coerceCString = coerceCString;
+        }
+
+        @ExportMessage
+        int execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
+                        @Cached GetLazyClassNode getKeyClassNode,
+                        @Cached IsBuiltinClassProfile isPStringProfile,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
+                        @Cached CallTernaryMethodNode callSetAttrNode,
+                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+            if (arguments.length != 4) {
+                throw ArityException.create(4, arguments.length);
+            }
+
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
+            Object key;
+            if (coerceCString) {
+                key = fromCharPointerNode.execute(arguments[2]);
+            } else {
+                key = keyAsPythonObjectNode.execute(context, arguments[2]);
+                if (!isPStringProfile.profileClass(getKeyClassNode.execute(key), PString)) {
+                    return raiseNativeNode.raiseInt(null, -1, TypeError, "attribute name must be string, not '%p'", key);
+                }
+            }
+            Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
+
+            Object attrGetattribute = lookupSetAttrNode.execute(receiver, SpecialMethodNames.__SETATTR__);
+            if (profile.profile(attrGetattribute != PNone.NO_VALUE)) {
+                try {
+                    callSetAttrNode.execute(attrGetattribute, receiver, key, value);
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(null, e);
+                    return -1;
+                }
+            } else {
+                return raiseNativeNode.raiseInt(null, -1, TypeError, "'%p' object has no attributes", receiver);
+            }
+            return 0;
+        }
+    }
+
 }
