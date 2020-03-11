@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -243,3 +243,9 @@ def test_function_dict_writeable():
     new_dict = { "customProp": "hello, world"}
     foo.__dict__ = new_dict
     assert foo.customProp == "hello, world"
+
+
+def test_function_text_signature_writable():
+    def foo(): pass
+    foo.__text_signature__ = 'foo()'
+    assert foo.__text_signature__ == 'foo()'

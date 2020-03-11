@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__GLOBALS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -58,7 +59,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -300,17 +300,35 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__text_signature__", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __TEXT_SIGNATURE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        protected Object doStatic(@SuppressWarnings("unused") PBuiltinFunction self) {
+    public abstract static class TextSignatureNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
+        Object getFunction(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            Object signature = readNode.execute(self, __TEXT_SIGNATURE__);
+            if (signature == PNone.NO_VALUE) {
+                throw raise(AttributeError, "'function' object has no attribute '__text_signature__'");
+            }
+            return signature;
+        }
+
+        @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)"})
+        Object setFunction(PFunction self, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+            writeNode.execute(self, __TEXT_SIGNATURE__, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        protected Object getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
             return getSignature(self.getSignature());
         }
 
-        @Specialization
-        protected Object doStatic(@SuppressWarnings("unused") PFunction self) {
-            return getSignature(self.getSignature());
+        @Specialization(guards = "!isNoValue(value)")
+        protected Object setBuiltin(@SuppressWarnings("unused") PBuiltinFunction self,
+                        @SuppressWarnings("unused") Object value) {
+            throw raise(AttributeError, "AttributeError: attribute '__text_signature__' of 'builtin_function_or_method' objects is not writable");
         }
 
         @TruffleBoundary
