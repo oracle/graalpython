@@ -55,6 +55,7 @@ Python3.g4.stamp
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/Test*.c
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.sha256
 /*.diff
+/testenv
 ## generated from: pyhocon -i ci.hocon -f json -o ci.json
 /ci.json
 /*.err
