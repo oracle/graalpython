@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPyth
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -325,9 +325,10 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @Cached PInteropSubscriptAssignNode setItemNode,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
                         @Cached("createClassProfile()") ValueProfile profile,
-                        @Cached PRaiseNativeNode raiseNode) throws ArityException {
+                        @Cached PRaiseNativeNode raiseNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 4) {
                 throw ArityException.create(4, arguments.length);
             }
@@ -340,9 +341,10 @@ public abstract class GraalHPyContextFunctions {
             Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
             Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
             try {
-                setItemNode.execute(dict, key, value);
+                hashingStorageLibrary.setItem(dict.getDictStorage(), key, value);
                 return 0;
-            } catch (UnsupportedMessageException e) {
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, e);
                 return -1;
             }
         }
@@ -356,7 +358,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode dictAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
-                        @Cached HashingStorageNodes.GetItemInteropNode getItemNode,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary hashingStorageLibrary,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached PRaiseNativeNode raiseNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
@@ -371,8 +373,10 @@ public abstract class GraalHPyContextFunctions {
             PDict dict = (PDict) left;
             Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
             try {
-                return asHandleNode.execute(getItemNode.executeWithGlobalState(dict.getDictStorage(), key));
+                return asHandleNode.execute(hashingStorageLibrary.getItem(dict.getDictStorage(), key));
             } catch (PException e) {
+                // This function has the same (odd) error behavior as PyDict_GetItem: If an error
+                // occurred, the error is cleared and NULL is returned.
                 return context.getNullHandle();
             }
         }
