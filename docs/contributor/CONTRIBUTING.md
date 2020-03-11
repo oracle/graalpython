@@ -167,3 +167,29 @@ following command. This will create a native executable called `graalpython` and
 print its path as the last output, if successful.
 
     mx python-svm
+
+### Benchmarking
+
+We use the `mx` facilities for benchmarking. Use this to list the available
+Python suites and VM configurations:
+
+    mx benchmark --list
+
+If you just want to run a single benchmark from, for example, the `meso` suite,
+you can use this:
+
+    mx benchmark meso --list
+
+Then if you want to run something, use (for example):
+
+    mx benchmark meso:nbody3
+
+To select which Python VM you want to use, you can pass the arguments separated
+by `--`:
+
+    mx benchmark meso:nbody3 -- --python-vm=cpython
+
+For additional arguments to the Python launcher, you can separate them by
+another double-dash:
+
+    mx benchmark meso:nbody3 -- --python-vm=graalpython -- --python.EmulateJython -Dgraal.Dump= -Dgraal.MethodFilter=*measure*
