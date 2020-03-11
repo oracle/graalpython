@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_CONTEXT_TO_NATIVE;
 
 import java.lang.reflect.Field;
@@ -65,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrSetString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatFromDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetAttr;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
@@ -128,6 +132,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_HASATTR_S("ctx_HasAttr_s"),
         CTX_SETATTR("ctx_SetAttr"),
         CTX_SETATTR_S("ctx_SetAttr_s"),
+        CTX_GETITEM("ctx_GetItem"),
+        CTX_GETITEM_I("ctx_GetItem_i"),
+        CTX_GETITEM_S("ctx_GetItem_s"),
         CTX_BYTES_CHECK("ctx_Bytes_Check"),
         CTX_BYTES_SIZE("ctx_Bytes_Size"),
         CTX_BYTES_GET_SIZE("ctx_Bytes_GET_SIZE"),
@@ -353,12 +360,15 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_OBJECT_ISTRUE.ordinal()] = new GraalHPyIsTrue();
         members[HPyContextMembers.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
         members[HPyContextMembers.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
-        members[HPyContextMembers.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(false);
-        members[HPyContextMembers.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(true);
-        members[HPyContextMembers.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(false);
-        members[HPyContextMembers.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(true);
-        members[HPyContextMembers.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(false);
-        members[HPyContextMembers.CTX_SETATTR_S.ordinal()] = new GraalHPySetAttr(true);
+        members[HPyContextMembers.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
+        members[HPyContextMembers.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
+        members[HPyContextMembers.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);
+        members[HPyContextMembers.CTX_HASATTR_S.ordinal()] = new GraalHPyHasAttr(CHAR_PTR);
+        members[HPyContextMembers.CTX_SETATTR.ordinal()] = new GraalHPySetAttr(OBJECT);
+        members[HPyContextMembers.CTX_SETATTR_S.ordinal()] = new GraalHPySetAttr(CHAR_PTR);
+        members[HPyContextMembers.CTX_GETITEM.ordinal()] = new GraalHPyGetItem(OBJECT);
+        members[HPyContextMembers.CTX_GETITEM_S.ordinal()] = new GraalHPyGetItem(CHAR_PTR);
+        members[HPyContextMembers.CTX_GETITEM_I.ordinal()] = new GraalHPyGetItem(INT32);
         return members;
     }
 

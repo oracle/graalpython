@@ -44,6 +44,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseExcep
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_DOC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_GET_M_NAME;
@@ -54,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
@@ -98,6 +102,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.ArityException;
@@ -108,10 +113,17 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class GraalHPyContextFunctions {
+
+    enum FunctionMode {
+        OBJECT,
+        CHAR_PTR,
+        INT32;
+    }
 
     @ExportLibrary(InteropLibrary.class)
     abstract static class GraalHPyContextFunction implements TruffleObject {
@@ -125,6 +137,19 @@ public abstract class GraalHPyContextFunctions {
         Object execute(@SuppressWarnings("unused") Object[] arguments) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("should not reach");
+        }
+
+        @ExplodeLoop
+        static void checkMode(FunctionMode actualMode, FunctionMode... allowedModes) {
+            CompilerAsserts.partialEvaluationConstant(actualMode);
+            CompilerAsserts.partialEvaluationConstant(allowedModes);
+            for (int i = 0; i < allowedModes.length; i++) {
+                if (actualMode == allowedModes[i]) {
+                    return;
+                }
+            }
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("invalid function mode used: " + actualMode);
         }
     }
 
@@ -622,10 +647,11 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyGetAttr extends GraalHPyContextFunction {
 
-        private final boolean coerceCString;
+        private final FunctionMode mode;
 
-        public GraalHPyGetAttr(boolean coerceCString) {
-            this.coerceCString = coerceCString;
+        public GraalHPyGetAttr(FunctionMode mode) {
+            checkMode(mode, OBJECT, CHAR_PTR);
+            this.mode = mode;
         }
 
         @ExportMessage
@@ -643,10 +669,16 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
             Object key;
-            if (coerceCString) {
-                key = fromCharPointerNode.execute(arguments[2]);
-            } else {
-                key = keyAsPythonObjectNode.execute(context, arguments[2]);
+            switch (mode) {
+                case OBJECT:
+                    key = keyAsPythonObjectNode.execute(context, arguments[2]);
+                    break;
+                case CHAR_PTR:
+                    key = fromCharPointerNode.execute(arguments[2]);
+                    break;
+                default:
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException("should not be reached");
             }
             try {
                 return asHandleNode.execute(context, getAttributeNode.execute(receiver, key));
@@ -660,10 +692,11 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyHasAttr extends GraalHPyContextFunction {
 
-        private final boolean coerceCString;
+        private final FunctionMode mode;
 
-        public GraalHPyHasAttr(boolean coerceCString) {
-            this.coerceCString = coerceCString;
+        public GraalHPyHasAttr(FunctionMode mode) {
+            checkMode(mode, OBJECT, CHAR_PTR);
+            this.mode = mode;
         }
 
         @ExportMessage
@@ -679,10 +712,16 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
             Object key;
-            if (coerceCString) {
-                key = fromCharPointerNode.execute(arguments[2]);
-            } else {
-                key = keyAsPythonObjectNode.execute(context, arguments[2]);
+            switch (mode) {
+                case OBJECT:
+                    key = keyAsPythonObjectNode.execute(context, arguments[2]);
+                    break;
+                case CHAR_PTR:
+                    key = fromCharPointerNode.execute(arguments[2]);
+                    break;
+                default:
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException("should not be reached");
             }
             try {
                 Object attr = getAttributeNode.execute(receiver, key);
@@ -696,10 +735,11 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPySetAttr extends GraalHPyContextFunction {
 
-        private final boolean coerceCString;
+        private final FunctionMode mode;
 
-        public GraalHPySetAttr(boolean coerceCString) {
-            this.coerceCString = coerceCString;
+        public GraalHPySetAttr(FunctionMode mode) {
+            checkMode(mode, OBJECT, CHAR_PTR);
+            this.mode = mode;
         }
 
         @ExportMessage
@@ -723,13 +763,19 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
             Object key;
-            if (coerceCString) {
-                key = fromCharPointerNode.execute(arguments[2]);
-            } else {
-                key = keyAsPythonObjectNode.execute(context, arguments[2]);
-                if (!isPStringProfile.profileClass(getKeyClassNode.execute(key), PString)) {
-                    return raiseNativeNode.raiseInt(null, -1, TypeError, "attribute name must be string, not '%p'", key);
-                }
+            switch (mode) {
+                case OBJECT:
+                    key = keyAsPythonObjectNode.execute(context, arguments[2]);
+                    if (!isPStringProfile.profileClass(getKeyClassNode.execute(key), PString)) {
+                        return raiseNativeNode.raiseInt(null, -1, TypeError, "attribute name must be string, not '%p'", key);
+                    }
+                    break;
+                case CHAR_PTR:
+                    key = fromCharPointerNode.execute(arguments[2]);
+                    break;
+                default:
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException("should not be reached");
             }
             Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
 
@@ -745,6 +791,55 @@ public abstract class GraalHPyContextFunctions {
                 return raiseNativeNode.raiseInt(null, -1, TypeError, "'%p' object has no attributes", receiver);
             }
             return 0;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyGetItem extends GraalHPyContextFunction {
+
+        private final FunctionMode mode;
+
+        public GraalHPyGetItem(FunctionMode mode) {
+            checkMode(mode, OBJECT, CHAR_PTR, INT32);
+            this.mode = mode;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PInteropSubscriptNode getItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+            if (arguments.length != 3) {
+                throw ArityException.create(3, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
+            Object key;
+            switch (mode) {
+                case OBJECT:
+                    key = keyAsPythonObjectNode.execute(context, arguments[2]);
+                    break;
+                case CHAR_PTR:
+                    key = fromCharPointerNode.execute(arguments[2]);
+                    break;
+                case INT32:
+                    key = arguments[2];
+                    assert key instanceof Number;
+                    break;
+                default:
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException("should not be reached");
+            }
+            try {
+                return asHandleNode.execute(context, getItemNode.execute(receiver, key));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, e);
+                return context.getNullHandle();
+            }
         }
     }
 
