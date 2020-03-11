@@ -843,4 +843,57 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPySetItem extends GraalHPyContextFunction {
+
+        private final FunctionMode mode;
+
+        public GraalHPySetItem(FunctionMode mode) {
+            checkMode(mode, OBJECT, CHAR_PTR, INT32);
+            this.mode = mode;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
+                        @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PInteropSubscriptAssignNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) throws ArityException {
+            if (arguments.length != 4) {
+                throw ArityException.create(4, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object receiver = receiverAsPythonObjectNode.execute(context, arguments[1]);
+            Object key;
+            switch (mode) {
+                case OBJECT:
+                    key = keyAsPythonObjectNode.execute(context, arguments[2]);
+                    break;
+                case CHAR_PTR:
+                    key = fromCharPointerNode.execute(arguments[2]);
+                    break;
+                case INT32:
+                    key = arguments[2];
+                    assert key instanceof Number;
+                    break;
+                default:
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException("should not be reached");
+            }
+            Object value = valueAsPythonObjectNode.execute(context, arguments[3]);
+            try {
+                setItemNode.execute(receiver, key, value);
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(null, e);
+            } catch (UnsupportedMessageException e) {
+                raiseNativeNode.raiseInt(null, -1, TypeError, "%p object does not support item assignment", receiver);
+            }
+            return -1;
+        }
+    }
 }

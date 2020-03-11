@@ -1798,7 +1798,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @GenerateUncached
     public abstract static class PInteropSubscriptAssignNode extends Node {
 
-        public abstract void execute(PythonAbstractObject primary, Object key, Object value) throws UnsupportedMessageException;
+        public abstract void execute(Object primary, Object key, Object value) throws UnsupportedMessageException;
 
         @Specialization
         static void doSpecialObject(PythonAbstractObject primary, Object key, Object value,
@@ -1812,14 +1812,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
             } else {
                 throw UnsupportedMessageException.create();
             }
-        }
-
-        public static PInteropSubscriptAssignNode create() {
-            return PythonAbstractObjectFactory.PInteropSubscriptAssignNodeGen.create();
-        }
-
-        public static PInteropSubscriptAssignNode getUncached() {
-            return PythonAbstractObjectFactory.PInteropSubscriptAssignNodeGen.getUncached();
         }
     }
 

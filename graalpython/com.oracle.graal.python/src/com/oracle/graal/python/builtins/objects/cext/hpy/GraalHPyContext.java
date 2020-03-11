@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8String;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
@@ -135,6 +136,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_GETITEM("ctx_GetItem"),
         CTX_GETITEM_I("ctx_GetItem_i"),
         CTX_GETITEM_S("ctx_GetItem_s"),
+        CTX_SETITEM("ctx_SetItem"),
+        CTX_SETITEM_I("ctx_SetItem_i"),
+        CTX_SETITEM_S("ctx_SetItem_s"),
         CTX_BYTES_CHECK("ctx_Bytes_Check"),
         CTX_BYTES_SIZE("ctx_Bytes_Size"),
         CTX_BYTES_GET_SIZE("ctx_Bytes_GET_SIZE"),
@@ -149,7 +153,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_DICT_NEW("ctx_Dict_New"),
         CTX_DICT_SETITEM("ctx_Dict_SetItem"),
         CTX_DICT_GETITEM("ctx_Dict_GetItem"),
-
         CTX_FROMPYOBJECT("ctx_FromPyObject"),
         CTX_ASPYOBJECT("ctx_AsPyObject"),
         CTX_CALLREALFUNCTIONFROMTRAMPOLINE("ctx_CallRealFunctionFromTrampoline");
@@ -369,6 +372,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_GETITEM.ordinal()] = new GraalHPyGetItem(OBJECT);
         members[HPyContextMembers.CTX_GETITEM_S.ordinal()] = new GraalHPyGetItem(CHAR_PTR);
         members[HPyContextMembers.CTX_GETITEM_I.ordinal()] = new GraalHPyGetItem(INT32);
+        members[HPyContextMembers.CTX_SETITEM.ordinal()] = new GraalHPySetItem(OBJECT);
+        members[HPyContextMembers.CTX_SETITEM_S.ordinal()] = new GraalHPySetItem(CHAR_PTR);
+        members[HPyContextMembers.CTX_SETITEM_I.ordinal()] = new GraalHPySetItem(INT32);
         return members;
     }
 
