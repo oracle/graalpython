@@ -867,10 +867,9 @@ def update_import_cmd(args):
 
     # now allow dependent repos to hook into update
     for repo in repos:
-        mx.run_mx([
-            "%s-update-import" % os.path.basename(repo),
-            "--overlaydir=%s" % overlaydir,
-        ], suite=repo, nonZeroIsFatal=False)
+        cmdname = "%s-update-import" % os.path.basename(repo)
+        if mx.run_mx(["help", cmdname], nonZeroIsFatal=False, quiet=True) == 0:
+            mx.run_mx([cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
 
     # update ci import in all our repos, commit the full update, and push verbosely
     prev_verbosity = mx._opts.very_verbose
