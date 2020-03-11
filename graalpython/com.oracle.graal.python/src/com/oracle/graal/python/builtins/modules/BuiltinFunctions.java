@@ -1603,6 +1603,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object asciiString(Object obj,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             String str = castToJavaStringNode.execute(obj);
+            return doAsciiString(str);
+        }
+
+        @TruffleBoundary
+        private static Object doAsciiString(String str) {
             byte[] bytes = BytesUtils.unicodeEscape(str);
             boolean hasSingleQuote = false;
             boolean hasDoubleQuote = false;
@@ -1632,6 +1637,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReprNode reprNode) {
             String repr = (String) reprNode.execute(frame, obj);
             byte[] bytes = BytesUtils.unicodeEscape(repr);
+            return newString(bytes);
+        }
+
+        @TruffleBoundary
+        private static String newString(byte[] bytes) {
             return new String(bytes);
         }
     }
