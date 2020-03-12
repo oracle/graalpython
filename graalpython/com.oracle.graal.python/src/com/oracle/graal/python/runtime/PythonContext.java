@@ -223,15 +223,15 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
-    private final PythonContextOptions options;
+    private final PythonEngineOptions engineOptions;
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core, PythonContextOptions options) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(language);
-        this.options = options;
+        this.engineOptions = PythonEngineOptions.fromOptionValues(env.getOptions());
         if (env == null) {
             this.in = System.in;
             this.out = System.out;
@@ -380,8 +380,20 @@ public final class PythonContext {
         core.postInitialize();
     }
 
+    public boolean isCatchingAllExcetptionsEnabled() {
+        return engineOptions.isCatchingAllExcetptionsEnabled();
+    }
+
+    public boolean areInternalSourcesExposed() {
+        return engineOptions.areInternalSourcesExposed();
+    }
+
     public boolean isJythonEmulated() {
-        return options.isJythonEmulated();
+        return engineOptions.isJythonEmulated();
+    }
+
+    public int getBuiltinsInliningMaxCallerSize() {
+        return engineOptions.getBuiltinsInliningMaxCallerSize();
     }
 
     /**

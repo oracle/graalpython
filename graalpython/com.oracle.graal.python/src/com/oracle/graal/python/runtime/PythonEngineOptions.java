@@ -45,21 +45,29 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 
-public class PythonContextOptions {
+public class PythonEngineOptions {
     @CompilationFinal private OptionValues optionValues;
 
+    @CompilationFinal private int builtinsInliningMaxCallerSize;
+    @CompilationFinal private boolean catchAllExceptions;
     @CompilationFinal private boolean emulatedJython;
+    @CompilationFinal private boolean exposeInternalSources;
+    @CompilationFinal private boolean withThread;
 
-    PythonContextOptions(OptionValues optionValues) {
+    PythonEngineOptions(OptionValues optionValues) {
         this.optionValues = optionValues;
         setOptionValues(optionValues);
     }
 
-    public static PythonContextOptions fromOptionValues(OptionValues optionValues) {
-        return new PythonContextOptions(optionValues);
+    public static PythonEngineOptions fromOptionValues(OptionValues optionValues) {
+        return new PythonEngineOptions(optionValues);
     }
 
     private boolean readBooleanOption(OptionKey<Boolean> key) {
+        return key.getValue(optionValues);
+    }
+
+    private int readIntegerOption(OptionKey<Integer> key) {
         return key.getValue(optionValues);
     }
 
@@ -70,17 +78,41 @@ public class PythonContextOptions {
     }
 
     private void cacheOptions() {
+        this.builtinsInliningMaxCallerSize = readIntegerOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+        this.catchAllExceptions = readBooleanOption(PythonOptions.CatchAllExceptions);
         this.emulatedJython = readBooleanOption(PythonOptions.EmulateJython);
+        this.exposeInternalSources = readBooleanOption(PythonOptions.ExposeInternalSources);
+        this.withThread = readBooleanOption(PythonOptions.WithThread);
+    }
+
+    public boolean areInternalSourcesExposed() {
+        return this.exposeInternalSources;
+    }
+
+    public boolean isCatchingAllExcetptionsEnabled() {
+        return this.catchAllExceptions;
     }
 
     public boolean isJythonEmulated() {
         return this.emulatedJython;
     }
 
+    public boolean isWithThread() {
+        return this.withThread;
+    }
+
+    public int getBuiltinsInliningMaxCallerSize() {
+        return this.builtinsInliningMaxCallerSize;
+    }
+
     @Override
     public int hashCode() {
         int hash = 7;
+        hash = 53 * hash + this.builtinsInliningMaxCallerSize;
+        hash = 53 * hash + (this.catchAllExceptions ? 1 : 0);
         hash = 53 * hash + (this.emulatedJython ? 1 : 0);
+        hash = 53 * hash + (this.exposeInternalSources ? 1 : 0);
+        hash = 53 * hash + (this.withThread ? 1 : 0);
         return hash;
     }
 
@@ -95,10 +127,19 @@ public class PythonContextOptions {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final PythonContextOptions other = (PythonContextOptions) obj;
+        final PythonEngineOptions other = (PythonEngineOptions) obj;
+        if (this.builtinsInliningMaxCallerSize != other.builtinsInliningMaxCallerSize) {
+            return false;
+        }
+        if (this.catchAllExceptions != other.catchAllExceptions) {
+            return false;
+        }
         if (this.emulatedJython != other.emulatedJython) {
             return false;
         }
-        return true;
+        if (this.exposeInternalSources != other.exposeInternalSources) {
+            return false;
+        }
+        return this.withThread == other.withThread;
     }
 }

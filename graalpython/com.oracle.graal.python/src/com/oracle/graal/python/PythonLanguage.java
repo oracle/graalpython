@@ -64,8 +64,8 @@ import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContextOptions;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonEngineOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -182,16 +182,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
-        // internal sources were marked during context initialization
-        return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
-                        // we cache WithThread on the language
-                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
-                        // we cache JythonEmulation on nodes
-                        firstOptions.get(PythonOptions.EmulateJython).equals(newOptions.get(PythonOptions.EmulateJython)) &&
-                        // we cache CatchAllExceptions hard on TryExceptNode
-                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
-                        // we cache BuiltinsInliningMaxCallerSize on the language
-                        firstOptions.get(PythonOptions.BuiltinsInliningMaxCallerSize).equals(newOptions.get(PythonOptions.BuiltinsInliningMaxCallerSize)));
+        return PythonEngineOptions.fromOptionValues(firstOptions).equals(PythonEngineOptions.fromOptionValues(newOptions));
     }
 
     private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
@@ -218,7 +209,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         assert this.isWithThread == null || this.isWithThread == PythonOptions.isWithThread(env) : "conflicting thread options in the same language!";
         this.isWithThread = PythonOptions.isWithThread(env);
         Python3Core newCore = new Python3Core(new PythonParserImpl(env));
-        final PythonContext context = new PythonContext(this, env, newCore, PythonContextOptions.fromOptionValues(env.getOptions()));
+        final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
         return context;
     }
@@ -551,7 +542,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
-        boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
+        boolean internal = !coreIsInitialized && !ctxt.areInternalSourcesExposed();
         if (internal) {
             srcBuilder.internal(true);
         }

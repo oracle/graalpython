@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -267,7 +267,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!PythonOptions.getOption(context, PythonOptions.ExposeInternalSources)) {
+                    if (!context.areInternalSourcesExposed()) {
                         capiSrcBuilder.internal(true);
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();

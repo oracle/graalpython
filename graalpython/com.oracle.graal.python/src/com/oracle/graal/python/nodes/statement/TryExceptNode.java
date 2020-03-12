@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
-import static com.oracle.graal.python.runtime.PythonOptions.EmulateJython;
-
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -47,7 +44,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -130,7 +126,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         } catch (Exception e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchJavaExceptions = PythonOptions.getOption(getContext(), EmulateJython);
+                shouldCatchJavaExceptions = getContext().isJythonEmulated();
             }
             if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
                 if (catchException(frame, (TruffleException) e, exceptionState)) {
@@ -139,7 +135,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
             if (shouldCatchAll == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchAll = PythonOptions.getOption(getContext(), CatchAllExceptions);
+                shouldCatchAll = getContext().isCatchingAllExcetptionsEnabled();
             }
             if (shouldCatchAll) {
                 if (e instanceof ControlFlowException) {
