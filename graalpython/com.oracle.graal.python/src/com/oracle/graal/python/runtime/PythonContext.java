@@ -223,7 +223,7 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
-    private final PythonEngineOptions engineOptions;
+    private PythonEngineOptions engineOptions;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -232,16 +232,10 @@ public final class PythonContext {
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(language);
         this.engineOptions = PythonEngineOptions.fromOptionValues(env.getOptions());
-        if (env == null) {
-            this.in = System.in;
-            this.out = System.out;
-            this.err = System.err;
-        } else {
-            this.resources.setEnv(env);
-            this.in = env.in();
-            this.out = env.out();
-            this.err = env.err();
-        }
+        this.resources.setEnv(env);
+        this.in = env.in();
+        this.out = env.out();
+        this.err = env.err();
     }
 
     public ThreadGroup getThreadGroup() {
@@ -297,6 +291,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        engineOptions = PythonEngineOptions.fromOptionValues(newEnv.getOptions());
     }
 
     /**
