@@ -324,7 +324,7 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
                        cls,
                        native_to_java(type_dict),
                        polyglot_from_string(name, SRC_CS),
-                       native_to_java(result_conversion != NULL ? pytruffle_decorate_function(native_to_java(meth), result_conversion) : meth),
+                       ptr_to_java(result_conversion != NULL ? pytruffle_decorate_function(ptr_to_java(meth), result_conversion) : meth),
                        (signature != NULL ? signature : get_method_flags_wrapper(flags)),
                        doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
                        (flags) > 0 && ((flags) & METH_CLASS) != 0,

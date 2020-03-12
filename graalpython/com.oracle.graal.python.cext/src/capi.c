@@ -63,6 +63,7 @@ alloc_reporter_fun_t PyObject_AllocationReporter;
 
 
 cache_t cache;
+ptr_cache_t ptr_cache;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
@@ -91,7 +92,8 @@ static void initialize_upcall_functions() {
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
-    cache = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
+    cache = (cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
+    ptr_cache = (ptr_cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create");
 }
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {

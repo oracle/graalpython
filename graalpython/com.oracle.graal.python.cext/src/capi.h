@@ -210,6 +210,9 @@ extern alloc_reporter_fun_t PyObject_AllocationReporter;
 typedef void* (*cache_t)(uint64_t);
 extern cache_t cache;
 
+typedef void* (*ptr_cache_t)(void *, uint64_t);
+extern ptr_cache_t ptr_cache;
+
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
 #define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
@@ -231,7 +234,7 @@ void* native_to_java(PyObject* obj) {
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
-    return obj;
+    return ptr_cache(obj, obj->ob_refcnt);
 }
 
 
@@ -242,7 +245,7 @@ void* native_to_java_slim(PyObject* obj) {
     if (!truffle_cannot_be_handle(obj)) {
         return truffle_managed_from_handle(obj);
     }
-    return obj;
+    return ptr_cache(obj, obj != NULL ? obj->ob_refcnt : 0);
 }
 
 MUST_INLINE
@@ -250,7 +253,17 @@ PyTypeObject* native_type_to_java(PyTypeObject* type) {
 	if (!truffle_cannot_be_handle(type)) {
         return (PyTypeObject *)truffle_managed_from_handle(type);
     }
-    return type;
+    return ptr_cache(type, type->ob_base.ob_base.ob_refcnt);
+}
+
+MUST_INLINE
+void* ptr_to_java(void* obj) {
+    if (polyglot_is_string(obj)) {
+        return obj;
+    } else if (!truffle_cannot_be_handle(obj)) {
+        return resolve_handle(cache, (uint64_t)obj);
+    }
+    return obj;
 }
 
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */

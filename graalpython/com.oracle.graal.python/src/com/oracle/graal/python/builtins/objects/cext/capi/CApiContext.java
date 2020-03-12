@@ -234,6 +234,11 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    public PythonAbstractNativeObject getPythonNativeObject(int idx) {
+        // TODO
+        return null;
+    }
+
     public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile resurrectProfile, AddRefCntNode addRefCntNode) {
         return getPythonNativeObject(nativePtr, newRefProfile, resurrectProfile, addRefCntNode, false);
     }
@@ -242,7 +247,7 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
         CompilerAsserts.partialEvaluationConstant(steal);
 
-        NativeObjectReference ref = getRef(nativePtr);
+        NativeObjectReference ref = lookupNativeObjectReference(nativePtr);
         PythonAbstractNativeObject nativeObject;
 
         // If there is no mapping, we need to create a new one.
@@ -258,7 +263,7 @@ public final class CApiContext extends CExtContext {
                 nativeObject = new PythonAbstractNativeObject(nativePtr);
 
                 ref = new NativeObjectReference(nativeObject, nativeObjectsQueue, ref.managedRefCount);
-                nativeObjectWrapperMap.put(nativePtr, ref);
+                putNativeObjectReference(nativePtr, ref);
             }
             if(steal) {
                 ref.managedRefCount++;
@@ -270,12 +275,17 @@ public final class CApiContext extends CExtContext {
     private PythonAbstractNativeObject createPythonAbstractNativeObject(TruffleObject nativePtr, AddRefCntNode addRefCntNode, boolean steal) {
         addRefCntNode.execute(nativePtr, REFERENCE_COUNT_MARKER);
         PythonAbstractNativeObject nativeObject = new PythonAbstractNativeObject(nativePtr);
-        nativeObjectWrapperMap.put(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, steal ? REFERENCE_COUNT_MARKER  + 1: REFERENCE_COUNT_MARKER));
+        putNativeObjectReference(nativePtr, new NativeObjectReference(nativeObject, nativeObjectsQueue, steal ? REFERENCE_COUNT_MARKER  + 1: REFERENCE_COUNT_MARKER));
         return nativeObject;
     }
 
     @TruffleBoundary
-    private NativeObjectReference getRef(TruffleObject nativePtr) {
+    private NativeObjectReference putNativeObjectReference(Object nativePtr, NativeObjectReference ref) {
+        return nativeObjectWrapperMap.put(nativePtr, ref);
+    }
+
+    @TruffleBoundary
+    public NativeObjectReference lookupNativeObjectReference(Object nativePtr) {
         return nativeObjectWrapperMap.get(nativePtr);
     }
 
