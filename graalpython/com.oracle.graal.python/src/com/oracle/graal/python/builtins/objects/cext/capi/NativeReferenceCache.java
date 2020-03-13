@@ -41,8 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,6 +59,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -83,10 +87,10 @@ public final class NativeReferenceCache implements TruffleObject {
                         rewriteOn = InvalidCacheEntry.class, //
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
-        static PythonAbstractNativeObject doCachedPointer(NativeReferenceCache receiver, Object[] arguments,
+        static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") NativeReferenceCache receiver, @SuppressWarnings("unused") Object[] arguments,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
                         @Cached(value = "lookupNativeReference(context, arguments)", uncached = "lookupNativeReferenceUncached(context, arguments)") NativeObjectReference ref,
-                        @CachedLibrary("ref.ptrObject") ReferenceLibrary referenceLibrary) {
+                        @CachedLibrary("ref.ptrObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 return wrapper;
@@ -94,22 +98,41 @@ public final class NativeReferenceCache implements TruffleObject {
             throw InvalidCacheEntry.INSTANCE;
         }
 
-        // TODO(fa) indexed case
-//        @Specialization(guards = {"arguments.length == 2"}, rewriteOn = CannotCastException.class)
-//        static PythonAbstractNativeObject doIndexed(NativeReferenceCache receiver, Object[] arguments,
-//                        @Cached CastToJavaLongNode castToJavaLongNode,
-//                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws CannotCastException {
-//            int idx = (int) (castToJavaLongNode.execute(arguments[1]) >> (Integer.BYTES * 8));
-//            return context.getCApiContext().getPythonNativeObject(idx);
-//        }
-
-        @Specialization(guards = "arguments.length == 2", replaces = "doCachedPointer")
-        static Object doGeneric(NativeReferenceCache receiver, Object[] arguments) {
+        @Specialization(guards = {"arguments.length == 2"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
+        static Object doGenericInt(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments,
+                        @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws CannotCastException {
+            CApiContext cApiContext = context.getCApiContext();
+            // The C API context may be null during initialization of the C API.
+            if (contextAvailableProfile.profile(cApiContext != null)) {
+                int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(arguments[1]));
+                if (wrapperExistsProfile.profile(idx != 0)) {
+                    PythonAbstractObject object = cApiContext.lookupNativeObjectReference(idx).get();
+                    if (object != null) {
+                        return object;
+                    }
+                }
+            }
             return arguments[0];
         }
 
+        @Specialization(guards = "arguments.length == 2", replaces = {"doCachedPointer", "doGenericInt"})
+        static Object doGeneric(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments,
+                        @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            try {
+                return doGenericInt(receiver, arguments, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, context);
+            } catch (CannotCastException e) {
+                return arguments[0];
+            }
+        }
+
         @Specialization(guards = "arguments.length != 2")
-        static Object doInvalidArity(NativeReferenceCache receiver, Object[] arguments) throws ArityException {
+        static Object doInvalidArity(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments) throws ArityException {
             throw ArityException.create(2, arguments.length);
         }
 
@@ -120,8 +143,9 @@ public final class NativeReferenceCache implements TruffleObject {
         static NativeObjectReference lookupNativeReference(PythonContext context, Object[] arguments) {
             CApiContext cApiContext = context.getCApiContext();
             // The C API context may be null during initialization of the C API.
-            if(cApiContext != null) {
-                return cApiContext.lookupNativeObjectReference(arguments[0]);
+            if (cApiContext != null) {
+                int idx = CApiContext.idFromRefCnt(CastToJavaLongNode.getUncached().execute(arguments[1]));
+                return cApiContext.lookupNativeObjectReference(idx);
             }
             return null;
         }

@@ -124,6 +124,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -151,6 +152,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -765,10 +767,11 @@ public abstract class CExtNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, addRefCntNode);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -786,10 +789,11 @@ public abstract class CExtNodes {
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, addRefCntNode, true);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -803,7 +807,8 @@ public abstract class CExtNodes {
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
-            // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
+            // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they
+            // cannot
             // be used in the user value space but might be passed-through
 
             // do not modify reference count at all; this is for non-'PyObject*' pointers
@@ -889,7 +894,8 @@ public abstract class CExtNodes {
             PFloat materializedFloat = context.getCore().getNaN();
             object.setMaterializedObject(materializedFloat);
 
-            // If the NaN singleton already has a native wrapper, we may need to update the pointer
+            // If the NaN singleton already has a native wrapper, we may need to update the
+            // pointer
             // of wrapper 'object' since the native code should see the same pointer.
             if (materializedFloat.getNativeWrapper() != null) {
                 object.setNativePointer(lib.getNativePointer(materializedFloat.getNativeWrapper()));
@@ -1674,7 +1680,8 @@ public abstract class CExtNodes {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             Object result = callFloatFunc.executeObject(value, __COMPLEX__);
-            // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
+            // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow
+            // subclasses
             // of PComplex
             if (result == PNone.NO_VALUE) {
                 throw raiseNode.raise(PythonErrorType.TypeError, "__complex__ returned non-complex (type %p)", value);
@@ -1812,14 +1819,16 @@ public abstract class CExtNodes {
                         @Cached IsBuiltinClassProfile classProfile,
                         @Cached CastToJavaDoubleNode castToJavaDoubleNode,
                         @Cached PRaiseNode raiseNode) {
-            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it is a
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
+            // is a
             // float object, use the value and do *NOT* call '__float__'.
             if (PGuards.isPFloat(value)) {
                 return ((PFloat) value).getValue();
             }
 
             Object result = callFloatFunc.executeObject(value, __FLOAT__);
-            // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses of
+            // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses
+            // of
             // PFloat
             if (classProfile.profileClass(getClassNode.execute(result), PythonBuiltinClassType.PFloat)) {
                 return castToJavaDoubleNode.execute(result);
@@ -2781,7 +2790,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(nativeWrapper)")
         static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper) {
-            // If this assertion fails, it indicates that the native code still uses a free'd native
+            // If this assertion fails, it indicates that the native code still uses a free'd
+            // native
             // wrapper.
             assert delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
             delegate.clearNativeWrapper();
@@ -2802,6 +2812,51 @@ public abstract class CExtNodes {
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
             return nativeWrapper instanceof PrimitiveNativeWrapper;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(CApiGuards.class)
+    public abstract static class GetRefCntNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GetRefCntNode.class);
+
+        public abstract long execute(Object ptrObject);
+
+        @Specialization(limit = "2")
+        static long doNativeObject(Object ptrObject,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @Cached GetEngineFlagNode getTraceMemFlagNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongNode castToJavaLongNode) {
+            if (!lib.isNull(ptrObject)) {
+                if (context.getCApiContext() != null && getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
+                    checkAccess(ptrObject, lib, context);
+                }
+
+                // directly reading the member is only possible if the pointer object is typed
+                // but
+                // if so, it is the faster way
+                if (lib.isMemberExisting(ptrObject, NativeMember.OB_REFCNT.getMemberName())) {
+                    try {
+                        return castToJavaLongNode.execute(lib.readMember(ptrObject, NativeMember.OB_REFCNT.getMemberName()));
+                    } catch (InteropException e) {
+                        CompilerDirectives.transferToInterpreter();
+                        throw new IllegalStateException(String.format("member %s could not be read but it claimed to be readable", NativeMember.OB_REFCNT.getMemberName()));
+                    }
+                }
+                if (context.getCApiContext() != null) {
+                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+                }
+            }
+            return 0;
+        }
+
+        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
+            Object ptrVal = CApiContext.asPointer(object, lib);
+            if (!context.getCApiContext().isAllocated(ptrVal)) {
+                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
+            }
         }
     }
 }
