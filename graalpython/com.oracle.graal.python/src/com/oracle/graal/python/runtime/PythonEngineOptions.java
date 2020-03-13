@@ -48,15 +48,20 @@ import org.graalvm.options.OptionValues;
 public class PythonEngineOptions {
     @CompilationFinal private OptionValues optionValues;
 
-    @CompilationFinal private int builtinsInliningMaxCallerSize;
-    @CompilationFinal private boolean catchAllExceptions;
-    @CompilationFinal private boolean emulatedJython;
-    @CompilationFinal private boolean exposeInternalSources;
-    @CompilationFinal private boolean withThread;
+    private final int builtinsInliningMaxCallerSize;
+    private final boolean catchAllExceptions;
+    private final boolean emulatedJython;
+    private final boolean exposeInternalSources;
+    private final boolean withThread;
 
     PythonEngineOptions(OptionValues optionValues) {
+        CompilerAsserts.neverPartOfCompilation();
         this.optionValues = optionValues;
-        setOptionValues(optionValues);
+        this.builtinsInliningMaxCallerSize = readIntegerOption(PythonOptions.BuiltinsInliningMaxCallerSize);
+        this.catchAllExceptions = readBooleanOption(PythonOptions.CatchAllExceptions);
+        this.emulatedJython = readBooleanOption(PythonOptions.EmulateJython);
+        this.exposeInternalSources = readBooleanOption(PythonOptions.ExposeInternalSources);
+        this.withThread = readBooleanOption(PythonOptions.WithThread);
     }
 
     public static PythonEngineOptions fromOptionValues(OptionValues optionValues) {
@@ -69,20 +74,6 @@ public class PythonEngineOptions {
 
     private int readIntegerOption(OptionKey<Integer> key) {
         return key.getValue(optionValues);
-    }
-
-    public void setOptionValues(OptionValues newOptions) {
-        CompilerAsserts.neverPartOfCompilation();
-        optionValues = newOptions;
-        cacheOptions();
-    }
-
-    private void cacheOptions() {
-        this.builtinsInliningMaxCallerSize = readIntegerOption(PythonOptions.BuiltinsInliningMaxCallerSize);
-        this.catchAllExceptions = readBooleanOption(PythonOptions.CatchAllExceptions);
-        this.emulatedJython = readBooleanOption(PythonOptions.EmulateJython);
-        this.exposeInternalSources = readBooleanOption(PythonOptions.ExposeInternalSources);
-        this.withThread = readBooleanOption(PythonOptions.WithThread);
     }
 
     public boolean areInternalSourcesExposed() {

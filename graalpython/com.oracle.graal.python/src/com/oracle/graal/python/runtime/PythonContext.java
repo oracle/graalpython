@@ -223,7 +223,7 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
-    private PythonEngineOptions engineOptions;
+    @CompilationFinal private PythonEngineOptions engineOptions;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
