@@ -111,7 +111,7 @@ abstract class CallSpecialMethodNode extends Node {
             int n = root instanceof PRootNode ? ((PRootNode) root).getNodeCount() : NodeUtil.countNodes(root);
             // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
             // ASTs will only we shared between contexts that have the same value for this option.
-            int maxSize = PythonOptions.getOption(lookupContextReference(PythonLanguage.class).get(), PythonOptions.BuiltinsInliningMaxCallerSize);
+            int maxSize = lookupContextReference(PythonLanguage.class).get().getBuiltinsInliningMaxCallerSize();
             if (n >= maxSize || n + NodeUtil.countNodes(builtinNode) >= maxSize) {
                 maxSizeExceeded = true;
                 return true;

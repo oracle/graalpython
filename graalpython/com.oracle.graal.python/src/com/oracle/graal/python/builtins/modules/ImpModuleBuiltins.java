@@ -270,7 +270,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!PythonOptions.getOption(context, PythonOptions.ExposeInternalSources)) {
+                    if (!context.areInternalSourcesExposed()) {
                         capiSrcBuilder.internal(true);
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();

@@ -222,22 +222,19 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
+    @CompilationFinal private PythonEngineOptions engineOptions;
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(language);
-        if (env == null) {
-            this.in = System.in;
-            this.out = System.out;
-            this.err = System.err;
-        } else {
-            this.resources.setEnv(env);
-            this.in = env.in();
-            this.out = env.out();
-            this.err = env.err();
-        }
+        this.engineOptions = PythonEngineOptions.fromOptionValues(env.getOptions());
+        this.resources.setEnv(env);
+        this.in = env.in();
+        this.out = env.out();
+        this.err = env.err();
     }
 
     public ThreadGroup getThreadGroup() {
@@ -293,6 +290,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        engineOptions = PythonEngineOptions.fromOptionValues(newEnv.getOptions());
     }
 
     /**
@@ -374,6 +372,22 @@ public final class PythonContext {
         setEnv(newEnv);
         setupRuntimeInformation(true);
         core.postInitialize();
+    }
+
+    public boolean isCatchingAllExcetptionsEnabled() {
+        return engineOptions.isCatchingAllExcetptionsEnabled();
+    }
+
+    public boolean areInternalSourcesExposed() {
+        return engineOptions.areInternalSourcesExposed();
+    }
+
+    public boolean isJythonEmulated() {
+        return engineOptions.isJythonEmulated();
+    }
+
+    public int getBuiltinsInliningMaxCallerSize() {
+        return engineOptions.getBuiltinsInliningMaxCallerSize();
     }
 
     /**

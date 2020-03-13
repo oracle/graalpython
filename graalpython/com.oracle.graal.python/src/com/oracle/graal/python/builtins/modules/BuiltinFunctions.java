@@ -1107,7 +1107,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected boolean emulateJython() {
             if (emulateJython == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                emulateJython = PythonOptions.getFlag(getContext(), PythonOptions.EmulateJython);
+                emulateJython = getContext().isJythonEmulated();
             }
             return emulateJython;
         }
