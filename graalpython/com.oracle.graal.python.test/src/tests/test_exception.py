@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -175,3 +175,15 @@ class ExceptionTests(unittest.TestCase):
             pass
         else:
             assert False, "named exception should be unbound after except block"
+
+    def test_raise_non_exception(self):
+        try:
+            raise object()
+        except TypeError:
+            pass
+
+    def test_raise_none(self):
+        try:
+            raise None
+        except TypeError:
+            pass

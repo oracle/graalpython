@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -50,7 +50,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class RaiseNode extends StatementNode {
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
-    @Specialization
+    @Specialization(guards = "isNoValue(type)")
     public void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
@@ -103,7 +103,7 @@ public abstract class RaiseNode extends StatementNode {
         throw raise.raise(pythonException);
     }
 
-    @Specialization(guards = "!isAnyPythonObject(exception)")
+    @Specialization(guards = "!isBaseExceptionOrPythonClass(exception)")
     @SuppressWarnings("unused")
     void doRaise(VirtualFrame frame, Object exception, Object cause,
                     @Cached PRaiseNode raise) {
@@ -116,5 +116,9 @@ public abstract class RaiseNode extends StatementNode {
 
     public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {
         return RaiseNodeGen.create(type, cause);
+    }
+
+    protected static boolean isBaseExceptionOrPythonClass(Object object) {
+        return object instanceof PBaseException || object instanceof PythonAbstractClass;
     }
 }
