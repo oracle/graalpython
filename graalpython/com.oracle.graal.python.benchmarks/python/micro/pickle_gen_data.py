@@ -37,36 +37,52 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .utils import get_pickler, get_data
-import sys
+from pickle_utils import *
+import pickle
 import os
 
 
-DATA = []
-dumps = None
-loads = None
+MOD_DIR = os.path.abspath(os.path.split(__file__)[0])
 
 
-def get_setup(module, name):
-    # this is needed in order to unpickle the funcs references ...
-    sys.path.append(os.path.split(__file__)[0])
-
-    def __setup__():
-        global DATA, dumps, loads
-        dumps, loads = get_pickler(module)
-        DATA = get_data(name)
-    return __setup__
+def gen_dics(size=500, size_min=10, size_max=100):
+    DATA = [random_dict(random.randint(size_min, size_max)) for _ in range(size)]
+    with open(os.path.join(MOD_DIR, "dicts.pickle"), "w+b") as FILE:
+        pickle.dump(DATA, FILE)
 
 
-def __process_args__():
-    pass
+def gen_funcs(size=500):
+    DATA = [random_func() for _ in range(size)]
+    with open(os.path.join(MOD_DIR, "funcs.pickle"), "w+b") as FILE:
+        pickle.dump(DATA, FILE)
 
 
-def __teardown__():
-    pass
+def gen_lists(size=500, size_min=10, size_max=100):
+    DATA = [random_list(random.randint(size_min, size_max)) for _ in range(size)]
+    with open(os.path.join(MOD_DIR, "lists.pickle"), "w+b") as FILE:
+        pickle.dump(DATA, FILE)
 
 
-def __benchmark__():
-    dumped = [dumps(s) for s in DATA]
-    loaded = [loads(b) for b in dumped]
-    print("loaded DATA are the same as dumped DATA: ", loaded == DATA)
+def gen_objects(size=500):
+    DATA = [random_instance() for _ in range(size)]
+    with open(os.path.join(MOD_DIR, "objects.pickle"), "w+b") as FILE:
+        pickle.dump(DATA, FILE)
+
+
+def gen_strings(size=10000, size_min=10, size_max=1000):
+    DATA = [random_string(random.randint(size_min, size_max)) for _ in range(size)]
+    with open(os.path.join(MOD_DIR, "strings.pickle"), "w+b") as FILE:
+        pickle.dump(DATA, FILE)
+
+
+if __name__ == '__main__':
+    print(">>>> gen dicts ...")
+    gen_dics()
+    print(">>>> gen funcs ...")
+    gen_funcs()
+    print(">>>> gen lists ...")
+    gen_lists()
+    print(">>>> gen objects ...")
+    gen_objects()
+    print(">>>> gen strings ...")
+    gen_strings()

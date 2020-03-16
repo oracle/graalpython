@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pickle_bench import bench
+import pickle_bench as bench
 
 
 __setup__ = bench.get_setup(*__name__.split("-"))

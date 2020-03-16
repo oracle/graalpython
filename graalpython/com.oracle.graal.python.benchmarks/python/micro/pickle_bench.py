@@ -37,10 +37,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from pickle_bench import bench
+from pickle_utils import get_pickler, get_data
+import sys
+import os
 
 
-__setup__ = bench.get_setup(*__name__.split("-"))
-__process_args__ = bench.__process_args__
-__teardown__ = bench.__teardown__
-__benchmark__ = bench.__benchmark__
+DATA = []
+dumps = None
+loads = None
+
+
+def get_setup(module, name):
+    # this is needed in order to unpickle the funcs references ...
+    sys.path.append(os.path.split(__file__)[0])
+
+    def __setup__():
+        global DATA, dumps, loads
+        dumps, loads = get_pickler(module)
+        DATA = get_data(name)
+    return __setup__
+
+
+def __process_args__():
+    pass
+
+
+def __teardown__():
+    pass
+
+
+def __benchmark__():
+    dumped = [dumps(s) for s in DATA]
+    loaded = [loads(b) for b in dumped]
+    print("loaded DATA are the same as dumped DATA: ", loaded == DATA)
