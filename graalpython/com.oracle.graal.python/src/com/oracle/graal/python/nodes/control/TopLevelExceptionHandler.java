@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins.GetTracebackNextNode;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins.GetMaterializedTracebackNode;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -82,6 +82,8 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
@@ -134,10 +136,11 @@ public class TopLevelExceptionHandler extends RootNode {
                 assert !PArguments.isPythonFrame(frame);
                 // we cannot reify at this point because we have no Python frame; so create the full
                 // traceback chain
-                PTraceback tbHead = GetTracebackNextNode.createTracebackChain(e, materializeFrameNode, factory());
-                if (tbHead != PTraceback.NO_TRACEBACK) {
-                    e.getExceptionObject().setTraceback(tbHead);
+                PTraceback tb = null;
+                for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(e)) {
+                    tb = GetMaterializedTracebackNode.truffleStackTraceElementToPTraceback(materializeFrameNode, factory(), tb, element);
                 }
+                e.getExceptionObject().setTraceback(tb);
                 printExc(frame, e);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);

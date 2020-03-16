@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,78 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class PTraceback extends PythonBuiltinObject {
 
-    /** A marker object to indicate the end of a traceback chain. */
-    public static final PTraceback NO_TRACEBACK = new PTraceback(PythonBuiltinClassType.PTraceback, null, (PException) null);
+    public interface TracebackStorage {
+    }
+
+    public static class MaterializedTracebackStorage implements TracebackStorage {
+        private final PFrame frame;
+        private final int lineno;
+        private final PTraceback next;
+
+        public MaterializedTracebackStorage(PFrame frame, int lineno, PTraceback next) {
+            this.frame = frame;
+            this.lineno = lineno;
+            this.next = next;
+        }
+
+        public PFrame getFrame() {
+            return frame;
+        }
+
+        public int getLineno() {
+            return lineno;
+        }
+
+        public PTraceback getNext() {
+            return next;
+        }
+    }
+
+    public static class LazyTracebackStorage implements TracebackStorage {
+        private final Reference frameInfo;
+        private final PFrame frame;
+        private final PException exception;
+        private final PTraceback nextChain;
+
+        public LazyTracebackStorage(Reference frameInfo, PException exception, PTraceback nextChain) {
+            this.frame = null;
+            this.frameInfo = frameInfo;
+            this.exception = exception;
+            this.nextChain = nextChain;
+        }
+
+        public LazyTracebackStorage(PFrame frame, PException exception, PTraceback nextChain) {
+            this.frame = frame;
+            this.frameInfo = null;
+            this.exception = exception;
+            this.nextChain = nextChain;
+        }
+
+        public Reference getFrameInfo() {
+            return frameInfo;
+        }
+
+        public PFrame getFrame() {
+            return frame;
+        }
+
+        public PException getException() {
+            return exception;
+        }
+
+        public PTraceback getNextChain() {
+            return nextChain;
+        }
+    }
 
     public static final String TB_FRAME = "tb_frame";
     public static final String TB_NEXT = "tb_next";
@@ -64,60 +124,28 @@ public final class PTraceback extends PythonBuiltinObject {
         return TB_DIR_FIELDS.clone();
     }
 
-    // we have to keep the exception around to lazily create the tb_next element
-    // if that isn't available and still stored in the TruffleStackTrace
-    private final PException exception;
-
-    private final PFrame frame;
-    private final int lasti;
-    private PTraceback next;
+    private TracebackStorage storage;
 
     public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
         super(clazz);
-        this.frame = frame;
-        this.exception = exception;
-        this.lasti = 0;
+        storage = new LazyTracebackStorage(frame, exception, null);
+    }
+
+    public PTraceback(LazyPythonClass clazz, Reference frameInfo, PException exception) {
+        super(clazz);
+        storage = new LazyTracebackStorage(frameInfo, exception, null);
     }
 
     public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {
         super(clazz);
-        this.frame = frame;
-        this.exception = next.exception;
-        this.next = next;
-        this.lasti = 0;
+        storage = new MaterializedTracebackStorage(frame, frame.getLine(), next);
     }
 
-    public PFrame getPFrame() {
-        return frame;
+    public TracebackStorage getTracebackStorage() {
+        return storage;
     }
 
-    public int getLasti() {
-        return lasti;
+    public void setStorage(TracebackStorage storage) {
+        this.storage = storage;
     }
-
-    public int getLineno() {
-        return frame.getLine();
-    }
-
-    public PTraceback getNext() {
-        return next;
-    }
-
-    public void setNext(PTraceback next) {
-        this.next = next;
-    }
-
-    public PException getException() {
-        return exception;
-    }
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        if (this == NO_TRACEBACK) {
-            return "NO_TRACEBACK";
-        }
-        return super.toString();
-    }
-
 }

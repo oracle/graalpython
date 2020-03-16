@@ -488,7 +488,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
             val.setTraceback(tb);
-            assert tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
             if (val.getException() != null) {
                 getContext().setCurrentException(val.getException());
             } else {
@@ -560,7 +559,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
             val.setTraceback(tb);
-            assert tb == null || tb.getPFrame().getRef().isEscaped() : "It's impossible to have an unescaped PFrame";
             if (val.getException() != null) {
                 getContext().setCaughtException(val.getException());
             } else {

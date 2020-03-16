@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
@@ -586,7 +587,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception));
     }
 
+    public PTraceback createTraceback(Reference frameInfo, PException exception) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frameInfo, exception));
+    }
+
     public PTraceback createTraceback(PFrame frame, PTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
+    }
+
+    public PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {
         return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
     }
 

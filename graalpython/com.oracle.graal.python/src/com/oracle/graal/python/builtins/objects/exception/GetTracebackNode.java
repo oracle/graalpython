@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Use this node to get the traceback object of an exception object. The traceback may need to be
@@ -61,65 +55,20 @@ public abstract class GetTracebackNode extends Node {
 
     public abstract PTraceback execute(VirtualFrame frame, PBaseException e);
 
-    @Specialization(guards = "!hasLazyTraceback(e)")
+    @Specialization(guards = "!hasTraceback(e)")
+    static PTraceback doExisting(PBaseException e,
+                    @Cached PythonObjectFactory factory) {
+        PTraceback traceback = factory.createTraceback(e.getFrameInfo(), e.getException());
+        e.setTraceback(traceback);
+        return traceback;
+    }
+
+    @Specialization(guards = "hasTraceback(e)")
     static PTraceback doExisting(PBaseException e) {
         return e.getTraceback();
     }
 
-    // case 1: not on stack: there is already a PFrame (so the frame of this frame info is no
-    // longer on the stack) and the frame has already been materialized
-    @Specialization(guards = {"hasLazyTraceback(e)", "isMaterialized(e.getFrameInfo())"})
-    static PTraceback doMaterializedFrame(PBaseException e,
-                    @Cached PythonObjectFactory factory) {
-        Reference frameInfo = e.getFrameInfo();
-        assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
-
-        PFrame escapedFrame = frameInfo.getPyFrame();
-        assert escapedFrame != null;
-
-        PTraceback result = factory.createTraceback(escapedFrame, e.getException());
-        e.setTraceback(result);
-        return result;
-    }
-
-    // case 2: on stack: the PFrame is not yet available so the frame must still be on the stack
-    @Specialization(guards = {"hasLazyTraceback(e)", "!isMaterialized(e.getFrameInfo())"})
-    PTraceback doOnStack(VirtualFrame frame, PBaseException e,
-                    @Cached PythonObjectFactory factory,
-                    @Cached MaterializeFrameNode materializeNode,
-                    @Cached ReadCallerFrameNode readCallerFrame,
-                    @Cached("createBinaryProfile()") ConditionProfile isCurFrameProfile) {
-        Reference frameInfo = e.getFrameInfo();
-        assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
-
-        PFrame escapedFrame = null;
-
-        // case 2.1: the frame info refers to the current frame
-        if (isCurFrameProfile.profile(PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
-            // materialize the current frame; marking is not necessary (already done); refreshing
-            // values is also not necessary (will be done on access to the locals or when returning
-            // from the frame)
-            escapedFrame = materializeNode.execute(frame, false);
-        } else {
-            // case 2.2: the frame info does not refer to the current frame
-            for (int i = 0;; i++) {
-                escapedFrame = readCallerFrame.executeWith(frame, i);
-                if (escapedFrame == null || escapedFrame.getRef() == frameInfo) {
-                    break;
-                }
-            }
-        }
-
-        PTraceback result = factory.createTraceback(escapedFrame, e.getException());
-        e.setTraceback(result);
-        return result;
-    }
-
-    protected static boolean hasLazyTraceback(PBaseException e) {
-        return e.getTraceback() == null && e.getFrameInfo() != null;
-    }
-
-    protected static boolean isMaterialized(PFrame.Reference frameInfo) {
-        return frameInfo.getPyFrame() != null;
+    protected static boolean hasTraceback(PBaseException e) {
+        return e.getTraceback() != null;
     }
 }
