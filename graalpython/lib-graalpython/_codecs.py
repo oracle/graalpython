@@ -130,15 +130,14 @@ def lookup_error(errors='strict'):
     return handler
 
 
-# TODO implement the encode / decode methods
 @__builtin__
 def escape_encode(data, errors=None):
-    raise NotImplementedError("escape_encode")
+    return unicode_escape_encode(data, errors)
 
 
 @__builtin__
 def escape_decode(data, errors=None):
-    raise NotImplementedError("escape_decode")
+    return unicode_escape_decode(data, errors)
 
 
 @__builtin__
