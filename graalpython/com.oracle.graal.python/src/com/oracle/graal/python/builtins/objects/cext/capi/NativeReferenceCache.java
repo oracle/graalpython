@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
@@ -82,8 +83,12 @@ public final class NativeReferenceCache implements TruffleObject {
 
     @ExportMessage
     static class Execute {
+        @Specialization(guards = {"arguments.length == 2", "isNativeWrapper(arguments)"})
+        static Object doNativeWrapper(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments) {
+            return arguments[0];
+        }
 
-        @Specialization(guards = {"arguments.length == 2", "ref != null", "isSame(referenceLibrary, arguments, ref)"}, //
+        @Specialization(guards = {"arguments.length == 2", "!isNativeWrapper(arguments)", "ref != null", "isSame(referenceLibrary, arguments, ref)"}, //
                         rewriteOn = InvalidCacheEntry.class, //
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
@@ -98,7 +103,7 @@ public final class NativeReferenceCache implements TruffleObject {
             throw InvalidCacheEntry.INSTANCE;
         }
 
-        @Specialization(guards = {"arguments.length == 2"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
+        @Specialization(guards = {"arguments.length == 2", "!isNativeWrapper(arguments)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
         static Object doGenericInt(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
@@ -118,7 +123,7 @@ public final class NativeReferenceCache implements TruffleObject {
             return arguments[0];
         }
 
-        @Specialization(guards = "arguments.length == 2", replaces = {"doCachedPointer", "doGenericInt"})
+        @Specialization(guards = {"arguments.length == 2", "!isNativeWrapper(arguments)"}, replaces = {"doCachedPointer", "doGenericInt"})
         static Object doGeneric(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
@@ -157,6 +162,10 @@ public final class NativeReferenceCache implements TruffleObject {
 
         static Assumption singleContextAssumption() {
             return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        static boolean isNativeWrapper(Object[] arguments) {
+            return CApiGuards.isNativeWrapper(arguments[0]);
         }
     }
 
