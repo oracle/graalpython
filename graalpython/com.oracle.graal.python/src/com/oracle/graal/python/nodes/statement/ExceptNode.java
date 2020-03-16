@@ -47,7 +47,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleException;
@@ -68,7 +67,6 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private WriteNode exceptName;
     @Child private ExpressionNode exceptType;
 
-    @Child private PythonObjectFactory factory;
     @Child private ExceptMatchNode matchNode;
 
     public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
@@ -87,11 +85,11 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         if (e instanceof PException) {
             PException pE = (PException) e;
             SetCaughtExceptionNode.execute(frame, pE);
+            PBaseException exceptionObject = pE.getExceptionObject();
+            PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+            info.markAsEscaped();
+            exceptionObject.reifyException(info, this);
             if (exceptName != null) {
-                PBaseException exceptionObject = pE.getExceptionObject();
-                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                info.markAsEscaped();
-                exceptionObject.reifyException(info, this);
                 exceptName.doWrite(frame, exceptionObject);
             }
         } else if (exceptName != null) {

@@ -295,7 +295,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return os;
     }
 
-    @Builtin(name = "exc_info", needsFrame = true)
+    @Builtin(name = "exc_info")
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
 
@@ -303,7 +303,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         public Object run(VirtualFrame frame,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                        @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached GetTracebackNode getTracebackNode) {
             PException currentException = getCaughtExceptionNode.execute(frame);
             assert currentException != PException.NO_EXCEPTION;
@@ -311,22 +310,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
                 PBaseException exception = currentException.getExceptionObject();
-                Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
-                PFrame escapedFrame = readCallerFrameNode.executeWith(frame, currentFrameInfo, 0);
-                currentFrameInfo.markAsEscaped();
-                PTraceback exceptionTraceback = getTracebackNode.execute(frame, exception);
-                // n.b. a call to 'sys.exc_info' always creates a new traceback with the current
-                // frame and links (via 'tb_next') to the traceback of the exception
-                PTraceback chainedTraceback;
-                if (exceptionTraceback != null) {
-                    chainedTraceback = factory().createTraceback(escapedFrame, exceptionTraceback);
-                } else {
-                    // it's still possible that there is no traceback if, for example, the exception
-                    // has been thrown and caught and did never escape
-                    chainedTraceback = factory().createTraceback(escapedFrame, currentException);
-                }
-                exception.setTraceback(chainedTraceback);
-                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, chainedTraceback});
+                PTraceback traceback = getTracebackNode.execute(frame, exception);
+                return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
             }
         }
 
