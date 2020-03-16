@@ -246,16 +246,9 @@ void* native_to_java_exported(PyObject* obj) {
 }
 
 // This function does not guarantee that a pointer object is returned.
-void* native_pointer_to_java(PyObject* val) {
-	PyObject* obj = (PyObject*) val;
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
-    }
-    return obj;
+NO_INLINE
+void* native_pointer_to_java_exported(void* val) {
+	return native_pointer_to_java(val);
 }
 
 // Workaround: use 'uint64' to avoid conversion to an LLVM boxed primitive such

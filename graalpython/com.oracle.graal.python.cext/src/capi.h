@@ -257,7 +257,7 @@ PyTypeObject* native_type_to_java(PyTypeObject* type) {
 }
 
 MUST_INLINE
-void* ptr_to_java(void* obj) {
+void* native_pointer_to_java(void* obj) {
     if (polyglot_is_string(obj)) {
         return obj;
     } else if (!truffle_cannot_be_handle(obj)) {
@@ -265,6 +265,8 @@ void* ptr_to_java(void* obj) {
     }
     return obj;
 }
+
+extern void* native_pointer_to_java_exported(void* ptr);
 
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE
