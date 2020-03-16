@@ -25,8 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SUPPRESS_CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
@@ -41,6 +43,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
@@ -55,6 +59,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -62,6 +67,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
 public class BaseExceptionBuiltins extends PythonBuiltins {
+
+    protected static boolean isBaseExceptionOrNone(Object obj) {
+        return obj instanceof PBaseException || PGuards.isNone(obj);
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -137,6 +146,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
+    @ImportStatic(BaseExceptionBuiltins.class)
     public abstract static class CauseNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         public Object cause(PBaseException self, @SuppressWarnings("unused") PNone value,
@@ -149,15 +159,24 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        public Object cause(PBaseException self, PBaseException value,
-                        @Cached("create()") WriteAttributeToObjectNode writeCause) {
+        @Specialization(guards = "isBaseExceptionOrNone(value)")
+        public Object cause(PBaseException self, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeCause,
+                        @Cached("create()") WriteAttributeToObjectNode writeSuppressContext) {
             writeCause.execute(self, __CAUSE__, value);
+            writeSuppressContext.execute(self, __SUPPRESS_CONTEXT__, true);
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isBaseExceptionOrNone(value)")
+        public Object cause(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
+                        @Cached("create()") PRaiseNode raise) {
+            throw raise.raise(TypeError, "exception cause must be None or derive from BaseException");
         }
     }
 
     @Builtin(name = __CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @ImportStatic(BaseExceptionBuiltins.class)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
@@ -171,21 +190,45 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        public Object context(PBaseException self, PBaseException value,
+        @Specialization(guards = "isBaseExceptionOrNone(value)")
+        public Object context(PBaseException self, Object value,
                         @Cached("create()") WriteAttributeToObjectNode writeContext) {
             writeContext.execute(self, __CONTEXT__, value);
             return PNone.NONE;
         }
+
+        @Specialization(guards = "!isBaseExceptionOrNone(value)")
+        public Object context(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
+                        @Cached("create()") PRaiseNode raise) {
+            throw raise.raise(TypeError, "exception context must be None or derive from BaseException");
+        }
     }
 
-    @Builtin(name = "__suppress_context__", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __SUPPRESS_CONTEXT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        public Object suppressContext(PBaseException self, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode readSuppressContext) {
+            Object suppressContext = readSuppressContext.execute(self, __SUPPRESS_CONTEXT__);
+            if (suppressContext == PNone.NO_VALUE) {
+                return false;
+            } else {
+                return suppressContext;
+            }
+        }
 
-        @Specialization
-        public boolean suppressContext(@SuppressWarnings("unused") PBaseException self) {
-            return false;
+        @Specialization(guards = "isBoolean(value)")
+        public Object suppressContext(PBaseException self, Object value,
+                        @Cached("create()") WriteAttributeToObjectNode writeContext) {
+            writeContext.execute(self, __SUPPRESS_CONTEXT__, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isBoolean(value)")
+        public Object suppressContext(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
+                        @Cached("create()") PRaiseNode raise) {
+            throw raise.raise(TypeError, "attribute value type must be bool");
         }
     }
 

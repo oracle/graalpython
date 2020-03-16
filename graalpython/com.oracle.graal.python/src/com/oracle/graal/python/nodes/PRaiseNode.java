@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
@@ -169,15 +169,17 @@ public abstract class PRaiseNode extends Node {
     @Specialization(guards = {"!isNoValue(cause)"})
     PException doBuiltinTypeWithCause(PythonBuiltinClassType type, PBaseException cause, String format, Object[] arguments,
                     @Shared("factory") @Cached PythonObjectFactory factory,
-                    @Cached WriteAttributeToDynamicObjectNode writeCause) {
+                    @Cached WriteAttributeToObjectNode writeCause,
+                    @Cached("create()") WriteAttributeToObjectNode writeSuppressContext) {
         assert format != null;
         PBaseException baseException = factory.createBaseException(type, format, arguments);
-        writeCause.execute(baseException.getStorage(), SpecialAttributeNames.__CAUSE__, cause);
+        writeCause.execute(baseException, SpecialAttributeNames.__CAUSE__, cause);
+        writeSuppressContext.execute(baseException, SpecialAttributeNames.__SUPPRESS_CONTEXT__, true);
         throw raise(baseException);
     }
 
     @TruffleBoundary
-    private static final String getMessage(Exception e) {
+    private static String getMessage(Exception e) {
         String msg = e.getMessage();
         return msg != null ? msg : e.getClass().getSimpleName();
     }
