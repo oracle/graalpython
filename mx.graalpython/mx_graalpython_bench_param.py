@@ -184,21 +184,6 @@ INTEROP_JAVA_BENCHMARKS = {
 }
 
 
-def _pickling_benchmarks(module='pickle'):
-    return {
-        'strings': ITER_10 + ['10000', '10', '1000', module],
-        'lists': ITER_10 + ['500', '10', '100', module],
-        'dicts': ITER_10 + ['100', '10', '100', module],
-        'objects': ITER_10 + ['100', module],
-        'funcs': ITER_10 + ['1000', module],
-    }
-
-
-PICKLE_BENCHMARKS = _pickling_benchmarks("pickle")
-# TODO: re-enable when the cPickle module is implemented
-# CPICKLE_BENCHMARKS = _pickling_benchmarks("cPickle")
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # the benchmarks
