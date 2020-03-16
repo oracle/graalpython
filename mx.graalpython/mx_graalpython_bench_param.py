@@ -96,6 +96,20 @@ MICRO_BENCHMARKS = {
 }
 
 
+def _pickling_benchmarks(module='pickle'):
+    return {
+        '{}-strings'.format(module): ITER_10,
+        '{}-lists'.format(module): ITER_10,
+        '{}-dicts'.format(module): ITER_10,
+        '{}-objects'.format(module): ITER_10,
+        '{}-funcs'.format(module): ITER_10,
+    }
+
+
+MICRO_BENCHMARKS.update(_pickling_benchmarks('pickle'))
+# MICRO_BENCHMARKS.update(_pickling_benchmarks('cPickle'))
+
+
 MICRO_NATIVE_BENCHMARKS = {
     'c_member_access': ITER_10 + ['5'],
     'c-list-iterating-obj': ITER_10 + ['50000000'],
