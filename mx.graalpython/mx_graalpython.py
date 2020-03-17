@@ -746,7 +746,7 @@ def update_import(name, suite_py, rev="origin/master"):
     parent = os.path.join(SUITE.dir, "..")
     for dirpath,dirnames,filenames in os.walk(parent):
         if os.path.sep in os.path.relpath(dirpath, parent):
-            dirnames = [] # we're looking for siblings or sibling-subdirs
+            dirnames.clear() # we're looking for siblings or sibling-subdirs
         elif name in dirnames:
             dep_dir = os.path.join(os.path.join(dirpath))
             break
