@@ -121,6 +121,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
+    private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
+
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
@@ -449,8 +451,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public static TruffleLogger getLogger() {
-        return TruffleLogger.getLogger(ID);
+    public static TruffleLogger getLogger(Class<?> clazz) {
+        return TruffleLogger.getLogger(ID, clazz);
     }
 
     public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
@@ -508,7 +510,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> {
-            PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
             return createCode.get();
         });
     }
