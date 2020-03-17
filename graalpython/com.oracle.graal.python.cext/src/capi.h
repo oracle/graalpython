@@ -212,6 +212,7 @@ extern cache_t cache;
 
 typedef void* (*ptr_cache_t)(void *, uint64_t);
 extern ptr_cache_t ptr_cache;
+extern ptr_cache_t ptr_cache_stealing;
 
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
@@ -237,8 +238,23 @@ void* native_to_java(PyObject* obj) {
     return ptr_cache(obj, obj->ob_refcnt);
 }
 
+MUST_INLINE
+void* native_to_java_stealing(PyObject* obj) {
+    if (obj == NULL) {
+        return Py_NoValue;
+    } else if (obj == Py_None) {
+        return Py_None;
+    } else if (polyglot_is_string(obj)) {
+        return obj;
+    } else if (!truffle_cannot_be_handle(obj)) {
+        return resolve_handle(cache, (uint64_t)obj);
+    }
+    return ptr_cache_stealing(obj, obj->ob_refcnt);
+}
+
 
 extern void* native_to_java_exported(PyObject* obj);
+extern void* native_to_java_stealing_exported(PyObject* obj);
 
 MUST_INLINE
 void* native_to_java_slim(PyObject* obj) {

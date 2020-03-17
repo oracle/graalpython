@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_NATIVE_LONG_TO_JAVA;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_NATIVE_TO_JAVA;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
@@ -79,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPt
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -152,9 +151,9 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -552,7 +551,6 @@ public abstract class CExtNodes {
         @Specialization
         static Object doNativeObject(CExtContext cextContext, PythonAbstractNativeObject nativeObject,
                         @Cached RefCntNode refCntNode) {
-
             Object res = ToSulongNode.doNativeObject(cextContext, nativeObject);
             refCntNode.inc(res);
             return res;
@@ -991,19 +989,26 @@ public abstract class CExtNodes {
     public abstract static class ToJavaNode extends ToJavaBaseNode {
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long l,
-                        @Exclusive @Cached PCallCapiFunction callNativeNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
+        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
+                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode) {
             // Unfortunately, a long could be a native pointer and therefore a handle. So, we
             // must try resolving it. At least we know that it's not a native type.
-            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
+            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), false));
         }
 
-        @Specialization(guards = "isForeignObject(value)")
+        @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
-                        @Exclusive @Cached PCallCapiFunction callNativeNode,
-                        @Shared("toJavaNode") @Cached AsPythonObjectNode toJavaNode) {
-            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
+                        @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary("value") InteropLibrary interopLibrary,
+                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+                return PNone.NO_VALUE;
+            }
+            return asPythonObjectNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), false));
         }
     }
 
@@ -1015,19 +1020,26 @@ public abstract class CExtNodes {
     public abstract static class ToJavaStealingNode extends ToJavaBaseNode {
 
         @Specialization
-        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long l,
-                        @Exclusive @Cached PCallCapiFunction callNativeNode,
+        static Object doLong(@SuppressWarnings("unused") CExtContext nativeContext, long value,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
                         @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode) {
             // Unfortunately, a long could be a native pointer and therefore a handle. So, we
             // must try resolving it. At least we know that it's not a native type.
-            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_LONG_TO_JAVA, l));
+            return toJavaNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.executeLong(value), true));
         }
 
-        @Specialization(guards = "isForeignObject(value)")
+        @Specialization(guards = "isForeignObject(value)", limit = "1")
         static Object doForeign(@SuppressWarnings("unused") CExtContext nativeContext, Object value,
-                        @Exclusive @Cached PCallCapiFunction callNativeNode,
-                        @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode) {
-            return toJavaNode.execute(callNativeNode.call(FUN_NATIVE_TO_JAVA, value));
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
+                        @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode,
+                        @CachedLibrary("value") InteropLibrary interopLibrary,
+                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            if (isNullProfile.profile(interopLibrary.isNull(value))) {
+                return PNone.NO_VALUE;
+            }
+            return toJavaNode.execute(resolveNativeReferenceNode.execute(resolveHandleNode.execute(value), true));
         }
     }
 
@@ -2816,13 +2828,37 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(CApiGuards.class)
     public abstract static class GetRefCntNode extends PNodeWithContext {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GetRefCntNode.class);
 
         public abstract long execute(Object ptrObject);
 
-        @Specialization(limit = "2")
+        @Specialization(limit = "2", rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static long doNativeObjectTyped(Object ptrObject,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached PCallCapiFunction callGetObRefCntNode,
+                        @Cached GetEngineFlagNode getTraceMemFlagNode,
+                        @CachedLibrary("ptrObject") InteropLibrary lib,
+                        @Cached CastToJavaLongNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
+            if (!lib.isNull(ptrObject)) {
+                if (context.getCApiContext() != null && getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
+                    checkAccess(ptrObject, lib, context);
+                }
+
+                // directly reading the member is only possible if the pointer object is typed
+                // but
+                // if so, it is the faster way
+                if (lib.hasMembers(ptrObject)) {
+                    return castToJavaLongNode.execute(lib.readMember(ptrObject, NativeMember.OB_REFCNT.getMemberName()));
+                }
+                if (context.getCApiContext() != null) {
+                    return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
+                }
+            }
+            return 0;
+        }
+
+        @Specialization(limit = "2", replaces = "doNativeObjectTyped")
         static long doNativeObject(Object ptrObject,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
@@ -2832,18 +2868,6 @@ public abstract class CExtNodes {
             if (!lib.isNull(ptrObject)) {
                 if (context.getCApiContext() != null && getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
                     checkAccess(ptrObject, lib, context);
-                }
-
-                // directly reading the member is only possible if the pointer object is typed
-                // but
-                // if so, it is the faster way
-                if (lib.isMemberExisting(ptrObject, NativeMember.OB_REFCNT.getMemberName())) {
-                    try {
-                        return castToJavaLongNode.execute(lib.readMember(ptrObject, NativeMember.OB_REFCNT.getMemberName()));
-                    } catch (InteropException e) {
-                        CompilerDirectives.transferToInterpreter();
-                        throw new IllegalStateException(String.format("member %s could not be read but it claimed to be readable", NativeMember.OB_REFCNT.getMemberName()));
-                    }
                 }
                 if (context.getCApiContext() != null) {
                     return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
@@ -2857,6 +2881,70 @@ public abstract class CExtNodes {
             if (!context.getCApiContext().isAllocated(ptrVal)) {
                 LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
             }
+        }
+    }
+
+    @GenerateUncached
+    abstract static class ResolveHandleNode extends Node {
+
+        public abstract Object execute(Object pointerObject);
+
+        public abstract Object executeLong(long pointer);
+
+        @Specialization(limit = "3", //
+                        guards = {"cachedPointer == pointer", "cachedValue != null"}, //
+                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
+        static PythonNativeWrapper doLongCachedSingleContext(@SuppressWarnings("unused") long pointer,
+                        @Cached("pointer") @SuppressWarnings("unused") long cachedPointer,
+                        @Cached("resolveHandleUncached(pointer)") PythonNativeWrapper cachedValue) {
+            return cachedValue;
+        }
+
+        @Specialization(limit = "3", //
+                        guards = {"isSame(referenceLibrary, cachedPointerObject, pointerObject)", "cachedValue != null"}, //
+                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
+        static PythonNativeWrapper doObjectCachedSingleContext(@SuppressWarnings("unused") Object pointerObject,
+                        @Cached("pointerObject") @SuppressWarnings("unused") Object cachedPointerObject,
+                        @CachedLibrary("cachedPointerObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary,
+                        @Cached("resolveHandleUncached(pointerObject)") PythonNativeWrapper cachedValue) {
+            return cachedValue;
+        }
+
+        @Specialization(replaces = {"doObjectCachedSingleContext", "doLongCachedSingleContext"})
+        static Object doGeneric(Object pointerObject,
+                        @Cached PCallCapiFunction callTruffleCannotBeHandleNode,
+                        @Cached PCallCapiFunction callTruffleManagedFromHandleNode) {
+            if (!((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_TRUFFLE_CANNOT_BE_HANDLE, pointerObject))) {
+                return callTruffleManagedFromHandleNode.call(NativeCAPISymbols.FUN_TRUFFLE_MANAGED_FROM_HANDLE, pointerObject);
+            }
+            // In this case, it cannot be a handle so we can just return the pointer object. It
+            // could, of course, still be a native pointer.
+            return pointerObject;
+        }
+
+        static PythonNativeWrapper resolveHandleUncached(Object pointerObject) {
+            CompilerAsserts.neverPartOfCompilation();
+            if (!((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_TRUFFLE_CANNOT_BE_HANDLE, pointerObject))) {
+                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_TRUFFLE_MANAGED_FROM_HANDLE, pointerObject);
+                if (resolved instanceof PythonNativeWrapper) {
+                    return (PythonNativeWrapper) resolved;
+                }
+            }
+            // In this case, it cannot be a handle so we return 'null' to indicate that it should
+            // not be cached.
+            return null;
+        }
+
+        static boolean isSame(ReferenceLibrary referenceLibrary, Object left, Object right) {
+            return referenceLibrary.isSame(left, right);
+        }
+
+        static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
+            return nativeWrapper.getHandleValidAssumption();
         }
     }
 }

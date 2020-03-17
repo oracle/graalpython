@@ -64,6 +64,7 @@ alloc_reporter_fun_t PyObject_AllocationReporter;
 
 cache_t cache;
 ptr_cache_t ptr_cache;
+ptr_cache_t ptr_cache_stealing;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
@@ -93,7 +94,8 @@ static void initialize_upcall_functions() {
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
     cache = (cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
-    ptr_cache = (ptr_cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create");
+    ptr_cache = (ptr_cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
+    ptr_cache_stealing = (ptr_cache_t)polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
 }
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid) {
@@ -245,8 +247,11 @@ void* native_to_java_exported(PyObject* obj) {
     return native_to_java(obj);
 }
 
+void* native_to_java_stealing_exported(PyObject* obj) {
+    return native_to_java_stealing(obj);
+}
+
 // This function does not guarantee that a pointer object is returned.
-NO_INLINE
 void* native_pointer_to_java_exported(void* val) {
 	return native_pointer_to_java(val);
 }
@@ -265,8 +270,8 @@ void* native_long_to_java(uint64_t val) {
     return obj;
 }
 
-__attribute__((always_inline))
-inline void* to_java(PyObject* obj) {
+MUST_INLINE
+void* to_java(PyObject* obj) {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "to_java", native_to_java(obj));
 }
 

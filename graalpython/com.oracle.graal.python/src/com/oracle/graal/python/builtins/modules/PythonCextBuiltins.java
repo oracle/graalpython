@@ -2165,12 +2165,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_PtrCache_Create", minNumOfPositionalArgs = 0)
+    @Builtin(name = "PyTruffle_PtrCache_Create", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTrufflePtrCacheCreate extends PythonBuiltinNode {
+    abstract static class PyTrufflePtrCacheCreate extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object createCache() {
-            return new NativeReferenceCache();
+        static Object createCache(int steal) {
+            return new NativeReferenceCache(steal != 0);
         }
     }
 

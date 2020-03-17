@@ -43,15 +43,20 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -60,19 +65,17 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 public final class NativeReferenceCache implements TruffleObject {
-    public static final int CACHE_SIZE = 3;
 
-    final long[] keys;
+    private final boolean steal;
 
-    int pos = 0;
-
-    public NativeReferenceCache() {
-        keys = new long[CACHE_SIZE];
+    public NativeReferenceCache(boolean steal) {
+        this.steal = steal;
     }
 
     @ExportMessage
@@ -82,20 +85,44 @@ public final class NativeReferenceCache implements TruffleObject {
     }
 
     @ExportMessage
-    static class Execute {
-        @Specialization(guards = {"arguments.length == 2", "isNativeWrapper(arguments)"})
-        static Object doNativeWrapper(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments) {
-            return arguments[0];
+    Object execute(Object[] arguments,
+                    @Cached ResolveNativeReferenceNode resolveNativeReferenceNode) throws ArityException {
+        if (arguments.length == 2) {
+            return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+        }
+        throw ArityException.create(2, arguments.length);
+    }
+
+    @GenerateUncached
+    @ImportStatic(CApiGuards.class)
+    public static abstract class ResolveNativeReferenceNode extends Node {
+
+        private static final Object NO_REF_CNT = new Object();
+
+        public abstract Object execute(Object pointerObject, Object refCnt, boolean steal);
+
+        public final Object execute(Object pointerObject, boolean steal) {
+            return execute(pointerObject, NO_REF_CNT, steal);
         }
 
-        @Specialization(guards = {"arguments.length == 2", "!isNativeWrapper(arguments)", "ref != null", "isSame(referenceLibrary, arguments, ref)"}, //
-                        rewriteOn = InvalidCacheEntry.class, //
+        @Specialization(guards = "isNativeWrapper(pointerObject)")
+        static Object doNativeWrapper(Object pointerObject, @SuppressWarnings("unused") Object refCnt, @SuppressWarnings("unused") boolean steal) {
+            return pointerObject;
+        }
+
+        @Specialization(guards = {"!isNativeWrapper(pointerObject)", "ref != null", "isSame(referenceLibrary, pointerObject, ref)"}, //
+                        rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
-        static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") NativeReferenceCache receiver, @SuppressWarnings("unused") Object[] arguments,
+        static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Cached(value = "lookupNativeReference(context, arguments)", uncached = "lookupNativeReferenceUncached(context, arguments)") NativeObjectReference ref,
+                        @Cached(value = "lookupNativeReference(context, pointerObject, refCnt)", uncached = "lookupNativeReferenceUncached(context, pointerObject, refCnt)") NativeObjectReference ref,
                         @CachedLibrary("ref.ptrObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
+            // If this is stealing the reference, we need to fixup the managed reference count.
+            CompilerAsserts.partialEvaluationConstant(steal);
+            if (steal) {
+                ref.managedRefCount++;
+            }
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 return wrapper;
@@ -103,8 +130,8 @@ public final class NativeReferenceCache implements TruffleObject {
             throw InvalidCacheEntry.INSTANCE;
         }
 
-        @Specialization(guards = {"arguments.length == 2", "!isNativeWrapper(arguments)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
-        static Object doGenericInt(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments,
+        @Specialization(guards = {"!isNativeWrapper(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
+        static Object doGenericIntWithRefCnt(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
@@ -112,50 +139,93 @@ public final class NativeReferenceCache implements TruffleObject {
             CApiContext cApiContext = context.getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
-                int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(arguments[1]));
+                int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(refCnt));
                 if (wrapperExistsProfile.profile(idx != 0)) {
-                    PythonAbstractObject object = cApiContext.lookupNativeObjectReference(idx).get();
+                    NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
+
+                    // If this is stealing the reference, we need to fixup the managed reference
+                    // count.
+                    CompilerAsserts.partialEvaluationConstant(steal);
+                    if (steal) {
+                        ref.managedRefCount++;
+                    }
+
+                    PythonAbstractObject object = ref.get();
                     if (object != null) {
                         return object;
                     }
                 }
             }
-            return arguments[0];
+            return pointerObject;
         }
 
-        @Specialization(guards = {"arguments.length == 2", "!isNativeWrapper(arguments)"}, replaces = {"doCachedPointer", "doGenericInt"})
-        static Object doGeneric(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments,
+        @Specialization(guards = {"!isNativeWrapper(pointerObject)", "isNoRefCnt(refCnt)"}, replaces = "doCachedPointer")
+        static Object doGenericInt(Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
+                        @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
+                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            CApiContext cApiContext = context.getCApiContext();
+            // The C API context may be null during initialization of the C API.
+            if (contextAvailableProfile.profile(cApiContext != null)) {
+                int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(pointerObject));
+                if (wrapperExistsProfile.profile(idx != 0)) {
+                    NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
+
+                    // If this is stealing the reference, we need to fixup the managed reference
+                    // count.
+                    CompilerAsserts.partialEvaluationConstant(steal);
+                    if (steal) {
+                        ref.managedRefCount++;
+                    }
+
+                    PythonAbstractObject object = ref.get();
+                    if (object != null) {
+                        return object;
+                    }
+                }
+            }
+            return pointerObject;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(pointerObject)", replaces = {"doCachedPointer", "doGenericIntWithRefCnt", "doGenericInt"})
+        static Object doGeneric(Object pointerObject, Object refCnt, boolean steal,
+                        @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            if (isNoRefCnt(refCnt)) {
+                return doGenericInt(pointerObject, refCnt, steal, getRefCntNode, contextAvailableProfile, wrapperExistsProfile, context);
+            }
             try {
-                return doGenericInt(receiver, arguments, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, context);
+                return doGenericIntWithRefCnt(pointerObject, refCnt, steal, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, context);
             } catch (CannotCastException e) {
-                return arguments[0];
+                return pointerObject;
             }
         }
 
-        @Specialization(guards = "arguments.length != 2")
-        static Object doInvalidArity(@SuppressWarnings("unused") NativeReferenceCache receiver, Object[] arguments) throws ArityException {
-            throw ArityException.create(2, arguments.length);
+        static boolean isSame(ReferenceLibrary referenceLibrary, Object pointerObject, NativeObjectReference cachedObjectRef) {
+            return referenceLibrary.isSame(cachedObjectRef.ptrObject, pointerObject);
         }
 
-        static boolean isSame(ReferenceLibrary referenceLibrary, Object[] arguments, NativeObjectReference cachedObjectRef) {
-            return referenceLibrary.isSame(cachedObjectRef.ptrObject, arguments[0]);
-        }
-
-        static NativeObjectReference lookupNativeReference(PythonContext context, Object[] arguments) {
+        static NativeObjectReference lookupNativeReference(PythonContext context, Object pointerObject, Object refCnt) {
             CApiContext cApiContext = context.getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (cApiContext != null) {
-                int idx = CApiContext.idFromRefCnt(CastToJavaLongNode.getUncached().execute(arguments[1]));
+                int idx;
+                if (isNoRefCnt(refCnt)) {
+                    idx = CApiContext.idFromRefCnt(GetRefCntNodeGen.getUncached().execute(pointerObject));
+                } else {
+                    idx = CApiContext.idFromRefCnt(CastToJavaLongNode.getUncached().execute(refCnt));
+                }
                 return cApiContext.lookupNativeObjectReference(idx);
             }
             return null;
         }
 
-        static NativeObjectReference lookupNativeReferenceUncached(PythonContext context, Object[] arguments) {
+        @SuppressWarnings("unused")
+        static NativeObjectReference lookupNativeReferenceUncached(PythonContext context, Object pointerObject, Object refCnt) {
             // TODO(fa): this should never happen since is should always be shadowed by 'doIndexed'
             return null;
         }
@@ -164,8 +234,8 @@ public final class NativeReferenceCache implements TruffleObject {
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        static boolean isNativeWrapper(Object[] arguments) {
-            return CApiGuards.isNativeWrapper(arguments[0]);
+        static boolean isNoRefCnt(Object refCnt) {
+            return refCnt == NO_REF_CNT;
         }
     }
 

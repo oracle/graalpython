@@ -101,6 +101,8 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_DECREF = "Py_DecRef";
     public static final String FUN_ADDREF = "PyTruffle_ADDREF";
     public static final String FUN_SUBREF = "PyTruffle_SUBREF";
+    public static final String FUN_TRUFFLE_MANAGED_FROM_HANDLE = "truffle_managed_from_handle";
+    public static final String FUN_TRUFFLE_CANNOT_BE_HANDLE = "truffle_cannot_be_handle";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

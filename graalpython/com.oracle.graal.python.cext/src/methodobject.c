@@ -48,7 +48,7 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
     return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
                                                "PyCFunction_NewEx",
                                                polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                               pytruffle_decorate_function(native_to_java(ml->ml_meth), native_to_java_exported),
+                                               pytruffle_decorate_function(native_pointer_to_java(ml->ml_meth), native_to_java_stealing_exported),
                                                get_method_flags_wrapper(ml->ml_flags),
                                                native_to_java(self),
                                                native_to_java(module),
