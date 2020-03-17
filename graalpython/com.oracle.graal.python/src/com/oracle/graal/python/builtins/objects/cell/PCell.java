@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -63,15 +64,22 @@ public final class PCell extends PythonAbstractObject {
         return ref;
     }
 
+    public void clearRef(Assumption assumption) {
+        setRef(null, assumption);
+    }
+
     public void clearRef() {
         setRef(null);
     }
 
+    @TruffleBoundary
+    private static void invalidateAssumption(Assumption assumption) {
+        assumption.invalidate();
+    }
+
     public void setRef(Object ref) {
-        if (effectivelyFinal.isValid()) {
-            if (this.ref != null) {
-                effectivelyFinal.invalidate();
-            }
+        if (this.ref != null) {
+            invalidateAssumption(effectivelyFinal);
         }
         this.ref = ref;
     }

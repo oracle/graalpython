@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -169,8 +171,13 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GetRefNode extends Node {
         public abstract Object execute(PCell self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.isEffectivelyFinalAssumption()", limit = "1")
+        protected static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.isEffectivelyFinalAssumption()", "singleContextAssumption"}, limit = "1")
         Object cached(@SuppressWarnings("unused") PCell self,
+                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                         @SuppressWarnings("unused") @Cached("self") PCell cachedSelf,
                         @Cached("self.getRef()") Object ref) {
             return ref;
