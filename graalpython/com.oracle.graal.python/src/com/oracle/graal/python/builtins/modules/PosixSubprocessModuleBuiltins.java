@@ -72,6 +72,7 @@ import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -91,6 +92,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     "errpipe_read", "errpipe_write", "restore_signals", "call_setsid", "preexec_fn"}, needsFrame = true)
     @GenerateNodeFactory
     abstract static class ForkExecNode extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ForkExecNode.class);
+
         @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         @Specialization
@@ -148,7 +151,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            PythonLanguage.getLogger().fine(() -> "_posixsubprocess.fork_exec: " + String.join(" ", argStrings));
+            LOGGER.fine(() -> "_posixsubprocess.fork_exec: " + String.join(" ", argStrings));
             ProcessBuilder pb = new ProcessBuilder(argStrings);
             if (p2cread != -1 && p2cwrite != -1) {
                 pb.redirectInput(Redirect.PIPE);

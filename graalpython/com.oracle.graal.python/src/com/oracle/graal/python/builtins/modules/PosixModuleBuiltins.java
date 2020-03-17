@@ -141,6 +141,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -1484,6 +1485,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SystemNode.class);
+
         static final String[] shell;
         static {
             String osProperty = System.getProperty("os.name");
@@ -1538,7 +1541,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (!context.isExecutableAccessAllowed()) {
                 return -1;
             }
-            PythonLanguage.getLogger().fine(() -> "os.system: " + cmd);
+            LOGGER.fine(() -> "os.system: " + cmd);
             String[] command = new String[]{shell[0], shell[1], cmd};
             Env env = context.getEnv();
             try {
