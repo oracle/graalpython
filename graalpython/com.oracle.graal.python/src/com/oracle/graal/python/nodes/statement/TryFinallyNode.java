@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
@@ -34,12 +37,16 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class TryFinallyNode extends StatementNode {
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
     @Child private SaveExceptionStateNode getCaughtExceptionNode;
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    @Child private WriteAttributeToObjectNode writeContext;
+
+    private final BranchProfile exceptionProfile = BranchProfile.create();
 
     public TryFinallyNode(StatementNode body, StatementNode finalbody) {
         this.body = body;
@@ -58,11 +65,14 @@ public class TryFinallyNode extends StatementNode {
             }
         } else {
             boolean executeFinalbody = true;
+            PException caughtException = null;
             try {
                 body.executeVoid(frame);
             } catch (PException e) {
+                exceptionProfile.enter();
                 // any thrown Python exception is visible in the finally block
                 SetCaughtExceptionNode.execute(frame, e);
+                caughtException = e;
                 throw e;
             } catch (ControlFlowException e) {
                 throw e;
@@ -79,6 +89,11 @@ public class TryFinallyNode extends StatementNode {
                     } catch (ControlFlowException e) {
                         // restore
                         restoreExceptionState(frame, exceptionState);
+                        throw e;
+                    } catch (PException e) {
+                        if (caughtException != null) {
+                            writeContext(e.getExceptionObject(), caughtException.getExceptionObject());
+                        }
                         throw e;
                     }
                 }
@@ -112,6 +127,14 @@ public class TryFinallyNode extends StatementNode {
             getCaughtExceptionNode = insert(SaveExceptionStateNode.create());
         }
         return getCaughtExceptionNode;
+    }
+
+    private void writeContext(PBaseException exception, PBaseException context) {
+        if (writeContext == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            writeContext = insert(WriteAttributeToObjectNode.create());
+        }
+        writeContext.execute(exception, SpecialAttributeNames.__CONTEXT__, context);
     }
 
 }

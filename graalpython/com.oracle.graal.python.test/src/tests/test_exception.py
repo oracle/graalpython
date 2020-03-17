@@ -187,3 +187,80 @@ class ExceptionTests(unittest.TestCase):
             raise None
         except TypeError:
             pass
+
+    def test_implicit_chaining(self):
+        try:
+            try:
+                raise OSError("first")
+            except OSError:
+                raise TypeError("second")
+        except TypeError as e:
+            self.assertEqual(e.args[0], "second")
+            self.assertIsNone(e.__cause__)
+            self.assertEqual(type(e.__context__), OSError)
+            self.assertEqual(e.__context__.args[0], "first")
+            self.assertFalse(e.__suppress_context__)
+
+    def test_implicit_chaining_finally(self):
+        try:
+            try:
+                raise OSError("first")
+            finally:
+                raise TypeError("second")
+        except TypeError as e:
+            self.assertEqual(e.args[0], "second")
+            self.assertIsNone(e.__cause__)
+            self.assertEqual(type(e.__context__), OSError)
+            self.assertEqual(e.__context__.args[0], "first")
+            self.assertFalse(e.__suppress_context__)
+
+    def test_explicit_chaining(self):
+        try:
+            try:
+                raise OSError("first")
+            except OSError as e:
+                captured = e
+            try:
+                raise NameError("third")
+            except NameError:
+                raise TypeError("second") from captured
+        except TypeError as e:
+            self.assertEqual(e.args[0], "second")
+            self.assertEqual(type(e.__context__), NameError)
+            self.assertEqual(e.__context__.args[0], "third")
+            self.assertEqual(type(e.__cause__), OSError)
+            self.assertEqual(e.__cause__.args[0], "first")
+            self.assertTrue(e.__suppress_context__)
+
+    def test_set_cause_manually(self):
+        try:
+            try:
+                raise OSError("first")
+            except OSError as e:
+                captured = e
+            try:
+                raise NameError("third")
+            except NameError:
+                e = TypeError("second")
+                e.__cause__ = captured
+                raise e
+        except TypeError as e:
+            self.assertEqual(e.args[0], "second")
+            self.assertEqual(type(e.__context__), NameError)
+            self.assertEqual(e.__context__.args[0], "third")
+            self.assertEqual(type(e.__cause__), OSError)
+            self.assertEqual(e.__cause__.args[0], "first")
+            self.assertTrue(e.__suppress_context__)
+
+    def test_suppress_implicit_chaining(self):
+        try:
+            try:
+                raise OSError("first")
+            except OSError:
+                raise TypeError("second") from None
+        except TypeError as e:
+            self.assertEqual(e.args[0], "second")
+            self.assertEqual(type(e.__context__), OSError)
+            self.assertEqual(e.__context__.args[0], "first")
+            self.assertIsNone(e.__cause__)
+            self.assertTrue(e.__suppress_context__)

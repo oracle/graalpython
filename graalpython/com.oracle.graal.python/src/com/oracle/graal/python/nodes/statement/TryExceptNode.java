@@ -36,8 +36,10 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
@@ -80,7 +82,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private PythonObjectFactory ofactory;
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child InteropLibrary interopLib;
+    @Child private WriteAttributeToObjectNode writeContext;
 
     private final ConditionProfile everMatched = ConditionProfile.createBinaryProfile();
 
@@ -165,15 +167,22 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     private boolean catchException(VirtualFrame frame, TruffleException exception, ExceptionState exceptionState) {
-        for (ExceptNode exceptNode : exceptNodes) {
-            if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
-                if (handleException(frame, exception, exceptionState, exceptNode)) {
-                    // restore previous exception state, this won't happen if the except block
-                    // raises an exception
-                    restoreExceptionState(frame, exceptionState);
-                    return true;
+        try {
+            for (ExceptNode exceptNode : exceptNodes) {
+                if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
+                    if (handleException(frame, exception, exceptionState, exceptNode)) {
+                        // restore previous exception state, this won't happen if the except block
+                        // raises an exception
+                        restoreExceptionState(frame, exceptionState);
+                        return true;
+                    }
                 }
             }
+        } catch (PException e) {
+            if (exception instanceof PException) {
+                writeContext(e.getExceptionObject(), ((PException) exception).getExceptionObject());
+            }
+            throw e;
         }
         return false;
     }
@@ -317,5 +326,13 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
             restoreExceptionStateNode.execute(frame, e);
         }
+    }
+
+    private void writeContext(PBaseException exception, PBaseException context) {
+        if (writeContext == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            writeContext = insert(WriteAttributeToObjectNode.create());
+        }
+        writeContext.execute(exception, SpecialAttributeNames.__CONTEXT__, context);
     }
 }
