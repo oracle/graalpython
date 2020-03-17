@@ -746,7 +746,7 @@ def update_import(name, suite_py, rev="origin/master"):
     parent = os.path.join(SUITE.dir, "..")
     for dirpath,dirnames,filenames in os.walk(parent):
         if os.path.sep in os.path.relpath(dirpath, parent):
-            dirnames.clear() # we're looking for siblings or sibling-subdirs
+            dirnames = [] # we're looking for siblings or sibling-subdirs
         elif name in dirnames:
             dep_dir = os.path.join(os.path.join(dirpath))
             break
@@ -849,12 +849,6 @@ def update_import_cmd(args):
 
     # copy files we inline from our imports
     shutil.copy(
-        join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
-        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h"))
-    shutil.copy(
-        join(mx.dependency("SULONG_HOME").output, "include", "polyglot.h"),
-        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h"))
-    shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
 
@@ -868,10 +862,15 @@ def update_import_cmd(args):
         repos_updated.append(overlaydir)
 
     # now allow dependent repos to hook into update
+    output = mx.OutputCapture()
     for repo in repos:
-        cmdname = "%s-update-import" % os.path.basename(repo)
-        if mx.run_mx(["help", cmdname], nonZeroIsFatal=False, quiet=True) == 0:
+        basename = os.path.basename(repo)
+        cmdname = "%s-update-import" % basename
+        is_mx_command = mx.run_mx(["help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        if is_mx_command:
             mx.run_mx([cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+        else:
+            print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
     # update ci import in all our repos, commit the full update, and push verbosely
     prev_verbosity = mx._opts.very_verbose
@@ -889,7 +888,7 @@ def update_import_cmd(args):
             repos_updated.append(repo)
 
     if repos_updated:
-        mx.log("These repos were updated: " + ", ".join(repos_updated))
+        mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
 
 
 def python_style_checks(args):
