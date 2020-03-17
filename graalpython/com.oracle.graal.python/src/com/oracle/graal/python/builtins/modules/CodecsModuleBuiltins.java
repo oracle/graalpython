@@ -90,7 +90,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
@@ -322,41 +321,41 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(str)")
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(str);
-            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", "strict");
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
+            String profiledStr = castStr.execute(str);
+            PBytes bytes = encodeString(profiledStr, "utf-8", "strict");
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)"})
         Object encode(Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(str);
-            Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict");
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding) {
+            String profiledStr = castStr.execute(str);
+            String profiledEncoding = castEncoding.execute(encoding);
+            PBytes bytes = encodeString(profiledStr, profiledEncoding, "strict");
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(errors)"})
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(str);
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString());
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
+            String profiledStr = castStr.execute(str);
+            String profiledErrors = castErrors.execute(errors);
+            PBytes bytes = encodeString(profiledStr, "utf-8", profiledErrors);
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
         Object encode(Object str, Object encoding, Object errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(str);
-            Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString());
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding,
+                        @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
+            String profiledStr = castStr.execute(str);
+            String profiledEncoding = castEncoding.execute(encoding);
+            String profiledErrors = castErrors.execute(errors);
+            PBytes bytes = encodeString(profiledStr, profiledEncoding, profiledErrors);
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
@@ -546,9 +545,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isString(errors)"})
         Object decode(PIBytesLike bytes, Object errors,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(getBytesBuffer(bytes), profiledErrors.toString());
+                        @Cached CastToJavaStringNode castStr) {
+            String profiledErrors = castStr.execute(errors);
+            String string = decodeBytes(getBytesBuffer(bytes), profiledErrors);
             return factory().createTuple(new Object[]{string, string.length()});
         }
 

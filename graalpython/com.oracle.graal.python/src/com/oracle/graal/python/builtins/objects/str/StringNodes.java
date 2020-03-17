@@ -287,13 +287,13 @@ public abstract class StringNodes {
                         @Cached IsBuiltinClassProfile errorProfile0,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile3) {
+                        @Cached CastToJavaStringNode castStrNode) {
 
             try {
                 Object iterator = getIterator.executeWith(frame, iterable);
                 StringBuilder str = new StringBuilder();
                 try {
-                    append(str, checkItem(next.execute(frame, iterator), 0, errorProfile3, raise));
+                    append(str, checkItem(next.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return "";
@@ -309,7 +309,7 @@ public abstract class StringNodes {
                         return toString(str);
                     }
                     append(str, string);
-                    append(str, checkItem(value, i++, errorProfile3, raise));
+                    append(str, checkItem(value, i++, castStrNode, raise));
                 }
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
@@ -317,11 +317,13 @@ public abstract class StringNodes {
             }
         }
 
-        private static String checkItem(Object item, int pos, ConditionProfile profile, PRaiseNode raise) {
-            if (profile.profile(PGuards.isString(item))) {
-                return item.toString();
+        private static String checkItem(Object item, int pos, CastToJavaStringNode castNode, PRaiseNode raise) {
+            String result = castNode.execute(item);
+            if (result != null) {
+                return result;
+            } else {
+                throw raise.raise(TypeError, INVALID_SEQ_ITEM, pos, item);
             }
-            throw raise.raise(TypeError, INVALID_SEQ_ITEM, pos, item);
         }
 
         @TruffleBoundary(allowInlining = true)

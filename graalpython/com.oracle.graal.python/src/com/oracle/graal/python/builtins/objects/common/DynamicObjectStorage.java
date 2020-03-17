@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -155,10 +156,11 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(DynamicObjectStorage self, PString key, ThreadState state,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
-            return string(self, key.getValue(), state, readKey, noValueProfile);
+            return string(self, castStr.execute(key), state, readKey, noValueProfile);
         }
 
         @Specialization(guards = {"cachedShape == self.store.getShape()", "!isBuiltinString(key, profile)"}, limit = "1")
@@ -254,10 +256,11 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static HashingStorage pstring(DynamicObjectStorage self, PString key, Object value, ThreadState state,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("hasMroprofile") @Cached BranchProfile hasMro,
                         @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
-            return string(self, key.getValue(), value, state, hasMro, writeNode);
+            return string(self, castStr.execute(key), value, state, hasMro, writeNode);
         }
 
         // n.b: do not replace the other two specializations here, because that would make the
