@@ -64,13 +64,16 @@ UPCALL_TYPED_ID(PyTruffle_Object_Alloc, alloc_reporter_fun_t);
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE static
 void PyTruffle_Object_Free(void* ptr) {
+	if (ptr == NULL) {
+		return;
+	}
 	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
 		if(polyglot_ensure_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_Free", native_pointer_to_java(ptr)))) {
 		    /* If 1 is returned, the upcall function already took care of freeing */
 		    return;
 		}
 	}
-	mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);
+    mem_head_t* ptr_with_head = AS_MEM_HEAD(ptr);
     (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Trace_Free", ptr, ptr_with_head->size);
     free(ptr_with_head);
 }
@@ -85,9 +88,9 @@ void* PyObject_Malloc(size_t size) {
 }
 
 void* PyObject_Realloc(void *ptr, size_t new_size) {
-	void* new_ptr = realloc(ptr, new_size);
-    _jls_PyTruffle_Object_Alloc(new_ptr, new_size);
-	return new_ptr;
+    mem_head_t* ptr_with_head = (mem_head_t*) realloc(AS_MEM_HEAD(ptr), new_size + sizeof(mem_head_t));
+    ptr_with_head->size = new_size;
+    return FROM_MEM_HEAD(ptr_with_head);
 }
 
 void PyObject_Free(void* ptr) {
@@ -95,30 +98,38 @@ void PyObject_Free(void* ptr) {
 }
 
 void* PyMem_Malloc(size_t size) {
-    void* ptr;
     if (size > (size_t)PY_SSIZE_T_MAX) {
         return NULL;
     }
-    ptr = malloc(size == 0 ? 1 : size);
+	mem_head_t* ptr_with_head = malloc(size + sizeof(mem_head_t));
+	void* ptr = FROM_MEM_HEAD(ptr_with_head);
+	ptr_with_head->size = size;
     _jls_PyTruffle_Object_Alloc(ptr, size);
     return ptr;
 }
 
 void* PyMem_RawMalloc(size_t size) {
-    void* ptr = malloc(size == 0 ? 1 : size);
+	mem_head_t* ptr_with_head = malloc((size == 0 ? 1 : size) + sizeof(mem_head_t));
+	void* ptr = FROM_MEM_HEAD(ptr_with_head);
+	ptr_with_head->size = size;
     _jls_PyTruffle_Object_Alloc(ptr, size);
     return ptr;
 }
 
 void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
-    size_t n = nelem == 0 || elsize == 0 ? 1 : nelem;
-    void* ptr = calloc(n, elsize);
+    size_t n = (nelem == 0 || elsize == 0) ? 1 : nelem;
+    size_t total = n * elsize + sizeof(mem_head_t);
+	mem_head_t* ptr_with_head = (mem_head_t*) malloc(total);
+	memset(ptr_with_head, 0, total);
+	void* ptr = FROM_MEM_HEAD(ptr_with_head);
     _jls_PyTruffle_Object_Alloc(ptr, n * elsize);
     return ptr;
 }
 
 void* PyMem_RawRealloc(void *ptr, size_t new_size) {
-    return realloc(ptr, new_size);
+    mem_head_t* ptr_with_head = (mem_head_t*) realloc(AS_MEM_HEAD(ptr), new_size + sizeof(mem_head_t));
+    ptr_with_head->size = new_size;
+    return FROM_MEM_HEAD(ptr_with_head);
 }
 
 void PyMem_RawFree(void *ptr) {
