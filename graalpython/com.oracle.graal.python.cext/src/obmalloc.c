@@ -88,7 +88,8 @@ void* PyObject_Malloc(size_t size) {
 }
 
 void* PyObject_Realloc(void *ptr, size_t new_size) {
-    mem_head_t* ptr_with_head = (mem_head_t*) realloc(AS_MEM_HEAD(ptr), new_size + sizeof(mem_head_t));
+	mem_head_t* old = ptr != NULL ? AS_MEM_HEAD(ptr) : NULL;
+    mem_head_t* ptr_with_head = (mem_head_t*) realloc(old, new_size + sizeof(mem_head_t));
     ptr_with_head->size = new_size;
     return FROM_MEM_HEAD(ptr_with_head);
 }
@@ -127,7 +128,8 @@ void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
 }
 
 void* PyMem_RawRealloc(void *ptr, size_t new_size) {
-    mem_head_t* ptr_with_head = (mem_head_t*) realloc(AS_MEM_HEAD(ptr), new_size + sizeof(mem_head_t));
+	mem_head_t* old = ptr != NULL ? AS_MEM_HEAD(ptr) : NULL;
+    mem_head_t* ptr_with_head = (mem_head_t*) realloc(old, new_size + sizeof(mem_head_t));
     ptr_with_head->size = new_size;
     return FROM_MEM_HEAD(ptr_with_head);
 }
