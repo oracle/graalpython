@@ -59,8 +59,6 @@ void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
 uint32_t Py_Truffle_Options;
 
-alloc_reporter_fun_t PyObject_AllocationReporter;
-
 
 cache_t cache;
 ptr_cache_t ptr_cache;
@@ -87,8 +85,6 @@ static void initialize_upcall_functions() {
     Py_Truffle_Options = (uint32_t) polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Native_Options"));
 
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
-
-    PyObject_AllocationReporter = (alloc_reporter_fun_t) UPCALL_CEXT_PTR(polyglot_from_string("PyObject_Get_AllocationReporter", SRC_CS));
 }
 
 __attribute__((constructor (__COUNTER__)))

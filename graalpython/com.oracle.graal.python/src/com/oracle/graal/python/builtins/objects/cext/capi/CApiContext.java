@@ -44,23 +44,17 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.Equivalence;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.SubRefCntNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -76,22 +70,25 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public final class CApiContext extends CExtContext {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
 
     public static final long REFERENCE_COUNT_BITS = Integer.SIZE;
     public static final long REFERENCE_COUNT_MARKER = (1L << REFERENCE_COUNT_BITS);
 
+    /** Total amount of allocated native memory (in bytes). */
+    private long allocatedMemory = 0;
+
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private Map<Object, AllocInfo> allocatedNativeMemory;
-// private final EconomicMap<Object, NativeObjectReference> nativeObjectWrapperMap;
     private final NativeReferenceStack nativeObjectWrapperList;
 
     /** Container of pointers that have seen to be free'd. */
@@ -102,7 +99,6 @@ public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
-// nativeObjectWrapperMap = EconomicMap.create(new ReferenceEquivalenceStrategy());
         nativeObjectWrapperList = new NativeReferenceStack();
 
         // avoid 0 to be used as ID
@@ -110,7 +106,7 @@ public final class CApiContext extends CExtContext {
         assert nullID == 0;
 
         context.registerAsyncAction(() -> {
-            Reference<? extends Object> reference = null;
+            Reference<?> reference = null;
             try {
                 reference = nativeObjectsQueue.remove();
             } catch (InterruptedException e) {
@@ -152,21 +148,6 @@ public final class CApiContext extends CExtContext {
             referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext().getLanguage()));
         }
         return referenceCleanerCallTarget;
-    }
-
-    private static final class ReferenceEquivalenceStrategy extends Equivalence {
-        private final ReferenceLibrary referenceLibrary = ReferenceLibrary.getFactory().getUncached();
-
-        @Override
-        public boolean equals(Object a, Object b) {
-            return referenceLibrary.isSame(a, b);
-        }
-
-        @Override
-        @TruffleBoundary
-        public int hashCode(Object o) {
-            return o.hashCode();
-        }
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
@@ -337,7 +318,7 @@ public final class CApiContext extends CExtContext {
 
     static int idFromRefCnt(long refCnt) {
         long idx = refCnt >> REFERENCE_COUNT_BITS;
-        assert idx >= 0 && idx <= Integer.MAX_VALUE;
+        assert idx >= 0;
         return (int) idx;
     }
 
@@ -363,9 +344,9 @@ public final class CApiContext extends CExtContext {
         AllocInfo allocatedValue = allocatedNativeMemory.remove(ptr);
         Object freedValue = freedNativeMemory.put(ptr, allocatedValue);
         if (freedValue != null) {
-            PythonLanguage.getLogger().severe(String.format("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
+            LOGGER.severe(String.format("freeing memory that was already free'd %s (double-free)", asHex(ptr)));
         } else if (allocatedValue == null) {
-            PythonLanguage.getLogger().info(String.format("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
+            LOGGER.info(String.format("freeing non-allocated memory %s (maybe a double-free or we didn't trace the allocation)", asHex(ptr)));
         }
         return allocatedValue;
     }
@@ -416,6 +397,38 @@ public final class CApiContext extends CExtContext {
             return false;
         }
         return true;
+    }
+
+    public void increaseMemoryPressure(VirtualFrame frame, Node location, long size) {
+        if (allocatedMemory <= getContext().getMaxNativeMemory()) {
+            allocatedMemory += size;
+            return;
+        }
+
+        doGc();
+
+        getContext().triggerAsyncActions(frame, location);
+
+        // TODO(fa): only works if we also count free's
+        if (allocatedMemory + size > getContext().getMaxNativeMemory()) {
+            throw new OutOfMemoryError("native memory");
+        }
+        allocatedMemory += size;
+    }
+
+    public void reduceMemoryPressure(long size) {
+        allocatedMemory -= size;
+    }
+
+    @TruffleBoundary
+    private static void doGc() {
+        System.gc();
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException x) {
+            // Restore interrupt status
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**

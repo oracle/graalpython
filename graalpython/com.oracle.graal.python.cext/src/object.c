@@ -530,7 +530,7 @@ void PyObject_GC_Track(void *tp) {
 }
 
 void PyObject_GC_Del(void *tp) {
-	PyTruffle_Object_Free(tp);
+	PyObject_Free(tp);
 }
 
 

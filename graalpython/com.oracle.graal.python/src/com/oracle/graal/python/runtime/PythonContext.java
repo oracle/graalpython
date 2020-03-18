@@ -183,7 +183,6 @@ public final class PythonContext {
     private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
-    @CompilationFinal private PythonOptions pythonOptions;
 
     /* this will be the single thread state if running single-threaded */
     private final PythonThreadState singleThreadState = new PythonThreadState();
@@ -279,10 +278,6 @@ public final class PythonContext {
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("Using Python options with a non-Python option key");
-    }
-
-    public PythonOptions getPythonOptions() {
-        return pythonOptions;
     }
 
     public PythonLanguage getLanguage() {
@@ -389,14 +384,12 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        pythonOptions = new PythonOptions(this);
         core.initialize(this);
         setupRuntimeInformation(false);
         core.postInitialize();
     }
 
     public void patch(Env newEnv) {
-        pythonOptions = new PythonOptions(this);
         setEnv(newEnv);
         setupRuntimeInformation(true);
         core.postInitialize();

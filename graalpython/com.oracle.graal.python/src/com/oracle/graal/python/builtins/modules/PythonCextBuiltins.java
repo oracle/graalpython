@@ -144,7 +144,6 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeA
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyObjectAllocationReporter;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -221,6 +220,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -255,6 +256,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -3071,20 +3073,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyObject_Get_AllocationReporter", minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    abstract static class GetNativeObjectAllocationReporter extends PythonBuiltinNode {
-
-        @Specialization
-        static Object doGeneric() {
-            return new PyObjectAllocationReporter();
-        }
-    }
-
     @Builtin(name = "PyTruffle_Object_Free", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(CApiGuards.class)
     abstract static class PyTruffleObjectFree extends PythonUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectFree.class);
 
         @Specialization(limit = "3")
         static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
@@ -3105,7 +3098,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
                 // necessary distinction.
                 Object nativePointer = lib.getNativePointer(nativeWrapper);
-                PythonLanguage.getLogger().fine(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, delegate));
+                LOGGER.fine(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, delegate));
                 callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
             }
             return 1;
@@ -3116,6 +3109,63 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
             return 0;
         }
+    }
+
+    @Builtin(name = "PyTruffle_Object_Alloc", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleObjectAlloc extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectAlloc.class);
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object allocatedObject, Object sizeObject,
+                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached("getAllocationReporter(contextRef)") AllocationReporter reporter) {
+
+            long objectSize;
+            try {
+                objectSize = castToJavaLongNode.execute(sizeObject);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
+            }
+
+            // memory management
+            PythonContext context = contextRef.get();
+            CApiContext cApiContext = context.getCApiContext();
+            cApiContext.increaseMemoryPressure(frame, this, objectSize);
+
+            boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
+            boolean reportAllocation = reporter.isActive();
+            if (isLoggable || traceNativeMemory || reportAllocation) {
+                if (isLoggable) {
+                    LOGGER.fine(() -> String.format("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
+                }
+                if (traceNativeMemory) {
+                    PFrame.Reference ref = null;
+                    if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
+                        ref = getCurrentFrameRef.execute(frame);
+                        ref.markAsEscaped();
+                    }
+                    cApiContext.traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null, objectSize);
+                }
+                if (reportAllocation) {
+                    reporter.onEnter(null, 0, objectSize);
+                    reporter.onReturnValue(allocatedObject, 0, objectSize);
+                }
+                return 0;
+            }
+            return -2;
+        }
+
+        @SuppressWarnings("static-method")
+        static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
+            return contextRef.get().getEnv().lookup(AllocationReporter.class);
+        }
+
     }
 
     abstract static class PyTruffleGcTracingNode extends PythonUnaryBuiltinNode {
@@ -3147,11 +3197,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         static boolean traceMem(PythonContext context) {
-            return context.getPythonOptions().traceNativeMemory();
+            return context.getOption(PythonOptions.TraceNativeMemory);
         }
 
         static boolean traceCalls(PythonContext context) {
-            return context.getPythonOptions().traceNativeMemoryCalls();
+            return context.getOption(PythonOptions.TraceNativeMemoryCalls);
         }
 
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
@@ -3163,10 +3213,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_GC_Untrack", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleGcUntrack extends PyTruffleGcTracingNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleGcUntrack.class);
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
-            PythonLanguage.getLogger().fine(() -> String.format("Untracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.fine(() -> String.format("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
     }
@@ -3174,10 +3225,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_GC_Track", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleGcTrack extends PyTruffleGcTracingNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleGcTrack.class);
 
         @Override
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
-            PythonLanguage.getLogger().fine(() -> String.format("Tracking container object at %s", CApiContext.asHex(ptr)));
+            LOGGER.fine(() -> String.format("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
     }
@@ -3191,7 +3243,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static int getNativeOptions(
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             int options = 0;
-            if (PythonOptions.getFlag(context, PythonOptions.TraceNativeMemory)) {
+            if (context.getOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
             return options;
@@ -3201,28 +3253,32 @@ public class PythonCextBuiltins extends PythonBuiltins {
     /**
      * This will be called right before the call to stdlib's {@code free} function.
      */
-    @Builtin(name = "PyTruffle_Trace_Free", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Trace_Free", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PyTruffleTraceFree extends PythonUnaryBuiltinNode {
+    abstract static class PyTruffleTraceFree extends PythonBinaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceFree.class);
+
         @Specialization(limit = "2")
-        static int doNativeWrapper(Object ptr,
+        static int doNativeWrapper(Object ptr, long size,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
 
-            TruffleLogger logger = PythonLanguage.getLogger();
-            boolean isLoggable = logger.isLoggable(Level.FINE);
-            boolean traceNativeMemory = context.getPythonOptions().traceNativeMemory();
-            boolean traceNativeMemoryCalls = context.getPythonOptions().traceNativeMemoryCalls();
+            CApiContext cApiContext = context.getCApiContext();
+            cApiContext.reduceMemoryPressure(size);
+
+            boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
             if ((isLoggable || traceNativeMemory) && !lib.isNull(ptr)) {
+                boolean traceNativeMemoryCalls = context.getOption(PythonOptions.TraceNativeMemoryCalls);
                 if (traceNativeMemory) {
                     PFrame.Reference ref = null;
-                    if (context.getPythonOptions().traceNativeMemoryCalls()) {
+                    if (traceNativeMemoryCalls) {
                         ref = getCurrentFrameRef.execute(null);
                     }
-                    AllocInfo allocLocation = context.getCApiContext().traceFree(CApiContext.asPointer(ptr, lib), ref, null);
+                    AllocInfo allocLocation = cApiContext.traceFree(CApiContext.asPointer(ptr, lib), ref, null);
                     if (allocLocation != null) {
-                        PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
+                        LOGGER.fine(() -> String.format("Freeing pointer (size: %d): %s", allocLocation.size, CApiContext.asHex(ptr)));
 
                         if (traceNativeMemoryCalls) {
                             Reference left = allocLocation.allocationSite;
@@ -3233,13 +3289,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             }
                             if (pyFrame != null) {
                                 final PFrame f = pyFrame;
-                                PythonLanguage.getLogger().fine(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
+                                LOGGER.fine(() -> String.format("Free'd pointer was allocated at: %s", f.getTarget()));
                             }
                         }
                     }
                 } else {
                     assert isLoggable;
-                    PythonLanguage.getLogger().fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
+                    LOGGER.fine(() -> String.format("Freeing pointer: %s", CApiContext.asHex(ptr)));
                 }
             }
             return 0;
@@ -3249,6 +3305,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Trace_Type", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffleTraceType extends PythonBinaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceType.class);
 
         @Specialization(limit = "3")
         int trace(Object ptr, Object classNameObj,
@@ -3268,7 +3325,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             Object primitivePtr = CApiContext.asPointer(ptr, ptrLib);
             context.getCApiContext().traceStaticMemory(primitivePtr, null, className);
-            PythonLanguage.getLogger().fine(() -> String.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
+            LOGGER.fine(() -> String.format("Initializing native type %s (ptr = %s)", className, CApiContext.asHex(primitivePtr)));
             return 0;
         }
     }

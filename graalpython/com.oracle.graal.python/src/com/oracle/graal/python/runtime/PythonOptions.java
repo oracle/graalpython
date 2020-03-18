@@ -194,6 +194,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "If native memory tracing is enabled, also capture stack.") //
     public static final OptionKey<Boolean> TraceNativeMemoryCalls = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Max native memory heap size (default: 2 GB).") //
+    public static final OptionKey<Long> MaxNativeMemory = new OptionKey<>(1L << 31);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

@@ -204,9 +204,6 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
-typedef int (*alloc_reporter_fun_t)(void *, Py_ssize_t size);
-extern alloc_reporter_fun_t PyObject_AllocationReporter;
-
 typedef void* (*cache_t)(uint64_t);
 extern cache_t cache;
 
@@ -283,25 +280,6 @@ void* native_pointer_to_java(void* obj) {
 }
 
 extern void* native_pointer_to_java_exported(void* ptr);
-
-/* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
-MUST_INLINE
-void PyTruffle_Object_Free(void* ptr) {
-	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
-		if(polyglot_ensure_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_Free", native_to_java(ptr)))) {
-		    /* If 10= is returned, the upcall function already took care of freeing */
-		    return;
-		}
-	}
-    if(PyTruffle_Trace_Memory()) {
-        (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Trace_Free", ptr);
-    }
-    free(ptr);
-}
-
-MUST_INLINE int PyTruffle_Report_Allocation(PyObject* obj, Py_ssize_t size) {
-    return PyObject_AllocationReporter(obj, size);
-}
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
