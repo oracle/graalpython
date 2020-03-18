@@ -44,10 +44,13 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
@@ -91,6 +94,7 @@ public final class CApiContext extends CExtContext {
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private Map<Object, AllocInfo> allocatedNativeMemory;
     private final NativeReferenceStack nativeObjectWrapperList;
+    private TraceMallocDomain[] traceMallocDomains;
 
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, AllocInfo> freedNativeMemory;
@@ -149,6 +153,33 @@ public final class CApiContext extends CExtContext {
             referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext().getLanguage()));
         }
         return referenceCleanerCallTarget;
+    }
+
+    public void traceMallocUntrack(long domain, Object pointerObject) {
+    }
+
+    public TraceMallocDomain getTraceMallocDomain(int domainIdx) {
+        return traceMallocDomains[domainIdx];
+    }
+
+    public int findOrCreateTraceMallocDomain(long id) {
+        int oldLength;
+        if (traceMallocDomains != null) {
+            for (int i = 0; i < traceMallocDomains.length; i++) {
+                if (traceMallocDomains[i].id == id) {
+                    return i;
+                }
+            }
+
+            // create new domain
+            oldLength = traceMallocDomains.length;
+            traceMallocDomains = Arrays.copyOf(traceMallocDomains, traceMallocDomains.length + 1);
+        } else {
+            oldLength = 0;
+            traceMallocDomains = new TraceMallocDomain[1];
+        }
+        traceMallocDomains[oldLength] = new TraceMallocDomain(id);
+        return oldLength;
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
@@ -479,6 +510,30 @@ public final class CApiContext extends CExtContext {
 
         public AllocInfo(PFrame.Reference allocationSite, String typeName) {
             this(typeName, allocationSite, -1);
+        }
+    }
+
+    public static final class TraceMallocDomain {
+        private final long id;
+        private final EconomicMap<Object, Long> allocatedMemory;
+
+        public TraceMallocDomain(long id) {
+            this.id = id;
+            this.allocatedMemory = EconomicMap.create();
+        }
+
+        @TruffleBoundary
+        public void track(Object pointerObject, long size) {
+            allocatedMemory.put(pointerObject, size);
+        }
+
+        @TruffleBoundary
+        public long untrack(Object pointerObject) {
+            return allocatedMemory.removeKey(pointerObject);
+        }
+
+        public long getId() {
+            return id;
         }
     }
 

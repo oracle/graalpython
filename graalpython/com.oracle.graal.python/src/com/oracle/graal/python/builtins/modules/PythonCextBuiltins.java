@@ -3161,11 +3161,69 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return -2;
         }
 
-        @SuppressWarnings("static-method")
         static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
             return contextRef.get().getEnv().lookup(AllocationReporter.class);
         }
+    }
 
+    @Builtin(name = "PyTruffle_TraceMalloc_Track", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
+    abstract static class PyTruffleTraceMallocTrack extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocTrack.class);
+
+        @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
+        int doCachedDomainIdx(VirtualFrame frame, long domain, Object pointerObject, long size,
+                        @Cached("domain") long cachedDomain,
+                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
+
+            CApiContext cApiContext = getContext().getCApiContext();
+            cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
+            cApiContext.increaseMemoryPressure(frame, this, size);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(() -> String.format("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
+            }
+            return 0;
+        }
+
+        @Specialization(replaces = "doCachedDomainIdx")
+        int doGeneric(VirtualFrame frame, int domain, Object pointerObject, long size) {
+            return doCachedDomainIdx(frame, domain, pointerObject, size, domain, lookupDomain(domain));
+        }
+
+        int lookupDomain(long domain) {
+            return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_TraceMalloc_Untrack", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @ImportStatic(CApiGuards.class)
+    abstract static class PyTruffleTraceMallocUntrack extends PythonBinaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocUntrack.class);
+
+        @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
+        int doCachedDomainIdx(VirtualFrame frame, long domain, Object pointerObject,
+                        @Cached("domain") long cachedDomain,
+                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
+
+            CApiContext cApiContext = getContext().getCApiContext();
+            long trackedMemorySize = cApiContext.getTraceMallocDomain(cachedDomainIdx).untrack(pointerObject);
+            cApiContext.reduceMemoryPressure(trackedMemorySize);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(() -> String.format("Untracking memory (size: %d): %s", trackedMemorySize, CApiContext.asHex(pointerObject)));
+            }
+            return 0;
+        }
+
+        @Specialization(replaces = "doCachedDomainIdx")
+        int doGeneric(VirtualFrame frame, int domain, Object pointerObject) {
+            return doCachedDomainIdx(frame, domain, pointerObject, domain, lookupDomain(domain));
+        }
+
+        int lookupDomain(long domain) {
+            return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+        }
     }
 
     abstract static class PyTruffleGcTracingNode extends PythonUnaryBuiltinNode {
@@ -3259,10 +3317,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceFree.class);
 
         @Specialization(limit = "2")
-        static int doNativeWrapper(Object ptr, long size,
+        static int doNativeWrapper(Object ptr, Object sizeObject,
+                        @Cached CastToJavaLongNode castToJavaLongNode,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            long size;
+            try {
+                size = castToJavaLongNode.execute(sizeObject);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
+            }
 
             CApiContext cApiContext = context.getCApiContext();
             cApiContext.reduceMemoryPressure(size);

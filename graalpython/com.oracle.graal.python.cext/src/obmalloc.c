@@ -144,17 +144,17 @@ void PyMem_Free(void *ptr) {
 	PyTruffle_Object_Free(ptr);
 }
 
+typedef int (*track_fun_t)(int64_t, int64_t, uint64_t);
+UPCALL_TYPED_ID(PyTruffle_TraceMalloc_Track, track_fun_t);
 int PyTraceMalloc_Track(unsigned int domain, uintptr_t ptr, size_t size) {
 	// 0 = success, -2 = disabled
-    return _jls_PyTruffle_Object_Alloc(ptr, size);
+	return _jls_PyTruffle_TraceMalloc_Track(domain, ptr, size);
 }
 
 
+typedef int (*untrack_fun_t)(int64_t, int64_t);
+UPCALL_TYPED_ID(PyTruffle_TraceMalloc_Untrack, untrack_fun_t);
 int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr) {
 	// 0 = success, -2 = disabled
-    if(PyTruffle_Trace_Memory()) {
-        (void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Trace_Free", (int64_t)ptr);
-        return 0;
-    }
-    return -2;
+	return _jls_PyTruffle_TraceMalloc_Untrack(domain, ptr);
 }
