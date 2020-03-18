@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -68,3 +68,184 @@ def test_import():
     except ImportError:
         imported = False
     assert imported
+
+
+def assert_has_traceback(code, expected_elements):
+    import traceback
+    stack = None
+    try:
+        code()
+    except Exception:
+        stack = traceback.TracebackException(*sys.exc_info()).stack
+    expected_elements = [('assert_has_traceback', 'code()')] + expected_elements
+    actual_elements = []
+    for frame in stack:
+        actual_elements.append((frame.name, frame.line))
+    assert expected_elements == actual_elements, \
+        "Expected traceback elements:\n{}\nGot:\n{}".format('\n'.join(map(str, expected_elements)), '\n'.join(map(str, actual_elements)))
+
+
+def test_basic_traceback():
+    def foo():
+        raise RuntimeError("test")
+
+    def test():
+        foo()
+
+    assert_has_traceback(
+        test,
+        [
+            ('test', 'foo()'),
+            ('foo', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_direct():
+    def reraise():
+        try:
+            raise RuntimeError("test")
+        except Exception:
+            raise
+
+    assert_has_traceback(
+        reraise,
+        [
+            ('reraise', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_direct_no_accumulate():
+    # This is a tricky corner case where sys.exc_info()[1].__traceback__ != sys.exc_info()[2] because e gets mutated by
+    # the inner exception block, but raise uses sys.exc_info which contains the unmodified traceback at the time the
+    # the exception was caught
+    def reraise():
+        try:
+            raise RuntimeError("test")
+        except Exception as e:
+            try:
+                raise e
+            except Exception:
+                pass
+            raise
+
+    assert_has_traceback(
+        reraise,
+        [
+            ('reraise', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_named():
+    def reraise():
+        try:
+            raise RuntimeError("test")
+        except Exception as e:
+            raise e
+
+    assert_has_traceback(
+        reraise,
+        [
+            ('reraise', 'raise e'),
+            ('reraise', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_captured():
+    captured_exc = None
+
+    try:
+        raise RuntimeError("test")
+    except Exception as e:
+        captured_exc = e
+
+    def reraise():
+        raise captured_exc
+
+    assert_has_traceback(
+        reraise,
+        [
+            ('reraise', 'raise captured_exc'),
+            ('test_reraise_captured', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_multiple():
+    # Test that the exception traceback accumulates frames even when reraised independently
+    captured_exc = None
+
+    try:
+        raise RuntimeError("test")
+    except Exception as e:
+        captured_exc = e
+
+    def reraise():
+        raise captured_exc
+
+    try:
+        reraise()
+    except Exception:
+        pass
+
+    assert_has_traceback(
+        reraise,
+        [
+            ('reraise', 'raise captured_exc'),
+            ('test_reraise_multiple', 'reraise()'),
+            ('reraise', 'raise captured_exc'),
+            ('test_reraise_multiple', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_with_traceback():
+    captured_exc = None
+
+    try:
+        raise RuntimeError("test")
+    except Exception as e:
+        captured_exc = e
+
+    def reraise_with_traceback():
+        exc = NameError("reraised").with_traceback(captured_exc.__traceback__)
+        raise exc
+
+    assert_has_traceback(
+        reraise_with_traceback,
+        [
+            ('reraise_with_traceback', 'raise exc'),
+            ('test_reraise_with_traceback', 'raise RuntimeError("test")'),
+        ]
+    )
+
+
+def test_reraise_with_traceback_multiple():
+    # Test that the exception traceback doesn't accumulate frames when copied to different exception using with_traceback
+    captured_exc = None
+
+    try:
+        raise RuntimeError("test")
+    except Exception as e:
+        captured_exc = e
+
+    def reraise_with_traceback():
+        exc = NameError("reraised").with_traceback(captured_exc.__traceback__)
+        raise exc
+
+    # If the implementation is wrong, this could affect captured_exc.__traceback__
+    try:
+        reraise_with_traceback()
+    except Exception:
+        pass
+
+    assert_has_traceback(
+        reraise_with_traceback,
+        [
+            ('reraise_with_traceback', 'raise exc'),
+            ('test_reraise_with_traceback_multiple', 'raise RuntimeError("test")'),
+        ]
+    )
