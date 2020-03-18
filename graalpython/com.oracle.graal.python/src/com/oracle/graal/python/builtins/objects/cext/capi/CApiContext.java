@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -195,6 +196,9 @@ public final class CApiContext extends CExtContext {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, new String[0]);
 
         @Child private SubRefCntNode refCntNode;
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
 
         protected CApiReferenceCleanerRootNode(TruffleLanguage<?> language) {
             super(language);
@@ -203,9 +207,14 @@ public final class CApiContext extends CExtContext {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            Object pointerObject = PArguments.getArgument(frame, 0);
-            Long managedRefCount = (Long) PArguments.getArgument(frame, 1);
-            return refCntNode.execute(pointerObject, managedRefCount);
+            CalleeContext.enter(frame, customLocalsProfile);
+            try {
+                Object pointerObject = PArguments.getArgument(frame, 0);
+                Long managedRefCount = (Long) PArguments.getArgument(frame, 1);
+                return refCntNode.execute(pointerObject, managedRefCount);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
         }
 
         @Override
