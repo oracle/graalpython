@@ -294,7 +294,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getItem(VirtualFrame frame, PDict self, Object key,
                         @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile,
@@ -432,7 +432,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         boolean run(VirtualFrame frame, PDict self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
