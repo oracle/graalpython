@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -130,15 +130,14 @@ def lookup_error(errors='strict'):
     return handler
 
 
-# TODO implement the encode / decode methods
 @__builtin__
 def escape_encode(data, errors=None):
-    raise NotImplementedError("escape_encode")
+    return unicode_escape_encode(data, errors)
 
 
 @__builtin__
 def escape_decode(data, errors=None):
-    raise NotImplementedError("escape_decode")
+    return unicode_escape_decode(data, errors)
 
 
 @__builtin__

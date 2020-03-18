@@ -36,7 +36,6 @@ PATH_BENCH = os.path.join(_BASE_PATH, 'com.oracle.graal.python.benchmarks')
 PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
-
 PATH_INTEROP = os.path.join(_BASE_PATH, 'host_interop')
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -97,6 +96,20 @@ MICRO_BENCHMARKS = {
 }
 
 
+def _pickling_benchmarks(module='pickle'):
+    return {
+        '{}-strings'.format(module): ITER_10,
+        '{}-lists'.format(module): ITER_10,
+        '{}-dicts'.format(module): ITER_10,
+        '{}-objects'.format(module): ITER_10,
+        '{}-funcs'.format(module): ITER_10,
+    }
+
+
+MICRO_BENCHMARKS.update(_pickling_benchmarks('pickle'))
+# MICRO_BENCHMARKS.update(_pickling_benchmarks('cPickle'))
+
+
 MICRO_NATIVE_BENCHMARKS = {
     'c_member_access': ITER_10 + ['5'],
     'c-list-iterating-obj': ITER_10 + ['50000000'],
@@ -153,11 +166,13 @@ MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
 }
 
+
 INTEROP_BENCHMARKS = {
     'euler_java': ITER_10 + ['200'],
     'image-magix': ITER_10 + ['10000'],
     'image-magix-java': ITER_10 + ['10000'],
 }
+
 
 _INTEROP_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.interop.'
 INTEROP_JAVA_BENCHMARKS = {
@@ -167,6 +182,7 @@ INTEROP_JAVA_BENCHMARKS = {
     'nbody3': [_INTEROP_JAVA_PACKAGE + 'PyNbody'] + MESO_BENCHMARKS['nbody3'],
     'fannkuchredux3': [_INTEROP_JAVA_PACKAGE + 'PyFannkuchredux'] + MESO_BENCHMARKS['fannkuchredux3'],
 }
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
