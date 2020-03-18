@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -104,15 +103,12 @@ public final class PBaseException extends PythonObject {
     /**
      * use {@link GetTracebackNode}
      */
-    PTraceback getTraceback() {
+    public PTraceback getTraceback() {
         return traceback;
     }
 
     public void setTraceback(PTraceback traceback) {
         this.traceback = traceback;
-        // Explicitly setting the traceback also makes the frame info for creating a lazy traceback
-        // obsolete or even incorrect. So it is cleared.
-        this.frameInfo = null;
     }
 
     public void clearTraceback() {
@@ -126,10 +122,6 @@ public final class PBaseException extends PythonObject {
      */
     public boolean hasTraceback() {
         return this.traceback != null;
-    }
-
-    public PFrame.Reference getFrameInfo() {
-        return frameInfo;
     }
 
     /**
@@ -181,36 +173,19 @@ public final class PBaseException extends PythonObject {
     }
 
     /**
-     * Associate this exception with a frame info that represents the {@link PFrame} instance that
-     * caught the exception. Furthermore, store the location at which this exception was caught so
-     * we can later reconstruct the correct traceback location.<br>
-     * <p>
-     * The use case for calling this method is when an exception is caught and the ExceptNode needs
-     * to be recorded so that we can later have the correct info.
-     * </p>
-     */
-    public void reifyException(PFrame.Reference info, ExceptNode node) {
-        info.setCallNode(node);
-        reifyException(info);
-    }
-
-    /**
      * Create the traceback for this exception using the provided {@link PFrame} instance (which
      * usually is the frame of the function that caught the exception).
      * <p>
-     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
-     * exceptions into the Python value space because otherwise the stack will not be correct if the
-     * exception object escapes the current function.
+     * This function (of {@link #reifyException(PFrame.Reference, PythonObjectFactory factory)} must
+     * be called before handing out exceptions into the Python value space because otherwise the
+     * stack will not be correct if the exception object escapes the current function.
      * </p>
      */
     public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
-        traceback = factory.createTraceback(pyFrame, exception);
-        frameInfo = pyFrame.getRef();
-
-        // TODO: frames: provide legacy stack walk method via Python option
-        // TruffleStackTrace.fillIn(exception);
+        traceback = factory.createTraceback(pyFrame, exception, traceback);
     }
 
+    // msimacek TODO doc
     /**
      * Associate this exception with a frame info that represents the {@link PFrame} instance that
      * caught the exception.<br>
@@ -228,14 +203,10 @@ public final class PBaseException extends PythonObject {
      * expensive. The traceback can then be created lazily from the frame info.
      * </p>
      */
-    public void reifyException(PFrame.Reference curFrameInfo) {
+    public void reifyException(PFrame.Reference curFrameInfo, PythonObjectFactory factory) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
-        traceback = null;
         curFrameInfo.markAsEscaped();
-        this.frameInfo = curFrameInfo;
-
-        // TODO: frames: provide legacy stack walk method via Python option
-        // TruffleStackTrace.fillIn(exception);
+        traceback = factory.createTraceback(curFrameInfo, exception, traceback);
     }
 
     @ExportMessage

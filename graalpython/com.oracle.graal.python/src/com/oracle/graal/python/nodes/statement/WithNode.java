@@ -182,8 +182,8 @@ public class WithNode extends StatementNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             factory = insert(PythonObjectFactory.create());
         }
-        PTraceback tb = factory.createTraceback(escapedFrame, e);
-        value.setTraceback(tb);
+        value.reifyException(escapedFrame, factory);
+        PTraceback tb = value.getTraceback();
         Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeBoolean(frame, returnValue)) {

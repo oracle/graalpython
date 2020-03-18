@@ -126,14 +126,14 @@ public final class PTraceback extends PythonBuiltinObject {
 
     private TracebackStorage storage;
 
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception) {
+    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception, PTraceback nextChain) {
         super(clazz);
-        storage = new LazyTracebackStorage(frame, exception, null);
+        storage = new LazyTracebackStorage(frame, exception, nextChain);
     }
 
-    public PTraceback(LazyPythonClass clazz, Reference frameInfo, PException exception) {
+    public PTraceback(LazyPythonClass clazz, Reference frameInfo, PException exception, PTraceback nextChain) {
         super(clazz);
-        storage = new LazyTracebackStorage(frameInfo, exception, null);
+        storage = new LazyTracebackStorage(frameInfo, exception, nextChain);
     }
 
     public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {

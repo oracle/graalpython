@@ -2300,8 +2300,9 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "frame != null")
         void doWithFrame(Frame frame, PException e,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            transformToNative(context, PArguments.getCurrentFrameInfo(frame), e);
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            transformToNative(context, PArguments.getCurrentFrameInfo(frame), e, factory);
         }
 
         protected static ConditionProfile[] getFlag() {
@@ -2312,7 +2313,8 @@ public abstract class CExtNodes {
         @Specialization(guards = "frame == null")
         void doWithoutFrame(@SuppressWarnings("unused") Frame frame, PException e,
                         @Cached(value = "getFlag()", dimensions = 1) ConditionProfile[] flag,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PFrame.Reference ref = context.peekTopFrameInfo();
             if (flag[0] == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2326,12 +2328,13 @@ public abstract class CExtNodes {
             if (flag[0].profile(ref == null)) {
                 ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }
-            transformToNative(context, ref, e);
+            transformToNative(context, ref, e, factory);
         }
 
         @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
         void doGeneric(Frame frame, PException e,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PFrame.Reference ref;
             if (frame == null) {
                 ref = context.peekTopFrameInfo();
@@ -2341,11 +2344,11 @@ public abstract class CExtNodes {
             } else {
                 ref = PArguments.getCurrentFrameInfo(frame);
             }
-            transformToNative(context, ref, e);
+            transformToNative(context, ref, e, factory);
         }
 
-        public static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p) {
-            p.getExceptionObject().reifyException(frameInfo);
+        public static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p, PythonObjectFactory factory) {
+            p.getExceptionObject().reifyException(frameInfo, factory);
             context.setCurrentException(p);
         }
     }

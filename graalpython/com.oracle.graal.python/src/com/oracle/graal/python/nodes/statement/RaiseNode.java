@@ -62,7 +62,10 @@ public abstract class RaiseNode extends StatementNode {
         if (hasCurrentException.profile(currentException == null)) {
             throw raise.raise(RuntimeError, "No active exception to reraise");
         }
-        throw currentException;
+        // We must be careful to never rethrow a PException that has already been caught and
+        // exposed to the program, because its Truffle lazy stacktrace may have been already
+        // materialized, which would prevent it from capturing frames after the rethrow
+        throw raise.raise(currentException.getExceptionObject());
     }
 
     // raise <exception>

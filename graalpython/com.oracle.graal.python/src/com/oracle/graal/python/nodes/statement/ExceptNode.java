@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleException;
@@ -68,6 +69,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     @Child private ExpressionNode exceptType;
 
     @Child private ExceptMatchNode matchNode;
+    @Child private PythonObjectFactory factory;
 
     public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
         this.body = body;
@@ -88,7 +90,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             PBaseException exceptionObject = pE.getExceptionObject();
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             info.markAsEscaped();
-            exceptionObject.reifyException(info, this);
+            exceptionObject.reifyException(info, getFactory());
             if (exceptName != null) {
                 exceptName.doWrite(frame, exceptionObject);
             }
@@ -115,6 +117,14 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
             matchNode = insert(ExceptMatchNode.create());
         }
         return matchNode;
+    }
+
+    private PythonObjectFactory getFactory() {
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        return factory;
     }
 
     public StatementNode getBody() {

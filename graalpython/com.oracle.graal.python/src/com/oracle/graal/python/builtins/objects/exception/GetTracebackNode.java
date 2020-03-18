@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -55,20 +53,8 @@ public abstract class GetTracebackNode extends Node {
 
     public abstract PTraceback execute(VirtualFrame frame, PBaseException e);
 
-    @Specialization(guards = "!hasTraceback(e)")
-    static PTraceback doExisting(PBaseException e,
-                    @Cached PythonObjectFactory factory) {
-        PTraceback traceback = factory.createTraceback(e.getFrameInfo(), e.getException());
-        e.setTraceback(traceback);
-        return traceback;
-    }
-
-    @Specialization(guards = "hasTraceback(e)")
+    @Specialization
     static PTraceback doExisting(PBaseException e) {
         return e.getTraceback();
-    }
-
-    protected static boolean hasTraceback(PBaseException e) {
-        return e.getTraceback() != null;
     }
 }

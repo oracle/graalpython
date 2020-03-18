@@ -169,7 +169,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static MaterializedTracebackStorage createTracebackFromTruffle(MaterializeFrameNode materializeNode, PythonObjectFactory factory, LazyTracebackStorage storage, PFrame pFrame) {
             int lineno = -2;
-            PTraceback prev = null;
+            PTraceback prev = storage.getNextChain();
             CallTarget currentCallTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
             for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(storage.getException())) {
                 if (element.getTarget() == currentCallTarget) {

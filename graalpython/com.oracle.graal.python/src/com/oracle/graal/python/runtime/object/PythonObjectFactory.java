@@ -583,20 +583,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, threadState, code, globals, locals));
     }
 
-    public PTraceback createTraceback(PFrame frame, PException exception) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception));
-    }
-
-    public PTraceback createTraceback(Reference frameInfo, PException exception) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frameInfo, exception));
-    }
-
     public PTraceback createTraceback(PFrame frame, PTraceback next) {
         return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
     }
 
-    public PTraceback createTraceback(PFrame frame, int lineno, PTraceback next) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
+    public PTraceback createTraceback(PFrame frame, PException exception, PTraceback nextChain) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception, nextChain));
+    }
+
+    public PTraceback createTraceback(Reference frameInfo, PException exception, PTraceback nextChain) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frameInfo, exception, nextChain));
     }
 
     public PBaseException createBaseException(LazyPythonClass cls, PTuple args) {

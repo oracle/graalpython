@@ -114,7 +114,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public int getStackTraceElementLimit() {
-        return 20;
+        return -1;
     }
 
     @Override
