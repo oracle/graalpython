@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import java.util.Iterator;
-
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -49,10 +47,6 @@ public abstract class PBaseSet extends PHashingCollection {
 
     public final boolean contains(Object key) {
         return HashingStorageLibrary.getUncached().hasKey(set, key);
-    }
-
-    public final Iterator<Object> values() {
-        return HashingStorageLibrary.getUncached().keys(set);
     }
 
     @Override

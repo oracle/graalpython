@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.set;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 
-import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -214,9 +213,7 @@ public final class SetBuiltins extends PythonBuiltins {
                         @Cached BranchProfile updatedStorage,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            Iterator<Object> iterator = lib.keys(self.getDictStorage());
-            if (iterator.hasNext()) {
-                Object next = iterator.next();
+            for (Object next : lib.keys(self.getDictStorage())) {
                 removeItem(frame, self, next, lib, hasFrame, updatedStorage);
                 return next;
             }

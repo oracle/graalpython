@@ -42,7 +42,6 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -405,9 +404,7 @@ public final class PythonContext {
      * run-time package paths.
      */
     private void patchPackagePaths(String from, String to) {
-        Iterator<HashingStorage.DictEntry> iter = HashingStorageLibrary.getUncached().entries(sysModules.getDictStorage());
-        while (iter.hasNext()) {
-            Object v = iter.next().getValue();
+        for (Object v : HashingStorageLibrary.getUncached().values(sysModules.getDictStorage())) {
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);

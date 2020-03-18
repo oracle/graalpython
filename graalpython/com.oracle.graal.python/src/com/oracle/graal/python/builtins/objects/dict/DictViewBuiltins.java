@@ -60,8 +60,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -119,18 +119,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getKeysViewIter(PDictKeysView self) {
-            if (self.getWrappedDict() != null) {
-                return factory().createDictKeysIterator(self.getWrappedDict());
-            }
-            return PNone.NONE;
+            return factory().createDictKeysIterator(self.getWrappedDict());
         }
 
-        @Specialization
-        Object getItemsViewIter(PDictItemsView self) {
-            if (self.getWrappedDict() != null) {
-                return factory().createDictItemsIterator(self.getWrappedDict());
-            }
-            return PNone.NONE;
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object getItemsViewIter(PDictItemsView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictItemsIterator(lib.entries(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 

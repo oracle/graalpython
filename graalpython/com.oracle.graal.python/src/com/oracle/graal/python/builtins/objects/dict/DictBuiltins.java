@@ -43,7 +43,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -62,17 +61,22 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -227,13 +231,10 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         public Object popItem(PDict dict,
                         @CachedLibrary("dict.getDictStorage()") HashingStorageLibrary lib) {
-            Iterator<DictEntry> iterator = lib.entries(dict.getDictStorage());
-            if (iterator.hasNext()) {
-                DictEntry entry = iterator.next();
+            for (DictEntry entry : lib.entries(dict.getDictStorage())) {
                 return factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
-            } else {
-                throw raise(KeyError, "popitem(): dictionary is empty");
             }
+            throw raise(KeyError, "popitem(): dictionary is empty");
         }
     }
 
@@ -502,50 +503,88 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @ValueType
+        private static final class ReprState {
+            private final PDict self;
+            private final HashingStorage dictStorage;
+            private final StringBuilder result;
 
-        @Specialization(limit = "3")
-        public Object repr(VirtualFrame frame, PDict self,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprKeyNode,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprValueNode,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-
-            StringBuilder result = new StringBuilder();
-            sbAppend(result, "{");
-            boolean initial = true;
-            for (Object key : self.keys()) {
-                Object value = lib.getItemWithState(self.getDictStorage(), key, PArguments.getThreadState(frame));
-                Object keyReprString = unwrap(reprKeyNode.executeObject(frame, key));
-                Object valueReprString = value != self ? unwrap(reprValueNode.executeObject(frame, value)) : "{...}";
-
-                checkString(keyReprString);
-                checkString(valueReprString);
-
-                if (initial) {
-                    initial = false;
-                } else {
-                    sbAppend(result, ", ");
-                }
-                result.append((String) keyReprString).append(": ").append((String) valueReprString);
+            ReprState(PDict self, HashingStorage dictStorage, StringBuilder result) {
+                this.self = self;
+                this.dictStorage = dictStorage;
+                this.result = result;
             }
-            return sbAppend(result, "}").toString();
         }
 
-        private void checkString(Object strObj) {
-            if (!(strObj instanceof String)) {
-                throw raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", strObj);
+        static final class EachRepr extends HashingStorageLibrary.ForEachNode<ReprState> {
+            @Child LookupAndCallUnaryDynamicNode reprKeyNode;
+            @Child LookupAndCallUnaryDynamicNode reprValueNode;
+            @Child CastToJavaStringNode castStr;
+            @Child PRaiseNode raiseNode;
+            @Child HashingStorageLibrary lib;
+            private final int limit;
+
+            EachRepr(int limit) {
+                this.limit = limit;
             }
+
+            static final EachRepr create(int limit) {
+                return new EachRepr(limit);
+            }
+
+            @Override
+            public ReprState execute(Object key, ReprState s) {
+                if (lib == null) {
+                    lib = insert(HashingStorageLibrary.getFactory().createDispatched(limit));
+                }
+                Object value = lib.getItem(s.dictStorage, key);
+                if (reprKeyNode == null) {
+                    reprKeyNode = insert(LookupAndCallUnaryDynamicNode.create());
+                }
+                Object keyRepr = reprKeyNode.executeObject(key, __REPR__);
+                if (reprValueNode == null) {
+                    reprValueNode = insert(LookupAndCallUnaryDynamicNode.create());
+                }
+                Object valueRepr = value != s.self ? reprValueNode.executeObject(value, __REPR__) : "{...}";
+                if (castStr == null) {
+                    castStr = insert(CastToJavaStringNodeGen.create());
+                }
+                String keyReprString = castStr.execute(keyRepr);
+                checkString(keyReprString);
+                String valueReprString = castStr.execute(valueRepr);
+                checkString(valueReprString);
+
+                if (s.result.length() > 0) {
+                    sbAppend(s.result, ", ");
+                }
+                s.result.append(keyReprString).append(": ").append(valueReprString);
+                return s;
+            }
+
+            private void checkString(Object strObj) {
+                if (!(strObj instanceof String)) {
+                    if (raiseNode == null) {
+                        raiseNode = insert(PRaiseNode.create());
+                    }
+                    throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", strObj);
+                }
+            }
+        }
+
+        @Specialization(limit = "3") // use same limit as for EachRepr nodes library
+        public Object repr(PDict self,
+                        @Cached("create(3)") EachRepr consumerNode,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            StringBuilder result = new StringBuilder();
+            sbAppend(result, "{");
+            HashingStorage dictStorage = self.getDictStorage();
+            lib.forEach(dictStorage, consumerNode, new ReprState(self, dictStorage, result));
+            return sbAppend(result, "}").toString();
         }
 
         @TruffleBoundary
         private static StringBuilder sbAppend(StringBuilder sb, String s) {
             return sb.append(s);
-        }
-
-        private static Object unwrap(Object valueReprString) {
-            if (valueReprString instanceof PString) {
-                return ((PString) valueReprString).getValue();
-            }
-            return valueReprString;
         }
     }
 

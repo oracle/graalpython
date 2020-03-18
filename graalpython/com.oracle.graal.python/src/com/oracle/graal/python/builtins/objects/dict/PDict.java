@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import java.util.Iterator;
-
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -99,15 +97,11 @@ public final class PDict extends PHashingCollection {
         int length = lib.length(dictStorage);
         int i = 0;
 
-        Iterator<HashingStorage.DictEntry> entries = HashingStorageLibrary.getUncached().entries(dictStorage);
-        while (entries.hasNext()) {
-            HashingStorage.DictEntry entry = entries.next();
+        for (HashingStorage.DictEntry entry : lib.entries(dictStorage)) {
             buf.append(entry.getKey() + ": " + entry.getValue());
-
             if (i < length - 1) {
                 buf.append(", ");
             }
-
             i++;
         }
 

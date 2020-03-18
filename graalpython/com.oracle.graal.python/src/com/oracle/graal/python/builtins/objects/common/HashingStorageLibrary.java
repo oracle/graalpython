@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
@@ -172,8 +173,13 @@ public abstract class HashingStorageLibrary extends Library {
      * A node to be called in a loop with different keys to operate on {@code
      * store}. It's execute method returns the new store to use for the next iteration.
      */
-    public abstract static class InjectIntoNode extends Node {
+    public abstract static class InjectIntoNode extends ForEachNode<HashingStorage[]> {
         public abstract HashingStorage[] execute(HashingStorage[] accumulator, Object key);
+
+        @Override
+        public final HashingStorage[] execute(Object key, HashingStorage[] accumulator) {
+            return execute(accumulator, key);
+        }
     }
 
     /**
@@ -184,7 +190,26 @@ public abstract class HashingStorageLibrary extends Library {
      *
      * @return the return value of the last call to {@link InjectIntoNode#execute}
      */
-    public abstract HashingStorage[] injectInto(HashingStorage self, HashingStorage[] firstValue, InjectIntoNode node);
+    public final HashingStorage[] injectInto(HashingStorage self, HashingStorage[] firstValue, InjectIntoNode node) {
+        return forEach(self, node, firstValue);
+    }
+
+    /**
+     * A node to be used as the hook for a consumer that is called in a loop over a storage.
+     */
+    public abstract static class ForEachNode<T> extends Node {
+        public abstract T execute(Object key, T arg);
+    }
+
+    public abstract Object forEachUntyped(HashingStorage self, ForEachNode<Object> node, Object arg);
+
+    /**
+     * Iterate over {@code self} keys and execute {@code node} with each key.
+     */
+    @SuppressWarnings("unchecked")
+    public final <T> T forEach(HashingStorage self, ForEachNode<T> node, T arg) {
+        return (T) forEachUntyped(self, (ForEachNode<Object>) node, (Object) arg);
+    }
 
     /**
      * Stores all key-value pairs from {@code self} into {@code other}, replacing key-value pairs
@@ -306,6 +331,36 @@ public abstract class HashingStorageLibrary extends Library {
         return diffWithState(self, other, null);
     }
 
+    public static final class HashingStorageIterable<T> implements Iterable<T> {
+        private final Iterator<T> iterator;
+
+        HashingStorageIterable(Iterator<T> iterator) {
+            this.iterator = iterator;
+        }
+
+        public BoundaryIterator<T> iterator() {
+            return new BoundaryIterator<T>(iterator);
+        }
+
+        static final class BoundaryIterator<T> implements Iterator<T> {
+            private final Iterator<T> iterator;
+
+            public BoundaryIterator(Iterator<T> iterator) {
+                this.iterator = iterator;
+            }
+
+            @TruffleBoundary
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @TruffleBoundary
+            public T next() {
+                return iterator.next();
+            }
+        }
+    }
+
     /**
      * This method can be used to iterate over the keys of a store. Due to the nature of Java
      * iterators being an interface and the different storage strategies, this may be slow and
@@ -313,7 +368,7 @@ public abstract class HashingStorageLibrary extends Library {
      *
      * @return an iterator over the keys in this store.
      */
-    public abstract Iterator<Object> keys(HashingStorage self);
+    public abstract HashingStorageIterable<Object> keys(HashingStorage self);
 
     /**
      * This method can be used to iterate over the values of a store. Due to the nature of Java
@@ -322,7 +377,7 @@ public abstract class HashingStorageLibrary extends Library {
      *
      * @return an iterator over the values in this store.
      */
-    public abstract Iterator<Object> values(HashingStorage self);
+    public abstract HashingStorageIterable<Object> values(HashingStorage self);
 
     /**
      * This method can be used to iterate over the key-value pairs of a store. Due to the nature of
@@ -331,7 +386,7 @@ public abstract class HashingStorageLibrary extends Library {
      *
      * @return an iterator over the keys-value pairs in this store.
      */
-    public abstract Iterator<HashingStorage.DictEntry> entries(HashingStorage self);
+    public abstract HashingStorageIterable<HashingStorage.DictEntry> entries(HashingStorage self);
 
     static final LibraryFactory<HashingStorageLibrary> FACTORY = LibraryFactory.resolve(HashingStorageLibrary.class);
 

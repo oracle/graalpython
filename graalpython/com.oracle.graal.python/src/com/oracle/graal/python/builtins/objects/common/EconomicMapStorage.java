@@ -46,11 +46,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
 import java.util.Iterator;
 
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.MapCursor;
-
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -73,6 +71,9 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+
+import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.MapCursor;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EconomicMapStorage extends HashingStorage {
@@ -289,11 +290,11 @@ public class EconomicMapStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
-        HashingStorage[] result = firstValue;
+    Object forEachUntyped(ForEachNode<Object> node, Object arg) {
+        Object result = arg;
         MapCursor<DictKey, Object> cursor = map.getEntries();
         while (cursor.advance()) {
-            result = node.execute(result, cursor.getKey().value);
+            result = node.execute(cursor.getKey().value, result);
         }
         return result;
     }
@@ -575,8 +576,8 @@ public class EconomicMapStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public Iterator<Object> keys() {
-        return new KeysIterator(map.getKeys().iterator());
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(new KeysIterator(map.getKeys().iterator()));
     }
 
     private static final class KeysIterator implements Iterator<Object> {

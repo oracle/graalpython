@@ -71,7 +71,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -2318,8 +2317,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib);
 
-                for (Iterator<DictEntry> it = nslib.entries(namespace.getDictStorage()); it.hasNext();) {
-                    DictEntry entry = it.next();
+                for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
                         callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
@@ -2410,7 +2408,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             Object slots = null;
-            for (DictEntry entry : namespace.entries()) {
+            for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                 Object key = entry.getKey();
                 Object value = entry.getValue();
                 if (__SLOTS__.equals(key)) {
