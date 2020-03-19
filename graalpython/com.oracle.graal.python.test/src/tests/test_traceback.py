@@ -249,3 +249,31 @@ def test_reraise_with_traceback_multiple():
             ('test_reraise_with_traceback_multiple', 'raise RuntimeError("test")'),
         ]
     )
+
+
+def test_with():
+    stored_exc = None
+
+    class cm:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, etype, e, tb):
+            nonlocal stored_exc
+            stored_exc = e
+            return True
+
+    with cm():
+        raise OSError("test")
+
+    def reraise():
+        raise stored_exc
+
+    assert_has_traceback(
+        reraise,
+        [
+            ('reraise', 'raise stored_exc'),
+            ('test_with', 'raise OSError("test")'),
+        ]
+    )
+

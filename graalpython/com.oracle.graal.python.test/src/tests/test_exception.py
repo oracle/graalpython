@@ -194,12 +194,47 @@ class ExceptionTests(unittest.TestCase):
                 raise OSError("first")
             except OSError:
                 raise TypeError("second")
-        except TypeError as e:
-            self.assertEqual(e.args[0], "second")
-            self.assertIsNone(e.__cause__)
-            self.assertEqual(type(e.__context__), OSError)
-            self.assertEqual(e.__context__.args[0], "first")
-            self.assertFalse(e.__suppress_context__)
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertIsNone(e.__cause__)
+        self.assertEqual(type(e.__context__), OSError)
+        self.assertEqual(e.__context__.args[0], "first")
+        self.assertFalse(e.__suppress_context__)
+
+    def test_no_implicit_chaining(self):
+        try:
+            raise OSError("first")
+        except OSError:
+            pass
+        try:
+            raise TypeError("second")
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertIsNone(e.__context__)
+
+    def test_implicit_chaining_from_outer(self):
+        def bar():
+            try:
+                raise TypeError("second")
+            except:
+                raise NameError("third")
+        def foo():
+            try:
+                raise OSError("first")
+            except OSError:
+                bar()
+        try:
+            foo()
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "third")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "second")
+        self.assertIsNotNone(e.__context__.__context__)
+        self.assertEqual(e.__context__.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__.__context__)
 
     def test_implicit_chaining_finally(self):
         try:
@@ -207,12 +242,187 @@ class ExceptionTests(unittest.TestCase):
                 raise OSError("first")
             finally:
                 raise TypeError("second")
-        except TypeError as e:
-            self.assertEqual(e.args[0], "second")
-            self.assertIsNone(e.__cause__)
-            self.assertEqual(type(e.__context__), OSError)
-            self.assertEqual(e.__context__.args[0], "first")
-            self.assertFalse(e.__suppress_context__)
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertIsNone(e.__cause__)
+        self.assertEqual(type(e.__context__), OSError)
+        self.assertEqual(e.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__)
+        self.assertFalse(e.__suppress_context__)
+
+    def test_implicit_chaining_finally_from_outer(self):
+        def bar():
+            try:
+                raise TypeError("second")
+            finally:
+                raise NameError("third")
+        def foo():
+            try:
+                raise OSError("first")
+            finally:
+                bar()
+        try:
+            foo()
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "third")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "second")
+        self.assertIsNotNone(e.__context__.__context__)
+        self.assertEqual(e.__context__.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__.__context__)
+
+    def test_implicit_chaining_reraise_explicit_no_chaining(self):
+        try:
+            try:
+                raise NameError("first")
+            except Exception as e:
+                raise e
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "first")
+        self.assertIsNone(e.__context__)
+
+    def test_implicit_chaining_reraise_no_chaining(self):
+        try:
+            try:
+                raise NameError("first")
+            except Exception:
+                raise
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "first")
+        self.assertIsNone(e.__context__)
+
+    def test_implicit_chaining_reraise_from_outer(self):
+        try:
+            try:
+                raise NameError("first")
+            except Exception as e:
+                try:
+                    raise OSError("second")
+                except Exception:
+                    raise e
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "first")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "second")
+        self.assertIsNone(e.__context__.__context__)
+
+    def test_implicit_chaining_with(self):
+        class cm:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, etype, e, tb):
+                raise TypeError("second")
+
+        def foo():
+            with cm():
+                raise OSError("first")
+        try:
+            foo()
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__)
+
+    def test_implicit_chaining_with_from_outer(self):
+        class cm:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, etype, e, tb):
+                raise TypeError("third")
+
+        def foo():
+            try:
+                raise NameError("first")
+            except:
+                with cm():
+                    raise OSError("second")
+        try:
+            foo()
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "third")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "second")
+        self.assertIsNotNone(e.__context__.__context__)
+        self.assertEqual(e.__context__.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__.__context__)
+
+    def test_implicit_chaining_generator(self):
+        def gen():
+            try:
+                yield 1
+                raise NameError("first")
+            except:
+                yield 2
+                raise NameError("second")
+        try:
+            list(gen())
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__)
+
+    def test_implicit_chaining_generator_from_outer(self):
+        def gen():
+            try:
+                yield 1
+                raise NameError("second")
+            except:
+                yield 2
+                raise NameError("third")
+        try:
+            try:
+                raise NameError("first")
+            except Exception:
+                list(gen())
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "third")
+        self.assertIsNotNone(e.__context__)
+        self.assertEqual(e.__context__.args[0], "second")
+        self.assertIsNotNone(e.__context__.__context__)
+        self.assertEqual(e.__context__.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__.__context__)
+
+    def test_no_implicit_chaining_generator_throw(self):
+        # I'd intuitively expect this to chain, but it doesn't
+        def gen():
+            try:
+                raise NameError("first")
+            except:
+                yield 1
+                yield 2
+        try:
+            g = gen()
+            next(g)
+            g.throw(RuntimeError, RuntimeError("second"))
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertIsNone(e.__context__)
+
+    def test_implicit_chaining_long(self):
+        # Test that our implementation of avoiding looped chains doesn't explode on this
+        e = NameError
+        for i in range(10000):
+            try:
+                try:
+                    raise e
+                except:
+                    raise RuntimeError
+            except Exception as exc:
+                e = exc
 
     def test_explicit_chaining(self):
         try:
@@ -224,13 +434,15 @@ class ExceptionTests(unittest.TestCase):
                 raise NameError("third")
             except NameError:
                 raise TypeError("second") from captured
-        except TypeError as e:
-            self.assertEqual(e.args[0], "second")
-            self.assertEqual(type(e.__context__), NameError)
-            self.assertEqual(e.__context__.args[0], "third")
-            self.assertEqual(type(e.__cause__), OSError)
-            self.assertEqual(e.__cause__.args[0], "first")
-            self.assertTrue(e.__suppress_context__)
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertEqual(type(e.__context__), NameError)
+        self.assertEqual(e.__context__.args[0], "third")
+        self.assertEqual(type(e.__cause__), OSError)
+        self.assertEqual(e.__cause__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__)
+        self.assertTrue(e.__suppress_context__)
 
     def test_set_cause_manually(self):
         try:
@@ -244,13 +456,15 @@ class ExceptionTests(unittest.TestCase):
                 e = TypeError("second")
                 e.__cause__ = captured
                 raise e
-        except TypeError as e:
-            self.assertEqual(e.args[0], "second")
-            self.assertEqual(type(e.__context__), NameError)
-            self.assertEqual(e.__context__.args[0], "third")
-            self.assertEqual(type(e.__cause__), OSError)
-            self.assertEqual(e.__cause__.args[0], "first")
-            self.assertTrue(e.__suppress_context__)
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertEqual(type(e.__context__), NameError)
+        self.assertEqual(e.__context__.args[0], "third")
+        self.assertIsNone(e.__context__.__context__)
+        self.assertEqual(type(e.__cause__), OSError)
+        self.assertEqual(e.__cause__.args[0], "first")
+        self.assertTrue(e.__suppress_context__)
 
     def test_suppress_implicit_chaining(self):
         try:
@@ -258,9 +472,11 @@ class ExceptionTests(unittest.TestCase):
                 raise OSError("first")
             except OSError:
                 raise TypeError("second") from None
-        except TypeError as e:
-            self.assertEqual(e.args[0], "second")
-            self.assertEqual(type(e.__context__), OSError)
-            self.assertEqual(e.__context__.args[0], "first")
-            self.assertIsNone(e.__cause__)
-            self.assertTrue(e.__suppress_context__)
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertEqual(type(e.__context__), OSError)
+        self.assertEqual(e.__context__.args[0], "first")
+        self.assertIsNone(e.__context__.__context__)
+        self.assertIsNone(e.__cause__)
+        self.assertTrue(e.__suppress_context__)
