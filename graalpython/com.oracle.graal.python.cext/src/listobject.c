@@ -56,7 +56,7 @@ UPCALL_TYPED_ID(PyList_SetItem, setitem_fun_t);
 int PyList_SetItem(PyObject* op, Py_ssize_t i, PyObject* newitem) {
     /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
        But this function steals the references, so we call without a landing function. */
-    return _jls_PyList_SetItem(native_to_java(op), i, native_to_java(newitem));
+    return _jls_PyList_SetItem(native_to_java(op), i, native_to_java_stealing(newitem));
 }
 
 UPCALL_ID(PyList_Append);

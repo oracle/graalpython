@@ -57,7 +57,7 @@ UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
     /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
        But this function steals the references, so we call without a landing function. */
-    return _jls_PyTuple_SetItem(native_to_java(tuple), position, native_to_java(item));
+    return _jls_PyTuple_SetItem(native_to_java(tuple), position, native_to_java_stealing(item));
 }
 
 UPCALL_ID(PyTuple_GetItem);
