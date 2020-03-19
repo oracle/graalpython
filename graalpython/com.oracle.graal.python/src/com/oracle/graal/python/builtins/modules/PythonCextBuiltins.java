@@ -144,6 +144,7 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeA
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectAlloc;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -256,7 +257,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -3111,58 +3111,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Object_Alloc", minNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Create_Object_Alloc")
     @GenerateNodeFactory
-    abstract static class PyTruffleObjectAlloc extends PythonBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectAlloc.class);
-
+    abstract static class PyTruffleCreateObjectAlloc extends PythonBuiltinNode {
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object allocatedObject, Object sizeObject,
-                        @Cached CastToJavaLongNode castToJavaLongNode,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached("getAllocationReporter(contextRef)") AllocationReporter reporter) {
-
-            long objectSize;
-            try {
-                objectSize = castToJavaLongNode.execute(sizeObject);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalArgumentException("invalid type for second argument 'objectSize'");
-            }
-
-            // memory management
-            PythonContext context = contextRef.get();
-            CApiContext cApiContext = context.getCApiContext();
-            cApiContext.increaseMemoryPressure(frame, this, objectSize);
-
-            boolean isLoggable = LOGGER.isLoggable(Level.FINE);
-            boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);
-            boolean reportAllocation = reporter.isActive();
-            if (isLoggable || traceNativeMemory || reportAllocation) {
-                if (isLoggable) {
-                    LOGGER.fine(() -> String.format("Allocated memory at %s (size: %d bytes)", CApiContext.asHex(allocatedObject), objectSize));
-                }
-                if (traceNativeMemory) {
-                    PFrame.Reference ref = null;
-                    if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
-                        ref = getCurrentFrameRef.execute(frame);
-                        ref.markAsEscaped();
-                    }
-                    cApiContext.traceAlloc(CApiContext.asPointer(allocatedObject, lib), ref, null, objectSize);
-                }
-                if (reportAllocation) {
-                    reporter.onEnter(null, 0, objectSize);
-                    reporter.onReturnValue(allocatedObject, 0, objectSize);
-                }
-                return 0;
-            }
-            return -2;
-        }
-
-        static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
-            return contextRef.get().getEnv().lookup(AllocationReporter.class);
+        static Object doGeneric() {
+            return new PyTruffleObjectAlloc();
         }
     }
 

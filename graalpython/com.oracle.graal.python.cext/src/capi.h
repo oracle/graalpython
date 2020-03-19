@@ -211,6 +211,9 @@ typedef void* (*ptr_cache_t)(void *, uint64_t);
 extern ptr_cache_t ptr_cache;
 extern ptr_cache_t ptr_cache_stealing;
 
+typedef int (*alloc_upcall_fun_t)(void *, Py_ssize_t size);
+extern alloc_upcall_fun_t alloc_upcall;
+
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
 #define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))

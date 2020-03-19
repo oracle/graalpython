@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_WHCAR_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -124,6 +125,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -2679,19 +2681,44 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object object, long value);
 
+        public final Object inc(Object object) {
+            return execute(object, 1);
+        }
+
         @Specialization
         static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
+            assert value >= 0 : "adding negative reference count; dealloc might not happen";
             nativeWrapper.setRefCount(nativeWrapper.getRefCount() + value);
             return nativeWrapper;
         }
 
-        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
+        @Specialization(guards = {"!isNativeWrapper(object)", "lib.hasMembers(object)"}, //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class, UnsupportedTypeException.class, CannotCastException.class}, //
+                        limit = "1")
+        static Object doNativeObjectByMember(Object object, long value,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached GetEngineFlagNode getTraceMemFlagNode,
+                        @Cached CastToJavaLongNode castToJavaLongNode,
+                        @CachedLibrary("object") InteropLibrary lib) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, CannotCastException {
+            if (!lib.isNull(object) && context.getCApiContext() != null) {
+                assert value >= 0 : "adding negative reference count; dealloc might not happen";
+                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
+                    checkAccess(object, lib, context);
+                }
+                long refCnt = castToJavaLongNode.execute(lib.readMember(object, OB_REFCNT.getMemberName()));
+                lib.writeMember(object, OB_REFCNT.getMemberName(), refCnt + value);
+            }
+            return object;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)", limit = "2", replaces = "doNativeObjectByMember")
         static Object doNativeObject(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @CachedLibrary("object") InteropLibrary lib) {
             if (!lib.isNull(object) && context.getCApiContext() != null) {
+                assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
                     checkAccess(object, lib, context);
                 }
@@ -2849,7 +2876,7 @@ public abstract class CExtNodes {
                 // but
                 // if so, it is the faster way
                 if (lib.hasMembers(ptrObject)) {
-                    return castToJavaLongNode.execute(lib.readMember(ptrObject, NativeMember.OB_REFCNT.getMemberName()));
+                    return castToJavaLongNode.execute(lib.readMember(ptrObject, OB_REFCNT.getMemberName()));
                 }
                 if (context.getCApiContext() != null) {
                     return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));

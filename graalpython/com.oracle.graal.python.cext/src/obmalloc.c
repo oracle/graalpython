@@ -58,9 +58,6 @@ typedef struct {
 /* Get the object given the GC head */
 #define FROM_MEM_HEAD(g) ((void *)(((mem_head_t *)g)+1))
 
-typedef int (*alloc_reporter_fun_t)(void *, Py_ssize_t size);
-UPCALL_TYPED_ID(PyTruffle_Object_Alloc, alloc_reporter_fun_t);
-
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE static
 void PyTruffle_Object_Free(void* ptr) {
@@ -83,7 +80,7 @@ void* PyObject_Malloc(size_t size) {
 	mem_head_t* ptr_with_head = calloc(size + sizeof(mem_head_t), 1);
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
 	ptr_with_head->size = size;
-	_jls_PyTruffle_Object_Alloc(ptr, size);
+	alloc_upcall(ptr, size);
     return ptr;
 }
 
@@ -105,7 +102,7 @@ void* PyMem_Malloc(size_t size) {
 	mem_head_t* ptr_with_head = malloc(size + sizeof(mem_head_t));
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
 	ptr_with_head->size = size;
-    _jls_PyTruffle_Object_Alloc(ptr, size);
+    alloc_upcall(ptr, size);
     return ptr;
 }
 
@@ -113,7 +110,7 @@ void* PyMem_RawMalloc(size_t size) {
 	mem_head_t* ptr_with_head = malloc((size == 0 ? 1 : size) + sizeof(mem_head_t));
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
 	ptr_with_head->size = size;
-    _jls_PyTruffle_Object_Alloc(ptr, size);
+    alloc_upcall(ptr, size);
     return ptr;
 }
 
@@ -123,7 +120,7 @@ void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
 	mem_head_t* ptr_with_head = (mem_head_t*) malloc(total);
 	memset(ptr_with_head, 0, total);
 	void* ptr = FROM_MEM_HEAD(ptr_with_head);
-    _jls_PyTruffle_Object_Alloc(ptr, n * elsize);
+    alloc_upcall(ptr, n * elsize);
     return ptr;
 }
 

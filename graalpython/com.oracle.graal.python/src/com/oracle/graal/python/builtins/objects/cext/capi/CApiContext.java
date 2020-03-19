@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
 
@@ -70,6 +71,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -99,7 +101,8 @@ public final class CApiContext extends CExtContext {
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, AllocInfo> freedNativeMemory;
 
-    private RootCallTarget referenceCleanerCallTarget;
+    @CompilationFinal  private RootCallTarget referenceCleanerCallTarget;
+    @CompilationFinal  private RootCallTarget triggerAsyncActionsCallTarget;
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -150,9 +153,18 @@ public final class CApiContext extends CExtContext {
 
     private RootCallTarget getReferenceCleanerCallTarget() {
         if (referenceCleanerCallTarget == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext().getLanguage()));
         }
         return referenceCleanerCallTarget;
+    }
+
+    RootCallTarget getTriggerAsyncActionsCallTarget() {
+        if (triggerAsyncActionsCallTarget == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            triggerAsyncActionsCallTarget = Truffle.getRuntime().createCallTarget(new TriggerAsyncActionsRootNode(getContext()));
+        }
+        return triggerAsyncActionsCallTarget;
     }
 
     public void traceMallocUntrack(long domain, Object pointerObject) {
@@ -225,6 +237,7 @@ public final class CApiContext extends CExtContext {
      */
     private static final class CApiReferenceCleanerRootNode extends PRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, new String[0]);
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiReferenceCleanerRootNode.class);
 
         @Child private SubRefCntNode refCntNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -242,6 +255,9 @@ public final class CApiContext extends CExtContext {
             try {
                 Object pointerObject = PArguments.getArgument(frame, 0);
                 Long managedRefCount = (Long) PArguments.getArgument(frame, 1);
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
+                }
                 return refCntNode.execute(pointerObject, managedRefCount);
             } finally {
                 calleeContext.exit(frame, this);
@@ -280,6 +296,44 @@ public final class CApiContext extends CExtContext {
                 PArguments.setArgument(pArguments, 1, nativeObjectReference.managedRefCount);
                 GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
             }
+        }
+    }
+
+    private static final class TriggerAsyncActionsRootNode extends PRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[0], new String[0]);
+
+        @Child private SubRefCntNode refCntNode;
+        @Child private CalleeContext calleeContext = CalleeContext.create();
+
+        private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
+        private final PythonContext context;
+
+        protected TriggerAsyncActionsRootNode(PythonContext context) {
+            super(context.getLanguage());
+            refCntNode = SubRefCntNodeGen.create();
+            this.context = context;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, customLocalsProfile);
+            try {
+                doGc();
+                context.triggerAsyncActions(frame, this);
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+            return 0;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
         }
     }
 
@@ -439,6 +493,22 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
+    public void increaseMemoryPressure(GenericInvokeNode invokeNode, long size) {
+        if (allocatedMemory <= getContext().getMaxNativeMemory()) {
+            allocatedMemory += size;
+            return;
+        }
+
+        // Triggering the GC and the async actions is hidden behind a call target to keep this
+        // method slim.
+        invokeNode.execute(getTriggerAsyncActionsCallTarget(), PArguments.create());
+
+        if (allocatedMemory + size > getContext().getMaxNativeMemory()) {
+            throw new OutOfMemoryError("native memory");
+        }
+        allocatedMemory += size;
+    }
+
     public void increaseMemoryPressure(VirtualFrame frame, Node location, long size) {
         if (allocatedMemory <= getContext().getMaxNativeMemory()) {
             allocatedMemory += size;
@@ -446,10 +516,8 @@ public final class CApiContext extends CExtContext {
         }
 
         doGc();
-
         getContext().triggerAsyncActions(frame, location);
 
-        // TODO(fa): only works if we also count free's
         if (allocatedMemory + size > getContext().getMaxNativeMemory()) {
             throw new OutOfMemoryError("native memory");
         }

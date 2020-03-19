@@ -64,6 +64,8 @@ cache_t cache;
 ptr_cache_t ptr_cache;
 ptr_cache_t ptr_cache_stealing;
 
+alloc_upcall_fun_t alloc_upcall;
+
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT = (void*)polyglot_eval("python", "import python_cext\npython_cext");
@@ -85,6 +87,8 @@ static void initialize_upcall_functions() {
     Py_Truffle_Options = (uint32_t) polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Native_Options"));
 
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
+
+    alloc_upcall = (alloc_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Object_Alloc");
 }
 
 __attribute__((constructor (__COUNTER__)))
