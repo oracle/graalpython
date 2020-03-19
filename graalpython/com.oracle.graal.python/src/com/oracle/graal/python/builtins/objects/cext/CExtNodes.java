@@ -767,10 +767,11 @@ public abstract class CExtNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
-            if (cApiContext != null) {
+            if (!lib.isNull(object) && cApiContext != null) {
                 return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
             }
             return new PythonAbstractNativeObject(object);
@@ -788,11 +789,12 @@ public abstract class CExtNodes {
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @CachedLibrary("object") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
-            if (cApiContext != null) {
+            if (!lib.isNull(object) && cApiContext != null) {
                 return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
             }
             return new PythonAbstractNativeObject(object);
