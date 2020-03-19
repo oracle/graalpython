@@ -46,6 +46,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -101,8 +102,8 @@ public final class CApiContext extends CExtContext {
     /** Container of pointers that have seen to be free'd. */
     private Map<Object, AllocInfo> freedNativeMemory;
 
-    @CompilationFinal  private RootCallTarget referenceCleanerCallTarget;
-    @CompilationFinal  private RootCallTarget triggerAsyncActionsCallTarget;
+    @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
+    @CompilationFinal private RootCallTarget triggerAsyncActionsCallTarget;
 
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
@@ -120,9 +121,20 @@ public final class CApiContext extends CExtContext {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            if (reference instanceof NativeObjectReference) {
-                return new CApiReferenceCleanerAction((NativeObjectReference) reference);
+
+            LinkedList<NativeObjectReference> refs = new LinkedList<>();
+            do {
+                if (reference instanceof NativeObjectReference) {
+                    refs.add((NativeObjectReference) reference);
+                }
+                // consume all
+                reference = nativeObjectsQueue.poll();
+            } while (reference != null);
+
+            if(!refs.isEmpty()) {
+                return new CApiReferenceCleanerAction(refs.toArray(new NativeObjectReference[0]));
             }
+
             return null;
         });
     }
@@ -279,22 +291,25 @@ public final class CApiContext extends CExtContext {
      * Reference cleaner action that will be executed by the {@link AsyncHandler}.
      */
     private static final class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
-        private final NativeObjectReference nativeObjectReference;
+        private final NativeObjectReference[] nativeObjectReferences;
 
-        public CApiReferenceCleanerAction(NativeObjectReference nativeObjectReference) {
-            this.nativeObjectReference = nativeObjectReference;
+        public CApiReferenceCleanerAction(NativeObjectReference[] nativeObjectReferences) {
+            this.nativeObjectReferences = nativeObjectReferences;
         }
 
         @Override
         public void execute(VirtualFrame frame, Node location, PythonContext context) {
-            if (!nativeObjectReference.resurrect) {
-                TruffleObject ptrObject = nativeObjectReference.getPtrObject();
+            for (int i = 0; i < nativeObjectReferences.length; i++) {
+                NativeObjectReference nativeObjectReference = nativeObjectReferences[i];
+                if (!nativeObjectReference.resurrect) {
+                    TruffleObject ptrObject = nativeObjectReference.getPtrObject();
 
-                context.getCApiContext().nativeObjectWrapperList.remove(nativeObjectReference.id);
-                Object[] pArguments = PArguments.create(2);
-                PArguments.setArgument(pArguments, 0, ptrObject);
-                PArguments.setArgument(pArguments, 1, nativeObjectReference.managedRefCount);
-                GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
+                    context.getCApiContext().nativeObjectWrapperList.remove(nativeObjectReference.id);
+                    Object[] pArguments = PArguments.create(2);
+                    PArguments.setArgument(pArguments, 0, ptrObject);
+                    PArguments.setArgument(pArguments, 1, nativeObjectReference.managedRefCount);
+                    GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
+                }
             }
         }
     }
