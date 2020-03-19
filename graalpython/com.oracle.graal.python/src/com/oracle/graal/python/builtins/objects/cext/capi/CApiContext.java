@@ -131,7 +131,7 @@ public final class CApiContext extends CExtContext {
                 reference = nativeObjectsQueue.poll();
             } while (reference != null);
 
-            if(!refs.isEmpty()) {
+            if (!refs.isEmpty()) {
                 return new CApiReferenceCleanerAction(refs.toArray(new NativeObjectReference[0]));
             }
 

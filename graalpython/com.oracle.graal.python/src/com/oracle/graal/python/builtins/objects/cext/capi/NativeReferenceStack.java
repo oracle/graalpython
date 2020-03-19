@@ -124,7 +124,7 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
         }
 
         void addToFreeList(int start, int end) {
-            for (int i = end-1; i >= start; i--) {
+            for (int i = end - 1; i >= start; i--) {
                 push(i);
             }
         }

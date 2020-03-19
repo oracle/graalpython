@@ -95,7 +95,7 @@ public final class NativeReferenceCache implements TruffleObject {
 
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
-    public static abstract class ResolveNativeReferenceNode extends Node {
+    public abstract static class ResolveNativeReferenceNode extends Node {
 
         private static final Object NO_REF_CNT = new Object();
 
