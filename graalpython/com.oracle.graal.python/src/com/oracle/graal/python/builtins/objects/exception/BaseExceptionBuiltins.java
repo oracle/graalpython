@@ -45,8 +45,6 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -149,22 +147,19 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @ImportStatic(BaseExceptionBuiltins.class)
     public abstract static class CauseNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public Object cause(PBaseException self, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode readCause) {
-            Object cause = readCause.execute(self, __CAUSE__);
-            if (cause == PNone.NO_VALUE) {
-                return PNone.NONE;
-            } else {
-                return cause;
-            }
+        public Object getCause(PBaseException self, @SuppressWarnings("unused") PNone value) {
+            return self.getCause() != null ? self.getCause() : PNone.NONE;
         }
 
-        @Specialization(guards = "isBaseExceptionOrNone(value)")
-        public Object cause(PBaseException self, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeCause,
-                        @Cached("create()") WriteAttributeToObjectNode writeSuppressContext) {
-            writeCause.execute(self, __CAUSE__, value);
-            writeSuppressContext.execute(self, __SUPPRESS_CONTEXT__, true);
+        @Specialization
+        public Object setCause(PBaseException self, PBaseException value) {
+            self.setCause(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNone(value)")
+        public Object setCause(PBaseException self, @SuppressWarnings("unused") PNone value) {
+            self.setCause(null);
             return PNone.NONE;
         }
 
@@ -180,20 +175,19 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public Object context(PBaseException self, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode readContext) {
-            Object context = readContext.execute(self, __CONTEXT__);
-            if (context == PNone.NO_VALUE) {
-                return PNone.NONE;
-            } else {
-                return context;
-            }
+        public Object getContext(PBaseException self, @SuppressWarnings("unused") PNone value) {
+            return self.getContext() != null ? self.getContext() : PNone.NONE;
         }
 
-        @Specialization(guards = "isBaseExceptionOrNone(value)")
-        public Object context(PBaseException self, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeContext) {
-            writeContext.execute(self, __CONTEXT__, value);
+        @Specialization
+        public Object setContext(PBaseException self, PBaseException value) {
+            self.setContext(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNone(value)")
+        public Object setContext(PBaseException self, @SuppressWarnings("unused") PNone value) {
+            self.setContext(null);
             return PNone.NONE;
         }
 
@@ -208,25 +202,18 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
-        public Object suppressContext(PBaseException self, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") ReadAttributeFromObjectNode readSuppressContext) {
-            Object suppressContext = readSuppressContext.execute(self, __SUPPRESS_CONTEXT__);
-            if (suppressContext == PNone.NO_VALUE) {
-                return false;
-            } else {
-                return suppressContext;
-            }
+        public Object getSuppressContext(PBaseException self, @SuppressWarnings("unused") PNone value) {
+            return self.getSuppressContext();
         }
 
-        @Specialization(guards = "isBoolean(value)")
-        public Object suppressContext(PBaseException self, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeContext) {
-            writeContext.execute(self, __SUPPRESS_CONTEXT__, value);
+        @Specialization
+        public Object setSuppressContext(PBaseException self, boolean value) {
+            self.setSuppressContext(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isBoolean(value)")
-        public Object suppressContext(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
+        public Object setSuppressContext(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
                         @Cached("create()") PRaiseNode raise) {
             throw raise.raise(TypeError, "attribute value type must be bool");
         }

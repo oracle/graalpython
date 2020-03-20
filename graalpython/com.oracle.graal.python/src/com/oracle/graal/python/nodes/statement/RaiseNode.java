@@ -35,8 +35,6 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -61,11 +59,8 @@ public abstract class RaiseNode extends StatementNode {
 
         // raise * from <exception>
         @Specialization
-        void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, PBaseException cause,
-                        @Cached("create()") WriteAttributeToObjectNode writeCause,
-                        @Cached("create()") WriteAttributeToObjectNode writeSuppressContext) {
-            writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
-            writeSuppressContext.execute(exception, SpecialAttributeNames.__SUPPRESS_CONTEXT__, true);
+        void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, PBaseException cause) {
+            exception.setCause(cause);
         }
 
         // raise * from <class>
@@ -74,23 +69,19 @@ public abstract class RaiseNode extends StatementNode {
                         @Cached PythonObjectFactory factory,
                         @Cached BranchProfile baseCheckFailedProfile,
                         @Cached ValidExceptionNode validException,
-                        @Cached PRaiseNode raise,
-                        @Cached("create()") WriteAttributeToObjectNode writeCause,
-                        @Cached("create()") WriteAttributeToObjectNode writeSuppressContext) {
+                        @Cached PRaiseNode raise) {
             if (!validException.execute(frame, causeClass)) {
                 baseCheckFailedProfile.enter();
                 throw raise.raise(PythonBuiltinClassType.TypeError, "exception causes must derive from BaseException");
             }
             PBaseException cause = factory.createBaseException(causeClass);
-            writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
-            writeSuppressContext.execute(exception, SpecialAttributeNames.__SUPPRESS_CONTEXT__, true);
+            exception.setCause(cause);
         }
 
         // raise * from None
         @Specialization(guards = "isNone(cause)")
-        void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
-                        @Cached("create()") WriteAttributeToObjectNode writeSuppressContext) {
-            writeSuppressContext.execute(exception, SpecialAttributeNames.__SUPPRESS_CONTEXT__, true);
+        void setCause(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause) {
+            setCause(frame, exception, (PBaseException) null);
         }
 
         // raise * from <invalid>

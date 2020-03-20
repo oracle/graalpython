@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -331,7 +330,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
                     if (pythonCause != PNone.NONE) {
-                        ((PythonObject) pythonCause).setAttribute(__CAUSE__, ((PException) e).getExceptionObject());
+                        ((PBaseException) pythonCause).setCause(((PException) e).getExceptionObject());
                     }
                     pythonCause = ((PException) e).getExceptionObject();
                 } else {
@@ -344,7 +343,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
             Object[] args = new Object[]{path, sb.toString()};
             PBaseException importExc = factory().createBaseException(ImportError, "cannot load %s: %s", args);
-            importExc.setAttribute(__CAUSE__, pythonCause);
+            if (pythonCause instanceof PBaseException) {
+                importExc.setCause((PBaseException) pythonCause);
+            }
             throw raise(importExc);
         }
     }

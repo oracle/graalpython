@@ -178,7 +178,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -810,7 +809,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
                 // the exception here must have already been reified, because we
                 // got it from the context
-                sysExc.setAttribute(SpecialAttributeNames.__CAUSE__, currentException.getExceptionObject());
+                sysExc.setCause(currentException.getExceptionObject());
                 throw PException.fromObject(sysExc, this);
             }
         }

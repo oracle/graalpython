@@ -73,6 +73,35 @@ public final class PBaseException extends PythonObject {
     private PException exception;
     private PTraceback traceback;
 
+    private PBaseException context;
+    private PBaseException cause;
+    private boolean suppressContext = false;
+
+    public PBaseException getContext() {
+        return context;
+    }
+
+    public void setContext(PBaseException context) {
+        this.context = context;
+    }
+
+    public PBaseException getCause() {
+        return cause;
+    }
+
+    public void setCause(PBaseException cause) {
+        this.cause = cause;
+        this.suppressContext = true;
+    }
+
+    public boolean getSuppressContext() {
+        return suppressContext;
+    }
+
+    public void setSuppressContext(boolean suppressContext) {
+        this.suppressContext = suppressContext;
+    }
+
     /** The frame info of the Python frame that first caught the exception. */
     private PFrame.Reference frameInfo;
 

@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
@@ -44,7 +41,6 @@ public class TryFinallyNode extends StatementNode {
     @Child private StatementNode finalbody;
     @Child private SaveExceptionStateNode getCaughtExceptionNode;
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child private WriteAttributeToObjectNode writeContext;
 
     private final BranchProfile exceptionProfile = BranchProfile.create();
 
@@ -91,8 +87,8 @@ public class TryFinallyNode extends StatementNode {
                         restoreExceptionState(frame, exceptionState);
                         throw e;
                     } catch (PException e) {
-                        if (caughtException != null) {
-                            writeContext(e.getExceptionObject(), caughtException.getExceptionObject());
+                        if (caughtException != null && e.getExceptionObject() != null) {
+                            e.getExceptionObject().setContext(caughtException.getExceptionObject());
                         }
                         throw e;
                     }
@@ -128,13 +124,4 @@ public class TryFinallyNode extends StatementNode {
         }
         return getCaughtExceptionNode;
     }
-
-    private void writeContext(PBaseException exception, PBaseException context) {
-        if (writeContext == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            writeContext = insert(WriteAttributeToObjectNode.create());
-        }
-        writeContext.execute(exception, SpecialAttributeNames.__CONTEXT__, context);
-    }
-
 }
