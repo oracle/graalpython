@@ -105,9 +105,6 @@ globals().update(http.HTTPStatus.__members__)
 # Mapping status codes to official W3C names
 responses = {v: v.phrase for v in http.HTTPStatus.__members__.values()}
 
-# maximal amount of data to read at one time in _safe_read
-MAXAMOUNT = 1048576
-
 # maximal line length when calling readline().
 _MAXLINE = 65536
 _MAXHEADERS = 100
@@ -602,43 +599,24 @@ class HTTPResponse(io.BufferedIOBase):
             raise IncompleteRead(bytes(b[0:total_bytes]))
 
     def _safe_read(self, amt):
-        """Read the number of bytes requested, compensating for partial reads.
-
-        Normally, we have a blocking socket, but a read() can be interrupted
-        by a signal (resulting in a partial read).
-
-        Note that we cannot distinguish between EOF and an interrupt when zero
-        bytes have been read. IncompleteRead() will be raised in this
-        situation.
+        """Read the number of bytes requested.
 
         This function should be used when <amt> bytes "should" be present for
         reading. If the bytes are truly not available (due to EOF), then the
         IncompleteRead exception can be used to detect the problem.
         """
-        s = []
-        while amt > 0:
-            chunk = self.fp.read(min(amt, MAXAMOUNT))
-            if not chunk:
-                raise IncompleteRead(b''.join(s), amt)
-            s.append(chunk)
-            amt -= len(chunk)
-        return b"".join(s)
+        data = self.fp.read(amt)
+        if len(data) < amt:
+            raise IncompleteRead(data, amt-len(data))
+        return data
 
     def _safe_readinto(self, b):
         """Same as _safe_read, but for reading into a buffer."""
-        total_bytes = 0
-        mvb = memoryview(b)
-        while total_bytes < len(b):
-            if MAXAMOUNT < len(mvb):
-                temp_mvb = mvb[0:MAXAMOUNT]
-                n = self.fp.readinto(temp_mvb)
-            else:
-                n = self.fp.readinto(mvb)
-            if not n:
-                raise IncompleteRead(bytes(mvb[0:total_bytes]), len(b))
-            mvb = mvb[n:]
-            total_bytes += n
-        return total_bytes
+        amt = len(b)
+        n = self.fp.readinto(b)
+        if n < amt:
+            raise IncompleteRead(bytes(b[:n]), amt-n)
+        return n
 
     def read1(self, n=-1):
         """Read with at most one underlying system call.  If at least one
@@ -1107,19 +1085,15 @@ class HTTPConnection:
         else:
             raise CannotSendRequest(self.__state)
 
-        # Save the method we use, we need it later in the response phase
+        # Save the method for use later in the response phase
         self._method = method
-        if not url:
-            url = '/'
-        # Prevent CVE-2019-9740.
-        match = _contains_disallowed_url_pchar_re.search(url)
-        if match:
-            raise InvalidURL(f"URL can't contain control characters. {url!r} "
-                             f"(found at least {match.group()!r})")
+
+        url = url or '/'
+        self._validate_path(url)
+
         request = '%s %s %s' % (method, url, self._http_vsn_str)
 
-        # Non-ASCII characters should have been eliminated earlier
-        self._output(request.encode('ascii'))
+        self._output(self._encode_request(request))
 
         if self._http_vsn == 11:
             # Issue some standard headers for better HTTP/1.1 compliance
@@ -1196,6 +1170,18 @@ class HTTPConnection:
         else:
             # For HTTP/1.0, the server will assume "not chunked"
             pass
+
+    def _encode_request(self, request):
+        # ASCII also helps prevent CVE-2019-9740.
+        return request.encode('ascii')
+
+    def _validate_path(self, url):
+        """Validate a url for putrequest."""
+        # Prevent CVE-2019-9740.
+        match = _contains_disallowed_url_pchar_re.search(url)
+        if match:
+            raise InvalidURL(f"URL can't contain control characters. {url!r} "
+                             f"(found at least {match.group()!r})")
 
     def putheader(self, header, *values):
         """Send a request header line to the server.
@@ -1449,8 +1435,7 @@ class IncompleteRead(HTTPException):
             e = ''
         return '%s(%i bytes read%s)' % (self.__class__.__name__,
                                         len(self.partial), e)
-    def __str__(self):
-        return repr(self)
+    __str__ = object.__str__
 
 class ImproperConnectionState(HTTPException):
     pass

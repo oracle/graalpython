@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
@@ -90,6 +91,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -711,7 +713,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize"})
+    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize", "_feature_version"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
@@ -1588,6 +1590,59 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return result;
             }
             throw raise(TypeError, "__repr__ returned non-string (type %p)", obj);
+        }
+    }
+
+    // ascii(object)
+    @Builtin(name = ASCII, minNumOfPositionalArgs = 1)
+    @ImportStatic(PGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AsciiNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isString(obj)")
+        public Object asciiString(Object obj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            String str = castToJavaStringNode.execute(obj);
+            return doAsciiString(str);
+        }
+
+        @TruffleBoundary
+        private static Object doAsciiString(String str) {
+            byte[] bytes = BytesUtils.unicodeEscape(str);
+            boolean hasSingleQuote = false;
+            boolean hasDoubleQuote = false;
+            for (int i = 0; i < bytes.length; i++) {
+                char c = (char) bytes[i];
+                hasSingleQuote |= c == '\'';
+                hasDoubleQuote |= c == '"';
+            }
+            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
+            char quote = useDoubleQuotes ? '"' : '\'';
+            StringBuilder sb = new StringBuilder(bytes.length + 2);
+            sb.append(quote);
+            for (int i = 0; i < bytes.length; i++) {
+                char c = (char) bytes[i];
+                if (c == '\'' && !useDoubleQuotes) {
+                    sb.append("\\'");
+                } else {
+                    sb.append(c);
+                }
+            }
+            sb.append(quote);
+            return sb.toString();
+        }
+
+        @Specialization(guards = "!isString(obj)")
+        public Object asciiGeneric(VirtualFrame frame, Object obj,
+                        @Cached ReprNode reprNode) {
+            String repr = (String) reprNode.execute(frame, obj);
+            byte[] bytes = BytesUtils.unicodeEscape(repr);
+            return newString(bytes);
+        }
+
+        @TruffleBoundary
+        private static String newString(byte[] bytes) {
+            return new String(bytes);
         }
     }
 

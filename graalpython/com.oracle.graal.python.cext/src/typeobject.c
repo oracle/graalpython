@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -334,7 +334,6 @@ int PyType_Ready(PyTypeObject* cls) {
 
     // add special methods defined directly on the type structs
     ADD_SLOT_PRIMITIVE("__dealloc__", cls->tp_dealloc, -1);
-    ADD_SLOT_PRIMITIVE("__print__", cls->tp_print, -3);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
     // tp_getattr and tp_setattr are deprecated, and should be the same as
     // tp_getattro and tp_setattro
@@ -523,4 +522,8 @@ Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple) {
     }
     cls->tp_basicsize = cur_offset;
     return cur_offset;
+}
+
+unsigned long PyType_GetFlags(struct _typeobject *type) {
+    return type->tp_flags;
 }

@@ -91,7 +91,8 @@ public abstract class CodeNodes {
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         @SuppressWarnings("try")
-        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
+        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount,
+                        int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codestring, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
@@ -101,7 +102,7 @@ public abstract class CodeNodes {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring,
+                return createCode(cls, argcount, posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codestring,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
@@ -109,7 +110,8 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
+        private static PCode createCode(LazyPythonClass cls, int argcount,
+                        int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codestring, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
@@ -150,7 +152,7 @@ public abstract class CodeNodes {
                 });
             }
 
-            Signature signature = createSignature(flags, argcount, kwonlyargcount, varnames);
+            Signature signature = createSignature(flags, argcount, posonlyargcount, kwonlyargcount, varnames);
 
             return factory.createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
@@ -246,7 +248,7 @@ public abstract class CodeNodes {
             return funcdef.toString();
         }
 
-        private static Signature createSignature(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
+        private static Signature createSignature(int flags, int argcount, int posonlyargcount, int kwonlyargcount, Object[] varnames) {
             CompilerAsserts.neverPartOfCompilation();
             char paramNom = 'A';
             String[] paramNames = new String[argcount];
@@ -271,7 +273,7 @@ public abstract class CodeNodes {
                 }
                 kwNames[i] = Character.toString(paramNom++);
             }
-            return new Signature(PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
+            return new Signature(posonlyargcount, PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
         }
 
         private ContextReference<PythonContext> getContextRef() {

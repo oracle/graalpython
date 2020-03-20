@@ -52,7 +52,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -276,70 +276,10 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
-        static final byte[] hexdigits = "0123456789abcdef".getBytes();
 
         @Specialization
-        @TruffleBoundary
         Object encode(String str, @SuppressWarnings("unused") Object errors) {
-            // Initial allocation of bytes for UCS4 strings needs 10 bytes per source character
-            // ('\U00xxxxxx')
-            byte[] bytes = new byte[str.length() * 10];
-            int j = 0;
-            for (int i = 0; i < str.length(); i++) {
-                int ch = str.codePointAt(i);
-                /* U+0000-U+00ff range */
-                if (ch < 0x100) {
-                    if (ch >= ' ' && ch < 127) {
-                        if (ch != '\\') {
-                            /* Copy printable US ASCII as-is */
-                            bytes[j++] = (byte) ch;
-                        } else {
-                            /* Escape backslashes */
-                            bytes[j++] = '\\';
-                            bytes[j++] = '\\';
-                        }
-                    } else if (ch == '\t') {
-                        /* Map special whitespace to '\t', \n', '\r' */
-                        bytes[j++] = '\\';
-                        bytes[j++] = 't';
-                    } else if (ch == '\n') {
-                        bytes[j++] = '\\';
-                        bytes[j++] = 'n';
-                    } else if (ch == '\r') {
-                        bytes[j++] = '\\';
-                        bytes[j++] = 'r';
-                    } else {
-                        /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
-                        bytes[j++] = '\\';
-                        bytes[j++] = 'x';
-                        bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
-                        bytes[j++] = hexdigits[ch & 0x000F];
-                    }
-                } else if (ch < 0x10000) {
-                    /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
-                    bytes[j++] = '\\';
-                    bytes[j++] = 'u';
-                    bytes[j++] = hexdigits[(ch >> 12) & 0x000F];
-                    bytes[j++] = hexdigits[(ch >> 8) & 0x000F];
-                    bytes[j++] = hexdigits[(ch >> 4) & 0x000F];
-                    bytes[j++] = hexdigits[ch & 0x000F];
-                } else {
-                    /* U+010000-U+10ffff range: Map 21-bit characters to '\U00HHHHHH' */
-                    /* Make sure that the first two digits are zero */
-                    bytes[j++] = '\\';
-                    bytes[j++] = 'U';
-                    bytes[j++] = '0';
-                    bytes[j++] = '0';
-                    bytes[j++] = hexdigits[(ch >> 20) & 0x0000000F];
-                    bytes[j++] = hexdigits[(ch >> 16) & 0x0000000F];
-                    bytes[j++] = hexdigits[(ch >> 12) & 0x0000000F];
-                    bytes[j++] = hexdigits[(ch >> 8) & 0x0000000F];
-                    bytes[j++] = hexdigits[(ch >> 4) & 0x0000000F];
-                    bytes[j++] = hexdigits[ch & 0x0000000F];
-                }
-            }
-            bytes = Arrays.copyOf(bytes, j);
-            return factory().createTuple(new Object[]{factory().createBytes(bytes), str.length()});
+            return factory().createTuple(new Object[]{factory().createBytes(BytesUtils.unicodeEscape(str)), str.length()});
         }
 
         @Fallback

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,127 +46,411 @@ class AST:
         return []
 
 
-class mod(AST):
+class Add(AST):
     pass
 
 
-class expr(AST):
+class And(AST):
     pass
 
 
-class stmt(AST):
+class AnnAssign(AST):
     pass
 
 
-class expr_context(AST):
+class Assert(AST):
     pass
 
 
-class slice(AST):
+class Assign(AST):
+    pass
+
+
+class AsyncFor(AST):
+    pass
+
+
+class AsyncFunctionDef(AST):
+    pass
+
+
+class AsyncWith(AST):
+    pass
+
+
+class Attribute(AST):
+    pass
+
+
+class AugAssign(AST):
+    pass
+
+
+class AugLoad(AST):
+    pass
+
+
+class AugStore(AST):
+    pass
+
+
+class Await(AST):
+    pass
+
+
+class BinOp(AST):
+    pass
+
+
+class BitAnd(AST):
+    pass
+
+
+class BitOr(AST):
+    pass
+
+
+class BitXor(AST):
+    pass
+
+
+class BoolOp(AST):
+    pass
+
+
+class Break(AST):
+    pass
+
+
+class Bytes(AST):
+    pass
+
+
+class Call(AST):
+    pass
+
+
+class ClassDef(AST):
+    pass
+
+
+class Compare(AST):
+    pass
+
+
+class Constant(AST):
+    pass
+
+
+class Continue(AST):
+    pass
+
+
+class Del(AST):
+    pass
+
+
+class Delete(AST):
+    pass
+
+
+class Dict(AST):
+    pass
+
+
+class DictComp(AST):
+    pass
+
+
+class Div(AST):
+    pass
+
+
+class Ellipsis(AST):
+    pass
+
+
+class Eq(AST):
+    pass
+
+
+class ExceptHandler(AST):
+    pass
+
+
+class Expr(AST):
+    pass
+
+
+class Expression(AST):
+    pass
+
+
+class ExtSlice(AST):
+    pass
+
+
+class FloorDiv(AST):
+    pass
+
+
+class For(AST):
+    pass
+
+
+class FormattedValue(AST):
+    pass
+
+
+class FunctionDef(AST):
+    pass
+
+
+class GeneratorExp(AST):
+    pass
+
+
+class Global(AST):
+    pass
+
+
+class Gt(AST):
+    pass
+
+
+class GtE(AST):
+    pass
+
+
+class If(AST):
+    pass
+
+
+class IfExp(AST):
+    pass
+
+
+class Import(AST):
+    pass
+
+
+class ImportFrom(AST):
+    pass
+
+
+class In(AST):
+    pass
+
+
+class Index(AST):
+    pass
+
+
+class Interactive(AST):
+    pass
+
+
+class Invert(AST):
+    pass
+
+
+class Is(AST):
+    pass
+
+
+class IsNot(AST):
+    pass
+
+
+class JoinedStr(AST):
+    pass
+
+
+class LShift(AST):
+    pass
+
+
+class Lambda(AST):
+    pass
+
+
+class List(AST):
+    pass
+
+
+class ListComp(AST):
+    pass
+
+
+class Load(AST):
+    pass
+
+
+class Lt(AST):
+    pass
+
+
+class LtE(AST):
+    pass
+
+
+class MatMult(AST):
+    pass
+
+
+class Mod(AST):
+    pass
+
+
+class Module(AST):
+    pass
+
+
+class Mult(AST):
+    pass
+
+
+class Name(AST):
+    pass
+
+
+class NameConstant(AST):
+    pass
+
+
+class Nonlocal(AST):
+    pass
+
+
+class Not(AST):
+    pass
+
+
+class NotEq(AST):
+    pass
+
+
+class NotIn(AST):
+    pass
+
+
+class Num(AST):
+    pass
+
+
+class Or(AST):
+    pass
+
+
+class Param(AST):
+    pass
+
+
+class Pass(AST):
+    pass
+
+
+class Pow(AST):
+    pass
+
+
+class RShift(AST):
+    pass
+
+
+class Raise(AST):
+    pass
+
+
+class Return(AST):
+    pass
+
+
+class Set(AST):
+    pass
+
+
+class SetComp(AST):
+    pass
+
+
+class Slice(AST):
+    pass
+
+
+class Starred(AST):
+    pass
+
+
+class Store(AST):
+    pass
+
+
+class Str(AST):
+    pass
+
+
+class Sub(AST):
+    pass
+
+
+class Subscript(AST):
+    pass
+
+
+class Suite(AST):
+    pass
+
+
+class Try(AST):
+    pass
+
+
+class Tuple(AST):
+    pass
+
+
+class UAdd(AST):
+    pass
+
+
+class USub(AST):
+    pass
+
+
+class UnaryOp(AST):
+    pass
+
+
+class While(AST):
+    pass
+
+
+class With(AST):
+    pass
+
+
+class Yield(AST):
+    pass
+
+
+class YieldFrom(AST):
+    pass
+
+
+class alias(AST):
+    pass
+
+
+class arg(AST):
+    pass
+
+
+class arguments(AST):
     pass
 
 
 class boolop(AST):
-    pass
-
-
-class operator(AST):
-    pass
-
-
-class BitOr(operator):
-    pass
-
-
-class BitXor(operator):
-    pass
-
-
-class BitAnd(operator):
-    pass
-
-
-class LShift(operator):
-    pass
-
-
-class RShift(operator):
-    pass
-
-
-class Add(operator):
-    pass
-
-
-class Sub(operator):
-    pass
-
-
-class Mult(operator):
-    pass
-
-
-class Div(operator):
-    pass
-
-
-class FloorDiv(operator):
-    pass
-
-
-class Mod(operator):
-    pass
-
-
-class Eq(operator):
-    pass
-
-
-class NotEq(operator):
-    pass
-
-
-class Lt(operator):
-    pass
-
-
-class LtE(operator):
-    pass
-
-
-class Gt(operator):
-    pass
-
-
-class GtE(operator):
-    pass
-
-
-class Pow(operator):
-    pass
-
-
-class Is(operator):
-    pass
-
-
-class IsNot(operator):
-    pass
-
-
-class In(operator):
-    pass
-
-
-class NotIn(operator):
-    pass
-
-
-class MatMult(operator):
-    pass
-
-
-class unaryop(AST):
     pass
 
 
@@ -182,7 +466,11 @@ class excepthandler(AST):
     pass
 
 
-class arguments(AST):
+class expr(AST):
+    pass
+
+
+class expr_context(AST):
     pass
 
 
@@ -190,37 +478,25 @@ class keyword(AST):
     pass
 
 
-class alias(AST):
+class mod(AST):
     pass
 
 
-class Eq(cmpop):
+class operator(AST):
     pass
 
 
-class In(cmpop):
+class slice(AST):
     pass
 
 
-class Not(unaryop):
+class stmt(AST):
     pass
 
 
-class Invert(unaryop):
+class unaryop(AST):
     pass
 
 
-class USub(unaryop):
-    pass
-
-
-class UAdd(unaryop):
-    pass
-
-
-class NotEq(cmpop):
-    pass
-
-
-class NotIn(cmpop):
+class withitem(AST):
     pass

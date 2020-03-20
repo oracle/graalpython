@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -226,7 +226,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
 
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallNoArg(callable);
+        return PyObject_CallObject(callable, NULL);
     }
 
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
@@ -245,7 +245,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
     PyObject* args;
 
     if (fmt == NULL || fmt[0] == '\0') {
-        return _PyObject_CallNoArg(callable);
+        return PyObject_CallObject(callable, NULL);
     }
 
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
@@ -299,7 +299,7 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
     return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
-PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, Py_ssize_t nargs, PyObject *kwargs) {
+PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t nargs, PyObject *kwargs) {
 	PyObject* targs = PyTuple_New(nargs);
 	Py_ssize_t i;
 	for(i=0; i < nargs; i++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -491,12 +491,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
                 if (kwIdx != -1) {
                     if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                        if (unusedKeywords != null) {
+                            unusedKeywords[k++] = kwArg;
+                        } else {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                        }
+                    } else {
+                        if (PArguments.getArgument(arguments, kwIdx) != null) {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
+                        }
+                        PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
-                    if (PArguments.getArgument(arguments, kwIdx) != null) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
-                    }
-                    PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                 } else if (unusedKeywords != null) {
                     unusedKeywords[k++] = kwArg;
                 } else {

@@ -2931,49 +2931,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "PyTruffle_Arg_ParseStackAndKeywords", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class ParseStackAndKeywordsNode extends ParseTupleAndKeywordsBaseNode {
-
-        @Specialization(guards = "arguments.length == 5", limit = "2")
-        int doConvert(VirtualFrame frame, Object cextModule, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("getArgsArray(arguments)") InteropLibrary argsArrayLib,
-                        @CachedLibrary("getKwds(arguments)") ReferenceLibrary kwdsRefLib,
-                        @CachedLibrary("getKwdnames(arguments)") ReferenceLibrary kwdnamesRefLib,
-                        @Cached("createIdentityProfile()") ValueProfile kwdsProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile functionNameProfile,
-                        @Cached CExtNodes.AsPythonObjectNode argvToJavaNode,
-                        @Cached CExtNodes.AsPythonObjectNode kwdsToJavaNode,
-                        @Cached CastToJavaStringNode castToStringNode,
-                        @Cached CExtNodes.ToSulongNode nativeNullToSulongNode,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode,
-                        @Cached PRaiseNativeNode raiseNode) {
-            try {
-                CExtContext nativeContext = context.getCApiContext();
-                Object argsArray = arguments[0];
-                int n = PInt.intValueExact(argsArrayLib.getArraySize(argsArray));
-                Object[] args = new Object[n];
-                for (int i = 0; i < args.length; i++) {
-                    args[i] = argvToJavaNode.execute(argsArrayLib.readArrayElement(argsArray, i));
-                }
-                Object nativeNull = nativeNullToSulongNode.execute(getNativeNullNode.execute(cextModule));
-                PTuple argv = factory().createTuple(args);
-                return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, nativeNull, argv, arguments[1], arguments[2], arguments[3], arguments[4], kwdsRefLib, kwdnamesRefLib, kwdsProfile,
-                                kwdnamesProfile, functionNameProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
-            } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                return raiseNode.raiseInt(frame, 0, SystemError, "error when reading native argument stack: %s", e);
-            }
-        }
-
-        static Object getArgsArray(Object[] arguments) {
-            return arguments[0];
-        }
-    }
-
     @Builtin(name = "PyTruffle_Arg_ParseTupleAndKeywords_VaList", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class ParseTupleAndKeywordsVaListNode extends ParseTupleAndKeywordsBaseNode {

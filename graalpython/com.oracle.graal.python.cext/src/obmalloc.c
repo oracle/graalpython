@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,13 @@
  * SOFTWARE.
  */
 #include "capi.h"
+
+struct _PyTraceMalloc_Config _Py_tracemalloc_config = {
+  .initialized = 0,
+  .tracing = 0,
+  .max_nframe = 1,
+  .use_domain = 0
+};
 
 void* PyMem_Malloc(size_t size) {
     if (size > (size_t)PY_SSIZE_T_MAX) {

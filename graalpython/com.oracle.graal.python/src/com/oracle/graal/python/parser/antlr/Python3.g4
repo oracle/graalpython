@@ -676,7 +676,7 @@ return_stmt
 :
 	'return'
 	{ SSTNode value = null; }
-	( testlist { value = $testlist.result; } )?
+	( testlist_star_expr { value = $testlist_star_expr.result; } )?
 	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getLastIndex($ctx)));}
 ;
 
@@ -1609,7 +1609,7 @@ returns [SSTNode result]
         (
             'from' test {value = $test.result; isFrom = true;}
             |
-            testlist { value = $testlist.result; }
+            testlist_star_expr { value = $testlist_star_expr.result; }
         )?
         { $result = factory.createYieldExpressionSSTNode(value, isFrom, getStartIndex($ctx), getLastIndex($ctx)); }
 ;

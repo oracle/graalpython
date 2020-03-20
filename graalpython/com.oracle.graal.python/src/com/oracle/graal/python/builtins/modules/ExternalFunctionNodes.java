@@ -382,8 +382,15 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object[] args = readVarargsNode.executeObjectArray(frame);
                 PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+                Object[] fastcallArgs = new Object[args.length + kwargs.length];
+                Object[] fastcallKwnames = new Object[kwargs.length];
+                System.arraycopy(args, 0, fastcallArgs, 0, args.length);
+                for (int i = 0; i < kwargs.length; i++) {
+                    fastcallKwnames[i] = kwargs[i].getName();
+                    fastcallArgs[args.length + i] = kwargs[i].getValue();
+                }
                 Object[] arguments = PArguments.create();
-                PArguments.setVariableArguments(arguments, self, factory.createTuple(args), args.length, factory.createDict(kwargs));
+                PArguments.setVariableArguments(arguments, self, factory.createTuple(fastcallArgs), args.length, factory.createTuple(fastcallKwnames));
                 return invokeNode.execute(frame, arguments);
             } finally {
                 exitCalleeContext(frame);

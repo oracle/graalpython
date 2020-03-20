@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_NEW;
 import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
@@ -70,6 +71,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -172,10 +174,10 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
+import com.oracle.graal.python.nodes.util.CoerceToDoubleNode;
 import com.oracle.graal.python.nodes.util.CoerceToStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
@@ -498,8 +500,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private GetLazyClassNode getClassNode;
         private IsBuiltinClassProfile isComplexTypeProfile;
         private BranchProfile errorProfile;
-        private CastToDoubleNode castRealNode;
-        private CastToDoubleNode castImagNode;
+        private CoerceToDoubleNode castRealNode;
+        private CoerceToDoubleNode castImagNode;
         private IsBuiltinClassProfile profile;
         private LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode callComplexFunc;
 
@@ -525,18 +527,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return errorProfile;
         }
 
-        private CastToDoubleNode getCastRealNode() {
+        private CoerceToDoubleNode getCastRealNode() {
             if (castRealNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castRealNode = insert(CastToDoubleNode.create());
+                castRealNode = insert(CoerceToDoubleNode.create());
             }
             return castRealNode;
         }
 
-        private CastToDoubleNode getCastImagNode() {
+        private CoerceToDoubleNode getCastImagNode() {
             if (castImagNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castImagNode = insert(CastToDoubleNode.create());
+                castImagNode = insert(CoerceToDoubleNode.create());
             }
             return castImagNode;
         }
@@ -968,11 +970,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromPInt(LazyPythonClass cls, PInt arg) {
-            if (isPrimitiveFloat(cls)) {
-                return arg.doubleValue();
+        Object floatFromPInt(LazyPythonClass cls, PInt arg,
+                        @Cached PRaiseNode raise) {
+            double value = arg.doubleValue();
+            if (Double.isInfinite(value)) {
+                throw raise.raise(OverflowError, "int too large to convert to float");
             }
-            return factory().createFloat(cls, arg.doubleValue());
+            if (isPrimitiveFloat(cls)) {
+                return value;
+            }
+            return factory().createFloat(cls, value);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -2291,6 +2298,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                        @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode) {
 
@@ -2309,7 +2318,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib);
 
-                // TODO: Call __set_name__ on all descriptors in a newly generated type
+                for (Iterator<DictEntry> it = nslib.entries(namespace.getDictStorage()); it.hasNext();) {
+                    DictEntry entry = it.next();
+                    Object setName = getSetNameNode.execute(entry.value);
+                    if (setName != PNone.NO_VALUE) {
+                        callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
+                    }
+                }
 
                 // Call __init_subclass__ on the parent of a newly generated type
                 SuperObject superObject = factory().createSuperObject(PythonBuiltinClassType.Super);
@@ -2550,7 +2565,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             plen -= ipriv;
 
             if ((long) plen + nlen >= Integer.MAX_VALUE) {
-                throw raise(PythonBuiltinClassType.OverflowError, "private identifier too large to be mangled");
+                throw raise(OverflowError, "private identifier too large to be mangled");
             }
 
             /* ident = "_" + priv[ipriv:] + ident # i.e. 1+plen+nlen bytes */
@@ -2968,13 +2983,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 14, maxNumOfPositionalArgs = 16)
+    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, maxNumOfPositionalArgs = 17)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
 
         // limit is 2 because we expect PBytes or String
         @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
-        Object call(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
+        Object call(VirtualFrame frame, LazyPythonClass cls, int argcount,
+                        int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         Object codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
@@ -2993,7 +3009,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object[] freevarsArr = getObjectArrayNode.execute(freevars);
             Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
 
-            return createCodeNode.execute(frame, cls, argcount, kwonlyargcount,
+            return createCodeNode.execute(frame, cls, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
@@ -3002,7 +3018,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
-        Object call(VirtualFrame frame, LazyPythonClass cls, Object argcount, Object kwonlyargcount,
+        Object call(VirtualFrame frame, LazyPythonClass cls, Object argcount,
+                        int posonlyargcount, Object kwonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, PTuple constants, PTuple names,
                         PTuple varnames, Object filename, Object name,
@@ -3022,7 +3039,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object[] freevarsArr = getObjectArrayNode.execute(freevars);
             Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
 
-            return createCodeNode.execute(frame, cls, objectLibrary.asSize(argcount), objectLibrary.asSize(kwonlyargcount),
+            return createCodeNode.execute(frame, cls, objectLibrary.asSize(posonlyargcount),
+                            objectLibrary.asSize(argcount), objectLibrary.asSize(kwonlyargcount),
                             objectLibrary.asSize(nlocals), objectLibrary.asSize(stacksize), objectLibrary.asSize(flags),
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
@@ -3032,7 +3050,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object call(Object cls, Object argcount, Object kwonlyargcount,
+        Object call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
                         Object varnames, Object filename, Object name,

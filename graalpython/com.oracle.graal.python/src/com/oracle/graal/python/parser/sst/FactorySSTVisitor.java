@@ -782,6 +782,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
         }
 
+        SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
+        returnTarget.assignSourceSection(sourceSection);
+
+        scopeEnvironment.setCurrentScope(node.functionScope.getParent());
+        ExpressionNode[] defaults = node.argBuilder.getDefaultParameterValues(this);
+        FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.argBuilder.getKwDefaultParameterValues(this);
         Map<String, SSTNode> sstAnnotations = node.argBuilder.getAnnotatedArgs();
         Map<String, ExpressionNode> annotations = null;
         if (sstAnnotations != null && !sstAnnotations.isEmpty()) {
@@ -791,12 +797,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 annotations.put(argName, (ExpressionNode) sstType.accept(this));
             }
         }
-        SourceSection sourceSection = createSourceSection(node.startOffset, node.endOffset);
-        returnTarget.assignSourceSection(sourceSection);
-
-        scopeEnvironment.setCurrentScope(node.functionScope.getParent());
-        ExpressionNode[] defaults = node.argBuilder.getDefaultParameterValues(this);
-        FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.argBuilder.getKwDefaultParameterValues(this);
         scopeEnvironment.setCurrentScope(node.functionScope);
 
         /**

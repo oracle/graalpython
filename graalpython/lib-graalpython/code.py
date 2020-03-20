@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -45,4 +45,27 @@ def co_repr(self):
     return '<code object %s, file "%s", line %d>' % (self.co_name, self.co_filename, self.co_firstlineno)
 
 
+def co_replace(self, **kwargs):
+    import types
+    return types.CodeType(
+        kwargs.get('co_argcount', self.co_argcount),
+        kwargs.get('co_posonlyargcount', self.co_posonlyargcount),
+        kwargs.get('co_kwonlyargcount', self.co_kwonlyargcount),
+        kwargs.get('co_nlocals', self.co_nlocals),
+        kwargs.get('co_stacksize', self.co_stacksize),
+        kwargs.get('co_flags', self.co_flags),
+        kwargs.get('co_code', self.co_code),
+        kwargs.get('co_consts', self.co_consts),
+        kwargs.get('co_names', self.co_names),
+        kwargs.get('co_varnames', self.co_varnames),
+        kwargs.get('co_filename', self.co_filename),
+        kwargs.get('co_name', self.co_name),
+        kwargs.get('co_firstlineno', self.co_firstlineno),
+        kwargs.get('co_lnotab', self.co_lnotab),
+        kwargs.get('co_freevars', self.co_freevars),
+        kwargs.get('co_cellvars', self.co_cellvars),
+    )
+
+
 codetype.__repr__ = co_repr
+codetype.replace = co_replace

@@ -1,5 +1,5 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates.
-# Copyright (C) 1996-2017 Python Software Foundation
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+# Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
     
@@ -46,3 +46,7 @@ class BuiltinTest(unittest.TestCase):
             pass
         else:
             self.assertTrue(False)
+
+    def test_ascii(self):
+        self.assertEqual(ascii(1), "1")
+        self.assertEqual(ascii("錦蛇 \t \0 a \x03"), "'\\u9326\\u86c7 \\t \\x00 a \\x03'")

@@ -162,6 +162,15 @@ def PyDict_Copy(dictObj):
 
 @may_raise
 def PyDict_GetItem(dictObj, key):
+    # PyDict_GetItem suppresses all exceptions for historical reasons
+    try:
+        return dictObj.get(key, native_null)
+    except:
+        return native_null
+
+
+@may_raise
+def PyDict_GetItemWithError(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
     return dictObj.get(key, native_null)
@@ -1354,6 +1363,13 @@ codetype = type(may_raise.__code__)
 
 @may_raise
 def PyCode_New(*args):
+    # Add posonlyargcount (2nd arg)
+    args = (args[0], 0) + args[1:]
+    return codetype(*args)
+
+
+@may_raise
+def PyCode_NewWithPosOnlyArgs(*args):
     return codetype(*args)
 
 

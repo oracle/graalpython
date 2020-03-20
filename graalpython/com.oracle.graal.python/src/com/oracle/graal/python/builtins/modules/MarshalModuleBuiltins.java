@@ -452,6 +452,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         void handlePCode(VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
             writeInt(c.getArgcount(), version, buffer);
+            writeInt(c.getPositionalOnlyArgCount(), version, buffer);
             writeInt(c.getKwonlyargcount(), version, buffer);
             writeInt(c.getNlocals(), version, buffer);
             writeInt(c.getStacksize(), version, buffer);
@@ -638,6 +639,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private PCode readCode(int depth, HashingStorageLibrary lib) {
             int argcount = readInt();
+            int posonlyargcount = readInt();
             int kwonlyargcount = readInt();
             int nlocals = readInt();
             int stacksize = readInt();
@@ -653,8 +655,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
 
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
-                            nlocals, stacksize, flags, codestring, constants, names,
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, posonlyargcount,
+                            kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names,
                             varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
         }
 

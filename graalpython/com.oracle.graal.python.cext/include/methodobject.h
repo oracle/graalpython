@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
@@ -51,11 +51,6 @@ PyAPI_FUNC(PyObject *) _PyCFunction_FastCallDict(PyObject *func,
     PyObject *const *args,
     Py_ssize_t nargs,
     PyObject *kwargs);
-
-PyAPI_FUNC(PyObject *) _PyCFunction_FastCallKeywords(PyObject *func,
-    PyObject *const *stack,
-    Py_ssize_t nargs,
-    PyObject *kwnames);
 #endif
 
 struct PyMethodDef {
@@ -110,6 +105,7 @@ typedef struct {
     PyObject    *m_self; /* Passed as 'self' arg to the C func, can be NULL */
     PyObject    *m_module; /* The __module__ attribute, can be anything */
     PyObject    *m_weakreflist; /* List of weak references */
+    vectorcallfunc vectorcall;
 } PyCFunctionObject;
 
 PyAPI_FUNC(PyObject *) _PyMethodDef_RawFastCallDict(

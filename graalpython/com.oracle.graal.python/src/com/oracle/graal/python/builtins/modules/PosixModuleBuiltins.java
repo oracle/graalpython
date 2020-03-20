@@ -121,7 +121,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -1766,16 +1766,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
 
-        @Child private CastToIntegerFromIntNode castIntNode;
+        @Child private CoerceToIntegerNode castIntNode;
         @Child private GetTerminalSizeNode recursiveNode;
 
         @CompilationFinal private ConditionProfile errorProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
-        private CastToIntegerFromIntNode getCastIntNode() {
+        private CoerceToIntegerNode getCastIntNode() {
             if (castIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }

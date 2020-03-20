@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
@@ -45,9 +45,11 @@ PyAPI_FUNC(int) _PySlice_GetLongIndices(PySliceObject *self, PyObject *length,
 #endif
 PyAPI_FUNC(int) PySlice_GetIndices(PyObject *r, Py_ssize_t length,
                                   Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step);
+Py_DEPRECATED(3.7)
 PyAPI_FUNC(int) PySlice_GetIndicesEx(PyObject *r, Py_ssize_t length,
                                      Py_ssize_t *start, Py_ssize_t *stop,
-                                     Py_ssize_t *step, Py_ssize_t *slicelength) Py_DEPRECATED(3.7);
+                                     Py_ssize_t *step,
+                                     Py_ssize_t *slicelength);
 
 #if !defined(Py_LIMITED_API) || (Py_LIMITED_API+0 >= 0x03050400 && Py_LIMITED_API+0 < 0x03060000) || Py_LIMITED_API+0 >= 0x03060100
 #define PySlice_GetIndicesEx(slice, length, start, stop, step, slicelen) (  \

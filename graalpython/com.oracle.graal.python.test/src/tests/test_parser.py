@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -121,3 +121,9 @@ def test_underscore_in_numbers():
     assert eval('0b1_1') == 0b11
     assert eval('0o1_7') == 0o17
     assert eval('0x1_f') == 0x1f
+
+
+def test_annotation_scope():
+    def foo(object: object):
+        pass
+    assert foo.__annotations__['object'] == object

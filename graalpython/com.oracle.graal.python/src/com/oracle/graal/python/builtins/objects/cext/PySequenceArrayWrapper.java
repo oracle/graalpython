@@ -310,17 +310,15 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    public boolean isArrayElementInsertable(long index,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
-        return 0 <= index && index <= getArraySize(lib, objectLib);
+    @SuppressWarnings("static-method")
+    public boolean isArrayElementInsertable(@SuppressWarnings("unused") long index) {
+        return false;
     }
 
     @ExportMessage
-    public boolean isArrayElementRemovable(long index,
-                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
-        return 0 <= index && index <= getArraySize(lib, objectLib);
+    @SuppressWarnings("static-method")
+    public boolean isArrayElementRemovable(@SuppressWarnings("unused") long index) {
+        return false;
     }
 
     @GenerateUncached

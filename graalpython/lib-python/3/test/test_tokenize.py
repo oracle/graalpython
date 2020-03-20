@@ -3,7 +3,7 @@ from tokenize import (tokenize, _tokenize, untokenize, NUMBER, NAME, OP,
                      STRING, ENDMARKER, ENCODING, tok_name, detect_encoding,
                      open as tokenize_open, Untokenizer, generate_tokens,
                      NEWLINE)
-from io import BytesIO
+from io import BytesIO, StringIO
 import unittest
 from unittest import TestCase, mock
 from test.test_grammar import (VALID_UNDERSCORE_LITERALS,
@@ -944,6 +944,14 @@ async def f():
     DEDENT     ''            (7, 0) (7, 0)
     """)
 
+class GenerateTokensTest(TokenizeTest):
+    def check_tokenize(self, s, expected):
+        # Format the tokens in s in a table format.
+        # The ENDMARKER and final NEWLINE are omitted.
+        f = StringIO(s)
+        result = stringify_tokens_from_source(generate_tokens(f.readline), s)
+        self.assertEqual(result, expected.rstrip().splitlines())
+
 
 def decistmt(s):
     result = []
@@ -1421,6 +1429,7 @@ class TestTokenize(TestCase):
         self.assertExactTypeEqual('**=', token.DOUBLESTAREQUAL)
         self.assertExactTypeEqual('//', token.DOUBLESLASH)
         self.assertExactTypeEqual('//=', token.DOUBLESLASHEQUAL)
+        self.assertExactTypeEqual(':=', token.COLONEQUAL)
         self.assertExactTypeEqual('...', token.ELLIPSIS)
         self.assertExactTypeEqual('->', token.RARROW)
         self.assertExactTypeEqual('@', token.AT)
@@ -1611,6 +1620,8 @@ class TestRoundtrip(TestCase):
             testfiles = random.sample(testfiles, 10)
 
         for testfile in testfiles:
+            if support.verbose >= 2:
+                print('tokenize', testfile)
             with open(testfile, 'rb') as f:
                 with self.subTest(file=testfile):
                     self.check_roundtrip(f)

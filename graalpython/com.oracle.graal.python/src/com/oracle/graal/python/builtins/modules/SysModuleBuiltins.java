@@ -75,7 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -194,6 +194,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         if (!ImageInfo.inImageBuildtimeCode()) {
             sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
+            sys.setAttribute("_base_executable", PythonOptions.getOption(context, PythonOptions.Executable));
             sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         }
         sys.setAttribute("graal_python_jython_emulation_enabled", context.isJythonEmulated());
@@ -468,7 +469,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
-        @Child private CastToIntegerFromIntNode castToIntNode = CastToIntegerFromIntNode.create();
+        @Child private CoerceToIntegerNode castToIntNode = CoerceToIntegerNode.create();
 
         @Specialization(guards = "isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,

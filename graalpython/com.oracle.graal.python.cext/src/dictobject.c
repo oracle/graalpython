@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,11 @@ int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t h
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
+}
+
+UPCALL_ID(PyDict_GetItemWithError);
+PyObject* PyDict_GetItemWithError(PyObject* d, PyObject* k) {
+    return UPCALL_CEXT_O(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
 }
 
 PyObject* _PyDict_GetItemId(PyObject* d, _Py_Identifier* id) {
