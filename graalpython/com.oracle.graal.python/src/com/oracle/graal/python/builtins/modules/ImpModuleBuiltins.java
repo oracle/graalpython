@@ -97,6 +97,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -165,6 +166,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class CreateDynamic extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CreateDynamic.class);
+
         protected static final String INITIALIZE_CAPI = "initialize_capi";
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
@@ -219,7 +222,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
-                PythonLanguage.getLogger().severe(() -> String.format("cannot load C extension '%s'", path));
+                LOGGER.severe(() -> String.format("cannot load C extension '%s'", path));
                 logJavaException(e);
                 throw raise(ImportError, "cannot load %s: %m", path, e);
             } catch (RuntimeException e) {
@@ -270,13 +273,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!PythonOptions.getOption(context, PythonOptions.ExposeInternalSources)) {
+                    if (!context.areInternalSourcesExposed()) {
                         capiSrcBuilder.internal(true);
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
                 } catch (IOException | RuntimeException e) {
-                    PythonLanguage.getLogger().severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
-                    PythonLanguage.getLogger().severe(() -> "Original error was: " + e);
+                    LOGGER.severe(() -> String.format(CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath()));
+                    LOGGER.severe(() -> "Original error was: " + e);
                     e.printStackTrace();
                     throw raise(PythonErrorType.ImportError, CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
@@ -296,7 +299,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         private static void logJavaException(Exception e) {
-            PythonLanguage.getLogger().fine(() -> String.format("Original error was: %s\n%s", e, getJavaStacktrace(e)));
+            LOGGER.fine(() -> String.format("Original error was: %s\n%s", e, getJavaStacktrace(e)));
         }
 
         @TruffleBoundary
@@ -459,6 +462,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "graal_python_cache_module_code", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class CacheModuleCode extends PythonTernaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CacheModuleCode.class);
+
         @Specialization
         public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
@@ -495,7 +500,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private static Object cacheWithModulePath(String modulename, String[] modulepath, PythonLanguage lang, final CallTarget ct) {
             CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, modulepath);
             if (cachedCt != ct) {
-                PythonLanguage.getLogger().log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
+                LOGGER.log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
             }
             return PNone.NONE;
         }
@@ -530,13 +535,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "graal_python_has_cached_code", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HasCachedCode extends PythonUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HasCachedCode.class);
+
         @Specialization
         public boolean run(String modulename,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @CachedLanguage PythonLanguage lang) {
             boolean b = PythonOptions.getFlag(ctxt, PythonOptions.WithCachedSources) && lang.hasCachedCode(modulename);
             if (b) {
-                PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
+                LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
             }
             return b;
         }
@@ -545,6 +552,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "graal_python_get_cached_code_path", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CachedCodeIsPackage extends PythonUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CachedCodeIsPackage.class);
+
         @Specialization
         public Object run(String modulename,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
@@ -556,7 +565,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (modulePath != null) {
                 Object[] outPath = new Object[modulePath.length];
                 System.arraycopy(modulePath, 0, outPath, 0, modulePath.length);
-                PythonLanguage.getLogger().log(Level.FINEST, () -> "Cached code re-used for " + modulename);
+                LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
                 return factory().createList(outPath);
             } else {
                 return PNone.NONE;

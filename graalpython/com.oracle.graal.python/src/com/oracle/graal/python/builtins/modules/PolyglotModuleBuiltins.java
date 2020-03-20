@@ -78,6 +78,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -241,6 +242,8 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "export_value", minNumOfPositionalArgs = 1, parameterNames = {"name", "value"})
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ExportSymbolNode.class);
+
         @Child private GetAttributeNode getNameAttributeNode;
         @Child private CastToJavaStringNode castToStringNode;
 
@@ -258,7 +261,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isString(value)")
         @TruffleBoundary
         public Object exportSymbolValueKey(Object value, String name) {
-            PythonLanguage.getLogger().warning("[deprecation] polyglot.export_value(value, name) is deprecated " +
+            LOGGER.warning("[deprecation] polyglot.export_value(value, name) is deprecated " +
                             "and will be removed. Please swap the arguments.");
             return exportSymbolKeyValue(name, value);
         }
@@ -266,7 +269,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isString(arg1)")
         @TruffleBoundary
         public Object exportSymbolAmbiguous(Object arg1, String arg2) {
-            PythonLanguage.getLogger().warning("[deprecation] polyglot.export_value(str, str) is ambiguous. In the future, this will " +
+            LOGGER.warning("[deprecation] polyglot.export_value(str, str) is ambiguous. In the future, this will " +
                             "default to using the first argument as the name and the second as value, but now it " +
                             "uses the first argument as value and the second as the name.");
             return exportSymbolValueKey(arg1, arg2);

@@ -25,6 +25,7 @@
 from __future__ import print_function
 
 import contextlib
+import datetime
 import glob
 import json
 import os
@@ -147,16 +148,16 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         dists += extra_dists
 
     if not os.environ.get("CI"):
+        graalpython_args.insert(0, "--llvm.enableLVI=true")
         # Try eagerly to include tools for convenience when running Python
         if not mx.suite("tools", fatalIfMissing=False):
             SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
         if mx.suite("tools", fatalIfMissing=False):
-            if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
-                # CHROMEINSPECTOR was built, put it on the classpath
-                dists.append('CHROMEINSPECTOR')
-                graalpython_args.insert(0, "--llvm.enableLVI=true")
+            for tool in ["CHROMEINSPECTOR", "TRUFFLE_COVERAGE"]:
+                if os.path.exists(mx.suite("tools").dependency(tool).path):
+                    dists.append(tool)
             else:
-                mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
+                mx.logv("%s was not built, not including it automatically" % tool)
 
     graalpython_args.insert(0, '--experimental-options=true')
 
@@ -378,6 +379,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
 
     args += [_graalpytest_driver(), "-v"]
     args += testfiles
+    mx.logv(" ".join([python_binary] + args))
     return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
@@ -847,12 +849,6 @@ def update_import_cmd(args):
 
     # copy files we inline from our imports
     shutil.copy(
-        join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
-        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h"))
-    shutil.copy(
-        join(mx.dependency("SULONG_HOME").output, "include", "polyglot.h"),
-        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h"))
-    shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
 
@@ -864,6 +860,17 @@ def update_import_cmd(args):
         vc.commit(overlaydir, "Update Python imports")
         overlaytip = str(vc.tip(overlaydir)).strip()
         repos_updated.append(overlaydir)
+
+    # now allow dependent repos to hook into update
+    output = mx.OutputCapture()
+    for repo in repos:
+        basename = os.path.basename(repo)
+        cmdname = "%s-update-import" % basename
+        is_mx_command = mx.run_mx(["help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        if is_mx_command:
+            mx.run_mx([cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+        else:
+            print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
     # update ci import in all our repos, commit the full update, and push verbosely
     prev_verbosity = mx._opts.very_verbose
@@ -881,7 +888,7 @@ def update_import_cmd(args):
             repos_updated.append(repo)
 
     if repos_updated:
-        mx.log("These repos were updated: " + ", ".join(repos_updated))
+        mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
 
 
 def python_style_checks(args):
@@ -1192,9 +1199,91 @@ def mx_post_parse_cmd_line(namespace):
 
 
 def python_coverage(args):
-    "Generate coverage report running args"
-    mx.run_mx(['--jacoco=on', '--jacoco-whitelist-package=com.oracle.graal.python'] + args)
-    mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
+    "Generate coverage report for our unittests"
+    os.system("which lcov")
+    os.system("which genhtml")
+    parser = ArgumentParser(prog='mx python-coverage')
+    parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
+    parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
+    parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
+    args = parser.parse_args(args)
+
+    if args.jacoco:
+        jacoco_args = [
+            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+            # '--jacoco-exclude-annotation', '@GeneratedBy',
+        ]
+        mx.run_mx(jacoco_args + [
+            '--strict-compliance',
+            '--dynamicimports', '/compiler',
+            '--primary', 'gate',
+            '-B=--force-deprecation-as-warning-for-dependencies',
+            '--strict-mode',
+            '--tags', 'python-unittest,python-tagged-unittest,python-junit',
+            '--jacocout', 'html',
+        ])
+        if mx.get_env("SONAR_HOST_URL", None):
+            mx.run_mx(jacoco_args + [
+                'sonarqube-upload',
+                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
+                '-Dsonar.projectKey=com.oracle.graalvm.python',
+                '-Dsonar.projectName=GraalVM - Python',
+                '--exclude-generated',
+            ])
+        mx.run_mx(jacoco_args + [
+            'coverage-upload',
+        ])
+    if args.truffle:
+        executable = python_gvm()
+        variants = [
+            {},
+            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+            # {"args": ["--llvm.managed"]},
+            {
+                "args": ["-v", "--python.WithThread=true", "--python.CAPI=" + _get_capi_home()],
+                "paths": ["test_tagged_unittests.py"],
+                "tagged": True
+            },
+        ]
+        outputlcov = "coverage.lcov"
+        if os.path.exists(outputlcov):
+            os.unlink(outputlcov)
+        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
+        for kwds in variants:
+            variant_str = re.sub(r"[^a-zA-Z]", "_", repr(kwds))
+            for pattern in ["py"]:
+                outfile = os.path.join(SUITE.dir, "coverage_%s_%s.lcov" % (variant_str, pattern))
+                if os.path.exists(outfile):
+                    os.unlink(outfile)
+                extra_args = [
+                    "--coverage",
+                    "--coverage.TrackInternal",
+                    "--coverage.FilterFile=*.%s" % pattern,
+                    "--coverage.Output=lcov",
+                    "--coverage.OutputFile=%s" % outfile,
+                ]
+                kwds["args"] = extra_args + kwds.get("args", [])
+                if kwds.pop("tagged", False):
+                    with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                        with _dev_pythonhome_context():
+                            run_python_unittests(executable, **kwds)
+                else:
+                    run_python_unittests(executable, **kwds)
+                cmdargs += ["-a", outfile]
+        mx.run(cmdargs)
+        primary = mx.primary_suite()
+        info = primary.vc.parent_info(primary.dir)
+        rev = primary.vc.parent(primary.dir)
+        coverage_dir = '{}-truffle-coverage_{}_{}'.format(
+            primary.name,
+            datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
+            rev[:7],
+        )
+        mx.run(["/usr/bin/env", "genhtml", "-o", coverage_dir, outputlcov])
+        if args.truffle_upload_url:
+            if not args.truffle_upload_url.endswith("/"):
+                args.truffle_upload_url = args.truffle_upload_url + "/"
+            mx.run(["scp", "-r", coverage_dir, args.truffle_upload_url])
 
 
 def python_build_watch(args):
@@ -1467,6 +1556,6 @@ mx.update_commands(SUITE, {
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],
-    'python-coverage': [python_coverage, '[gate-tag]'],
+    'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
 })

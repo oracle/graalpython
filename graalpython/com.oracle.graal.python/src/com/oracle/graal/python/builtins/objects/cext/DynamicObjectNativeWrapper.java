@@ -136,6 +136,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -576,6 +577,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     @GenerateUncached
     abstract static class ReadObjectNativeMemberNode extends ReadNativeMemberNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ReadObjectNativeMemberNode.class);
 
         @Specialization(guards = "eq(D_COMMON, key)")
         Object doDCommon(Object o, @SuppressWarnings("unused") String key,
@@ -894,7 +896,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @TruffleBoundary(allowInlining = true)
         private static void logGeneric(String key) {
-            PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
+            LOGGER.log(Level.FINE, "read of Python struct native member " + key);
         }
     }
 
@@ -902,6 +904,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     @GenerateUncached
     @ImportStatic({NativeMemberNames.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     abstract static class WriteNativeMemberNode extends Node {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(WriteNativeMemberNode.class);
 
         abstract Object execute(Object receiver, String key, Object value) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException;
 
@@ -1035,7 +1038,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @TruffleBoundary(allowInlining = true)
         private static void logGeneric(String key) {
-            PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
+            LOGGER.log(Level.FINE, "write of Python struct native member " + key);
         }
 
         protected static boolean eq(String expected, String actual) {

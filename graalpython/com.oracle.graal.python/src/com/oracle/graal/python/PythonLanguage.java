@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonEngineOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -120,6 +121,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
+    private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
+
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     private final NodeFactory nodeFactory;
@@ -173,16 +176,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
-        // internal sources were marked during context initialization
-        return (firstOptions.get(PythonOptions.ExposeInternalSources).equals(newOptions.get(PythonOptions.ExposeInternalSources)) &&
-                        // we cache WithThread on the language
-                        firstOptions.get(PythonOptions.WithThread).equals(newOptions.get(PythonOptions.WithThread)) &&
-                        // we cache JythonEmulation on nodes
-                        firstOptions.get(PythonOptions.EmulateJython).equals(newOptions.get(PythonOptions.EmulateJython)) &&
-                        // we cache CatchAllExceptions hard on TryExceptNode
-                        firstOptions.get(PythonOptions.CatchAllExceptions).equals(newOptions.get(PythonOptions.CatchAllExceptions)) &&
-                        // we cache BuiltinsInliningMaxCallerSize on the language
-                        firstOptions.get(PythonOptions.BuiltinsInliningMaxCallerSize).equals(newOptions.get(PythonOptions.BuiltinsInliningMaxCallerSize)));
+        return PythonEngineOptions.fromOptionValues(firstOptions).equals(PythonEngineOptions.fromOptionValues(newOptions));
     }
 
     private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
@@ -457,8 +451,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    public static TruffleLogger getLogger() {
-        return TruffleLogger.getLogger(ID);
+    public static TruffleLogger getLogger(Class<?> clazz) {
+        return TruffleLogger.getLogger(ID, clazz);
     }
 
     public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
@@ -497,7 +491,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
-        boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
+        boolean internal = !coreIsInitialized && !ctxt.areInternalSourcesExposed();
         if (internal) {
             srcBuilder.internal(true);
         }
@@ -516,7 +510,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public CallTarget cacheCode(String filename, Supplier<CallTarget> createCode) {
         return cachedCode.computeIfAbsent(filename, f -> {
-            PythonLanguage.getLogger().log(Level.FINEST, () -> "Caching CallTarget for " + filename);
+            LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
             return createCode.get();
         });
     }

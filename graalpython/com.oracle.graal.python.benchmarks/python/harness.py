@@ -362,6 +362,7 @@ def run_benchmark(args):
 
     # set the paths if specified
     print(_HRULE)
+    sys.path.append(os.path.split(bench_file)[0])
     if paths:
         for pth in paths:
             print("### adding module path: %s" % pth)

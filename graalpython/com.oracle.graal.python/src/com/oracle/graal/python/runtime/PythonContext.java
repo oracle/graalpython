@@ -91,12 +91,14 @@ import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 public final class PythonContext {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
     private static final class PythonThreadState {
 
@@ -222,22 +224,19 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
+    @CompilationFinal private PythonEngineOptions engineOptions;
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(language);
-        if (env == null) {
-            this.in = System.in;
-            this.out = System.out;
-            this.err = System.err;
-        } else {
-            this.resources.setEnv(env);
-            this.in = env.in();
-            this.out = env.out();
-            this.err = env.err();
-        }
+        this.engineOptions = PythonEngineOptions.fromOptionValues(env.getOptions());
+        this.resources.setEnv(env);
+        this.in = env.in();
+        this.out = env.out();
+        this.err = env.err();
     }
 
     public ThreadGroup getThreadGroup() {
@@ -293,6 +292,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        engineOptions = PythonEngineOptions.fromOptionValues(newEnv.getOptions());
     }
 
     /**
@@ -374,6 +374,22 @@ public final class PythonContext {
         setEnv(newEnv);
         setupRuntimeInformation(true);
         core.postInitialize();
+    }
+
+    public boolean isCatchingAllExcetptionsEnabled() {
+        return engineOptions.isCatchingAllExcetptionsEnabled();
+    }
+
+    public boolean areInternalSourcesExposed() {
+        return engineOptions.areInternalSourcesExposed();
+    }
+
+    public boolean isJythonEmulated() {
+        return engineOptions.isJythonEmulated();
+    }
+
+    public int getBuiltinsInliningMaxCallerSize() {
+        return engineOptions.getBuiltinsInliningMaxCallerSize();
     }
 
     /**
@@ -614,7 +630,7 @@ public final class PythonContext {
     }
 
     private static void writeWarning(String warning) {
-        PythonLanguage.getLogger().warning(warning);
+        LOGGER.warning(warning);
     }
 
     @TruffleBoundary
@@ -645,14 +661,14 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void shutdownThreads() {
-        PythonLanguage.getLogger().fine("shutting down threads");
+        LOGGER.fine("shutting down threads");
         PDict importedModules = getImportedModules();
         HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
         Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, "threading");
         if (value != null) {
             Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.SHUTDOWN);
             if (attrShutdown == PNone.NO_VALUE) {
-                PythonLanguage.getLogger().fine("threading module has no member " + SpecialMethodNames.SHUTDOWN);
+                LOGGER.fine("threading module has no member " + SpecialMethodNames.SHUTDOWN);
                 return;
             }
             try {
@@ -669,9 +685,9 @@ public final class PythonContext {
             }
         } else {
             // threading was not imported; this is
-            PythonLanguage.getLogger().finest("threading module was not imported");
+            LOGGER.finest("threading module was not imported");
         }
-        PythonLanguage.getLogger().fine("successfully shut down all threads");
+        LOGGER.fine("successfully shut down all threads");
 
         if (!singleThreaded.isValid()) {
             // collect list of threads to join in synchronized block
@@ -690,12 +706,12 @@ public final class PythonContext {
                 for (WeakReference<Thread> threadRef : threadList) {
                     Thread thread = threadRef.get();
                     if (thread != null) {
-                        PythonLanguage.getLogger().finest("joining thread " + thread);
+                        LOGGER.finest("joining thread " + thread);
                         thread.join();
                     }
                 }
             } catch (InterruptedException e) {
-                PythonLanguage.getLogger().finest("got interrupt while joining threads");
+                LOGGER.finest("got interrupt while joining threads");
             }
         }
     }
@@ -829,7 +845,7 @@ public final class PythonContext {
             TruffleFile absolutePath = path.getAbsoluteFile();
             return absolutePath.startsWith(coreHomePath);
         }
-        PythonLanguage.getLogger().log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
+        LOGGER.log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
         return false;
     }
 

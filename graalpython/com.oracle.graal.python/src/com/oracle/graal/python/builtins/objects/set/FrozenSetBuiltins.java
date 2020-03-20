@@ -396,7 +396,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Cached("create()") IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-
             HashingStorage curStorage = dictStorage;
             Object iterator = getIteratorNode.executeWith(frame, iterable);
             while (true) {
@@ -454,7 +453,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         boolean isSuperSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
             if (hasFrame.profile(frame != null)) {
                 return lib.compareKeysWithState(other.getDictStorage(), self.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
             } else {
@@ -462,11 +461,11 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(replaces = "isSuperSet", limit = "1")
+        @Specialization(replaces = "isSuperSet")
         boolean isSuperSetGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             PSet otherSet = constructSetNode.executeWith(frame, other);
             if (hasFrame.profile(frame != null)) {
                 return lib.compareKeysWithState(otherSet.getDictStorage(), self.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
@@ -480,10 +479,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean doLE(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             if (hasFrame.profile(frame != null)) {
                 return lib.compareKeysWithState(self.getDictStorage(), other.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
             } else {
@@ -504,7 +503,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         boolean doGE(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
             if (hasFrame.profile(frame != null)) {
                 return lib.compareKeysWithState(other.getDictStorage(), self.getDictStorage(), PArguments.getThreadState(frame)) <= 0;
             } else {

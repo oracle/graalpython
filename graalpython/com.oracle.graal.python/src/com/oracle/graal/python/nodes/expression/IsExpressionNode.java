@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -218,7 +217,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         boolean doObjectPNone(Object left, PNone right,
                         @Cached.Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            if (PythonOptions.getFlag(ctxt, PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
+            if (ctxt.isJythonEmulated() && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
             }
