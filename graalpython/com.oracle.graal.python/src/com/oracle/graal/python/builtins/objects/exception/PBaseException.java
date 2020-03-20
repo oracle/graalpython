@@ -102,9 +102,6 @@ public final class PBaseException extends PythonObject {
         this.suppressContext = suppressContext;
     }
 
-    /** The frame info of the Python frame that first caught the exception. */
-    private PFrame.Reference frameInfo;
-
     public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
         this.args = args;
