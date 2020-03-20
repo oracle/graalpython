@@ -612,7 +612,12 @@ public final class CApiContext extends CExtContext {
 
         @TruffleBoundary
         public long untrack(Object pointerObject) {
-            return allocatedMemory.removeKey(pointerObject);
+            Long value = allocatedMemory.removeKey(pointerObject);
+            if(value != null) {
+                // TODO(fa): be more restrictive?
+                return value;
+            }
+            return 0;
         }
 
         public long getId() {
