@@ -444,6 +444,21 @@ class ExceptionTests(unittest.TestCase):
         self.assertIsNone(e.__context__.__context__)
         self.assertTrue(e.__suppress_context__)
 
+    def test_explicit_chaining_class(self):
+        try:
+            try:
+                raise NameError("first")
+            except NameError:
+                raise TypeError("second") from OSError
+        except Exception as exc:
+            e = exc
+        self.assertEqual(e.args[0], "second")
+        self.assertEqual(type(e.__context__), NameError)
+        self.assertEqual(e.__context__.args[0], "first")
+        self.assertEqual(type(e.__cause__), OSError)
+        self.assertIsNone(e.__context__.__context__)
+        self.assertTrue(e.__suppress_context__)
+
     def test_set_cause_manually(self):
         try:
             try:
