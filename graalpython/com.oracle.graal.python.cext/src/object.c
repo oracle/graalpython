@@ -620,3 +620,16 @@ PyObject * _PyObject_NextNotImplemented(PyObject *self) {
     return NULL;
 }
 
+#undef _Py_Dealloc
+
+void
+_Py_Dealloc(PyObject *op)
+{
+    destructor dealloc = Py_TYPE(op)->tp_dealloc;
+#ifdef Py_TRACE_REFS
+    _Py_ForgetReference(op);
+#else
+    _Py_INC_TPFREES(op);
+#endif
+    (*dealloc)(op);
+}
