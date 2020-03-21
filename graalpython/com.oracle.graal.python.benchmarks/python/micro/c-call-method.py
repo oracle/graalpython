@@ -60,9 +60,7 @@ static PyObject* nc_method_varargs(PyObject* self, PyObject* args, PyObject* kwd
     Py_XDECREF(args);
     Py_XDECREF(kwds);
     lval2 = PyLong_AsLong(longobj);
-    result = PyLong_FromLong(lval2 + ival + lval);
-    Py_INCREF(result);
-    return result;
+    return PyLong_FromLong(lval2 + ival + lval);
 }
 
 static PyObject* nc_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {

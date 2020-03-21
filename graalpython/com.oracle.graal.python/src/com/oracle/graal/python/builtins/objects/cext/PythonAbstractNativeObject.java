@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileClassNodeGen;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -255,7 +257,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                         @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached ToJavaNode toJavaNode,
-                        @Exclusive @Cached("createIdentityProfile()") ValueProfile classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+                        @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile((PythonAbstractClass) toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
         }
@@ -264,7 +266,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
                         @Exclusive @Cached AsPythonObjectNode toJavaNode,
-                        @Exclusive @Cached("createIdentityProfile()") ValueProfile classProfile) {
+                        @Exclusive @Cached ProfileClassNode classProfile) {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile((PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
         }
@@ -283,7 +285,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
         public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
             // do not wrap 'object.object' since that is really the native pointer object
-            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ValueProfile.getUncached());
+            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNodeGen.getUncached());
         }
     }
 

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -95,6 +96,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -606,6 +608,53 @@ public abstract class TypeNodes {
         @Fallback
         boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class ProfileClassNode extends PNodeWithContext {
+
+        public abstract Object execute(Object object);
+
+        public final PythonAbstractClass profile(PythonAbstractClass object) {
+            return (PythonAbstractClass) execute(object);
+        }
+
+        public final PythonBuiltinClassType profile(PythonBuiltinClassType object) {
+            return (PythonBuiltinClassType) execute(object);
+        }
+
+        @Specialization(guards = {"classType == cachedClassType"}, limit = "1")
+        static PythonBuiltinClassType doPythonBuiltinClassType(@SuppressWarnings("unused") PythonBuiltinClassType classType,
+                        @Cached("classType") PythonBuiltinClassType cachedClassType) {
+            return cachedClassType;
+        }
+
+        @Specialization(limit = "1", assumptions = "singleContextAssumption()", rewriteOn = NotSameTypeException.class)
+        static PythonAbstractClass doPythonAbstractClass(PythonAbstractClass object,
+                        @Cached("weak(object)") WeakReference<PythonAbstractClass> cachedObjectRef,
+                        @CachedLibrary("object") ReferenceLibrary referenceLibrary) throws NotSameTypeException {
+            PythonAbstractClass cachedObject = cachedObjectRef.get();
+            if (referenceLibrary.isSame(object, cachedObject)) {
+                return cachedObject;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw NotSameTypeException.INSTANCE;
+        }
+
+        @Specialization(replaces = {"doPythonBuiltinClassType", "doPythonAbstractClass"})
+        static Object doDisabled(Object object) {
+            return object;
+        }
+
+        static WeakReference<PythonAbstractClass> weak(PythonAbstractClass object) {
+            return new WeakReference<>(object);
+        }
+
+        static final class NotSameTypeException extends ControlFlowException {
+            private static final long serialVersionUID = 1L;
+            static final NotSameTypeException INSTANCE = new NotSameTypeException();
         }
     }
 
