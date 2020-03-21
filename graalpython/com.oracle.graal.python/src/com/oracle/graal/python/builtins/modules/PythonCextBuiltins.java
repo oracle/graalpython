@@ -118,12 +118,13 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
@@ -207,6 +208,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -2286,7 +2288,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"})
-        int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
+        static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
                         @Cached("a") @SuppressWarnings("unused") PythonNativeWrapper cachedA,
                         @Cached("b") @SuppressWarnings("unused") PythonNativeWrapper cachedB,
                         @Cached("doSlow(frame, a, b)") int result) {
@@ -2295,15 +2297,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doCached")
         int doGeneric(VirtualFrame frame, Object a, Object b,
-                        @Cached CExtNodes.AsPythonObjectNode leftToJavaNode,
-                        @Cached CExtNodes.AsPythonObjectNode rightToJavaNode) {
+                        @Cached ToJavaNode leftToJavaNode,
+                        @Cached ToJavaNode rightToJavaNode) {
             Object ua = leftToJavaNode.execute(a);
             Object ub = rightToJavaNode.execute(b);
             return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
         }
 
-        int doSlow(VirtualFrame frame, Object derived, Object cls) {
-            return doGeneric(frame, derived, cls, CExtNodesFactory.AsPythonObjectNodeGen.getUncached(), CExtNodesFactory.AsPythonObjectNodeGen.getUncached());
+        static int doSlow(VirtualFrame frame, Object derived, Object cls) {
+            Object ua = ToJavaNodeGen.getUncached().execute(derived);
+            Object ub = ToJavaNodeGen.getUncached().execute(cls);
+            return IsSubtypeNodeGen.getUncached().execute(frame, ua, ub) ? 1 : 0;
         }
     }
 

@@ -56,9 +56,10 @@ PyTypeObject PyType_Type = PY_TRUFFLE_TYPE("type", &PyType_Type, Py_TPFLAGS_DEFA
 PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), 0, object_dealloc, PyObject_Del);
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
-UPCALL_ID(PyType_IsSubtype);
+typedef int (*type_issubtype_fun_t)(PyTypeObject*, PyTypeObject*);
+UPCALL_TYPED_ID(PyType_IsSubtype, type_issubtype_fun_t);
 int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return ((int (*)(void* a, void* b))_jls_PyType_IsSubtype)(native_type_to_java(a), native_type_to_java(b));
+    return _jls_PyType_IsSubtype(a, b);
 }
 
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
