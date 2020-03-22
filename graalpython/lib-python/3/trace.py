@@ -60,6 +60,7 @@ import gc
 import dis
 import pickle
 from time import monotonic as _time
+import _trace
 
 import threading
 
@@ -404,6 +405,7 @@ class Trace:
         @param outfile file in which to write the results
         @param timing true iff timing information be displayed
         """
+        self._trace = _trace.Trace()
         self.infile = infile
         self.outfile = outfile
         self.ignore = _Ignore(ignoremods, ignoredirs)
@@ -443,14 +445,13 @@ class Trace:
         if globals is None: globals = {}
         if locals is None: locals = {}
         if not self.donothing:
-            threading.settrace(self.globaltrace)
-            sys.settrace(self.globaltrace)
+            self._trace.__start__()
         try:
             exec(cmd, globals, locals)
         finally:
             if not self.donothing:
-                sys.settrace(None)
-                threading.settrace(None)
+                self._trace.__stop__()
+                self.counts, self._calledfuncs = self._trace.results()
 
     def runfunc(*args, **kw):
         if len(args) >= 2:
@@ -470,12 +471,13 @@ class Trace:
 
         result = None
         if not self.donothing:
-            sys.settrace(self.globaltrace)
+            self._trace.__start__()
         try:
             result = func(*args, **kw)
         finally:
             if not self.donothing:
-                sys.settrace(None)
+                self._trace.__stop__()
+                self.counts, self._calledfuncs = self._trace.results()
         return result
     runfunc.__text_signature__ = '($self, func, /, *args, **kw)'
 

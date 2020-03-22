@@ -43,6 +43,14 @@ suite = {
                 ]
             },
             {
+                "name": "tools",
+                "version": "783c56aeadd253c159c5dba754b1965b1d83b3f4",
+                "subdir": True,
+                "urls": [
+                    {"url": "https://github.com/oracle/graal", "kind": "git"},
+                ],
+            },
+            {
                 "name": "sulong",
                 "version": "3c8324fbbc2136f3f088f6df1b8c9e492b3d2753",
                 "subdir": True,
@@ -190,6 +198,7 @@ suite = {
             "sourceDirs": ["src"],
             "dependencies": [
                 "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_COVERAGE",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
@@ -332,6 +341,7 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_COVERAGE",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
