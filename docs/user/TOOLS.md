@@ -34,5 +34,17 @@ only line counts and called functions.
 
 ### Profiling
 
-We are going to support the `cProfile` module API, but using the Truffle
-*cpusampler* tool
+We implement the `_lsprof` built-in module using the Truffle *cpusampler*
+tool. Not all profiling features are currently supported, but basic profiling
+works:
+
+    $ graalpython -m cProfile -s sort -m ginstall --help
+
+The interactive exploration of a stats output file also works:
+
+    $ graalpython -m cProfile -o ginstall.profile -m ginstall --help
+    $ graalpython -m pstats ginstall.profile
+    ginstall.profile%
+    callers
+    [...]
+

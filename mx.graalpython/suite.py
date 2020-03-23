@@ -199,6 +199,7 @@ suite = {
             "dependencies": [
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
+                "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
@@ -342,6 +343,7 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
+                "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",

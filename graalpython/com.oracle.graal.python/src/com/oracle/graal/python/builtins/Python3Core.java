@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
@@ -254,6 +255,8 @@ public final class Python3Core implements PythonCore {
                         "resource",
                         "_contextvars",
                         "pip_hook",
+                        "_lsprof",
+                        "marshal",
                         "_lzma"));
         // must be last
         coreFiles.add("final_patches");
@@ -377,6 +380,8 @@ public final class Python3Core implements PythonCore {
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new TraceModuleBuiltins(),
+                        new LsprofModuleBuiltins(),
+                        LsprofModuleBuiltins.newProfilerBuiltins(),
                         new GraalPythonModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
