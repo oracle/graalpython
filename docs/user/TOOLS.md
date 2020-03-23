@@ -20,8 +20,17 @@ doesn't currently work).
 
 ### Coverage
 
-We are going to support the `trace` module API, but using the Truffle *coverage*
-tool.
+GraalVM comes with a coverage instrument that can be used with `--coverage`. See
+the commandline help for more options on how to use it. In order to work better
+with existing Python code, we also partially support the standard library
+`trace` module with this low-overhead GraalVM coverage instrument. So you can do
+this:
+
+    $ graalpython -m trace -m -c -s my_script.py
+
+And this will work similarly to how it will run on CPython. The programmatic API
+also works, with some limitations. For example, we do not currently track calls,
+only line counts and called functions.
 
 ### Profiling
 

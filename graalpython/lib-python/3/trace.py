@@ -405,7 +405,6 @@ class Trace:
         @param outfile file in which to write the results
         @param timing true iff timing information be displayed
         """
-        self._trace = _trace.Trace()
         self.infile = infile
         self.outfile = outfile
         self.ignore = _Ignore(ignoremods, ignoredirs)
@@ -436,6 +435,8 @@ class Trace:
             # Ahem -- do nothing?  Okay.
             self.donothing = 1
 
+        self._graal_start_args = (count, countfuncs, ignoremods, ignoredirs)
+
     def run(self, cmd):
         import __main__
         dict = __main__.__dict__
@@ -445,13 +446,13 @@ class Trace:
         if globals is None: globals = {}
         if locals is None: locals = {}
         if not self.donothing:
-            self._trace.__start__()
+            _trace.start(*self._graal_start_args)
         try:
             exec(cmd, globals, locals)
         finally:
             if not self.donothing:
-                self._trace.__stop__()
-                self.counts, self._calledfuncs = self._trace.results()
+                _trace.stop()
+                self.counts, self._calledfuncs = _trace.results()
 
     def runfunc(*args, **kw):
         if len(args) >= 2:
@@ -471,13 +472,13 @@ class Trace:
 
         result = None
         if not self.donothing:
-            self._trace.__start__()
+            _trace.start(*self._graal_start_args())
         try:
             result = func(*args, **kw)
         finally:
             if not self.donothing:
-                self._trace.__stop__()
-                self.counts, self._calledfuncs = self._trace.results()
+                _trace.stop()
+                self.counts, self._calledfuncs = _trace.results()
         return result
     runfunc.__text_signature__ = '($self, func, /, *args, **kw)'
 

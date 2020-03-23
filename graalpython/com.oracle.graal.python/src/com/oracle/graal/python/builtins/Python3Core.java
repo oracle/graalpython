@@ -377,7 +377,6 @@ public final class Python3Core implements PythonCore {
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new TraceModuleBuiltins(),
-                        TraceModuleBuiltins.newTraceBuiltins(),
                         new GraalPythonModuleBuiltins()));
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());

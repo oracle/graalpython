@@ -192,10 +192,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     RuntimeWarning("RuntimeWarning", BuiltinNames.BUILTINS),
     SyntaxWarning("SyntaxWarning", BuiltinNames.BUILTINS),
     UnicodeWarning("UnicodeWarning", BuiltinNames.BUILTINS),
-    UserWarning("UserWarning", BuiltinNames.BUILTINS),
-
-    // extras
-    PTrace("Trace", "_trace");
+    UserWarning("UserWarning", BuiltinNames.BUILTINS);
 
     private final String name;
     private final Shape instanceShape;
