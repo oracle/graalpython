@@ -249,7 +249,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public int compareEntriesWithState(HashingStorage self, HashingStorage other, ThreadState state) {
         if (state == null) {
-            throw new AbstractMethodError("HashingStorageLibrary.compareKeysWithState");
+            throw new AbstractMethodError("HashingStorageLibrary.compareEntriesWithState");
         }
         return compareEntries(self, other);
     }
@@ -264,7 +264,19 @@ public abstract class HashingStorageLibrary extends Library {
     /**
      * @return the intersection of the two storages, keeping the values from {@code other}.
      */
-    public abstract HashingStorage intersect(HashingStorage self, HashingStorage other);
+    public HashingStorage intersectWithState(HashingStorage self, HashingStorage other, ThreadState state) {
+        if (state == null) {
+            throw new AbstractMethodError("HashingStorageLibrary.intersectWithState");
+        }
+        return intersect(self, other);
+    }
+
+    /**
+     * @see #intersectWithState(HashingStorage, HashingStorage, ThreadState)
+     */
+    public HashingStorage intersect(HashingStorage self, HashingStorage other) {
+        return intersectWithState(self, other, null);
+    }
 
     /**
      * @return the xor of the two storages.
@@ -280,7 +292,19 @@ public abstract class HashingStorageLibrary extends Library {
     /**
      * @return the a storage with all keys of {@code self} that are not also in {@code other}
      */
-    public abstract HashingStorage diff(HashingStorage self, HashingStorage other);
+    public HashingStorage diffWithState(HashingStorage self, HashingStorage other, ThreadState state) {
+        if (state == null) {
+            throw new AbstractMethodError("HashingStorageLibrary.diffWithState");
+        }
+        return diff(self, other);
+    }
+
+    /**
+     * @see #diffWithState(HashingStorage, HashingStorage, ThreadState)
+     */
+    public HashingStorage diff(HashingStorage self, HashingStorage other) {
+        return diffWithState(self, other, null);
+    }
 
     /**
      * This method can be used to iterate over the keys of a store. Due to the nature of Java

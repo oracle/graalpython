@@ -47,7 +47,10 @@ import java.util.function.BiFunction;
 import org.graalvm.collections.MapCursor;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.DictKey;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -114,6 +117,8 @@ final class PEMap implements Iterable<DictKey> {
      */
     private byte[] hashArray;
 
+    @CompilationFinal private boolean hasSideEffect;
+
     /**
      * Intercept method for debugging purposes.
      */
@@ -121,20 +126,21 @@ final class PEMap implements Iterable<DictKey> {
         return map;
     }
 
-    public static PEMap create(boolean isSet) {
-        return intercept(new PEMap(isSet));
+    public static PEMap create(boolean isSet, boolean hasSideEffects) {
+        return intercept(new PEMap(isSet, hasSideEffects));
     }
 
-    public static PEMap create(int initialCapacity, boolean isSet) {
-        return intercept(new PEMap(initialCapacity, isSet));
+    public static PEMap create(int initialCapacity, boolean isSet, boolean hasSideEffects) {
+        return intercept(new PEMap(initialCapacity, isSet, hasSideEffects));
     }
 
-    private PEMap(boolean isSet) {
+    private PEMap(boolean isSet, boolean hasSideEffect) {
         this.isSet = isSet;
+        this.hasSideEffect = hasSideEffect;
     }
 
-    private PEMap(int initialCapacity, boolean isSet) {
-        this(isSet);
+    private PEMap(int initialCapacity, boolean isSet, boolean hasSideEffect) {
+        this(isSet, hasSideEffect);
         init(initialCapacity);
     }
 
@@ -142,6 +148,10 @@ final class PEMap implements Iterable<DictKey> {
         if (size > INITIAL_CAPACITY) {
             entries = new Object[size << 1];
         }
+    }
+
+    protected boolean hasSideEffect() {
+        return hasSideEffect;
     }
 
     /**
@@ -163,35 +173,38 @@ final class PEMap implements Iterable<DictKey> {
         final int next;
     }
 
-    public Object get(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
+    public Object get(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        if (hasSideEffect) {
+            return getSE(key, keylib, otherlib, findProfile, gotState, state);
+        }
         Objects.requireNonNull(key);
 
-        int index = find(key, keylib, otherlib, findProfile);
+        int index = find(key, keylib, otherlib, findProfile, gotState, state);
         if (index != -1) {
             return getValue(index);
         }
         return null;
     }
 
-    private int find(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
+    private int find(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
         if (findProfile.profile(hasHashArray())) {
-            return findHash(key, keylib, otherlib);
+            return findHash(key, keylib, otherlib, gotState, state);
         } else {
-            return findLinear(key, keylib, otherlib);
+            return findLinear(key, keylib, otherlib, gotState, state);
         }
     }
 
-    private int findLinear(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    private int findLinear(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         for (int i = 0; i < totalEntries; i++) {
             DictKey entryKey = getKey(i);
-            if (entryKey != null && compareKeys(key, entryKey, keylib, otherlib)) {
+            if (entryKey != null && compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
                 return i;
             }
         }
         return -1;
     }
 
-    private static boolean compareKeys(DictKey key, DictKey other, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) { //
+    private static boolean compareKeys(DictKey key, DictKey other, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         // Comparison as per CPython's dictobject.c#lookdict function. First
         // check if the keys are identical, then check if the hashes are the
         // same, and only if they are, also call the comparison function.
@@ -199,25 +212,25 @@ final class PEMap implements Iterable<DictKey> {
             return true;
         }
         if (key.hash == other.hash) {
-            if (keylib != null && otherlib != null) {
-                return keylib.equals(key.value, other.value, otherlib);
+            if (gotState.profile(state != null)) {
+                return keylib.equalsWithState(key.value, other.value, otherlib, state);
             } else {
-                return key.value.equals(other.value);
+                return keylib.equals(key.value, other.value, otherlib);
             }
         }
         return false;
     }
 
-    private int findHash(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    private int findHash(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         int index = getHashArray(getHashIndex(key)) - 1;
         if (index != -1) {
             DictKey entryKey = getKey(index);
-            if (compareKeys(key, entryKey, keylib, otherlib)) {
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
                 return index;
             } else {
                 Object entryValue = getRawValue(index);
                 if (entryValue instanceof CollisionLink) {
-                    return findWithCollision(key, (CollisionLink) entryValue, keylib, otherlib);
+                    return findWithCollision(key, (CollisionLink) entryValue, keylib, otherlib, gotState, state);
                 }
             }
         }
@@ -225,7 +238,7 @@ final class PEMap implements Iterable<DictKey> {
         return -1;
     }
 
-    private int findWithCollision(DictKey key, CollisionLink initialEntryValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    private int findWithCollision(DictKey key, CollisionLink initialEntryValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         int index;
         DictKey entryKey;
         CollisionLink entryValue = initialEntryValue;
@@ -233,7 +246,7 @@ final class PEMap implements Iterable<DictKey> {
             CollisionLink collisionLink = entryValue;
             index = collisionLink.next;
             entryKey = getKey(index);
-            if (compareKeys(key, entryKey, keylib, otherlib)) {
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
                 return index;
             } else {
                 Object value = getRawValue(index);
@@ -274,12 +287,12 @@ final class PEMap implements Iterable<DictKey> {
         }
     }
 
-    private int findAndRemoveHash(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    private int findAndRemoveHash(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         int hashIndex = getHashIndex(key);
         int index = getHashArray(hashIndex) - 1;
         if (index != -1) {
             DictKey entryKey = getKey(index);
-            if (compareKeys(key, entryKey, keylib, otherlib)) {
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
                 Object value = getRawValue(index);
                 int nextIndex = -1;
                 if (value instanceof CollisionLink) {
@@ -291,7 +304,7 @@ final class PEMap implements Iterable<DictKey> {
             } else {
                 Object entryValue = getRawValue(index);
                 if (entryValue instanceof CollisionLink) {
-                    return findAndRemoveWithCollision(key, (CollisionLink) entryValue, index, keylib, otherlib);
+                    return findAndRemoveWithCollision(key, (CollisionLink) entryValue, index, keylib, otherlib, gotState, state);
                 }
             }
         }
@@ -299,7 +312,8 @@ final class PEMap implements Iterable<DictKey> {
         return -1;
     }
 
-    private int findAndRemoveWithCollision(DictKey key, CollisionLink initialEntryValue, int initialIndexValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    private int findAndRemoveWithCollision(DictKey key, CollisionLink initialEntryValue, int initialIndexValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState,
+                    ThreadState state) {
         int index;
         DictKey entryKey;
         CollisionLink entryValue = initialEntryValue;
@@ -308,7 +322,7 @@ final class PEMap implements Iterable<DictKey> {
             CollisionLink collisionLink = entryValue;
             index = collisionLink.next;
             entryKey = getKey(index);
-            if (compareKeys(key, entryKey, keylib, otherlib)) {
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
                 Object value = getRawValue(index);
                 if (value instanceof CollisionLink) {
                     CollisionLink thisCollisionLink = (CollisionLink) value;
@@ -335,16 +349,25 @@ final class PEMap implements Iterable<DictKey> {
         return hash & (getHashTableSize() - 1);
     }
 
-    public Object put(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
+    public Object put(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        if (hasSideEffect) {
+            return putSE(key, value, keylib, otherlib, findProfile, gotState, state);
+        }
         if (key == null) {
             throw new UnsupportedOperationException("null not supported as key!");
         }
-        int index = find(key, keylib, otherlib, findProfile);
+        int index = find(key, keylib, otherlib, findProfile, gotState, state);
         if (index != -1) {
             Object oldValue = getValue(index);
             setValue(index, value);
             return oldValue;
         }
+
+        put(key, value);
+        return null;
+    }
+
+    public void put(DictKey key, Object value) {
 
         int nextEntryIndex = totalEntries;
         if (entries == null) {
@@ -368,17 +391,21 @@ final class PEMap implements Iterable<DictKey> {
         } else if (totalEntries > getHashThreshold()) {
             createHash();
         }
-
-        return null;
     }
 
     @TruffleBoundary
-    public void putAll(PEMap other) {
-        final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+    protected void putAll(PEMap other) {
         MapCursor<DictKey, Object> e = other.getEntries();
-        ConditionProfile findProfile = ConditionProfile.createBinaryProfile();
         while (e.advance()) {
-            put(e.getKey(), e.getValue(), lib, lib, findProfile);
+            put(e.getKey(), e.getValue());
+        }
+    }
+
+    @TruffleBoundary
+    protected void putAll(PEMap other, PythonObjectLibrary lib, ConditionProfile findProfile, ConditionProfile gotState) {
+        MapCursor<DictKey, Object> e = other.getEntries();
+        while (e.advance()) {
+            put(e.getKey(), e.getValue(), lib, lib, findProfile, gotState, null);
         }
     }
 
@@ -524,8 +551,8 @@ final class PEMap implements Iterable<DictKey> {
         return totalEntries - deletedEntries;
     }
 
-    public boolean containsKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile) {
-        return find(key, keylib, otherlib, findProfile) != -1;
+    public boolean containsKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        return find(key, keylib, otherlib, findProfile, gotState, state) != -1;
     }
 
     public void clear() {
@@ -539,15 +566,15 @@ final class PEMap implements Iterable<DictKey> {
     }
 
     @TruffleBoundary
-    public Object removeKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib) {
+    public Object removeKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         if (key == null) {
             throw new UnsupportedOperationException("null not supported as key!");
         }
         int index;
         if (hasHashArray()) {
-            index = this.findAndRemoveHash(key, keylib, otherlib);
+            index = this.findAndRemoveHash(key, keylib, otherlib, gotState, state);
         } else {
-            index = this.findLinear(key, keylib, otherlib);
+            index = this.findLinear(key, keylib, otherlib, gotState, state);
         }
 
         if (index != -1) {
@@ -608,7 +635,8 @@ final class PEMap implements Iterable<DictKey> {
         public void remove() {
             if (hasHashArray()) {
                 final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
-                PEMap.this.findAndRemoveHash(getKey(current - 1), lib, lib);
+                ConditionProfile gotState = ConditionProfile.createBinaryProfile();
+                PEMap.this.findAndRemoveHash(getKey(current - 1), lib, lib, gotState, null);
             }
             current = PEMap.this.remove(current - 1);
         }
@@ -651,6 +679,9 @@ final class PEMap implements Iterable<DictKey> {
 
     @TruffleBoundary
     public MapCursor<DictKey, Object> getEntries() {
+        if (hasSideEffect) {
+            return getEntriesSE();
+        }
         return new MapCursor<DictKey, Object>() {
             int current = -1;
 
@@ -682,7 +713,8 @@ final class PEMap implements Iterable<DictKey> {
             public void remove() {
                 if (hasHashArray()) {
                     final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
-                    PEMap.this.findAndRemoveHash(PEMap.this.getKey(current), lib, lib);
+                    ConditionProfile gotState = ConditionProfile.createBinaryProfile();
+                    PEMap.this.findAndRemoveHash(PEMap.this.getKey(current), lib, lib, gotState, null);
                 }
                 current = PEMap.this.remove(current) - 1;
             }
@@ -766,5 +798,208 @@ final class PEMap implements Iterable<DictKey> {
                 return result;
             }
         };
+    }
+
+    protected void setSideEffectFlag() {
+        assert CompilerDirectives.inInterpreter();
+        this.hasSideEffect = true;
+    }
+
+    private Object getSE(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        Objects.requireNonNull(key);
+
+        Entry p = findSE(key, keylib, otherlib, findProfile, gotState, state);
+        if (p != null) {
+            return p.value;
+        }
+        return null;
+    }
+
+    private Object putSE(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        if (key == null) {
+            throw new UnsupportedOperationException("null not supported as key!");
+        }
+        Entry entry = findSE(key, keylib, otherlib, findProfile, gotState, state);
+        if (entry != null) {
+            setValue(entry.index, value);
+            return entry.value;
+        }
+
+        put(key, value);
+        return null;
+    }
+
+    @TruffleBoundary
+    private MapCursor<DictKey, Object> getEntriesSE() {
+        return new MapCursor<DictKey, Object>() {
+            int current = -1;
+            DictKey cachedKey = null;
+            Object cachedValue = null;
+
+            @Override
+            public boolean advance() {
+                current++;
+                if (current >= totalEntries) {
+                    return false;
+                } else {
+                    while (PEMap.this.getKey(current) == null) {
+                        // Skip over null entries
+                        current++;
+                    }
+                    cachedKey = PEMap.this.getKey(current);
+                    cachedValue = PEMap.this.getValue(current);
+                    return true;
+                }
+            }
+
+            @Override
+            public DictKey getKey() {
+                return cachedKey;
+            }
+
+            @Override
+            public Object getValue() {
+                return cachedValue;
+            }
+
+            @Override
+            public void remove() {
+                if (hasHashArray()) {
+                    final PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                    ConditionProfile gotState = ConditionProfile.createBinaryProfile();
+                    PEMap.this.findAndRemoveHashSE(PEMap.this.getKey(current), lib, lib, gotState, null);
+                }
+                if (totalEntries > 0) { // in case of modifying __eq__,see GR-21141.
+                    current = PEMap.this.remove(current) - 1;
+                }
+            }
+        };
+    }
+
+    private Entry findSE(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        if (findProfile.profile(hasHashArray())) {
+            return findHashSE(key, keylib, otherlib, gotState, state);
+        } else {
+            return findLinearSE(key, keylib, otherlib, gotState, state);
+        }
+    }
+
+    private Entry findLinearSE(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
+        for (int i = 0; i < totalEntries; i++) {
+            DictKey entryKey = getKey(i);
+            Object value = getValue(i);
+            if (entryKey != null && compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
+                return new Entry(i, entryKey, value);
+            }
+        }
+        return null;
+    }
+
+    private Entry findHashSE(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
+        int index = getHashArray(getHashIndex(key)) - 1;
+        if (index != -1) {
+            DictKey entryKey = getKey(index);
+            Object value = getValue(index);
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
+                return new Entry(index, entryKey, value);
+            } else {
+                Object entryValue = getRawValue(index);
+                if (entryValue instanceof CollisionLink) {
+                    return findWithCollisionSE(key, (CollisionLink) entryValue, keylib, otherlib, gotState, state);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Entry findWithCollisionSE(DictKey key, CollisionLink initialEntryValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
+        int index;
+        DictKey entryKey;
+        CollisionLink entryValue = initialEntryValue;
+        while (true) {
+            CollisionLink collisionLink = entryValue;
+            index = collisionLink.next;
+            entryKey = getKey(index);
+            Object value = getValue(index);
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
+                return new Entry(index, entryKey, value);
+            } else {
+                value = getRawValue(index);
+                if (value instanceof CollisionLink) {
+                    entryValue = (CollisionLink) getRawValue(index);
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+
+    private Entry findAndRemoveHashSE(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
+        int hashIndex = getHashIndex(key);
+        int index = getHashArray(hashIndex) - 1;
+        if (index != -1) {
+            DictKey entryKey = getKey(index);
+            Object value = getRawValue(index);
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
+                int nextIndex = -1;
+                if (value instanceof CollisionLink) {
+                    CollisionLink collisionLink = (CollisionLink) value;
+                    value = collisionLink.value;
+                    nextIndex = collisionLink.next;
+                }
+                setHashArray(hashIndex, nextIndex + 1);
+                return new Entry(index, entryKey, value);
+            } else {
+                Object entryValue = getRawValue(index);
+                if (entryValue instanceof CollisionLink) {
+                    return findAndRemoveWithCollisionSE(key, (CollisionLink) entryValue, index, keylib, otherlib, gotState, state);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Entry findAndRemoveWithCollisionSE(DictKey key, CollisionLink initialEntryValue, int initialIndexValue, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState,
+                    ThreadState state) {
+        int index;
+        DictKey entryKey;
+        CollisionLink entryValue = initialEntryValue;
+        int lastIndex = initialIndexValue;
+        while (true) {
+            CollisionLink collisionLink = entryValue;
+            index = collisionLink.next;
+            entryKey = getKey(index);
+            final Object value = getRawValue(index);
+            if (compareKeys(key, entryKey, keylib, otherlib, gotState, state)) {
+                if (value instanceof CollisionLink) {
+                    CollisionLink thisCollisionLink = (CollisionLink) value;
+                    setRawValue(lastIndex, new CollisionLink(collisionLink.value, thisCollisionLink.next));
+                } else {
+                    setRawValue(lastIndex, collisionLink.value);
+                }
+                return new Entry(index, entryKey, collisionLink.value);
+            } else {
+                if (value instanceof CollisionLink) {
+                    entryValue = (CollisionLink) getRawValue(index);
+                    lastIndex = index;
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+}
+
+final class Entry {
+    int index;
+    DictKey key;
+    Object value;
+
+    Entry(int index, DictKey key, Object val) {
+        this.index = index;
+        this.key = key;
+        this.value = val;
     }
 }
