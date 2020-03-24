@@ -1,3 +1,43 @@
+/*
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.oracle.graal.python.builtins.modules;
 
 import java.io.IOException;
@@ -26,6 +66,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -57,7 +98,8 @@ public class TraceModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TraceNew extends PythonBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        PNone doit(VirtualFrame frame, PythonModule mod, Object count, Object countfuncs, PSequence ignoremods, PSequence ignoredirs,
+        @TruffleBoundary
+        PNone doit(PythonModule mod, Object count, Object countfuncs, PSequence ignoremods, PSequence ignoredirs,
                         @Cached SequenceNodes.GetSequenceStorageNode getStore,
                         @Cached SequenceStorageNodes.ToArrayNode toArray,
                         @Cached CastToJavaStringNode castStr,
@@ -128,7 +170,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             }
             writeNode.execute(mod, TRACK_FUNCS, countfuncs);
 
-            tracker.start(new CoverageTracker.Config(filter.build(), lib.isTrueWithState(count, PArguments.getThreadState(frame))));
+            tracker.start(new CoverageTracker.Config(filter.build(), lib.isTrue(count)));
 
             return PNone.NONE;
         }
@@ -138,6 +180,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class Stop extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         PNone start(PythonModule mod,
                         @Cached ReadAttributeFromObjectNode readNode) {
             Object currentTracker = readNode.execute(mod, TRACKER);
@@ -159,7 +202,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             Object currentTracker = readNode.execute(mod, TRACKER);
-            boolean countFuncs = lib.isTrue(readNode.execute(mod, TRACK_FUNCS));
+            boolean countFuncs = lib.isTrueWithState(readNode.execute(mod, TRACK_FUNCS), PArguments.getThreadState(frame));
 
             CoverageTracker tracker;
             if (currentTracker instanceof CoverageTracker) {
@@ -167,14 +210,14 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raise(PythonBuiltinClassType.TypeError, "coverage tracker not running");
             }
-            SourceCoverage[] coverage = tracker.getCoverage();
+            SourceCoverage[] coverage = getCoverage(tracker);
             // callers -> not supported
             // calledfuncs -> {(filename, modulename, funcname) => 1}
             // counts -> {(filename, lineno) => count}
             PDict calledFuncs = factory().createDict();
             PDict counts = factory().createDict();
             for (SourceCoverage c : coverage) {
-                String filename = c.getSource().getPath();
+                String filename = getSourcePath(c);
                 if (filename == null) {
                     continue;
                 }
@@ -183,41 +226,85 @@ public class TraceModuleBuiltins extends PythonBuiltins {
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(filename);
                 String baseName = file.getName();
                 if (baseName != null) {
-                    if (baseName.endsWith("__init__.py")) {
-                        modName = file.getParent().getName();
-                    } else {
-                        modName = baseName.replaceFirst("\\.py$", "");
-                    }
+                    modName = deriveModuleName(file, baseName);
                 } else {
                     continue;
                 }
 
-                for (RootCoverage r : c.getRoots()) {
-                    String name = r.getName();
+                RootCoverage[] rootCoverage = getRootCoverage(c);
+                for (RootCoverage r : rootCoverage) {
+                    String name = getRootName(r);
                     if (name == null) {
                         continue;
                     }
                     if (countFuncs) {
-                        PTuple tp = factory().createTuple(new Object[] {filename, modName, name});
+                        PTuple tp = factory().createTuple(new Object[]{filename, modName, name});
                         setItemNode.execute(frame, calledFuncs, tp, 1);
                     }
-                    for (SectionCoverage s : r.getSectionCoverage()) {
-                        if (s.getSourceSection().hasLines()) {
-                            int startLine = s.getSourceSection().getStartLine();
-                            int endLine = startLine; // s.getSourceSection().getEndLine();
-                            long cnt = s.getCount();
+                    SectionCoverage[] sectionCoverage = getSectionCoverage(r);
+                    for (SectionCoverage s : sectionCoverage) {
+                        if (hasLines(s)) {
+                            int startLine = getStartLine(s);
+                            long cnt = getCoverageCount(s);
                             if (cnt < 0) {
                                 cnt = 1;
                             }
-                            for (int i = startLine; i <= endLine; i++) {
-                                PTuple ctp = factory().createTuple(new Object[] {filename, i});
-                                setItemNode.execute(frame, counts, ctp, cnt);
-                            }
+                            PTuple ctp = factory().createTuple(new Object[]{filename, startLine});
+                            setItemNode.execute(frame, counts, ctp, cnt);
                         }
                     }
                 }
             }
-            return factory().createTuple(new Object[] { counts, calledFuncs });
+            return factory().createTuple(new Object[]{counts, calledFuncs});
+        }
+
+        @TruffleBoundary
+        private static long getCoverageCount(SectionCoverage s) {
+            return s.getCount();
+        }
+
+        @TruffleBoundary
+        private static int getStartLine(SectionCoverage s) {
+            return s.getSourceSection().getStartLine();
+        }
+
+        @TruffleBoundary
+        private static boolean hasLines(SectionCoverage s) {
+            return s.getSourceSection().hasLines();
+        }
+
+        @TruffleBoundary
+        private static SectionCoverage[] getSectionCoverage(RootCoverage r) {
+            return r.getSectionCoverage();
+        }
+
+        @TruffleBoundary
+        private static String getRootName(RootCoverage r) {
+            return r.getName();
+        }
+
+        @TruffleBoundary
+        private static RootCoverage[] getRootCoverage(SourceCoverage c) {
+            return c.getRoots();
+        }
+
+        @TruffleBoundary
+        private static String deriveModuleName(TruffleFile file, String baseName) {
+            if (baseName.endsWith("__init__.py")) {
+                return file.getParent().getName();
+            } else {
+                return baseName.replaceFirst("\\.py$", "");
+            }
+        }
+
+        @TruffleBoundary
+        private static String getSourcePath(SourceCoverage c) {
+            return c.getSource().getPath();
+        }
+
+        @TruffleBoundary
+        private static SourceCoverage[] getCoverage(CoverageTracker tracker) {
+            return tracker.getCoverage();
         }
     }
 }

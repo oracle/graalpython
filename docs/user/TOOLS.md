@@ -1,6 +1,6 @@
 # Tooling for Python on GraalVM
 
-We will try to support all the Truffle tools in a way the user would expect.
+We will try to support all the GraalVM tools in a way the user would expect.
 
 ### Debugger
 
@@ -34,7 +34,7 @@ only line counts and called functions.
 
 ### Profiling
 
-We implement the `_lsprof` built-in module using the Truffle *cpusampler*
+We implement the `_lsprof` built-in module using the GraalVM cpusampler
 tool. Not all profiling features are currently supported, but basic profiling
 works:
 
@@ -47,4 +47,3 @@ The interactive exploration of a stats output file also works:
     ginstall.profile%
     callers
     [...]
-
