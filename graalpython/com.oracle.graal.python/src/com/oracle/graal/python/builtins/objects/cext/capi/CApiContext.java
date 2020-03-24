@@ -545,9 +545,10 @@ public final class CApiContext extends CExtContext {
 
     @TruffleBoundary
     private static void doGc() {
+        LOGGER.fine("full GC due to native memory");
         System.gc();
         try {
-            Thread.sleep(100);
+            Thread.sleep(50);
         } catch (InterruptedException x) {
             // Restore interrupt status
             Thread.currentThread().interrupt();
