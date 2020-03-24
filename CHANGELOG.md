@@ -3,6 +3,27 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 20.1.0
+
+* Update language support target and standard library to 3.8.2
+* Improve performance of tuples with primitive elements
+* Improve performance of using Python sequences from other GraalVM languages
+* Improve performance of dictionaries and sets
+* Support `cProfile` and `trace` modules through the GraalVM CPU sampler and coverage, respectively
+* Support NumPy on macOS
+* Support setuptools-scm and pytz.timezone
+* Support new syntax for iterable unpacking from yield and return statements
+* Fix issues with inspection and printing of non-Python numbers in the Chrome debugger
+* Fix issues with AST sharing across different contexts, if these context run concurrently on multiple threads
+* Fix code serialization and deserialization with pickle
+* Fix DirEntry.stat
+* Fix passing non-ASCII strings to `gethostbyname`
+* Fix `help(numpy)` to work again in the interactive REPL
+* Polyglot: Rethrow AttributeError as UnknownIdentifierException in invokeMember
+* Jython mode: treat Java `null` as identical to Python `None` when comparing with the `is` operator
+* Jython mode: `isinstance` now works with Java classes and objects
+* Improve errno handling in `posix` module
+
 ## Version 20.0.0
 
 * Jython Compatiblity: Implement `from JavaType import *` to import all static members of a Java class
