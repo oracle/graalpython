@@ -72,7 +72,10 @@ def make_wrapped_getstats(original):
     return getstats
 
 
-Profiler.getstats = make_wrapped_getstats(Profiler.getstats)
+try:
+    Profiler.getstats = make_wrapped_getstats(Profiler.getstats)
+except NameError:
+    pass # Profiler isn't available, we've been built without tools
 
 
 # cleanup
