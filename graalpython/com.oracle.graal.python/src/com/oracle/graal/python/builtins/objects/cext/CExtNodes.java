@@ -2973,7 +2973,7 @@ public abstract class CExtNodes {
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
-            return nativeWrapper.getHandleValidAssumption();
+            return nativeWrapper.ensureHandleValidAssumption();
         }
     }
 }

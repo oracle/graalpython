@@ -142,7 +142,7 @@ public final class HandleCache implements TruffleObject {
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
-            return nativeWrapper.getHandleValidAssumption();
+            return nativeWrapper.ensureHandleValidAssumption();
         }
     }
 }

@@ -101,11 +101,18 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         return handleValidAssumption;
     }
 
+    public final Assumption ensureHandleValidAssumption() {
+        if(handleValidAssumption == null) {
+            handleValidAssumption = Truffle.getRuntime().createAssumption();
+        }
+        return handleValidAssumption;
+    }
+
     protected static Assumption singleContextAssumption() {
         return PythonLanguage.getCurrent().singleContextAssumption;
     }
 
-    protected static final boolean isEq(Object obj, Object obj2) {
+    protected static boolean isEq(Object obj, Object obj2) {
         return obj == obj2;
     }
 
@@ -163,9 +170,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         // we must not set the pointer for one of the context-insensitive singletons
         assert PythonLanguage.getSingletonNativePtrIdx(delegate) == -1;
 
-        if (this.nativePointer == null) {
-            this.handleValidAssumption = Truffle.getRuntime().createAssumption();
-        } else if (nativePointer == null) {
+        if (nativePointer == null) {
             this.handleValidAssumption = null;
         }
         this.nativePointer = nativePointer;
