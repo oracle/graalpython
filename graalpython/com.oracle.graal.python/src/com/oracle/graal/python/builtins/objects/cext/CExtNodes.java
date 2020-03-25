@@ -766,13 +766,14 @@ public abstract class CExtNodes {
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode);
             }
             return new PythonAbstractNativeObject(object);
         }
@@ -788,6 +789,7 @@ public abstract class CExtNodes {
                         @Cached @SuppressWarnings("unused") GetLazyClassNode getClassNode,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
                         @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
@@ -795,7 +797,7 @@ public abstract class CExtNodes {
                         @Cached AddRefCntNode addRefCntNode) {
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
-                return cApiContext.getPythonNativeObject(object, newRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
+                return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true);
             }
             return new PythonAbstractNativeObject(object);
         }

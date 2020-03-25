@@ -51,7 +51,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -96,6 +96,7 @@ public final class NativeReferenceCache implements TruffleObject {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class ResolveNativeReferenceNode extends Node {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ResolveNativeReferenceNode.class);
 
         private static final Object NO_REF_CNT = new Object();
 
@@ -117,7 +118,7 @@ public final class NativeReferenceCache implements TruffleObject {
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                        @Cached(value = "lookupNativeReference(context, pointerObject, refCnt)", uncached = "lookupNativeReferenceUncached(context, pointerObject, refCnt)") NativeObjectReference ref,
+                        @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
                         @CachedLibrary("ref.ptrObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
             // If this is stealing the reference, we need to fixup the managed reference count.
             if (stealProfile.profile(steal)) {
@@ -141,20 +142,7 @@ public final class NativeReferenceCache implements TruffleObject {
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(refCnt));
-                if (wrapperExistsProfile.profile(idx != 0)) {
-                    NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
-
-                    // If this is stealing the reference, we need to fixup the managed reference
-                    // count.
-                    if (stealProfile.profile(steal)) {
-                        ref.managedRefCount++;
-                    }
-
-                    PythonAbstractObject object = ref.get();
-                    if (object != null) {
-                        return object;
-                    }
-                }
+                return lookupNativeObjectReference(pointerObject, idx, steal, wrapperExistsProfile, stealProfile, cApiContext);
             }
             return pointerObject;
         }
@@ -170,20 +158,7 @@ public final class NativeReferenceCache implements TruffleObject {
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(pointerObject));
-                if (wrapperExistsProfile.profile(idx != 0)) {
-                    NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
-
-                    // If this is stealing the reference, we need to fixup the managed reference
-                    // count.
-                    if (stealProfile.profile(steal)) {
-                        ref.managedRefCount++;
-                    }
-
-                    PythonAbstractObject object = ref.get();
-                    if (object != null) {
-                        return object;
-                    }
-                }
+                return lookupNativeObjectReference(pointerObject, idx, steal, wrapperExistsProfile, stealProfile, cApiContext);
             }
             return pointerObject;
         }
@@ -206,6 +181,26 @@ public final class NativeReferenceCache implements TruffleObject {
             }
         }
 
+        private static Object lookupNativeObjectReference(Object pointerObject, int idx, boolean steal, ConditionProfile wrapperExistsProfile, ConditionProfile stealProfile, CApiContext cApiContext) {
+            if (wrapperExistsProfile.profile(idx > 0)) {
+                NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
+
+                // If this is stealing the reference, we need to fixup the managed reference
+                // count.
+                if (stealProfile.profile(steal)) {
+                    ref.managedRefCount++;
+                }
+
+                PythonAbstractObject object = ref.get();
+                if (object != null) {
+                    return object;
+                }
+            } else if (idx < 0) {
+                LOGGER.warning(() -> String.format("negative native reference ID %d for object %s", idx, CApiContext.asHex(pointerObject)));
+            }
+            return pointerObject;
+        }
+
         static boolean isSame(ReferenceLibrary referenceLibrary, Object pointerObject, NativeObjectReference cachedObjectRef) {
             return referenceLibrary.isSame(cachedObjectRef.ptrObject, pointerObject);
         }
@@ -222,12 +217,6 @@ public final class NativeReferenceCache implements TruffleObject {
                 }
                 return cApiContext.lookupNativeObjectReference(idx);
             }
-            return null;
-        }
-
-        @SuppressWarnings("unused")
-        static NativeObjectReference lookupNativeReferenceUncached(PythonContext context, Object pointerObject, Object refCnt) {
-            // TODO(fa): this should never happen since is should always be shadowed by 'doIndexed'
             return null;
         }
 

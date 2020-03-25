@@ -360,13 +360,13 @@ public final class CApiContext extends CExtContext {
         return nativeObjectWrapperList.get(idx);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile resurrectProfile, GetRefCntNode getObRefCntNode,
-                    AddRefCntNode addRefCntNode) {
-        return getPythonNativeObject(nativePtr, newRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false);
+    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
+                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode) {
+        return getPythonNativeObject(nativePtr, newRefProfile, validRefProfile, resurrectProfile, getObRefCntNode, addRefCntNode, false);
     }
 
-    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile resurrectProfile, GetRefCntNode getObRefCntNode,
-                    AddRefCntNode addRefCntNode, boolean steal) {
+    public PythonAbstractNativeObject getPythonNativeObject(TruffleObject nativePtr, ConditionProfile newRefProfile, ConditionProfile validRefProfile, ConditionProfile resurrectProfile,
+                    GetRefCntNode getObRefCntNode, AddRefCntNode addRefCntNode, boolean steal) {
         CompilerAsserts.partialEvaluationConstant(addRefCntNode);
         CompilerAsserts.partialEvaluationConstant(steal);
 
@@ -378,7 +378,7 @@ public final class CApiContext extends CExtContext {
         // If there is no mapping, we need to create a new one.
         if (newRefProfile.profile(id == 0)) {
             nativeObject = createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal);
-        } else {
+        } else if (validRefProfile.profile(id > 0)) {
             ref = lookupNativeObjectReference(id);
             nativeObject = ref.get();
             if (resurrectProfile.profile(nativeObject == null)) {
@@ -396,6 +396,9 @@ public final class CApiContext extends CExtContext {
             if (steal) {
                 ref.managedRefCount++;
             }
+        } else {
+            LOGGER.warning(() -> String.format("cannot associate a native object reference to %s because reference count is corrupted", CApiContext.asHex(nativePtr)));
+            nativeObject = new PythonAbstractNativeObject(nativePtr);
         }
         return nativeObject;
     }
@@ -413,17 +416,6 @@ public final class CApiContext extends CExtContext {
         nativeObjectWrapperList.commit(nativeRefID, ref);
         return nativeObject;
     }
-
-// @TruffleBoundary
-// private NativeObjectReference putNativeObjectReference(Object nativePtr, NativeObjectReference
-// ref) {
-// return nativeObjectWrapperMap.put(nativePtr, ref);
-// }
-//
-// @TruffleBoundary
-// public NativeObjectReference lookupNativeObjectReference(Object nativePtr) {
-// return nativeObjectWrapperMap.get(nativePtr);
-// }
 
     static int idFromRefCnt(long refCnt) {
         long idx = refCnt >> REFERENCE_COUNT_BITS;
@@ -614,7 +606,7 @@ public final class CApiContext extends CExtContext {
         @TruffleBoundary
         public long untrack(Object pointerObject) {
             Long value = allocatedMemory.removeKey(pointerObject);
-            if(value != null) {
+            if (value != null) {
                 // TODO(fa): be more restrictive?
                 return value;
             }
