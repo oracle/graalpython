@@ -121,7 +121,7 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     PythonContext context, IndirectCallNode callNode, CallContext callContext, ConditionProfile isNullFrameProfile, ConditionProfile isClassBodyProfile) {
         optionallySetClassBodySpecial(arguments, callTarget, isClassBodyProfile);
         if (isNullFrameProfile.profile(frame == null)) {
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, callTarget);
+            PFrame.Reference frameInfo = IndirectCalleeContext.enterIndirect(context, arguments);
             try {
                 return callNode.call(callTarget, arguments);
             } finally {
@@ -129,7 +129,7 @@ public abstract class GenericInvokeNode extends InvokeNode {
             }
         } else {
             assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
-            callContext.prepareCall((VirtualFrame) frame, arguments, callTarget, this);
+            callContext.prepareIndirectCall((VirtualFrame) frame, arguments, this);
             return callNode.call(callTarget, arguments);
         }
     }
