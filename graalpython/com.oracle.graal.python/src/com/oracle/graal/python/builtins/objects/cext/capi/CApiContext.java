@@ -43,10 +43,10 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +55,7 @@ import java.util.logging.Level;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
@@ -76,7 +77,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -122,7 +122,7 @@ public final class CApiContext extends CExtContext {
                 Thread.currentThread().interrupt();
             }
 
-            LinkedList<NativeObjectReference> refs = new LinkedList<>();
+            ArrayDeque<NativeObjectReference> refs = new ArrayDeque<>();
             do {
                 if (reference instanceof NativeObjectReference) {
                     refs.add((NativeObjectReference) reference);
@@ -132,7 +132,7 @@ public final class CApiContext extends CExtContext {
             } while (reference != null);
 
             if (!refs.isEmpty()) {
-                return new CApiReferenceCleanerAction(refs.toArray(new NativeObjectReference[0]));
+                return new CApiReferenceCleanerAction(refs);
             }
 
             return null;
@@ -166,7 +166,7 @@ public final class CApiContext extends CExtContext {
     private RootCallTarget getReferenceCleanerCallTarget() {
         if (referenceCleanerCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext().getLanguage()));
+            referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext()));
         }
         return referenceCleanerCallTarget;
     }
@@ -255,25 +255,41 @@ public final class CApiContext extends CExtContext {
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
+        private final CApiContext cApiContext;
 
-        protected CApiReferenceCleanerRootNode(TruffleLanguage<?> language) {
-            super(language);
+        protected CApiReferenceCleanerRootNode(PythonContext context) {
+            super(context.getLanguage());
             refCntNode = SubRefCntNodeGen.create();
+            this.cApiContext = context.getCApiContext();
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Object execute(VirtualFrame frame) {
             CalleeContext.enter(frame, customLocalsProfile);
             try {
-                Object pointerObject = PArguments.getArgument(frame, 0);
-                Long managedRefCount = (Long) PArguments.getArgument(frame, 1);
-                if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
+                ArrayDeque<NativeObjectReference> nativeObjectReferences = (ArrayDeque<NativeObjectReference>) PArguments.getArgument(frame, 0);
+                NativeObjectReference nativeObjectReference;
+                while ((nativeObjectReference = pollFirst(nativeObjectReferences)) != null) {
+                    if (!nativeObjectReference.resurrect) {
+                        TruffleObject pointerObject = nativeObjectReference.getPtrObject();
+
+                        cApiContext.nativeObjectWrapperList.remove(nativeObjectReference.id);
+                        if (LOGGER.isLoggable(Level.FINE)) {
+                            LOGGER.fine(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
+                        }
+                        refCntNode.execute(pointerObject, nativeObjectReference.managedRefCount);
+                    }
                 }
-                return refCntNode.execute(pointerObject, managedRefCount);
             } finally {
                 calleeContext.exit(frame, this);
             }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static NativeObjectReference pollFirst(ArrayDeque<NativeObjectReference> deque) {
+            return deque.pollFirst();
         }
 
         @Override
@@ -291,26 +307,17 @@ public final class CApiContext extends CExtContext {
      * Reference cleaner action that will be executed by the {@link AsyncHandler}.
      */
     private static final class CApiReferenceCleanerAction implements AsyncHandler.AsyncAction {
-        private final NativeObjectReference[] nativeObjectReferences;
+        private final ArrayDeque<NativeObjectReference> nativeObjectReferences;
 
-        public CApiReferenceCleanerAction(NativeObjectReference[] nativeObjectReferences) {
+        public CApiReferenceCleanerAction(ArrayDeque<NativeObjectReference> nativeObjectReferences) {
             this.nativeObjectReferences = nativeObjectReferences;
         }
 
         @Override
         public void execute(VirtualFrame frame, Node location, PythonContext context) {
-            for (int i = 0; i < nativeObjectReferences.length; i++) {
-                NativeObjectReference nativeObjectReference = nativeObjectReferences[i];
-                if (!nativeObjectReference.resurrect) {
-                    TruffleObject ptrObject = nativeObjectReference.getPtrObject();
-
-                    context.getCApiContext().nativeObjectWrapperList.remove(nativeObjectReference.id);
-                    Object[] pArguments = PArguments.create(2);
-                    PArguments.setArgument(pArguments, 0, ptrObject);
-                    PArguments.setArgument(pArguments, 1, nativeObjectReference.managedRefCount);
-                    GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
-                }
-            }
+            Object[] pArguments = PArguments.create(1);
+            PArguments.setArgument(pArguments, 0, nativeObjectReferences);
+            GenericInvokeNode.getUncached().execute(frame, context.getCApiContext().getReferenceCleanerCallTarget(), pArguments);
         }
     }
 
