@@ -224,7 +224,6 @@ def test_reraise_with_traceback():
 
 
 def test_reraise_with_traceback_multiple():
-    # Test that the exception traceback doesn't accumulate frames when copied to different exception using with_traceback
     captured_exc = None
 
     try:
@@ -276,4 +275,28 @@ def test_with():
             ('test_with', 'raise OSError("test")'),
         ]
     )
+
+
+def test_top_level_exception_handler():
+    import subprocess
+    from textwrap import dedent
+    proc = subprocess.Popen([sys.executable, '-q', '-c', dedent("""\
+            def reraise():
+                try:
+                    raise RuntimeError("test")
+                except Exception as e:
+                    raise e
+            reraise()
+        """)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    out, err = proc.communicate()
+    assert proc.wait() == 1
+    assert out == ''
+    expected = dedent("""\
+        Traceback (most recent call last):
+          File "<string>", line 6, in <module>
+          File "<string>", line 5, in reraise
+          File "<string>", line 3, in reraise
+        RuntimeError: test
+        """).strip()
+    assert err.strip() == expected, f"Expected stderr:\n{expected}\nGot:\n{err.strip()}"
 
