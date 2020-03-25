@@ -160,8 +160,19 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached PythonObjectFactory factory) {
             LazyTracebackStorage storage = (LazyTracebackStorage) tb.getTracebackStorage();
-            PFrame pFrame = getPFrameNode.execute(frame, storage);
+            PFrame pFrame = storage.getFrame();
+            if (storage.getFrameInfo() != null) {
+                pFrame = getPFrameNode.execute(frame, storage);
+            }
             MaterializedTracebackStorage materializedStorage = createTracebackFromTruffle(materializeNode, factory, storage, pFrame);
+            if (pFrame == null) {
+                // TopLevelExceptionHandler doesn't have a PFrame, but we'd like to be able to still
+                // use the traceback construction logic. So we allow the frame to be null and just
+                // skip to the next when we encounter it. This recursion should only happen once as
+                // only the top PFrame might be null
+                materializedStorage = execute(frame, materializedStorage.getNext());
+            }
+
             tb.setStorage(materializedStorage);
             return materializedStorage;
         }
@@ -172,10 +183,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
             PTraceback prev = storage.getNextChain();
             CallTarget currentCallTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
             for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(storage.getException())) {
-                if (element.getTarget() == currentCallTarget) {
-                    SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
-                    if (sourceSection != null) {
-                        lineno = sourceSection.getStartLine();
+                if (currentCallTarget != null && element.getTarget() == currentCallTarget) {
+                    if (element.getLocation() != null) {
+                        SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
+                        if (sourceSection != null) {
+                            lineno = sourceSection.getStartLine();
+                        }
                     }
                     break;
                 }
