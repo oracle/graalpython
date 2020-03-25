@@ -560,6 +560,9 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
+        vmArgs += [
+            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+        ]
         vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
         jmh_entry = ["com.oracle.graal.python.benchmarks.interop.BenchRunner"]
         runArgs = self.runArgs(bmSuiteArgs)
