@@ -44,6 +44,7 @@ import java.lang.ref.WeakReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -102,6 +103,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     public final Assumption ensureHandleValidAssumption() {
+        CompilerAsserts.neverPartOfCompilation();
         if(handleValidAssumption == null) {
             handleValidAssumption = Truffle.getRuntime().createAssumption();
         }

@@ -403,11 +403,6 @@ def PyList_Insert(listObj, i, item):
 
 ##################### LONG
 
-@may_raise(-1)
-def PyLong_AsPrimitive(obj, signed, size):
-    return TrufflePInt_AsPrimitive(obj, signed, size)
-
-
 def _PyLong_Sign(n):
     if n==0:
         return 0
@@ -966,14 +961,15 @@ def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
     pclass = to_java_type(primary)
     getter = ReadMemberFunctions[memberType]
+    offset_converted = to_long(int(offset))
     def member_getter(self):
-        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8)))
+        return to_java(getter(to_sulong(self), offset_converted))
     member_fget = member_getter
     member_fset = None
     if canSet:
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
-            setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8), to_sulong(value))
+            setter(to_sulong(self), offset_converted, to_sulong(value))
         member_fset = member_setter
     # nb: do not use member.setter/getter because they create copies of the property
     member = property(fget=member_fget, fset=member_fset, doc=doc)

@@ -2921,7 +2921,7 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
-    abstract static class ResolveHandleNode extends Node {
+    public abstract static class ResolveHandleNode extends Node {
 
         public abstract Object execute(Object pointerObject);
 

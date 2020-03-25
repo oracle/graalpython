@@ -40,7 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+
 public abstract class CApiGuards {
+
+    public static boolean isPrimitiveNativeWrapper(Object object) {
+        return object instanceof PrimitiveNativeWrapper;
+    }
 
     public static boolean isNativeWrapper(Object object) {
         return object instanceof PythonNativeWrapper;

@@ -69,6 +69,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.IntNodeFactory;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.AllocFuncRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.ExternalFunctionNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.GetAttrFuncRootNode;
@@ -86,8 +88,8 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFun
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -116,10 +118,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
@@ -240,6 +244,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -265,9 +270,11 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -949,25 +956,122 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "TrufflePInt_AsPrimitive", minNumOfPositionalArgs = 3)
+    // directly called without landing function
+    @Builtin(name = "PyLong_AsPrimitive", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
-    abstract static class TrufflePInt_AsPrimitive extends PythonTernaryBuiltinNode {
+    abstract static class PyLongAsPrimitive extends PythonTernaryBuiltinNode {
+
+        public abstract Object executeWith(VirtualFrame frame, Object object, int signed, long targetTypeSize);
+
+        public abstract long executeLong(VirtualFrame frame, Object object, int signed, long targetTypeSize);
+
+        public abstract int executeInt(VirtualFrame frame, Object object, int signed, long targetTypeSize);
+
+        @Specialization(rewriteOn = {UnexpectedWrapperException.class, UnexpectedResultException.class})
+        static long doPrimitiveNativeWrapperToLong(VirtualFrame frame, Object object, int signed, long targetTypeSize,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws UnexpectedWrapperException, UnexpectedResultException {
+            Object resolvedPointer = resolveHandleNode.execute(object);
+            try {
+                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
+                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, targetTypeSize);
+                }
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnexpectedWrapperException.INSTANCE;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(replaces = "doPrimitiveNativeWrapperToLong", rewriteOn = UnexpectedResultException.class)
+        static long doGenericToLong(VirtualFrame frame, Object object, int signed, long targetTypeSize,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
+                        @Cached("createClassProfile()") ValueProfile pointerClassProfile,
+                        @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws UnexpectedResultException {
+            Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
+            try {
+                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
+                    return convertPIntToPrimitiveNode.executeLong(frame, resolvedPointer, signed, targetTypeSize);
+                }
+                return convertPIntToPrimitiveNode.executeLong(frame, toJavaNode.execute(resolvedPointer), signed, targetTypeSize);
+            } catch (UnexpectedResultException e) {
+                CompilerAsserts.neverPartOfCompilation();
+                throw new UnexpectedResultException(CastToNativeLongNodeGen.getUncached().execute(e.getResult()));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        @Specialization(replaces = {"doPrimitiveNativeWrapperToLong", "doGenericToLong"})
+        static Object doGeneric(VirtualFrame frame, Object object, int signed, long targetTypeSize,
+                        @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
+                        @Shared("toJavaNode") @Cached ToJavaNode toJavaNode,
+                        @Cached CastToNativeLongNode castToNativeLongNode,
+                        @Cached("createClassProfile()") ValueProfile pointerClassProfile,
+                        @Cached("createIntNode()") IntNode constructIntNode,
+                        @Shared("converPIntToPrimitiveNode") @Cached ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode,
+                        @Shared("transformExceptionToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            Object resolvedPointer = pointerClassProfile.profile(resolveHandleNode.execute(object));
+            try {
+                if (resolvedPointer instanceof PrimitiveNativeWrapper) {
+                    return convertPIntToPrimitiveNode.execute(frame, resolvedPointer, signed, targetTypeSize);
+                }
+                Object coerced = constructIntNode.executeWith(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
+                return castToNativeLongNode.execute(convertPIntToPrimitiveNode.execute(frame, coerced, signed, targetTypeSize));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
+        }
+
+        static IntNode createIntNode() {
+            return IntNodeFactory.create(null);
+        }
+
+        static final class UnexpectedWrapperException extends ControlFlowException {
+            private static final long serialVersionUID = 1L;
+            static final UnexpectedWrapperException INSTANCE = new UnexpectedWrapperException();
+        }
+    }
+
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    abstract static class ConvertPIntToPrimitiveNode extends Node {
 
         @Child private PRaiseNativeNode raiseNativeNode;
 
-        public abstract Object executeWith(VirtualFrame frame, Object o, int signed, long targetTypeSize);
+        public abstract Object execute(VirtualFrame frame, Object o, int signed, long targetTypeSize);
 
-        public abstract long executeLong(VirtualFrame frame, Object o, int signed, long targetTypeSize);
+        public final long executeLong(VirtualFrame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
+        }
 
-        public abstract int executeInt(VirtualFrame frame, Object o, int signed, long targetTypeSize);
+        public final int executeInt(VirtualFrame frame, Object o, int signed, long targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
+        }
+
+        @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
+        static long doPrimitiveNativeWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return nativeWrapper.getInt();
+        }
+
+        @Specialization(guards = {"targetTypeSize == 8", "fitsInInt64(nativeWrapper)"})
+        static long doPrimitiveNativeWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+            return nativeWrapper.getLong();
+        }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        static long doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        static long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             if (signed != 0) {
                 return obj;
             } else {
@@ -976,37 +1080,32 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doIntOther(VirtualFrame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+        long doIntOther(VirtualFrame frame, @SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
             return raiseUnsupportedSize(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doLong4(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        long doLong4(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return raiseTooLarge(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize) {
+        static long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return obj;
         }
 
         @Specialization(guards = "targetTypeSize == 8")
-        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
-            return obj;
-        }
-
-        @Specialization(guards = "targetTypeSize == 8")
-        Object doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        static PythonNativeVoidPtr doVoid(PythonNativeVoidPtr obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize) {
             return obj;
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doPInt(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+        long doPInt(VirtualFrame frame, @SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
             return raiseUnsupportedSize(frame, targetTypeSize);
         }
 
         @Specialization(guards = "targetTypeSize == 4")
-        int doPInt4(VirtualFrame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
+        long doPInt4(VirtualFrame frame, PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize) {
             try {
                 if (signed != 0) {
                     return obj.intValueExact();
@@ -1036,12 +1135,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
-        int doPInt(VirtualFrame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
+        long doPInt(VirtualFrame frame, @SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize) {
             return raiseUnsupportedSize(frame, targetTypeSize);
         }
 
-        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
-        Object doGeneric(Object obj, int signed, long targetTypeSize,
+        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)", "!isInteger(obj)", "!isPInt(obj)"})
+        static Object doGeneric(Object obj, int signed, long targetTypeSize,
                         @Cached CExtNodes.AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
         }
@@ -1060,6 +1159,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 raiseNativeNode = insert(PRaiseNativeNodeGen.create());
             }
             return raiseNativeNode;
+        }
+
+        static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
+            return nativeWrapper.isBool() || nativeWrapper.isByte() || nativeWrapper.isInt();
+        }
+
+        static boolean fitsInInt64(PrimitiveNativeWrapper nativeWrapper) {
+            return nativeWrapper.isIntLike() || nativeWrapper.isBool();
         }
     }
 
@@ -2234,22 +2341,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyLong_AsVoidPtr", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyLong_AsVoidPtr extends PythonUnaryBuiltinNode {
-        @Child private TrufflePInt_AsPrimitive asPrimitiveNode;
+    abstract static class PyLongAsVoidPtr extends PythonUnaryBuiltinNode {
+        @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
 
         @Specialization
-        long doPointer(int n) {
+        static long doPointer(int n) {
             return n;
         }
 
         @Specialization
-        long doPointer(long n) {
+        static long doPointer(long n) {
             return n;
         }
 
         @Specialization
         long doPointer(PInt n,
-                        @Cached("create()") BranchProfile overflowProfile) {
+                        @Cached BranchProfile overflowProfile) {
             try {
                 return n.longValueExact();
             } catch (ArithmeticException e) {
@@ -2259,7 +2366,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        TruffleObject doPointer(PythonNativeVoidPtr n) {
+        static TruffleObject doPointer(PythonNativeVoidPtr n) {
             return n.object;
         }
 
@@ -2267,9 +2374,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         long doGeneric(VirtualFrame frame, Object n) {
             if (asPrimitiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPrimitiveNode = insert(TrufflePInt_AsPrimitiveFactory.create());
+                asPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
             }
-            return asPrimitiveNode.executeLong(frame, n, 0, Long.BYTES);
+            try {
+                return asPrimitiveNode.executeLong(frame, n, 0, Long.BYTES);
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
+            }
         }
     }
 

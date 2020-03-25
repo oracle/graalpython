@@ -48,9 +48,10 @@ PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAU
 PyObject * _PyLong_Zero;
 PyObject * _PyLong_One;
 
-UPCALL_ID(PyLong_AsPrimitive);
+typedef uint64_t (*as_primitive_t)(PyObject*, int32_t, size_t);
+UPCALL_TYPED_ID(PyLong_AsPrimitive, as_primitive_t);
 long PyLong_AsLong(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
+    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -58,13 +59,13 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
+    long result = _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
 
 long long PyLong_AsLongLong(PyObject *obj) {
-    return as_long_long(obj);
+    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
 }
 
 long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
@@ -82,7 +83,7 @@ unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long)-1;
     }
-    return (unsigned long) UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(unsigned long));
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, 0, sizeof(unsigned long));
 }
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
@@ -94,11 +95,11 @@ PyObject * PyLong_FromDouble(double n) {
 }
 
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t));
+    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(Py_ssize_t));
 }
 
 size_t PyLong_AsSize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(size_t));
+    return _jls_PyLong_AsPrimitive(obj, 0, sizeof(size_t));
 }
 
 typedef PyObject* (*from_long_fun_t)(int64_t, int32_t);

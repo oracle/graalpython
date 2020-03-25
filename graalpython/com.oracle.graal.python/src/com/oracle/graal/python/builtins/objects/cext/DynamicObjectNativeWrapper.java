@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MD_DEF;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_BASE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_ALLOC;
@@ -225,8 +226,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
         static Object doObBaseCached(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
-                        @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
+                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
             return object;
+        }
+
+        @Specialization(guards = {"key == cachedObRefcnt", "isObRefcnt(cachedObRefcnt)"}, limit = "1")
+        static Object doObRefcnt(DynamicObjectNativeWrapper object, @SuppressWarnings("unused") String key,
+                        @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt) {
+            return object.getRefCount();
         }
 
         @Specialization
@@ -236,14 +243,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             Object delegate = getDelegate.execute(object);
 
             // special key for the debugger
-            if (key.equals(DynamicObjectNativeWrapper.GP_OBJECT)) {
+            if (DynamicObjectNativeWrapper.GP_OBJECT.equals(key)) {
                 return delegate;
             }
             return readNativeMemberNode.execute(delegate, object, key);
         }
 
         protected static boolean isObBase(String key) {
-            return NativeMember.OB_BASE.getMemberName().equals(key);
+            return OB_BASE.getMemberName().equals(key);
+        }
+
+        protected static boolean isObRefcnt(String key) {
+            return OB_REFCNT.getMemberName().equals(key);
+        }
+
+        protected static boolean isObType(String key) {
+            return OB_TYPE.getMemberName().equals(key);
         }
     }
 
@@ -1622,6 +1637,77 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMember.isValid(name);
             }
 
+        }
+
+        @ExportMessage
+        abstract static class ReadMember {
+
+            @Specialization(guards = {"key == cachedObBase", "isObBase(cachedObBase)"}, limit = "1")
+            static Object doObBaseCached(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
+                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObBase) {
+                return object;
+            }
+
+            @Specialization(guards = {"key == cachedObRefcnt", "isObRefcnt(cachedObRefcnt)"}, limit = "1")
+            static Object doObRefcnt(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
+                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObRefcnt) {
+                return object.getRefCount();
+            }
+
+            @Specialization(guards = {"key == cachedObType", "isObType(cachedObType)"}, limit = "1")
+            static Object doObType(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
+                            @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObType,
+                            @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
+                            @Cached GetClassNode getClassNode) {
+
+                PythonAbstractClass clazz;
+                if (object.isBool()) {
+                    clazz = getClassNode.execute(true);
+                } else if (object.isByte() || object.isInt() || object.isLong()) {
+                    clazz = getClassNode.execute(0);
+                } else if (object.isDouble()) {
+                    clazz = getClassNode.execute(0.0);
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("should not reach");
+                }
+
+                return toSulongNode.execute(clazz);
+            }
+
+            @Specialization
+            static Object execute(PrimitiveNativeWrapper object, String key,
+                            @Exclusive @Cached BranchProfile isNotObRefcntProfile,
+                            @Exclusive @Cached ReadNativeMemberDispatchNode readNativeMemberNode,
+                            @Exclusive @Cached CExtNodes.AsPythonObjectNode getDelegate) throws UnsupportedMessageException, UnknownIdentifierException {
+                // avoid materialization of primitive native wrappers if we only ask for the
+                // reference
+                // count
+                if (isObRefcnt(key)) {
+                    return object.getRefCount();
+                }
+                isNotObRefcntProfile.enter();
+
+                Object delegate = getDelegate.execute(object);
+
+                // special key for the debugger
+                if (DynamicObjectNativeWrapper.GP_OBJECT.equals(key)) {
+                    return delegate;
+                }
+                return readNativeMemberNode.execute(delegate, object, key);
+            }
+
+            protected static boolean isObBase(String key) {
+                return OB_BASE.getMemberName().equals(key);
+            }
+
+            protected static boolean isObRefcnt(String key) {
+                return OB_REFCNT.getMemberName().equals(key);
+            }
+
+            protected static boolean isObType(String key) {
+                return OB_TYPE.getMemberName().equals(key);
+            }
         }
 
         @ExportMessage
