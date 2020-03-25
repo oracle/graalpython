@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -129,20 +130,20 @@ public abstract class ExecutionContext {
                     neededExceptionState = true;
                     reportPolymorphicSpecialize();
                 }
-                PException curExc = null;
+                ExceptionInfo curExc = null;
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
                     if (curExc == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                        curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                        ExceptionInfo fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                        curExc = fromStackWalk != null ? fromStackWalk : ExceptionInfo.NO_EXCEPTION;
                         // now, set in our args, such that we won't do this again
                         PArguments.setException(frame, curExc);
                     }
                 } else {
                     // If we're here, it can only be because some top-level call
                     // inside Python led us here
-                    curExc = PException.NO_EXCEPTION;
+                    curExc = ExceptionInfo.NO_EXCEPTION;
                 }
                 PArguments.setException(callArguments, curExc);
             }
@@ -276,9 +277,9 @@ public abstract class ExecutionContext {
     @ValueType
     private static final class IndirectCallState {
         private final PFrame.Reference info;
-        private final PException curExc;
+        private final ExceptionInfo curExc;
 
-        private IndirectCallState(PFrame.Reference info, PException curExc) {
+        private IndirectCallState(PFrame.Reference info, ExceptionInfo curExc) {
             this.info = info;
             this.curExc = curExc;
         }
@@ -335,9 +336,9 @@ public abstract class ExecutionContext {
                 info.setCallNode((Node) callNode);
                 context.setTopFrameInfo(info);
             }
-            PException curExc = null;
+            ExceptionInfo curExc = null;
             if (callNode.calleeNeedsExceptionState()) {
-                PException exceptionState = PArguments.getException(frame);
+                ExceptionInfo exceptionState = PArguments.getException(frame);
                 curExc = context.getCaughtException();
                 context.setCaughtException(exceptionState);
             }
@@ -431,11 +432,11 @@ public abstract class ExecutionContext {
 
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsExceptionState()) {
-                PException curExc = context.getCaughtException();
+                ExceptionInfo curExc = context.getCaughtException();
                 if (curExc == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
+                    ExceptionInfo fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                    curExc = fromStackWalk != null ? fromStackWalk : ExceptionInfo.NO_EXCEPTION;
                     // now, set in our args, such that we won't do this again
                     context.setCaughtException(curExc);
                 }

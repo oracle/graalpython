@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
@@ -75,7 +76,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
 
         if (gen.isActive(frame, exceptFlag)) {
-            catchExceptionInGenerator(frame, gen.getActiveException(frame).exc, exceptionState);
+            catchExceptionInGenerator(frame, gen.getActiveException(frame).exc.exception.getException(), exceptionState);
             reset(frame);
             return;
         }
@@ -90,7 +91,8 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             getBody().executeVoid(frame);
         } catch (PException ex) {
             gen.setActive(frame, exceptFlag, true);
-            gen.setActiveException(frame, new ExceptionState(ex, ExceptionState.SOURCE_GENERATOR));
+            ExceptionInfo exceptionInfo = new ExceptionInfo(ex.getExceptionObject(), ex.getExceptionObject().getTraceback());
+            gen.setActiveException(frame, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
             catchExceptionInGenerator(frame, ex, exceptionState);
             reset(frame);
             return;

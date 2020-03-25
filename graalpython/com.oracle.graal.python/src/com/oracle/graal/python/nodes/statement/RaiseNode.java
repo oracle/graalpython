@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -102,14 +103,22 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
-        PException currentException = getCaughtExceptionNode.execute(frame);
-        if (hasCurrentException.profile(currentException == null)) {
+        ExceptionInfo exceptionInfo = getCaughtExceptionNode.execute(frame);
+        if (hasCurrentException.profile(exceptionInfo == null)) {
             throw raise.raise(RuntimeError, "No active exception to reraise");
         }
-        // We must be careful to never rethrow a PException that has already been caught and
+        // 1) We must be careful to never rethrow a PException that has already been caught and
         // exposed to the program, because its Truffle lazy stacktrace may have been already
-        // materialized, which would prevent it from capturing frames after the rethrow
-        throw raise.raise(currentException.getExceptionObject());
+        // materialized, which would prevent it from capturing frames after the rethrow. So we need
+        // a new PException even though its just a dumb rethrow. We also need a new PException for
+        // the reason below
+        // 2) CPython reraises the exception with the traceback captured in sys.exc_info, discarding
+        // the traceback in the exception, which may have changed since the time the exception had
+        // been caught. This can happen due to explicit modification by the program or, more
+        // commonly, by accumulating more frames by being reraised in the meantime
+        // 3) We set the location to null, which will make the traceback materialization logic skip the frame
+        exceptionInfo.exception.setTraceback(exceptionInfo.traceback);
+        throw PException.fromObject(exceptionInfo.exception, null);
     }
 
     // raise <exception>

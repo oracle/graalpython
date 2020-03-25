@@ -82,6 +82,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -2348,8 +2350,9 @@ public abstract class CExtNodes {
         }
 
         public static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p, PythonObjectFactory factory) {
-            p.getExceptionObject().reifyException(frameInfo, factory);
-            context.setCurrentException(p);
+            PBaseException pythonException = p.getExceptionObject();
+            pythonException.reifyException(frameInfo, factory);
+            context.setCurrentException(new ExceptionInfo(pythonException, pythonException.getTraceback()));
         }
     }
 

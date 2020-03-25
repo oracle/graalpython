@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -98,8 +97,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-
-        @Child private GetCaughtExceptionNode getCaughtExceptionNode;
 
         private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 

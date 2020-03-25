@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Ge
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -77,7 +78,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -117,10 +117,10 @@ public final class PythonContext {
         WeakReference<PLock> sentinelLock;
 
         /* corresponds to 'PyThreadState.curexc_*' */
-        PException currentException;
+        ExceptionInfo currentException;
 
         /* corresponds to 'PyThreadState.exc_*' */
-        PException caughtException;
+        ExceptionInfo caughtException;
 
         PythonThreadState() {
             owners = new LinkedList<>();
@@ -349,19 +349,19 @@ public final class PythonContext {
         return out;
     }
 
-    public void setCurrentException(PException e) {
+    public void setCurrentException(ExceptionInfo e) {
         getThreadState().currentException = e;
     }
 
-    public PException getCurrentException() {
+    public ExceptionInfo getCurrentException() {
         return getThreadState().currentException;
     }
 
-    public void setCaughtException(PException e) {
+    public void setCaughtException(ExceptionInfo e) {
         getThreadState().caughtException = e;
     }
 
-    public PException getCaughtException() {
+    public ExceptionInfo getCaughtException() {
         return getThreadState().caughtException;
     }
 

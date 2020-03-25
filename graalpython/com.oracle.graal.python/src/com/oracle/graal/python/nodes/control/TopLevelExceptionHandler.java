@@ -48,6 +48,7 @@ import java.io.IOException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -272,7 +273,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PHashingCollection mainDict = PythonObjectLibrary.getUncached().getDict(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setCustomLocals(arguments, mainDict);
-            PArguments.setException(arguments, PException.NO_EXCEPTION);
+            PArguments.setException(arguments, ExceptionInfo.NO_EXCEPTION);
         }
         PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, innerCallTarget);
         try {
