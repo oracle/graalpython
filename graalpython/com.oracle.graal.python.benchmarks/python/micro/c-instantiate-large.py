@@ -42,7 +42,7 @@ code = """
 
 typedef struct {
     PyObject_HEAD;
-    int payload;
+    int64_t payload[1024*1024];
 } NativeTypeObject;
 
 

@@ -115,7 +115,6 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-list-iterating-obj': ITER_10 + ['50000000'],
     'c-magic-bool': ITER_10 + ['100000000'],
     'c-magic-iter': ITER_10 + ['50000000'],
-    'c-instantiation': ITER_10 + ['50000000'],
     'c_arith-binop': ITER_10 + ['5'],
     'c_arith_binop_2': ITER_10 + ['50'],
     'c-call-classmethod': ITER_10 + ['50000000'],
@@ -123,6 +122,7 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-issubtype-polymorphic': ITER_10 + ['50000000'],
     'c-issubtype-monorphic': ITER_10 + ['50000000'],
     'c-call-method': ITER_15 + ['5000000'],
+    'c-instantiate-large': ITER_15 + ['1000'],
 }
 
 
