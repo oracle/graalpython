@@ -149,9 +149,14 @@ public abstract class CExtParseArgumentsNode {
                         @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") String cachedFormat,
                         @Cached(value = "getChars(format)", allowUncached = true, dimensions = 1) char[] chars,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
+                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(funName, argv, kwds, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
+                PDict kwdsDict = null;
+                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                    kwdsDict = (PDict) kwds;
+                }
+                doParsingExploded(funName, argv, kwdsDict, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -161,12 +166,17 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial")
         int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
+                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 char[] chars = getChars(format);
+                PDict kwdsDict = null;
+                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                    kwdsDict = (PDict) kwds;
+                }
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);
                 for (int i = 0; i < format.length(); i++) {
-                    state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
+                    state = convertArg(state, kwdsDict, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
