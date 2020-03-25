@@ -54,7 +54,11 @@ public class ModuleRootNode extends PClosureRootNode {
 
     public ModuleRootNode(PythonLanguage language, String name, String doc, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots, boolean hasAnnotations) {
         super(language, descriptor, freeVarSlots, hasAnnotations);
-        this.name = "<module '" + name + "'>";
+        if (name.startsWith("<")) {
+            this.name = "<module>";
+        } else {
+            this.name = "<module '" + name + "'>";
+        }
         this.doc = doc;
         this.body = new InnerRootNode(this, file);
     }
