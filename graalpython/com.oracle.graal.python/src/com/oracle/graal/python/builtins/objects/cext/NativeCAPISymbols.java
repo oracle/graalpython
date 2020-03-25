@@ -52,7 +52,6 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
     public static final String FUN_NATIVE_TO_JAVA = "native_to_java_exported";
     public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
     public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";

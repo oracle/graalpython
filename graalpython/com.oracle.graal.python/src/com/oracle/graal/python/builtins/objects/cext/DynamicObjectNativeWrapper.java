@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_TYPE;
@@ -1366,7 +1366,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization
         static Object doObject(PythonNativeWrapper wrapper,
                         @Cached PCallCapiFunction callNativeUnary) {
-            return callNativeUnary.call(FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT, wrapper);
+            return callNativeUnary.call(FUN_DEREF_HANDLE, wrapper);
         }
     }
 

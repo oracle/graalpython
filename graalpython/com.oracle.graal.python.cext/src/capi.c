@@ -415,14 +415,6 @@ uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
-/** to be used from Java code only; only creates the deref handle */
-void* PyObjectHandle_ForJavaObject(void* cobj) {
-    if (truffle_cannot_be_handle(cobj)) {
-        return truffle_deref_handle_for_managed(cobj);
-    }
-    return cobj;
-}
-
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
 void PyTruffle_Free(void* obj) {
 	if(!truffle_cannot_be_handle(obj) && truffle_is_handle_to_managed(obj)) {
