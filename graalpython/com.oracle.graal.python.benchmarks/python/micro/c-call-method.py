@@ -56,6 +56,7 @@ static PyObject* nc_method_varargs(PyObject* self, PyObject* args, PyObject* kwd
         return NULL;
     }
     lval2 = PyLong_AsLong(longobj);
+    Py_DECREF(longobj);
     return PyLong_FromLong(lval2 + ival + lval);
 }
 
