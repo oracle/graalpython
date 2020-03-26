@@ -412,13 +412,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @ImportStatic(CApiGuards.class)
     abstract static class PyTuple_SetItem extends PythonTernaryBuiltinNode {
         @Specialization
-        static int doManaged(VirtualFrame frame, PythonNativeWrapper tupleWrapper, Object position, Object elementWrapper,
-                        @Cached AsPythonObjectNode tupleAsPythonObjectNode,
+        static int doManaged(VirtualFrame frame, PythonNativeWrapper selfWrapper, Object position, Object elementWrapper,
+                        @Cached AsPythonObjectNode selfAsPythonObjectNode,
                         @Cached AsPythonObjectStealingNode elementAsPythonObjectNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                PTuple tuple = (PTuple) tupleAsPythonObjectNode.execute(tupleWrapper);
+                Object self = selfAsPythonObjectNode.execute(selfWrapper);
+                if (!PGuards.isPTuple(self) || selfWrapper.getRefCount() != 1) {
+                    throw raiseNode.raise(SystemError, "bad argument to internal function 'PTuple_SetItem'");
+                }
+                PTuple tuple = (PTuple) self;
                 Object element = elementAsPythonObjectNode.execute(elementWrapper);
                 setItemNode.execute(frame, tuple.getSequenceStorage(), position, element);
                 return 0;
