@@ -939,3 +939,50 @@ void _PyArg_BadArgument(const char *fname, const char *displayname,
                  fname, displayname, expected,
                  arg == Py_None ? "None" : arg->ob_type->tp_name);
 }
+
+#undef _PyArg_CheckPositional
+
+// Taken from CPython 3.8 getargs.c
+int
+_PyArg_CheckPositional(const char *name, Py_ssize_t nargs,
+                       Py_ssize_t min, Py_ssize_t max)
+{
+    assert(min >= 0);
+    assert(min <= max);
+
+    if (nargs < min) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%.200s expected %s%zd argument%s, got %zd",
+                name, (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd element%s,"
+                " but has %zd",
+                (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
+        return 0;
+    }
+
+    if (nargs == 0) {
+        return 1;
+    }
+
+    if (nargs > max) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%.200s expected %s%zd argument%s, got %zd",
+                name, (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd element%s,"
+                " but has %zd",
+                (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
+        return 0;
+    }
+
+    return 1;
+}
