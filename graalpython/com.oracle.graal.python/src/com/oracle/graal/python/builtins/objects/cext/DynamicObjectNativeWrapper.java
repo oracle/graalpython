@@ -136,6 +136,7 @@ import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1162,6 +1163,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("delegate of memoryview object is not native");
+        }
+
+        @Specialization(guards = "eq(F_LINENO, key)")
+        static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                             @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaIntNode castToJavaIntNode) {
+            try {
+                int lineno = castToJavaIntNode.execute(value);
+                object.setLine(lineno);
+                return lineno;
+            } catch(PException e) {
+                return -1;
+            }
         }
 
         @Specialization(guards = "isGenericCase(object, key)", limit = "1")

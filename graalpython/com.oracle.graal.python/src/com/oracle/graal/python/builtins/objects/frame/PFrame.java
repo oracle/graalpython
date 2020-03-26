@@ -214,6 +214,10 @@ public final class PFrame extends PythonBuiltinObject {
         this.backref = backref;
     }
 
+    public void setLine(int line) {
+        this.line = line;
+    }
+
     @TruffleBoundary
     public int getLine() {
         if (line == -2) {

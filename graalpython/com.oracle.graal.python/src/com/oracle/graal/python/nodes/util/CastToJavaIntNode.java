@@ -93,7 +93,7 @@ public abstract class CastToJavaIntNode extends PNodeWithContext {
         return CastToJavaIntExactNodeGen.getUncached();
     }
 
-    public static CastToJavaIntNode createLossyUncached() {
+    public static CastToJavaIntNode getLossyUncached() {
         return CastToJavaIntLossyNodeGen.getUncached();
     }
 
