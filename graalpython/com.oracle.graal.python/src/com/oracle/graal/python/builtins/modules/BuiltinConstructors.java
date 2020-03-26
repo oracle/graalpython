@@ -2949,8 +2949,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Specialization
-        Object doMapping(LazyPythonClass klass, PHashingCollection obj) {
-            return factory().createMappingproxy(klass, obj.getDictStorage());
+        Object doMapping(LazyPythonClass klass, PHashingCollection obj,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage) {
+            return factory().createMappingproxy(klass, getStorage.execute(obj));
         }
 
         @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"})
