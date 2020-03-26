@@ -60,6 +60,7 @@ import gc
 import dis
 import pickle
 from time import monotonic as _time
+import _trace
 
 import threading
 
@@ -434,6 +435,8 @@ class Trace:
             # Ahem -- do nothing?  Okay.
             self.donothing = 1
 
+        self._graal_start_args = (count, countfuncs, ignoremods, ignoredirs)
+
     def run(self, cmd):
         import __main__
         dict = __main__.__dict__
@@ -443,14 +446,13 @@ class Trace:
         if globals is None: globals = {}
         if locals is None: locals = {}
         if not self.donothing:
-            threading.settrace(self.globaltrace)
-            sys.settrace(self.globaltrace)
+            _trace.start(*self._graal_start_args)
         try:
             exec(cmd, globals, locals)
         finally:
             if not self.donothing:
-                sys.settrace(None)
-                threading.settrace(None)
+                _trace.stop()
+                self.counts, self._calledfuncs = _trace.results()
 
     def runfunc(*args, **kw):
         if len(args) >= 2:
@@ -470,12 +472,13 @@ class Trace:
 
         result = None
         if not self.donothing:
-            sys.settrace(self.globaltrace)
+            _trace.start(*self._graal_start_args())
         try:
             result = func(*args, **kw)
         finally:
             if not self.donothing:
-                sys.settrace(None)
+                _trace.stop()
+                self.counts, self._calledfuncs = _trace.results()
         return result
     runfunc.__text_signature__ = '($self, func, /, *args, **kw)'
 

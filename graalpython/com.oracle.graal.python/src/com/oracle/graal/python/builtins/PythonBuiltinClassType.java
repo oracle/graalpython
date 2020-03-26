@@ -118,6 +118,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PDirEntry("DirEntry", "posix"),
     PLZMACompressor("LZMACompressor", "_lzma"),
     PLZMADecompressor("LZMADecompressor", "_lzma"),
+    LsprofProfiler("Profiler", "_lsprof"),
 
     // Errors and exceptions:
 

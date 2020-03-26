@@ -40,8 +40,6 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
@@ -65,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
@@ -89,6 +88,7 @@ import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
@@ -191,6 +191,8 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
  * types.
@@ -253,6 +255,8 @@ public final class Python3Core implements PythonCore {
                         "resource",
                         "_contextvars",
                         "pip_hook",
+                        "_lsprof",
+                        "marshal",
                         "_lzma"));
         // must be last
         coreFiles.add("final_patches");
@@ -260,6 +264,24 @@ public final class Python3Core implements PythonCore {
     }
 
     private final PythonBuiltins[] builtins;
+
+    private static final boolean hasCoverageTool;
+    private static final boolean hasProfilerTool;
+    static {
+        Class<?> c = null;
+        try {
+            c = Class.forName("com.oracle.truffle.tools.coverage.CoverageTracker");
+        } catch (LinkageError | ClassNotFoundException e) {
+        }
+        hasCoverageTool = c != null;
+        c = null;
+        try {
+            c = Class.forName("com.oracle.truffle.tools.profiler.CPUSampler");
+        } catch (LinkageError | ClassNotFoundException e) {
+        }
+        hasProfilerTool = c != null;
+        c = null;
+    }
 
     private static final PythonBuiltins[] initializeBuiltins() {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
@@ -376,6 +398,13 @@ public final class Python3Core implements PythonCore {
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new GraalPythonModuleBuiltins()));
+        if (hasCoverageTool) {
+            builtins.add(new TraceModuleBuiltins());
+        }
+        if (hasProfilerTool) {
+            builtins.add(new LsprofModuleBuiltins());
+            builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
+        }
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {

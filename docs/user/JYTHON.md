@@ -6,75 +6,181 @@ stable Jython release, and these only come in Python 2.x versions. The GraalVM
 implementation of Python, in contrast, is only targeting Python 3.x.
 
 Nonetheless, there are certain features of Jython's Java integration that we can
-offer similarly. Some features are more expensive to offer, and thus are hidden
-behind a command line flag, `--python.EmulateJython`.
+offer similarly. Here is an example:
 
-## Importing Java Classes and Packages
+    >>> import java.awt as awt
+    >>> win = awt.Frame()
+    >>> win.setSize(200, 200)
+    >>> win.setTitle("Hello from Python!")
+    >>> win.getSize().toString()
+    'java.awt.Dimension[width=200,height=200]'
+    >>> win.show()
 
-In the default mode, Java classes can only be imported through the `java`
-package. Additionally, only Java classes can be imported, not packages. In
-Jython compatibility mode, importing works more directly, at the cost worse
-performance for import failures in the general case.
+This example works exactly the same on both Jython and Python on GraalVM. Some
+features of Jython are more expensive at runtime, and thus are hidden behind a
+command line flag on Graal: `--python.EmulateJython`.
 
-#### Normal mode
+### Importing
 
-Suppose you want to import the class `sun.misc.Signal`, normal usage looks like
-this:
+Import statements allow you to import Java classes, but (unlike Jython), only
+packages in the `java` namespace can be directly imported. So this works:
 
-    import java.sun.misc.Signal as Signal
+    import java.lang as lang
 
-For the `java` namespace, you do not have to repeat the `java` name (but can):
+But this doesn't:
 
-    import java.lang.System as System
+    import javax.swing as swing
+    from javax.swing import *
 
-#### Jython mode
+Instead, you'll have to import one of the classes you're interested in directly:
 
-In Jython mode, Java packages can be imported and traversed, and they can be
-imported directly without going through the `java` module.
+    import javax.swing.Window as Window
 
-    import sun.misc.Signal as Signal
+### Basic Object Usage
 
-    import org.antlr
+Constructing and working with Java objects and classes is done with natural
+Python syntax. The methods of Java objects can also be retrieved and passed
+around as first class objects (bound to their instance) the same as Python
+methods:
 
-    type(org.antlr.v4.runtime) # => module
-    org.antlr.v4.runtime.Token
+    >>> from java.util import Random
+    >>> rg = Random(99)
+    >>> boundNextInt = rg.nextInt
+    >>> rg.nextInt()
+    1491444859
+    >>> boundNextInt = rg.nextInt
+    1672896916
 
-The downside of this is that everytime an import fails (and there are many
-speculative imports in the standard library), we ask the Java classloader to
-list currently available packages and traverse them to check if we should create
-a Java package. This slows down startup significantly.
+### Java-to-Python Types: Automatic Conversion
 
-## Interacting with Java Objects
+Method overloads are resolved by matching the Python arguments in a best-effort
+manner to the available parameter types. This is also when data conversion
+happens. The goal here is to make using Java from Python as smooth as
+possible. The matching we do here is similar to Jython, but Graal Python uses a
+more dynamic approach to matching &mdash; Python types emulating `int` or
+`float` are also converted to the appropriate Java types. This allows, for
+example, to use Pandas frames as `double[][]` or NumPy array elements as `int[]`
+when the elements fit into those Java primitive types.
 
-Once you get hold of a Java object or class, interaction in both modes works
-naturally. Public fields and methods can be read and invoked as expected.
+| Java type              | Python type                                                                       |
+|:-----------------------|:----------------------------------------------------------------------------------|
+| null                   | None                                                                              |
+| boolean                | bool                                                                              |
+| byte, short, int, long | int, any object that has an `__int__` method                                      |
+| float                  | float, any object that has a `__float__` method                                   |
+| char                   | str of length 1                                                                   |
+| java.lang.String       | str                                                                               |
+| byte[]                 | bytes, bytearray, wrapped Java array, Python list with only the appropriate types |
+| Java arrays            | Wrapped Java array or Python list with only the appropriate types                 |
+| Java objects           | Wrapped Java object of the appropriate type                                       |
+| java.lang.Object       | Any object                                                                        |
 
-## Subclassing Java Classes and Implementing Interfaces with Python Classes
+### Special Jython Modules
 
-This is not supported at all right now, there's no emulation available even in
-Jython compatibility mode. We have not seen many uses of this in the wild. Let
-us know if this is of interest to you!
+We do not offer any of the special Jython modules. For example, the `jarray`
+module on Jython allows construction of primitive Java arrays. This can be
+achieved as follows on GraalPython:
 
-## Catching Java exceptions
+    >>> import java
+    >>> java.type("int[]")(10)
 
-By default this is not allowed, because of the additional cost of checking for
-Java exceptions in the except statement execution. However, in Jython
-compatibility mode, the common case of catching a Java exception directly works:
+Code that only needs to pass a Java array can also use Python types. However,
+implicitly this may entail a copy of the array data, which can be deceiving when
+using Java arrays as output parameters:
 
-    import java.lang.NumberFormatException as NumberFormatException
-    import java.lang.Integer as Integer
+    >>> i = java.io.ByteArrayInputStream(b"foobar")
+    >>> buf = [0, 0, 0]
+    >>> i.read(buf) # buf is automatically converted to a byte[] array
+    3
+    >>> buf
+    [0, 0, 0] # the converted byte[] array got lost
+    >>> jbuf = java.type("byte[]")(3)
+    >>> i.read(jbuf)
+    3
+    >>> jbuf
+    [98, 97, 122]
 
-    try:
-        Integer.parseInt("99", 8)
-    except NumberFormatException as e:
-        pass
+### Exceptions from Java
 
-Note that even in this mode, Java exceptions are never caught by generic except
-handlers, so this *will not* work:
+Catching all kinds of Java exceptions comes with a performance penalty, and is
+only enabled with the `--python.EmulateJython` flag.
 
-    import java.lang.Integer as Integer
+    >>> import java
+    >>> v = java.util.Vector()
+    >>> try:
+    ...    x = v.elementAt(7)
+    ... except java.lang.ArrayIndexOutOfBoundsException as e:
+    ...    print(e.getMessage())
+    ...
+    7 >= 0
 
-    try:
-        Integer.parseInt("99", 8)
-    except:
-        pass
+### Java Collections
+
+There is no automatic mapping of the Python syntax for accessing dictionary
+elements to the `java.util` mapping and list classes' ` get`, `set`, or `put`
+methods. To use these mapping and list clases, you must call the Java methods:
+
+    >>> ht = java.util.Hashtable()
+    >>> ht.put("foo", "bar")
+    >>> ht.get("foo")
+    'bar'
+
+We also do not support Python-style iteration of Java `java.util.Enumerable`,
+`java.util.Iterator`, or `java.lang.Iterable`. For these, you'll have to use a
+`while` loop and use the `hasNext()` and `next()` (or equivalent) methods.
+
+### No Inheriting from Java
+
+Python classes cannot inherit from Java classes. A workaround can be to create a
+flexible subclass in Java, compile it, and use delegation instead. Take this
+example:
+
+    import java.util.logging.Handler;
+
+    public class PythonHandler extends Handler {
+        private final Value pythonDelegate;
+
+        public PythonHandler(Value pythonDelegate) {
+            this.pythonDelegate = pythonDelegate;
+        }
+
+        public void publish(LogRecord record) {
+            pythonDelegate.invokeMember("publish", record);
+        }
+
+        public void flush() {
+            pythonDelegate.invokeMember("flush");
+        }
+
+        public void close() {
+            pythonDelegate.invokeMember("close");
+        }
+    }
+
+Then you can use it like this in Python:
+
+    from java.util.logging import LogManager, Logger
+
+    class MyHandler():
+        def publish(self, logRecord): print("[python]", logRecord.toString())​
+        def flush(): pass​
+        def close(): pass
+    ​
+    LogManager.getLogManager().addLogger(Logger('my.python.logger', None, MyHandler()))
+
+## Embedding Python into Java
+
+The other way to use Jython is to embed it into Java applications. Where above,
+Graal Python offered some measure of compatibility with existing Jython code, we
+do not offer any in this case. Existing code using Jython depends directly on
+the Jython package (for example, in the Maven configuration), because the Java
+code has references to Jython internal classes such as `PythonInterpreter`.
+
+For Graal Python, no dependency other than on the [GraalVM
+SDK](https://mvnrepository.com/artifact/org.graalvm.sdk/graal-sdk) is
+required. There are no APIs particular to Python that are exposed, and
+everything is done through the GraalVM API. Important to know is that as long as
+your application is executed on a GraalVM with the Python language installed,
+you can embed Python in your programs. Please refer to [our embedding
+documentation](https://www.graalvm.org/docs/reference-manual/embed/#Function_Python)
+for more details.
