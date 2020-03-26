@@ -128,8 +128,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonOptions.GetEngineFlagNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -2706,14 +2704,12 @@ public abstract class CExtNodes {
                         limit = "1")
         static Object doNativeObjectByMember(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @Cached CastToJavaLongNode castToJavaLongNode,
                         @CachedLibrary("object") InteropLibrary lib) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, CannotCastException {
-            if (!lib.isNull(object) && context.getCApiContext() != null) {
+            CApiContext cApiContext = context.getCApiContext();
+            if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
-                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
-                    checkAccess(object, lib, context);
-                }
+                cApiContext.checkAccess(object, lib);
                 long refCnt = castToJavaLongNode.execute(lib.readMember(object, OB_REFCNT.getMemberName()));
                 lib.writeMember(object, OB_REFCNT.getMemberName(), refCnt + value);
             }
@@ -2724,25 +2720,15 @@ public abstract class CExtNodes {
         static Object doNativeObject(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
-                        @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            if (!lib.isNull(object) && context.getCApiContext() != null) {
+            CApiContext cApiContext = context.getCApiContext();
+            if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
-                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
-                    checkAccess(object, lib, context);
-                }
+                cApiContext.checkAccess(object, lib);
                 callAddRefCntNode.call(NativeCAPISymbols.FUN_ADDREF, object, value);
             }
             return object;
         }
-
-        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
-            Object ptrVal = CApiContext.asPointer(object, lib);
-            if (!context.getCApiContext().isAllocated(ptrVal)) {
-                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
-            }
-        }
-
     }
 
     @GenerateUncached
@@ -2762,24 +2748,14 @@ public abstract class CExtNodes {
         static Object doNativeObject(Object object, long value,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callAddRefCntNode,
-                        @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            if (!lib.isNull(object) && context.getCApiContext() != null) {
-                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
-                    checkAccess(object, lib, context);
-                }
+            CApiContext cApiContext = context.getCApiContext();
+            if (!lib.isNull(object) && cApiContext != null) {
+                cApiContext.checkAccess(object, lib);
                 callAddRefCntNode.call(NativeCAPISymbols.FUN_SUBREF, object, value);
             }
             return object;
         }
-
-        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
-            Object ptrVal = CApiContext.asPointer(object, lib);
-            if (!context.getCApiContext().isAllocated(ptrVal)) {
-                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
-            }
-        }
-
     }
 
     @GenerateUncached
@@ -2810,25 +2786,15 @@ public abstract class CExtNodes {
         static Object doNativeObject(String fun, Object object,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callIncRefNode,
-                        @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            if (!lib.isNull(object) && context.getCApiContext() != null) {
-                if (getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
-                    checkAccess(object, lib, context);
-                }
+            CApiContext cApiContext = context.getCApiContext();
+            if (!lib.isNull(object) && cApiContext != null) {
+                cApiContext.checkAccess(object, lib);
                 CompilerAsserts.partialEvaluationConstant(fun);
                 callIncRefNode.call(fun, object);
             }
             return object;
         }
-
-        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
-            Object ptrVal = CApiContext.asPointer(object, lib);
-            if (!context.getCApiContext().isAllocated(ptrVal)) {
-                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
-            }
-        }
-
     }
 
     @GenerateUncached
@@ -2873,12 +2839,12 @@ public abstract class CExtNodes {
         static long doNativeObjectTyped(Object ptrObject,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
-                        @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
             if (!lib.isNull(ptrObject)) {
-                if (context.getCApiContext() != null && getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
-                    checkAccess(ptrObject, lib, context);
+                CApiContext cApiContext = context.getCApiContext();
+                if (cApiContext != null) {
+                    cApiContext.checkAccess(ptrObject, lib);
                 }
 
                 // directly reading the member is only possible if the pointer object is typed
@@ -2898,25 +2864,18 @@ public abstract class CExtNodes {
         static long doNativeObject(Object ptrObject,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PCallCapiFunction callGetObRefCntNode,
-                        @Cached GetEngineFlagNode getTraceMemFlagNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongNode castToJavaLongNode) {
             if (!lib.isNull(ptrObject)) {
-                if (context.getCApiContext() != null && getTraceMemFlagNode.execute(context, PythonOptions.TraceNativeMemory)) {
-                    checkAccess(ptrObject, lib, context);
+                CApiContext cApiContext = context.getCApiContext();
+                if (cApiContext != null) {
+                    cApiContext.checkAccess(ptrObject, lib);
                 }
                 if (context.getCApiContext() != null) {
                     return castToJavaLongNode.execute(callGetObRefCntNode.call(NativeCAPISymbols.FUN_GET_OB_REFCNT, ptrObject));
                 }
             }
             return 0;
-        }
-
-        private static void checkAccess(Object object, InteropLibrary lib, PythonContext context) {
-            Object ptrVal = CApiContext.asPointer(object, lib);
-            if (!context.getCApiContext().isAllocated(ptrVal)) {
-                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
-            }
         }
     }
 

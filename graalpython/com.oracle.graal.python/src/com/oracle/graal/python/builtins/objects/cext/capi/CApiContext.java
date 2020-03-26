@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -508,7 +509,7 @@ public final class CApiContext extends CExtContext {
     }
 
     public void increaseMemoryPressure(GenericInvokeNode invokeNode, long size) {
-        if (allocatedMemory <= getContext().getMaxNativeMemory()) {
+        if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
@@ -517,14 +518,14 @@ public final class CApiContext extends CExtContext {
         // method slim.
         invokeNode.execute(getTriggerAsyncActionsCallTarget(), PArguments.create());
 
-        if (allocatedMemory + size > getContext().getMaxNativeMemory()) {
+        if (allocatedMemory + size > getContext().getOption(PythonOptions.MaxNativeMemory)) {
             throw new OutOfMemoryError("native memory");
         }
         allocatedMemory += size;
     }
 
     public void increaseMemoryPressure(VirtualFrame frame, Node location, long size) {
-        if (allocatedMemory <= getContext().getMaxNativeMemory()) {
+        if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
@@ -532,7 +533,7 @@ public final class CApiContext extends CExtContext {
         doGc();
         getContext().triggerAsyncActions(frame, location);
 
-        if (allocatedMemory + size > getContext().getMaxNativeMemory()) {
+        if (allocatedMemory + size > getContext().getOption(PythonOptions.MaxNativeMemory)) {
             throw new OutOfMemoryError("native memory");
         }
         allocatedMemory += size;
@@ -551,6 +552,19 @@ public final class CApiContext extends CExtContext {
         } catch (InterruptedException x) {
             // Restore interrupt status
             Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Tests if any read/write access to the given pointer object is invalid. This should be used to
+     * test access before getting the type of reference count of native objects.
+     */
+    public void checkAccess(Object pointerObject, InteropLibrary lib) {
+        if (getContext().getOption(PythonOptions.TraceNativeMemory)) {
+            Object ptrVal = CApiContext.asPointer(pointerObject, lib);
+            if (!isAllocated(ptrVal)) {
+                LOGGER.severe(() -> "Access to invalid memory at " + CApiContext.asHex(ptrVal));
+            }
         }
     }
 
