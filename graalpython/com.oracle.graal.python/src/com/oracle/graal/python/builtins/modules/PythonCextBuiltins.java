@@ -1898,12 +1898,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class UpcallLNode extends UpcallLandingNode {
 
         @Specialization
-        long upcall(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static Object upcall(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.CastToNativeLongNode asLongNode,
                         @Cached CExtNodes.ObjectUpcallNode upcallNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return asLongNode.execute(upcallNode.execute(frame, args));
+                Object result = asLongNode.execute(upcallNode.execute(frame, args));
+                assert result instanceof Long || result instanceof PythonNativeVoidPtr;
+                return result;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
@@ -2016,29 +2018,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class UpcallCextLNode extends UpcallLandingNode {
 
         @Specialization(guards = "isStringCallee(args)")
-        Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
+        static Object upcall(VirtualFrame frame, PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.CextUpcallNode upcallNode,
                         @Shared("asLong") @Cached CExtNodes.CastToNativeLongNode asLongNode) {
-            Object result = upcallNode.execute(frame, cextModule, args);
-            if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
-                return ((PythonNativeVoidPtr) result).object;
-            } else {
-                return asLongNode.execute(result);
-            }
+            return asLongNode.execute(upcallNode.execute(frame, cextModule, args));
         }
 
         @Specialization(guards = "!isStringCallee(args)")
-        Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isVoidPtr,
+        static Object doDirect(VirtualFrame frame, @SuppressWarnings("unused") PythonModule cextModule, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached CExtNodes.DirectUpcallNode upcallNode,
                         @Shared("asLong") @Cached CExtNodes.CastToNativeLongNode asLongNode) {
-            Object result = upcallNode.execute(frame, args);
-            if (isVoidPtr.profile(result instanceof PythonNativeVoidPtr)) {
-                return ((PythonNativeVoidPtr) result).object;
-            } else {
-                return asLongNode.execute(result);
-            }
+            return asLongNode.execute(upcallNode.execute(frame, args));
         }
     }
 
@@ -2123,11 +2113,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AsLong extends PythonUnaryBuiltinNode {
         @Specialization
-        long doIt(VirtualFrame frame, Object object,
+        Object doIt(VirtualFrame frame, Object object,
                         @Cached CExtNodes.CastToNativeLongNode asLongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return asLongNode.execute(object);
+                Object result = asLongNode.execute(object);
+                assert result instanceof Long || result instanceof PythonNativeVoidPtr;
+                return result;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;
@@ -2821,7 +2813,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isMappingOrSequence(obj)")
-        static long doGenericUnboxed(VirtualFrame frame, Object obj,
+        static Object doGenericUnboxed(VirtualFrame frame, Object obj,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode,
                         @Cached("createBinaryProfile()") ConditionProfile noLenProfile,
                         @Cached CastToNativeLongNode castToLongNode,
@@ -2831,7 +2823,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (noLenProfile.profile(result == PNone.NO_VALUE)) {
                     return -1;
                 }
-                return castToLongNode.execute(result);
+                Object lresult = castToLongNode.execute(result);
+                assert lresult instanceof Long || lresult instanceof PythonNativeVoidPtr;
+                return lresult;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1;

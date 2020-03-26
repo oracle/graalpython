@@ -1876,60 +1876,65 @@ public abstract class CExtNodes {
 
         public abstract long execute(double arg);
 
-        public abstract long execute(Object arg);
+        public abstract Object execute(Object arg);
 
         @Specialization(guards = "value.length() == 1")
-        long doString(String value) {
+        static long doString(String value) {
             return value.charAt(0);
         }
 
         @Specialization
-        long doBoolean(boolean value) {
+        static long doBoolean(boolean value) {
             return value ? 1 : 0;
         }
 
         @Specialization
-        long doByte(byte value) {
+        static long doByte(byte value) {
             return value;
         }
 
         @Specialization
-        long doInt(int value) {
+        static long doInt(int value) {
             return value;
         }
 
         @Specialization
-        long doLong(long value) {
+        static long doLong(long value) {
             return value;
         }
 
         @Specialization
-        long doDouble(double value) {
+        static long doDouble(double value) {
             return (long) value;
         }
 
         @Specialization
-        long doPInt(PInt value) {
+        static long doPInt(PInt value) {
             return value.longValue();
         }
 
         @Specialization
-        long doPFloat(PFloat value) {
+        static long doPFloat(PFloat value) {
             return (long) value.getValue();
         }
 
+        @Specialization
+        static Object doPythonNativeVoidPtr(PythonNativeVoidPtr object) {
+            return object.object;
+        }
+
         @Specialization(guards = "!object.isDouble()")
-        long doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static long doLongNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        long doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
+        static long doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
             return (long) object.getDouble();
         }
 
         @Specialization(limit = "1")
-        long run(PythonNativeWrapper value,
+        static Object run(PythonNativeWrapper value,
                         @CachedLibrary("value") PythonNativeWrapperLibrary lib,
                         @Cached CastToNativeLongNode recursive) {
             // TODO(fa) this specialization should eventually go away
