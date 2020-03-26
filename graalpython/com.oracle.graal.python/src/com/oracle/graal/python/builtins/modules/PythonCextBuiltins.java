@@ -3272,8 +3272,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocUntrack.class);
 
         @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
-        int doCachedDomainIdx(VirtualFrame frame, long domain, Object pointerObject,
-                        @Cached("domain") long cachedDomain,
+        int doCachedDomainIdx(@SuppressWarnings("unused") long domain, Object pointerObject,
+                        @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
 
             CApiContext cApiContext = getContext().getCApiContext();
@@ -3286,12 +3286,24 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(VirtualFrame frame, int domain, Object pointerObject) {
-            return doCachedDomainIdx(frame, domain, pointerObject, domain, lookupDomain(domain));
+        int doGeneric(int domain, Object pointerObject) {
+            return doCachedDomainIdx(domain, pointerObject, domain, lookupDomain(domain));
         }
 
         int lookupDomain(long domain) {
             return getContext().getCApiContext().findOrCreateTraceMallocDomain(domain);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_TraceMalloc_NewReference", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleTraceMallocNewReference extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static int doCachedDomainIdx(Object pointerObject) {
+            // TODO(fa): implement; capture tracebacks in PyTraceMalloc_Track and update them here
+            return 0;
         }
     }
 

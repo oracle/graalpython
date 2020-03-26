@@ -157,3 +157,16 @@ int PyTraceMalloc_Untrack(unsigned int domain, uintptr_t ptr) {
 	// 0 = success, -2 = disabled
 	return _jls_PyTruffle_TraceMalloc_Untrack(domain, ptr);
 }
+
+
+/* If the object memory block is already traced, update its trace
+   with the current Python traceback.
+
+   Do nothing if tracemalloc is not tracing memory allocations
+   or if the object memory block is not already traced. */
+typedef int (*newref_fun_t)(PyObject*);
+UPCALL_TYPED_ID(PyTruffle_TraceMalloc_NewReference, newref_fun_t);
+int _PyTraceMalloc_NewReference(PyObject *op) {
+	// 0 = success, -1 = not tracing
+	return _jls_PyTruffle_TraceMalloc_NewReference(op);
+}
