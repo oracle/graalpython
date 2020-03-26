@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 
@@ -103,6 +104,7 @@ public class FormatStringLiteralNode extends LiteralNode {
     }
 
     @Override
+    @ExplodeLoop
     public Object execute(VirtualFrame frame) {
         if (values.length == 0) {
             return EMPTY_STRING;
