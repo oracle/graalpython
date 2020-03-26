@@ -104,7 +104,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     public final Assumption ensureHandleValidAssumption() {
         CompilerAsserts.neverPartOfCompilation();
-        if(handleValidAssumption == null) {
+        if (handleValidAssumption == null) {
             handleValidAssumption = Truffle.getRuntime().createAssumption();
         }
         return handleValidAssumption;

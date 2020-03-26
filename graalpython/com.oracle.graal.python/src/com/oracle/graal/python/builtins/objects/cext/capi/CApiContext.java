@@ -180,9 +180,6 @@ public final class CApiContext extends CExtContext {
         return triggerAsyncActionsCallTarget;
     }
 
-    public void traceMallocUntrack(long domain, Object pointerObject) {
-    }
-
     public TraceMallocDomain getTraceMallocDomain(int domainIdx) {
         return traceMallocDomains[domainIdx];
     }
@@ -325,7 +322,6 @@ public final class CApiContext extends CExtContext {
     private static final class TriggerAsyncActionsRootNode extends PRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[0], new String[0]);
 
-        @Child private SubRefCntNode refCntNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
         private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
@@ -333,7 +329,6 @@ public final class CApiContext extends CExtContext {
 
         protected TriggerAsyncActionsRootNode(PythonContext context) {
             super(context.getLanguage());
-            refCntNode = SubRefCntNodeGen.create();
             this.context = context;
         }
 
@@ -358,10 +353,6 @@ public final class CApiContext extends CExtContext {
         public boolean isPythonInternal() {
             return true;
         }
-    }
-
-    public PythonAbstractNativeObject getPythonNativeObject(int idx) {
-        return nativeObjectWrapperList.get(idx).get();
     }
 
     public NativeObjectReference lookupNativeObjectReference(int idx) {
@@ -443,7 +434,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public AllocInfo traceFree(Object ptr, PFrame.Reference curFrame, String clazzName) {
+    public AllocInfo traceFree(Object ptr, @SuppressWarnings("unused") PFrame.Reference curFrame, @SuppressWarnings("unused") String clazzName) {
         if (allocatedNativeMemory == null) {
             allocatedNativeMemory = new HashMap<>();
         }

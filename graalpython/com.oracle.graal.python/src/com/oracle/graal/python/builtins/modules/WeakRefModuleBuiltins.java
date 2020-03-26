@@ -93,10 +93,12 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             this.reference = reference;
         }
 
+        @Override
         public Object callable() {
             return reference.getCallback();
         }
 
+        @Override
         public Object[] arguments() {
             return new Object[]{reference.getRef()};
         }

@@ -136,7 +136,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -550,7 +549,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doNativeObject(CExtContext cextContext, PythonAbstractNativeObject nativeObject,
-                        @Cached RefCntNode refCntNode) {
+                        @Cached AddRefCntNode refCntNode) {
             Object res = ToSulongNode.doNativeObject(cextContext, nativeObject);
             refCntNode.inc(res);
             return res;
@@ -2684,7 +2683,6 @@ public abstract class CExtNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class AddRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(AddRefCntNode.class);
 
         public abstract Object execute(Object object, long value);
 
@@ -2734,7 +2732,6 @@ public abstract class CExtNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class SubRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
 
         public abstract Object execute(Object object, long value);
 
@@ -2759,53 +2756,14 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
-    @ImportStatic(CApiGuards.class)
-    public abstract static class RefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(RefCntNode.class);
-
-        /**
-         * Do not use directly! Use {@link #inc(Object)} or {@link #dec(Object)};
-         */
-        abstract Object execute(String fun, Object object);
-
-        public final Object inc(Object object) {
-            return execute(NativeCAPISymbols.FUN_INCREF, object);
-        }
-
-        public final Object dec(Object object) {
-            return execute(NativeCAPISymbols.FUN_DECREF, object);
-        }
-
-        @Specialization
-        static Object doNativeWrapper(@SuppressWarnings("unused") String fun, PythonNativeWrapper nativeWrapper) {
-            nativeWrapper.increaseRefCount();
-            return nativeWrapper;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)", limit = "2")
-        static Object doNativeObject(String fun, Object object,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PCallCapiFunction callIncRefNode,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            CApiContext cApiContext = context.getCApiContext();
-            if (!lib.isNull(object) && cApiContext != null) {
-                cApiContext.checkAccess(object, lib);
-                CompilerAsserts.partialEvaluationConstant(fun);
-                callIncRefNode.call(fun, object);
-            }
-            return object;
-        }
-    }
-
-    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class ClearNativeWrapperNode extends Node {
+
         public abstract void execute(Object delegate, PythonNativeWrapper nativeWrapper);
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(nativeWrapper)")
         static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper) {
-            // If this assertion fails, it indicates that the native code still uses a free'd
-            // native
+            // If this assertion fails, it indicates that the native code still uses a free'd native
             // wrapper.
             assert delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
             delegate.clearNativeWrapper();
@@ -2831,7 +2789,6 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     public abstract static class GetRefCntNode extends PNodeWithContext {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GetRefCntNode.class);
 
         public abstract long execute(Object ptrObject);
 

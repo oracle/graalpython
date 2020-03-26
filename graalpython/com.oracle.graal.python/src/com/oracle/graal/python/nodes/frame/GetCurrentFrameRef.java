@@ -57,7 +57,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
- * This node retrieves the frame reference ({@link PFrame.Reference}) of the current Python frame
+ * This node retrieves the frame reference ({@link Reference}) of the current Python frame
  * regardless if a frame is available or not.
  */
 @GenerateUncached
@@ -96,7 +96,6 @@ public abstract class GetCurrentFrameRef extends Node {
 
     @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
     Reference doGeneric(Frame frame,
-                    @Cached(value = "getFlag()", uncached = "getFlagUncached()", dimensions = 1) ConditionProfile[] flag,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         PFrame.Reference ref;
         if (frame == null) {

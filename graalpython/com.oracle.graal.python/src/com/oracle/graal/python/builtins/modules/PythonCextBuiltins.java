@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
@@ -117,7 +118,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.RefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
@@ -2561,7 +2561,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "object.isDouble()")
         static Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
-                        @Cached RefCntNode refCntNode) {
+                        @Cached AddRefCntNode refCntNode) {
             return refCntNode.inc(object);
         }
 
@@ -3242,8 +3242,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocTrack.class);
 
         @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
-        int doCachedDomainIdx(VirtualFrame frame, long domain, Object pointerObject, long size,
-                        @Cached("domain") long cachedDomain,
+        int doCachedDomainIdx(VirtualFrame frame, @SuppressWarnings("unused") long domain, Object pointerObject, long size,
+                        @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
 
             CApiContext cApiContext = getContext().getCApiContext();
@@ -3310,7 +3310,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleGcTracingNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!traceCalls(context)", "traceMem(context)"})
-        int doNativeWrapper(VirtualFrame frame, Object ptr,
+        int doNativeWrapper(Object ptr,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
             trace(context, CApiContext.asPointer(ptr, lib), null, null);
@@ -3329,7 +3329,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!traceMem(context)")
-        static int doNothing(VirtualFrame frame, Object ptr,
+        static int doNothing(@SuppressWarnings("unused") Object ptr,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context) {
             // do nothing
             return 0;
@@ -3343,6 +3343,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return context.getOption(PythonOptions.TraceNativeMemoryCalls);
         }
 
+        @SuppressWarnings("unused")
         protected void trace(PythonContext context, Object ptr, Reference ref, String className) {
             CompilerDirectives.transferToInterpreter();
             throw new IllegalStateException("should not reach");

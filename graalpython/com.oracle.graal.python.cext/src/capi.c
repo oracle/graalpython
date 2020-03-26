@@ -339,12 +339,12 @@ allocfunc get_tp_alloc(PyTypeObject* obj) {
 }
 
 /** to be used from Java code only; reads native 'tp_dealloc' field */
-allocfunc get_tp_dealloc(PyTypeObject* obj) {
+destructor get_tp_dealloc(PyTypeObject* obj) {
 	return obj->tp_dealloc;
 }
 
 /** to be used from Java code only; reads native 'tp_free' field */
-allocfunc get_tp_free(PyTypeObject* obj) {
+freefunc get_tp_free(PyTypeObject* obj) {
 	return obj->tp_free;
 }
 

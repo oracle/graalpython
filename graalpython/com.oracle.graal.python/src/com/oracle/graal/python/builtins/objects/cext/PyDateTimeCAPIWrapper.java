@@ -123,31 +123,37 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
     Object getMembers(boolean includeInternal) {
         return new InteropArray(new String[0]);
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberReadable(String member) {
         return indexOf(member) != -1;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberInvocable(String member) {
         return indexOf(member) >= INVOCABLE_MEMBER_START_IDX;
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberModifiable(String member) {
         return isMemberReadable(member);
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
     boolean isMemberInsertable(String member) {
         return false;
     }

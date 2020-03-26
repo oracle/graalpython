@@ -54,9 +54,8 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
 
     public NativeReferenceStack() {
         nativeObjectWrapperList = new NativeObjectReference[INITIAL_CAPACITY];
-        IntegerStack freeList = new IntegerStack(INITIAL_CAPACITY);
+        freeList = new IntegerStack(INITIAL_CAPACITY);
         freeList.addToFreeList(0, INITIAL_CAPACITY);
-        this.freeList = freeList;
     }
 
     @TruffleBoundary

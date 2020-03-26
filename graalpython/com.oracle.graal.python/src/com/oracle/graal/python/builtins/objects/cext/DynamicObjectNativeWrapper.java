@@ -257,10 +257,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         protected static boolean isObRefcnt(String key) {
             return OB_REFCNT.getMemberName().equals(key);
         }
-
-        protected static boolean isObType(String key) {
-            return OB_TYPE.getMemberName().equals(key);
-        }
     }
 
     @GenerateUncached
@@ -1167,12 +1163,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(F_LINENO, key)")
         static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                             @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaIntNode castToJavaIntNode) {
+                        @Cached(value = "createLossy()", uncached = "getLossyUncached()") CastToJavaIntNode castToJavaIntNode) {
             try {
                 int lineno = castToJavaIntNode.execute(value);
                 object.setLine(lineno);
                 return lineno;
-            } catch(PException e) {
+            } catch (PException e) {
                 return -1;
             }
         }
@@ -1796,7 +1792,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return object.bitCount() / 32;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
         static long doOther(Object object,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             try {

@@ -129,14 +129,17 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             this.signum = signum;
         }
 
+        @Override
         public Object callable() {
             return callableObject;
         }
 
+        @Override
         public Object[] arguments() {
             return new Object[]{signum, null};
         }
 
+        @Override
         public int frameIndex() {
             return 1;
         }
