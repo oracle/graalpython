@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -48,10 +48,9 @@ import org.graalvm.options.OptionStability;
 import org.graalvm.options.OptionValues;
 
 /**
- * The options for Python. Note that some options have an effect on the AST
- * structure, and thus must be the same for all contexts in an engine. We
- * annotate these with {@link EngineOption} and the PythonLanguage will ensure
- * that these are matched across contexts.
+ * The options for Python. Note that some options have an effect on the AST structure, and thus must
+ * be the same for all contexts in an engine. We annotate these with {@link EngineOption} and the
+ * PythonLanguage will ensure that these are matched across contexts.
  */
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
@@ -106,19 +105,16 @@ public final class PythonOptions {
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CAPI = new OptionKey<>("");
 
-    @EngineOption
-    @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
-    @EngineOption
-    @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace if enabled") //
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Print the java stacktrace if enabled") //
     public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
 
     @Option(category = OptionCategory.INTERNAL, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
 
-    @EngineOption
-    @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
@@ -127,24 +123,19 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Prints parser time statistis after number of parsed files, set by this option. 0 or <0 means no statistics are printed.") //
     public static final OptionKey<Integer> ParserStatistics = new OptionKey<>(0);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(5);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Minimal size of string, when lazy strings are used. Default 20") //
@@ -153,21 +144,18 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "This option control builtin _thread module support") //
     public static final OptionKey<Boolean> WithThread = new OptionKey<>(false);
 
     // disabling TRegex has an effect on the _sre Python functions that are
     // dynamically created, so we cannot change that option again.
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine and call the CPython sre engine only as a fallback. Default true") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine and call the CPython sre engine only as a fallback. Default true") //
     public static final OptionKey<Boolean> WithTRegex = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default false.") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Enable forced splitting (of builtins). Default false.") //
     public static final OptionKey<Boolean> EnableForcedSplits = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher if an interactive console is used to run Python.") //
@@ -191,15 +179,13 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Embedder option: what to print in response to PythonLanguage#toString.") //
     public static final OptionKey<Boolean> UseReprForPrintString = new OptionKey<>(true);
 
-    @EngineOption
-    @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Stop inlining of builtins if caller's cumulative tree size would exceed this limit") //
     public static final OptionKey<Integer> BuiltinsInliningMaxCallerSize = new OptionKey<>(2250);
 
     @Option(category = OptionCategory.EXPERT, help = "Propagate append operations to lists created as literals back to where they were created, to inform overallocation to avoid having to grow them later.") //
     public static final OptionKey<Boolean> OverallocateLiteralLists = new OptionKey<>(true);
 
-    @EngineOption
-    @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
+    @EngineOption @Option(category = OptionCategory.USER, help = "Emulate some Jython features that can cause performance degradation") //
     public static final OptionKey<Boolean> EmulateJython = new OptionKey<>(false);
 
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
@@ -245,9 +231,8 @@ public final class PythonOptions {
     }
 
     /**
-     * Check if the options set in the {@code first} and {@code second} set are
-     * compatible, i.e, there are no Python per-engine options in these sets
-     * that differ.
+     * Check if the options set in the {@code first} and {@code second} set are compatible, i.e,
+     * there are no Python per-engine options in these sets that differ.
      */
     public static boolean areOptionsCompatible(OptionValues first, OptionValues second) {
         for (OptionKey<?> key : ENGINE_OPTION_KEYS) {
