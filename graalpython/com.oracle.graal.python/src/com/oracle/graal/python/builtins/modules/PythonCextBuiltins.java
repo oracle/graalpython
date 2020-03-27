@@ -106,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectSte
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ClearNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
@@ -150,6 +149,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectAlloc;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -3188,50 +3188,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Object_Free", minNumOfPositionalArgs = 1)
+    @Builtin(name = "PyTruffle_Create_Lightweight_Upcall", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ImportStatic(CApiGuards.class)
-    abstract static class PyTruffleObjectFree extends PythonUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleObjectFree.class);
-
-        @Specialization(limit = "3")
-        static int doNativeWrapper(PythonNativeWrapper nativeWrapper,
-                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
-                        @Cached ClearNativeWrapperNode clearNativeWrapperNode,
-                        @Cached PCallCapiFunction callReleaseHandleNode) {
-            if (nativeWrapper.getRefCount() > 0) {
-                throw new IllegalStateException("deallocating native object with refcnt > 0");
-            }
-
-            // clear native wrapper
-            Object delegate = lib.getDelegate(nativeWrapper);
-            clearNativeWrapperNode.execute(delegate, nativeWrapper);
-
-            // If it already went to native, also release the handle or free the native memory.
-            if (lib.isNative(nativeWrapper)) {
-                // We do not call 'truffle_release_handle' directly because we still want to support
-                // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
-                // necessary distinction.
-                Object nativePointer = lib.getNativePointer(nativeWrapper);
-                LOGGER.fine(() -> String.format("Releasing handle: %s (object: %s)", nativePointer, delegate));
-                callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
-            }
-            return 1;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)")
-        static int doOther(@SuppressWarnings("unused") Object object) {
-            // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
-            return 0;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_Create_Object_Alloc")
-    @GenerateNodeFactory
-    abstract static class PyTruffleCreateObjectAlloc extends PythonBuiltinNode {
+    abstract static class PyTruffleCreateLightweightUpcall extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object doGeneric() {
-            return new PyTruffleObjectAlloc();
+        static Object doGeneric(String key) {
+            switch (key) {
+                case "PyTruffle_Object_Alloc":
+                    return new PyTruffleObjectAlloc();
+                case "PyTruffle_Object_Free":
+                    return new PyTruffleObjectFree();
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException("");
         }
     }
 

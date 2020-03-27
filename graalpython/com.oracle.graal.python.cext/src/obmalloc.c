@@ -60,12 +60,12 @@ typedef struct {
 
 /* This is our version of 'PyObject_Free' which is also able to free Sulong handles. */
 MUST_INLINE static
-void PyTruffle_Object_Free(void* ptr) {
+void _PyObject_Free(void* ptr) {
 	if (ptr == NULL) {
 		return;
 	}
 	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
-		if(polyglot_ensure_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_Free", native_pointer_to_java(ptr)))) {
+		if(free_upcall(native_pointer_to_java(ptr))) {
 		    /* If 1 is returned, the upcall function already took care of freeing */
 		    return;
 		}
@@ -92,7 +92,7 @@ void* PyObject_Realloc(void *ptr, size_t new_size) {
 }
 
 void PyObject_Free(void* ptr) {
-	PyTruffle_Object_Free(ptr);
+	_PyObject_Free(ptr);
 }
 
 void* PyMem_Malloc(size_t size) {
@@ -132,7 +132,7 @@ void* PyMem_RawRealloc(void *ptr, size_t new_size) {
 }
 
 void PyMem_RawFree(void *ptr) {
-	PyTruffle_Object_Free(ptr);
+	_PyObject_Free(ptr);
 }
 
 void * PyMem_Realloc(void *ptr, size_t new_size) {
@@ -140,7 +140,7 @@ void * PyMem_Realloc(void *ptr, size_t new_size) {
 }
 
 void PyMem_Free(void *ptr) {
-	PyTruffle_Object_Free(ptr);
+	_PyObject_Free(ptr);
 }
 
 typedef int (*track_fun_t)(int64_t, int64_t, uint64_t);

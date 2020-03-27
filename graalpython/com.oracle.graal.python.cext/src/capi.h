@@ -211,8 +211,11 @@ typedef void* (*ptr_cache_t)(void *, uint64_t);
 extern ptr_cache_t ptr_cache;
 extern ptr_cache_t ptr_cache_stealing;
 
-typedef int (*alloc_upcall_fun_t)(void *, Py_ssize_t size);
+typedef int (*alloc_upcall_fun_t)(void *, Py_ssize_t);
 extern alloc_upcall_fun_t alloc_upcall;
+
+typedef int (*free_upcall_fun_t)(void *);
+extern free_upcall_fun_t free_upcall;
 
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
@@ -274,9 +277,7 @@ PyTypeObject* native_type_to_java(PyTypeObject* type) {
 
 MUST_INLINE
 void* native_pointer_to_java(void* obj) {
-    if (polyglot_is_string(obj)) {
-        return obj;
-    } else if (!truffle_cannot_be_handle(obj)) {
+    if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
     return obj;

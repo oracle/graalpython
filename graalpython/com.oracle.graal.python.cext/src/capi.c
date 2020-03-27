@@ -65,6 +65,7 @@ ptr_cache_t ptr_cache;
 ptr_cache_t ptr_cache_stealing;
 
 alloc_upcall_fun_t alloc_upcall;
+free_upcall_fun_t free_upcall;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
@@ -88,7 +89,8 @@ static void initialize_upcall_functions() {
 
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
 
-    alloc_upcall = (alloc_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Object_Alloc");
+    alloc_upcall = (alloc_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Lightweight_Upcall", polyglot_from_string("PyTruffle_Object_Alloc", SRC_CS));
+    free_upcall = (free_upcall_fun_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Create_Lightweight_Upcall", polyglot_from_string("PyTruffle_Object_Free", SRC_CS));
 }
 
 __attribute__((constructor (__COUNTER__)))
