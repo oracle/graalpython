@@ -68,7 +68,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PTuple select(Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") Object timeout) {
-            if (PythonOptions.getFlag(getContext(), PythonOptions.VerboseFlag)) {
+            if (getContext().getOption(PythonOptions.VerboseFlag)) {
                 new PrintStream(getContext().getEnv().err()).println("select() will always return immediately, we only support blocking I/O for now");
             }
             return factory().createTuple(new Object[]{rlist, wlist, xlist});

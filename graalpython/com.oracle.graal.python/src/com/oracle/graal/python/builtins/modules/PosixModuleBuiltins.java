@@ -121,10 +121,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -220,7 +220,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     };
 
     private static boolean terminalIsInteractive(PythonContext context) {
-        return PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive);
+        return context.getOption(PythonOptions.TerminalIsInteractive);
     }
 
     @Override
@@ -283,7 +283,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
-                value = PythonOptions.getOption(core.getContext(), PythonOptions.Executable);
+                value = core.getContext().getOption(PythonOptions.Executable);
             } else {
                 value = entry.getValue();
             }
@@ -1803,7 +1803,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (getErrorProfile().profile(getContext().getResources().getFileChannel(0) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
 
         @Specialization
@@ -1811,7 +1811,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (getErrorProfile().profile(getContext().getResources().getFileChannel(fd) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
 
         @Specialization
@@ -1822,7 +1822,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
 
         @Specialization
@@ -1836,7 +1836,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (ArithmeticException e) {
                 throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
+        }
+
+        private int getTerminalWidth() {
+            return getContext().getOption(PythonOptions.TerminalWidth);
+        }
+
+        private int getTerminalHeight() {
+            return getContext().getOption(PythonOptions.TerminalHeight);
         }
 
         @Fallback

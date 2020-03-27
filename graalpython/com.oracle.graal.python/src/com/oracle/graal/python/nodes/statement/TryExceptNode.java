@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -126,7 +127,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         } catch (Exception e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchJavaExceptions = getContext().isJythonEmulated();
+                shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
             }
             if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
                 if (catchException(frame, (TruffleException) e, exceptionState)) {
@@ -135,7 +136,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
             if (shouldCatchAll == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchAll = getContext().isCatchingAllExcetptionsEnabled();
+                shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
             }
             if (shouldCatchAll) {
                 if (e instanceof ControlFlowException) {

@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
-import org.graalvm.collections.EconomicMap;
-
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -56,6 +54,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
+import org.graalvm.collections.EconomicMap;
+
 /**
  * this builtin module is used to fill in truffle land config options into the sysconfig python
  * module
@@ -67,7 +67,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", PythonOptions.isWithThread(core.getContext().getEnv()) ? 1 : 0);
+        STATIC_CONFIG_OPTIONS.put("WITH_THREAD", core.getContext().getOption(PythonOptions.WithThread) ? 1 : 0);
     }
 
     @Override

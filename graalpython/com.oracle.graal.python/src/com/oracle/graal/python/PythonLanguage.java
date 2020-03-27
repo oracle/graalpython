@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonEngineOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -176,19 +175,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
-        return PythonEngineOptions.fromOptionValues(firstOptions).equals(PythonEngineOptions.fromOptionValues(newOptions));
-    }
-
-    private boolean areOptionsCompatibleWithPreinitializedContext(OptionValues firstOptions, OptionValues newOptions) {
-        return (areOptionsCompatible(firstOptions, newOptions) &&
-                        // disabling TRegex has an effect on the _sre Python functions that are
-                        // dynamically created
-                        firstOptions.get(PythonOptions.WithTRegex).equals(newOptions.get(PythonOptions.WithTRegex)));
+        return PythonOptions.areOptionsCompatible(firstOptions, newOptions);
     }
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        if (!areOptionsCompatibleWithPreinitializedContext(context.getEnv().getOptions(), newEnv.getOptions())) {
+        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
             PythonCore.writeInfo("Cannot use preinitialized context.");
             return false;
         }
@@ -210,7 +202,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected OptionDescriptors getOptionDescriptors() {
-        return PythonOptions.createDescriptors();
+        return PythonOptions.DESCRIPTORS;
     }
 
     @Override
@@ -238,7 +230,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private RootNode doParse(PythonContext context, Source source) {
         ParserMode mode = null;
         if (source.isInteractive()) {
-            if (PythonOptions.getOption(context, PythonOptions.TerminalIsInteractive)) {
+            if (context.getOption(PythonOptions.TerminalIsInteractive)) {
                 // if we run through our own launcher, the sys.__displayhook__ would provide the
                 // printing
                 mode = ParserMode.Statement;
@@ -491,7 +483,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
-        boolean internal = !coreIsInitialized && !ctxt.areInternalSourcesExposed();
+        boolean internal = !coreIsInitialized && !ctxt.getOption(PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal(true);
         }

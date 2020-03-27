@@ -143,7 +143,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 
 interface EmulateJythonNode {
     default boolean emulateJython(PythonContext context) {
-        return PythonOptions.getOption(context, PythonOptions.EmulateJython);
+        return context.getOption(PythonOptions.EmulateJython);
     }
 }
 

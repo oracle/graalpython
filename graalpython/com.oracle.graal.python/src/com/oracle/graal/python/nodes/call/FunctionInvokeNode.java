@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -73,7 +72,7 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
 
     protected FunctionInvokeNode(CallTarget callTarget, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        if (isBuiltin && PythonOptions.getEnableForcedSplits()) {
+        if (isBuiltin && forceSplitBuiltins()) {
             callNode.cloneCallTarget();
         }
         if (isGenerator && shouldInlineGenerators()) {

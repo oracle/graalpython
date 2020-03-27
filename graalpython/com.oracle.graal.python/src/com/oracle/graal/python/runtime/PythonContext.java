@@ -52,9 +52,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionValues;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -94,8 +91,12 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionKey;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
@@ -224,7 +225,7 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
-    @CompilationFinal private PythonEngineOptions engineOptions;
+    @CompilationFinal(dimensions = 1) private Object[] optionValues;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -232,7 +233,7 @@ public final class PythonContext {
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(language);
-        this.engineOptions = PythonEngineOptions.fromOptionValues(env.getOptions());
+        this.optionValues = PythonOptions.createOptionValuesStorage(env);
         this.resources.setEnv(env);
         this.in = env.in();
         this.out = env.out();
@@ -257,8 +258,28 @@ public final class PythonContext {
         return globalId.incrementAndGet();
     }
 
-    public OptionValues getOptions() {
-        return getEnv().getOptions();
+    @SuppressWarnings("unchecked")
+    public <T> T getOption(OptionKey<T> key) {
+        if (CompilerDirectives.inInterpreter()) {
+            return getEnv().getOptions().get(key);
+        } else {
+            return getOptionUnrolling(key);
+        }
+    }
+
+    @ExplodeLoop
+    @SuppressWarnings("unchecked")
+    private <T> T getOptionUnrolling(OptionKey<T> key) {
+        OptionKey<?>[] optionKeys = PythonOptions.getOptionKeys();
+        CompilerAsserts.partialEvaluationConstant(optionKeys);
+        for (int i = 0; i < optionKeys.length; i++) {
+            CompilerAsserts.partialEvaluationConstant(optionKeys[i]);
+            if (optionKeys[i] == key) {
+                return (T) optionValues[i];
+            }
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("Using Python options with a non-Python option key");
     }
 
     public PythonLanguage getLanguage() {
@@ -292,7 +313,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
-        engineOptions = PythonEngineOptions.fromOptionValues(newEnv.getOptions());
+        optionValues = PythonOptions.createOptionValuesStorage(newEnv);
     }
 
     /**
@@ -374,22 +395,6 @@ public final class PythonContext {
         setEnv(newEnv);
         setupRuntimeInformation(true);
         core.postInitialize();
-    }
-
-    public boolean isCatchingAllExcetptionsEnabled() {
-        return engineOptions.isCatchingAllExcetptionsEnabled();
-    }
-
-    public boolean areInternalSourcesExposed() {
-        return engineOptions.areInternalSourcesExposed();
-    }
-
-    public boolean isJythonEmulated() {
-        return engineOptions.isJythonEmulated();
-    }
-
-    public int getBuiltinsInliningMaxCallerSize() {
-        return engineOptions.getBuiltinsInliningMaxCallerSize();
     }
 
     /**
@@ -677,7 +682,7 @@ public final class PythonContext {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.getOption(this, PythonOptions.WithJavaStacktrace)) {
+                    if (getOption(PythonOptions.WithJavaStacktrace)) {
                         e.printStackTrace(new PrintWriter(getStandardErr()));
                     }
                 }

@@ -46,7 +46,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
-        return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
+        return PythonLanguage.getContext().getOption(PythonOptions.ForceInlineGeneratorCalls);
+    }
+
+    protected static boolean forceSplitBuiltins() {
+        return PythonLanguage.getContext().getOption(PythonOptions.EnableForcedSplits);
     }
 
     @TruffleBoundary

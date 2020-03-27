@@ -219,7 +219,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.BUILTINS);
-        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
+        builtinsModule.setAttribute(__DEBUG__, !core.getContext().getOption(PythonOptions.PythonOptimizeFlag));
     }
 
     // abs(x)
@@ -808,7 +808,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, String name, Object defaultValue);
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, String name, PNone defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
@@ -817,7 +817,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, String name, Object defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
@@ -1106,18 +1106,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return false;
         }
 
-        protected boolean emulateJython() {
-            if (emulateJython == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                emulateJython = getContext().isJythonEmulated();
-            }
-            return emulateJython;
-        }
-
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            TruffleLanguage.Env env = getContext().getEnv();
-            if (emulateJython() && env.isHostObject(cls)) {
+            PythonContext context = getContext();
+            TruffleLanguage.Env env = context.getEnv();
+            if (context.getOption(PythonOptions.EmulateJython) && env.isHostObject(cls)) {
                 Object hostCls = env.asHostObject(cls);
                 Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
                 return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());

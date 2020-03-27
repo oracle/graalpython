@@ -66,8 +66,8 @@ public class AssertNode extends StatementNode {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             PythonContext context = getContext();
-            javaExceptionsFailAssertions = context.isCatchingAllExcetptionsEnabled();
-            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
+            javaExceptionsFailAssertions = context.getOption(PythonOptions.CatchAllExceptions);
+            assertionsEnabled = !context.getOption(PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {
@@ -104,7 +104,7 @@ public class AssertNode extends StatementNode {
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
                 PythonContext context = getContext();
-                if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
+                if (context.getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(context, e);
                 }
             }

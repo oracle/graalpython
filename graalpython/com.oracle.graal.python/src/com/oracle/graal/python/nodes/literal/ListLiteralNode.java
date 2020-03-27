@@ -144,7 +144,7 @@ public final class ListLiteralNode extends SequenceLiteralNode {
 
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
-            if (PythonOptions.getFlag(lookupContextReference(PythonLanguage.class).get(), PythonOptions.OverallocateLiteralLists)) {
+            if (lookupContextReference(PythonLanguage.class).get().getOption(PythonOptions.OverallocateLiteralLists)) {
                 if (newStore.capacity() > initialCapacity.estimate()) {
                     initialCapacity.updateFrom(newStore.capacity());
                     LOGGER.fine(() -> {

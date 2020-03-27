@@ -193,40 +193,40 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String capiHome = context.getCAPIHome();
 
         if (!ImageInfo.inImageBuildtimeCode()) {
-            sys.setAttribute("executable", PythonOptions.getOption(context, PythonOptions.Executable));
-            sys.setAttribute("_base_executable", PythonOptions.getOption(context, PythonOptions.Executable));
+            sys.setAttribute("executable", context.getOption(PythonOptions.Executable));
+            sys.setAttribute("_base_executable", context.getOption(PythonOptions.Executable));
             sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         }
-        sys.setAttribute("graal_python_jython_emulation_enabled", context.isJythonEmulated());
+        sys.setAttribute("graal_python_jython_emulation_enabled", context.getOption(PythonOptions.EmulateJython));
         sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
         sys.setAttribute("graal_python_core_home", coreHome);
         sys.setAttribute("graal_python_stdlib_home", stdlibHome);
         sys.setAttribute("graal_python_capi_home", capiHome);
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
-                        !PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // debug
+                        !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
                         true,  // dont_write_bytecode
                         false, // hash_randomization
-                        PythonOptions.getFlag(context, PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
-                        PythonOptions.getFlag(context, PythonOptions.InspectFlag), // inspect
-                        PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive), // interactive
-                        PythonOptions.getFlag(context, PythonOptions.IsolateFlag), // isolated
-                        PythonOptions.getFlag(context, PythonOptions.NoSiteFlag), // no_site
-                        PythonOptions.getFlag(context, PythonOptions.NoUserSiteFlag), // no_user_site
-                        PythonOptions.getFlag(context, PythonOptions.PythonOptimizeFlag), // optimize
-                        PythonOptions.getFlag(context, PythonOptions.QuietFlag), // quiet
-                        PythonOptions.getFlag(context, PythonOptions.VerboseFlag), // verbose
+                        context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
+                        context.getOption(PythonOptions.InspectFlag), // inspect
+                        context.getOption(PythonOptions.TerminalIsInteractive), // interactive
+                        context.getOption(PythonOptions.IsolateFlag), // isolated
+                        context.getOption(PythonOptions.NoSiteFlag), // no_site
+                        context.getOption(PythonOptions.NoUserSiteFlag), // no_user_site
+                        context.getOption(PythonOptions.PythonOptimizeFlag), // optimize
+                        context.getOption(PythonOptions.QuietFlag), // quiet
+                        context.getOption(PythonOptions.VerboseFlag), // verbose
                         false, // dev_mode
                         0, // utf8_mode
         }));
 
         Env env = context.getEnv();
-        String option = PythonOptions.getOption(context, PythonOptions.PythonPath);
+        String option = context.getOption(PythonOptions.PythonPath);
 
         LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
 
-        boolean isIsolated = PythonOptions.getOption(context, PythonOptions.IsolateFlag);
+        boolean isIsolated = context.getOption(PythonOptions.IsolateFlag);
         boolean capiSeparate = !capiHome.equals(coreHome);
 
         Object[] path;
