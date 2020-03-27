@@ -99,6 +99,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
@@ -210,24 +211,25 @@ public abstract class TypeNodes {
         public abstract MroSequenceStorage execute(Object obj);
 
         @Specialization
-        MroSequenceStorage doPythonClass(PythonManagedClass obj) {
+        static MroSequenceStorage doPythonClass(PythonManagedClass obj) {
             return obj.getMethodResolutionOrder();
         }
 
         @Specialization
-        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
+        static MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getMethodResolutionOrder();
         }
 
         @Specialization
-        MroSequenceStorage doNativeClass(PythonNativeClass obj,
+        static MroSequenceStorage doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpMroNode,
                         @Cached PRaiseNode raise,
+                        @Cached("createBinaryProfile()") ConditionProfile lazyTypeInitProfile,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
-                        @Cached("createClassProfile()") ValueProfile storageProfile) {
+                        @Cached("createIdentityProfile()") ValueProfile storageProfile) {
             Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
-            if (tupleObj == PNone.NO_VALUE) {
+            if (lazyTypeInitProfile.profile(tupleObj == PNone.NO_VALUE)) {
                 // Special case: lazy type initialization (should happen at most only once per type)
                 CompilerDirectives.transferToInterpreter();
 
@@ -242,7 +244,7 @@ public abstract class TypeNodes {
             }
             Object profiled = tpMroProfile.profile(tupleObj);
             if (profiled instanceof PTuple) {
-                SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) tupleObj).getSequenceStorage());
+                SequenceStorage sequenceStorage = storageProfile.profile(((PTuple) profiled).getSequenceStorage());
                 if (sequenceStorage instanceof MroSequenceStorage) {
                     return (MroSequenceStorage) sequenceStorage;
                 }
