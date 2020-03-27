@@ -68,8 +68,6 @@ PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
     // TODO(fa): GC malloc if 'cls' is a heap type
     PyObject* newObj = (PyObject*)PyObject_Malloc(size);
 
-    memset(newObj, '\0', size);
-
     if (cls->tp_flags & Py_TPFLAGS_HEAPTYPE)
         Py_INCREF(cls);
 
