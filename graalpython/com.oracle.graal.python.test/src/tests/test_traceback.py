@@ -277,6 +277,50 @@ def test_with():
     )
 
 
+def test_finally():
+    def test():
+        try:
+            raise OSError("test")
+        except:
+            raise sys.exc_info()[1]  # except
+        finally:
+            try:
+                raise sys.exc_info()[1]  # finally
+            except Exception as e:
+                pass
+
+    assert_has_traceback(
+        test,
+        [
+            ('test', 'raise sys.exc_info()[1]  # except'),
+            ('test', 'raise OSError("test")'),
+        ]
+    )
+
+
+def test_reraise_from_finally():
+    def reraise_from_finally():
+        try:
+            raise OSError("test")
+        except:
+            raise sys.exc_info()[1]  # except
+        finally:
+            try:
+                raise sys.exc_info()[1]  # finally
+            except Exception as e:
+                raise e
+
+    assert_has_traceback(
+        reraise_from_finally,
+        [
+            ('reraise_from_finally', 'raise e'),
+            ('reraise_from_finally', 'raise sys.exc_info()[1]  # finally'),
+            ('reraise_from_finally', 'raise sys.exc_info()[1]  # except'),
+            ('reraise_from_finally', 'raise OSError("test")'),
+        ]
+    )
+
+
 def test_top_level_exception_handler():
     import subprocess
     from textwrap import dedent
