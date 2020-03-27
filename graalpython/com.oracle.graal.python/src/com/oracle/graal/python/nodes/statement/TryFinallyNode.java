@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
@@ -67,19 +68,19 @@ public class TryFinallyNode extends StatementNode {
             }
         } else {
             boolean executeFinalbody = true;
-            PException caughtException = null;
+            PBaseException caughtException = null;
+            PTraceback caughtTraceback = null;
             try {
                 body.executeVoid(frame);
             } catch (PException e) {
                 exceptionProfile.enter();
                 // any thrown Python exception is visible in the finally block
-                PBaseException pythonException = e.getExceptionObject();
+                caughtException = e.getExceptionObject();
                 PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
                 info.markAsEscaped();
-                pythonException.reifyException(info, getFactory());
-                SetCaughtExceptionNode.execute(frame, new ExceptionInfo(pythonException, pythonException.getTraceback()));
-                caughtException = e;
-                throw e;
+                caughtException.reifyException(info, getFactory());
+                caughtTraceback = caughtException.getTraceback();
+                SetCaughtExceptionNode.execute(frame, new ExceptionInfo(caughtException, caughtException.getTraceback()));
             } catch (ControlFlowException e) {
                 throw e;
             } catch (Throwable e) {
@@ -98,9 +99,12 @@ public class TryFinallyNode extends StatementNode {
                         throw e;
                     } catch (PException e) {
                         if (caughtException != null && e.getExceptionObject() != null) {
-                            e.getExceptionObject().setContext(caughtException.getExceptionObject());
+                            e.getExceptionObject().setContext(caughtException);
                         }
                         throw e;
+                    }
+                    if (caughtException != null) {
+                        throw caughtException.getExceptionForReraise(caughtTraceback);
                     }
                 }
                 // restore

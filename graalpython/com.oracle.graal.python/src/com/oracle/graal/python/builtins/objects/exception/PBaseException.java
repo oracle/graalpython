@@ -260,4 +260,33 @@ public final class PBaseException extends PythonObject {
             throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
         }
     }
+
+    /**
+     * Prepare a {@link PException} for reraising this exception, as done by <code>raise</code>
+     * without arguments.
+     *
+     * <p>
+     * We must be careful to never rethrow a PException that has already been caught and exposed to
+     * the program, because its Truffle lazy stacktrace may have been already materialized, which
+     * would prevent it from capturing frames after the rethrow. So we need a new PException even
+     * though its just a dumb rethrow. We also need a new PException for the reason below.
+     * </p>
+     *
+     * <p>
+     * CPython reraises the exception with the traceback captured in sys.exc_info, discarding the
+     * traceback in the exception, which may have changed since the time the exception had been
+     * caught. This can happen due to explicit modification by the program or, more commonly, by
+     * accumulating more frames by being reraised in the meantime. That's why this method takes an
+     * explicit traceback argument
+     * </p>
+     *
+     * <p>
+     * Reraises shouldn't be visible in the stacktrace. We set the location to null, which will make
+     * the traceback materialization logic skip the frame.
+     * </p>
+     **/
+    public PException getExceptionForReraise(PTraceback traceback) {
+        setTraceback(traceback);
+        throw PException.fromObject(this, null);
+    }
 }
