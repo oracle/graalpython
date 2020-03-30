@@ -173,7 +173,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
-                GetSubclassesNode.doSlowPath(base).add(this);
+                GetSubclassesNode.getUncached().execute(base).add(this);
             }
         }
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
