@@ -142,8 +142,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             // that actually gives you a whole cmdline, which we need to split up for process
             // builder
             if (!argStrings.isEmpty()) {
-                if (argStrings.get(0).equals(PythonOptions.getOption(context, PythonOptions.Executable))) {
-                    String[] executableList = PythonOptions.getExecutableList();
+                if (argStrings.get(0).equals(context.getOption(PythonOptions.Executable))) {
+                    String[] executableList = PythonOptions.getExecutableList(context);
                     argStrings.remove(0);
                     for (int i = executableList.length - 1; i >= 0; i--) {
                         argStrings.add(0, executableList[i]);

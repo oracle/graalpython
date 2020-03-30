@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -95,13 +96,17 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_build_regex_engine", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BuildRegexEngine extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "!getFlag(context, WithTRegex)")
+        protected static boolean withTRegex(PythonContext context) {
+            return context.getOption(PythonOptions.WithTRegex);
+        }
+
+        @Specialization(guards = "!withTRegex(context)")
         Object useSRE(@SuppressWarnings("unused") String code,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "getFlag(context, WithTRegex)")
+        @Specialization(guards = "withTRegex(context)")
         @TruffleBoundary
         Object run(String code,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context) {

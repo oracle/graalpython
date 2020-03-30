@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -67,7 +68,6 @@ public abstract class AbstractImportNode extends StatementNode {
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
-    @CompilationFinal private Boolean emulateJython;
 
     public AbstractImportNode() {
         super();
@@ -151,11 +151,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected boolean emulateJython() {
-        if (emulateJython == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            emulateJython = getContext().isJythonEmulated();
-        }
-        return emulateJython;
+        return getContext().getOption(PythonOptions.EmulateJython);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -139,7 +139,7 @@ public class TopLevelExceptionHandler extends RootNode {
                     e.getExceptionObject().setTraceback(tbHead);
                 }
                 printExc(frame, e);
-                if (PythonOptions.getOption(getContext(), PythonOptions.WithJavaStacktrace)) {
+                if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
                 }
                 return null;
@@ -147,7 +147,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.getOption(getContext(), PythonOptions.WithJavaStacktrace)) {
+                    if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                         printStackTrace(e);
                     }
                 }
@@ -184,7 +184,7 @@ public class TopLevelExceptionHandler extends RootNode {
         sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
 
         Object hook = sys.getAttribute(BuiltinNames.EXCEPTHOOK);
-        if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
+        if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             if (hook != PNone.NO_VALUE) {
                 try {
                     // Note: it is important to pass frame 'null' because that will cause the
@@ -212,7 +212,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
     private void handleSystemExit(VirtualFrame frame, PException e) {
         PythonContext theContext = getContext();
-        if (PythonOptions.getOption(theContext, PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
+        if (theContext.getOption(PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }
@@ -230,7 +230,7 @@ public class TopLevelExceptionHandler extends RootNode {
         if (exitcode != null) {
             throw new PythonExitException(this, exitcode);
         }
-        if (PythonOptions.getOption(theContext, PythonOptions.AlwaysRunExcepthook)) {
+        if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
             try {
                 theContext.getEnv().err().write(callStrNode.executeObject(frame, e.getExceptionObject()).toString().getBytes());

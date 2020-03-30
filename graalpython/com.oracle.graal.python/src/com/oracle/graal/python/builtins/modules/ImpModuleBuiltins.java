@@ -273,7 +273,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Object capi = null;
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
-                    if (!context.areInternalSourcesExposed()) {
+                    if (!context.getOption(PythonOptions.ExposeInternalSources)) {
                         capiSrcBuilder.internal(true);
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
@@ -541,7 +541,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public boolean run(String modulename,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @CachedLanguage PythonLanguage lang) {
-            boolean b = PythonOptions.getFlag(ctxt, PythonOptions.WithCachedSources) && lang.hasCachedCode(modulename);
+            boolean b = ctxt.getOption(PythonOptions.WithCachedSources) && lang.hasCachedCode(modulename);
             if (b) {
                 LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
             }
@@ -559,7 +559,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @CachedLanguage PythonLanguage lang) {
             String[] modulePath = null;
-            if (PythonOptions.getFlag(ctxt, PythonOptions.WithCachedSources)) {
+            if (ctxt.getOption(PythonOptions.WithCachedSources)) {
                 modulePath = lang.cachedCodeModulePath(modulename);
             }
             if (modulePath != null) {

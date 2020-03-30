@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -217,7 +218,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         boolean doObjectPNone(Object left, PNone right,
                         @Cached.Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            if (ctxt.isJythonEmulated() && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
+            if (ctxt.getOption(PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
             }

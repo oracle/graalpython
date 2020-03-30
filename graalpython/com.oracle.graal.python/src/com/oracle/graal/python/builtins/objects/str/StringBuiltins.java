@@ -390,13 +390,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private Object doIt(CharSequence left, CharSequence right, ConditionProfile shortStringAppend) {
-            if (LazyString.UseLazyStrings) {
+            if (getContext().getOption(PythonOptions.LazyStrings)) {
                 int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
                 int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
                 int resultLength = leftLength + rightLength;
-                if (resultLength >= LazyString.MinLazyStringLength) {
+                Integer minLazyStringLength = getContext().getOption(PythonOptions.MinLazyStringLength);
+                if (resultLength >= minLazyStringLength) {
                     if (shortStringAppend.profile(leftLength == 1 || rightLength == 1)) {
-                        return factory().createString(LazyString.createCheckedShort(left, right, resultLength));
+                        return factory().createString(LazyString.createCheckedShort(left, right, resultLength, minLazyStringLength));
                     } else {
                         return factory().createString(LazyString.createChecked(left, right, resultLength));
                     }

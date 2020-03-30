@@ -634,7 +634,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, String member,
-                        @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
+                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
             try {
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));

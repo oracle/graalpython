@@ -1716,6 +1716,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     @ExportMessage
     @ImportStatic(PythonOptions.class)
     public static class ToDisplayString {
+        public static boolean useReprForPrintString(PythonContext context) {
+            return context.getOption(PythonOptions.UseReprForPrintString);
+        }
+
         @Specialization(guards = {"allowSideEffects", "builtins != null"}) // may be null during
                                                                            // initialization
         public static String builtin(PythonAbstractObject self, boolean allowSideEffects,
@@ -1724,7 +1728,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
                         @Cached ReadAttributeFromObjectNode readStr,
                         @Cached CallNode callNode,
                         @Cached CastToJavaStringNode castStr,
-                        @Cached(value = "getFlag(context, UseReprForPrintString)", allowUncached = true) boolean useRepr) {
+                        @Cached(value = "useReprForPrintString(context)", allowUncached = true) boolean useRepr) {
             Object toStrAttr;
             if (useRepr) {
                 toStrAttr = readStr.execute(builtins, BuiltinNames.REPR);

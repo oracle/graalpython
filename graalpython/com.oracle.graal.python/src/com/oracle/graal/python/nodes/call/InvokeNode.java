@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -46,7 +46,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
-        return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
+        return PythonLanguage.getContext().getOption(PythonOptions.ForceInlineGeneratorCalls);
+    }
+
+    protected static boolean forceSplitBuiltins() {
+        return PythonLanguage.getContext().getOption(PythonOptions.EnableForcedSplits);
     }
 
     @TruffleBoundary
