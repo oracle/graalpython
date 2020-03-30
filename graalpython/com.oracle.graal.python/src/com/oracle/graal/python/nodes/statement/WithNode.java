@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -49,7 +48,6 @@ import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -65,7 +63,6 @@ public class WithNode extends StatementNode {
     @Child private CoerceToBooleanNode toBooleanNode = CoerceToBooleanNode.createIfTrueNode();
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
-    @Child private PythonObjectFactory factory;
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private MaterializeFrameNode materializeFrameNode;
@@ -179,11 +176,7 @@ public class WithNode extends StatementNode {
         PFrame escapedFrame = materializeFrameNode.execute(frame, this, true, false);
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = getClassNode.execute(value);
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
-        value.reifyException(escapedFrame, factory);
+        value.reifyException(escapedFrame);
         LazyTraceback tb = value.getTraceback();
         Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress

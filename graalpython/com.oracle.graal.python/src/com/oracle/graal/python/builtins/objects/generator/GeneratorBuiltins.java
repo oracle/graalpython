@@ -213,7 +213,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached MaterializeFrameNode materializeNode) {
             PException pException = PException.fromObject(instance, this);
             PFrame pyFrame = materializeNode.execute(frame, this, true, false);
-            pException.getExceptionObject().reifyException(pyFrame, factory());
+            pException.getExceptionObject().reifyException(pyFrame);
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
         }

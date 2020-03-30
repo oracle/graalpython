@@ -60,11 +60,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -73,7 +70,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -91,11 +87,8 @@ public class TopLevelExceptionHandler extends RootNode {
     private final SourceSection sourceSection;
     @CompilationFinal private ContextReference<PythonContext> context;
 
-    @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
     @Child private CallNode exceptionHookCallNode = CallNode.create();
-    @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
-    @Child private PythonObjectFactory factory;
     @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
@@ -131,7 +124,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 assert !PArguments.isPythonFrame(frame);
-                e.getExceptionObject().reifyException((PFrame) null, factory());
+                e.getExceptionObject().reifyException((PFrame) null);
                 printExc(frame, e);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
@@ -240,14 +233,6 @@ public class TopLevelExceptionHandler extends RootNode {
     @TruffleBoundary
     private static void printStackTrace(Throwable e) {
         e.printStackTrace();
-    }
-
-    private PythonObjectFactory factory() {
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
-        return factory;
     }
 
     private GetExceptionTracebackNode ensureGetTracebackNode() {

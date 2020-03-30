@@ -30,13 +30,11 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -48,7 +46,6 @@ public class TryFinallyNode extends StatementNode {
     @Child private StatementNode finalbody;
     @Child private SaveExceptionStateNode getCaughtExceptionNode;
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
-    @Child private PythonObjectFactory factory;
 
     private final BranchProfile exceptionProfile = BranchProfile.create();
 
@@ -79,7 +76,7 @@ public class TryFinallyNode extends StatementNode {
                 caughtException = e.getExceptionObject();
                 PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
                 info.markAsEscaped();
-                caughtException.reifyException(info, getFactory());
+                caughtException.reifyException(info);
                 caughtTraceback = caughtException.getTraceback();
                 SetCaughtExceptionNode.execute(frame, new ExceptionInfo(caughtException, caughtException.getTraceback()));
             } catch (ControlFlowException e) {
@@ -138,13 +135,5 @@ public class TryFinallyNode extends StatementNode {
             getCaughtExceptionNode = insert(SaveExceptionStateNode.create());
         }
         return getCaughtExceptionNode;
-    }
-
-    private PythonObjectFactory getFactory() {
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
-        return factory;
     }
 }

@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -207,12 +206,12 @@ public final class PBaseException extends PythonObject {
      * Create the traceback for this exception using the provided {@link PFrame} instance (which
      * usually is the frame of the function that caught the exception).
      * <p>
-     * This function (of {@link #reifyException(PFrame.Reference, PythonObjectFactory factory)} must
+     * This function (of {@link #reifyException(PFrame.Reference)} must
      * be called before handing out exceptions into the Python value space because otherwise the
      * stack will not be correct if the exception object escapes the current function.
      * </p>
      */
-    public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
+    public void reifyException(PFrame pyFrame) {
         traceback = new LazyTraceback(pyFrame, exception, traceback);
     }
 
@@ -221,7 +220,7 @@ public final class PBaseException extends PythonObject {
      * Associate this exception with a frame info that represents the {@link PFrame} instance that
      * caught the exception.<br>
      * <p>
-     * In contrast to {@link #reifyException(PFrame, PythonObjectFactory)}, this method can be used
+     * In contrast to {@link #reifyException(PFrame)}, this method can be used
      * if the {@link PFrame} instance isn't already available and if the Truffle frame is also not
      * available to create the {@link PFrame} instance using the
      * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
@@ -234,7 +233,7 @@ public final class PBaseException extends PythonObject {
      * expensive. The traceback can then be created lazily from the frame info.
      * </p>
      */
-    public void reifyException(PFrame.Reference curFrameInfo, PythonObjectFactory factory) {
+    public void reifyException(PFrame.Reference curFrameInfo) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
         curFrameInfo.markAsEscaped();
         traceback = new LazyTraceback(curFrameInfo, exception, traceback);
