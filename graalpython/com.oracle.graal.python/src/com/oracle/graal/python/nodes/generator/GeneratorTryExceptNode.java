@@ -118,7 +118,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                     ExceptNode exceptNode = exceptNodes[i];
                     gen.setIndex(frame, exceptIndex, i + 1);
                     if (exceptNode.matchesException(frame, exception)) {
-                        runExceptionHandler(frame, exception, exceptNode, exceptionState);
+                        runExceptionHandler(frame, exception, exceptNode, exceptionState, true);
                         wasHandled = true;
                     }
                 }
@@ -144,7 +144,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we want a constant loop iteration count for ExplodeLoop to work,
             // so we always run through all except handlers
             if (i == matchingExceptNodeIndex - 1) {
-                runExceptionHandler(frame, exception, exceptNodes[i], exceptionState);
+                runExceptionHandler(frame, exception, exceptNodes[i], exceptionState, false);
                 wasHandled = true;
             }
         }
@@ -152,9 +152,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         return wasHandled;
     }
 
-    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionState exceptionState) {
+    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionState exceptionState, boolean firstTime) {
         try {
-            exceptNode.executeExcept(frame, exception);
+            exceptNode.executeExcept(frame, exception, firstTime);
         } catch (ExceptionHandledException e) {
             return;
         } catch (ControlFlowException e) {
