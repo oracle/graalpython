@@ -156,8 +156,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
             for tool in ["CHROMEINSPECTOR", "TRUFFLE_COVERAGE"]:
                 if os.path.exists(mx.suite("tools").dependency(tool).path):
                     dists.append(tool)
-            else:
-                mx.logv("%s was not built, not including it automatically" % tool)
 
     graalpython_args.insert(0, '--experimental-options=true')
 
@@ -742,9 +740,8 @@ def delete_self_if_testdownstream(args):
 
 
 def update_import(name, suite_py, rev="origin/master"):
-    mx_name = "mx." + name
     parent = os.path.join(SUITE.dir, "..")
-    for dirpath,dirnames,filenames in os.walk(parent):
+    for dirpath, dirnames, _ in os.walk(parent):
         if os.path.sep in os.path.relpath(dirpath, parent):
             dirnames.clear() # we're looking for siblings or sibling-subdirs
         elif name in dirnames:
@@ -793,7 +790,7 @@ def update_import_cmd(args):
             if os.path.exists(jsonnetfile):
                 local_names.append(sibling)
                 repos.append(dd)
-                for dirpath,dirnames,filenames in os.walk(dd):
+                for dirpath, dirnames, filenames in os.walk(dd):
                     mx_dirs = list(filter(lambda x: x.startswith("mx."), dirnames))
                     if mx_dirs:
                         dirnames[:] = mx_dirs # don't go deeper once we found some mx dirs
@@ -834,9 +831,9 @@ def update_import_cmd(args):
     # find all imports we might update
     imports_to_update = set()
     for suite_py in suite_py_files:
-        dict = {}
+        d = {}
         with open(suite_py) as f:
-            exec(f.read(), dict, dict)
+            exec(f.read(), d, d) # pylint: disable=exec-used;
         for suite in dict["suite"].get("imports", {}).get("suites", []):
             import_name = suite["name"]
             if suite.get("version") and import_name not in local_names:
@@ -934,7 +931,7 @@ def _python_checkpatchfiles():
         pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
         with open(listfilename, "r") as listfile:
             content = listfile.read()
-        patchfile_pattern = re.compile("lib-graalpython/patches/(.*)\.patch")
+        patchfile_pattern = re.compile(r"lib-graalpython/patches/(.*)\.patch")
         allowed_licenses = ["MIT", "BSD", "MIT license"]
         for line in content.split("\n"):
             match = patchfile_pattern.search(line)
@@ -949,7 +946,7 @@ def _python_checkpatchfiles():
                     if data_license not in allowed_licenses:
                         mx.abort(("The license for the original project %r is %r. We cannot include " +
                                   "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
-                except Exception as e:
+                except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:
                     if response:
@@ -1523,7 +1520,7 @@ def checkout_find_version_for_graalvm(args):
         contents = SUITE.vc.git_command(path, ["show", "%s:%s" % (current_revision, suite)])
         d = {}
         try:
-            exec(contents, d, d)
+            exec(contents, d, d) # pylint: disable=exec-used;
         except:
             mx.log("suite.py no longer parseable, falling back to %s" % current_commit)
             return

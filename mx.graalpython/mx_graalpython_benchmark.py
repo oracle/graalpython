@@ -29,7 +29,6 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
-import mx_subst
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
@@ -77,7 +76,7 @@ def _check_vm_args(name, args):
 
 
 def is_sandboxed_configuration(conf):
-    return conf == CONFIGURATION_SANDBOXED or conf == CONFIGURATION_SANDBOXED_MULTI
+    return conf in (CONFIGURATION_SANDBOXED, CONFIGURATION_SANDBOXED_MULTI)
 
 
 # from six
@@ -365,7 +364,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def benchSuiteName(self, bmSuiteArgs):
         return self.name()
-        
+
     def subgroup(self):
         return SUBGROUP_GRAAL_PYTHON
 
@@ -490,7 +489,7 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
             mx.abort("python harness path not specified!")
 
         self._bench_path = join(SUITE.dir, bench_path)
-    
+
     def get_bench_name(self, benchmarks):
         return os.path.basename(os.path.splitext(benchmarks[0])[0])
 
@@ -542,9 +541,6 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
 
 class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
 
-    def __init__(self, name, benchmarks):
-        super(PythonInteropBenchmarkSuite, self).__init__(name, benchmarks)
-
     def get_vm_registry(self):
         return java_vm_registry
 
@@ -567,7 +563,7 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
         vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
         jmh_entry = ["com.oracle.graal.python.benchmarks.interop.BenchRunner"]
         runArgs = self.runArgs(bmSuiteArgs)
-        
+
         bench_name = benchmarks[0]
         bench_args = self._benchmarks[bench_name]
         return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
@@ -576,4 +572,3 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
         return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
-
