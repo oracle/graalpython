@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
@@ -116,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -126,7 +126,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -583,16 +582,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFrame(PythonBuiltinClassType.PFrame, threadState, code, globals, locals));
     }
 
-    public PTraceback createTraceback(PFrame frame, PTraceback next) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, next));
+    public PTraceback createTraceback(PFrame frame, int lineno, LazyTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, lineno, next));
     }
 
-    public PTraceback createTraceback(PFrame frame, PException exception, PTraceback nextChain) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frame, exception, nextChain));
+    public PTraceback createTraceback(PFrame.Reference frameInfo, int lineno, LazyTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frameInfo, lineno, next));
     }
 
-    public PTraceback createTraceback(Reference frameInfo, PException exception, PTraceback nextChain) {
-        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, frameInfo, exception, nextChain));
+    public PTraceback createTraceback(MaterializedFrame truffleFrame, Node location, LazyTraceback next) {
+        return trace(new PTraceback(PythonBuiltinClassType.PTraceback, truffleFrame, location, next));
     }
 
     public PBaseException createBaseException(LazyPythonClass cls, PTuple args) {

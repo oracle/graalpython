@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import java.util.Objects;
+
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -57,8 +59,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import java.util.Objects;
 
 @NodeInfo(shortName = "read_caller_fame")
 public final class ReadCallerFrameNode extends Node {

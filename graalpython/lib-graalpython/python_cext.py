@@ -1217,6 +1217,10 @@ def PyErr_PrintEx(set_sys_last_vars):
     typ, val, tb = fetched if fetched is not native_null else (None, None, None)
     if typ is None:
         return
+    if tb is native_null:
+        tb = None
+    if val.__traceback__ is None:
+        val.__traceback__ = tb
     if set_sys_last_vars:
         try:
             sys.last_type = typ

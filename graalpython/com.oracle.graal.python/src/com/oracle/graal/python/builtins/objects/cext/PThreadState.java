@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -172,11 +174,12 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         Object doCurExcTraceback(@SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             ExceptionInfo currentException = context.getCurrentException();
-            Object result = null;
+            PTraceback result = null;
             if (currentException != null) {
-                result = currentException.traceback;
+                result = getTracebackNode.execute(currentException.traceback);
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -210,11 +213,12 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         Object doExcTraceback(@SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             ExceptionInfo currentException = context.getCaughtException();
-            Object result = null;
+            PTraceback result = null;
             if (currentException != null) {
-                result = currentException.traceback;
+                result = getTracebackNode.execute(currentException.traceback);
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -360,7 +364,7 @@ public class PThreadState extends PythonNativeWrapper {
             if (e != null) {
                 exception = e.exception;
             }
-            context.setCurrentException(new ExceptionInfo(exception, value));
+            context.setCurrentException(new ExceptionInfo(exception, new LazyTraceback(value)));
             return value;
         }
 
@@ -387,7 +391,7 @@ public class PThreadState extends PythonNativeWrapper {
             if (e != null) {
                 exception = e.exception;
             }
-            context.setCaughtException(new ExceptionInfo(exception, value));
+            context.setCaughtException(new ExceptionInfo(exception, new LazyTraceback(value)));
             return value;
         }
 
@@ -407,7 +411,7 @@ public class PThreadState extends PythonNativeWrapper {
 
         private static void setCurrentException(PythonContext context, PBaseException exceptionObject) {
             ExceptionInfo e = context.getCurrentException();
-            PTraceback currentTraceback = null;
+            LazyTraceback currentTraceback = null;
             if (e != null) {
                 currentTraceback = e.traceback;
             }
@@ -416,7 +420,7 @@ public class PThreadState extends PythonNativeWrapper {
 
         private static void setCaughtException(PythonContext context, PBaseException exceptionObject) {
             ExceptionInfo e = context.getCaughtException();
-            PTraceback currentTraceback = null;
+            LazyTraceback currentTraceback = null;
             if (e != null) {
                 currentTraceback = e.traceback;
             }

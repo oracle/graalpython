@@ -41,27 +41,17 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback.LazyTracebackStorage;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback.MaterializedTracebackStorage;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleStackTrace;
-import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
 public final class TracebackBuiltins extends PythonBuiltins {
@@ -81,36 +71,49 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
     public abstract static class GetPFrameNode extends Node {
 
-        public abstract PFrame execute(VirtualFrame frame, LazyTracebackStorage tb);
+        public abstract PFrame execute(VirtualFrame frame, PTraceback tb);
 
         @Specialization(guards = "hasPFrame(tb)")
-        PFrame doExisting(LazyTracebackStorage tb) {
+        PFrame doExisting(PTraceback tb) {
             return tb.getFrame();
+        }
+
+        @Specialization(guards = {"!hasPFrame(tb)", "hasTruffleFrame(tb)"})
+        PFrame doTruffleFrame(PTraceback tb,
+                        @Cached MaterializeFrameNode materializeNode) {
+            // create the PFrame and refresh frame values
+            PFrame escapedFrame = materializeNode.execute(null, tb.getLocation(), false, true, tb.getTruffleFrame());
+            tb.setFrame(escapedFrame);
+            tb.setLineno(escapedFrame.getLine());
+            return escapedFrame;
         }
 
         // case 1: not on stack: there is already a PFrame (so the frame of this frame info is
         // no
         // longer on the stack) and the frame has already been materialized
-        @Specialization(guards = {"!hasPFrame(tb)", "isMaterialized(tb.getFrameInfo())"})
-        PFrame doMaterializedFrame(LazyTracebackStorage tb) {
+        @Specialization(guards = {"!hasPFrame(tb)", "!hasTruffleFrame(tb)", "isMaterialized(tb.getFrameInfo())"})
+        PFrame doMaterializedFrame(PTraceback tb) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
             PFrame escapedFrame = frameInfo.getPyFrame();
             assert escapedFrame != null;
+
+            tb.setFrame(escapedFrame);
+
             return escapedFrame;
         }
 
         // case 2: on stack: the PFrame is not yet available so the frame must still be on the
         // stack
-        @Specialization(guards = {"!hasPFrame(tb)", "!isMaterialized(tb.getFrameInfo())"})
-        PFrame doOnStack(VirtualFrame frame, LazyTracebackStorage tb,
+        @Specialization(guards = {"!hasPFrame(tb)", "!hasTruffleFrame(tb)", "!isMaterialized(tb.getFrameInfo())"})
+        PFrame doOnStack(VirtualFrame frame, PTraceback tb,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
                         @Cached("createBinaryProfile()") ConditionProfile isCurFrameProfile) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
 
-            PFrame escapedFrame = null;
+            PFrame escapedFrame;
 
             // case 2.1: the frame info refers to the current frame
             if (isCurFrameProfile.profile(PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
@@ -130,86 +133,21 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 }
             }
 
+            tb.setFrame(escapedFrame);
+
             return escapedFrame;
         }
 
-        protected static boolean hasPFrame(LazyTracebackStorage tb) {
+        protected static boolean hasPFrame(PTraceback tb) {
             return tb.getFrame() != null;
         }
 
         protected static boolean isMaterialized(PFrame.Reference frameInfo) {
             return frameInfo.getPyFrame() != null;
         }
-    }
 
-    public abstract static class GetMaterializedTracebackNode extends Node {
-        public abstract MaterializedTracebackStorage execute(VirtualFrame frame, PTraceback tb);
-
-        protected static boolean isMaterialized(PTraceback tb) {
-            return tb.getTracebackStorage() instanceof MaterializedTracebackStorage;
-        }
-
-        @Specialization(guards = "isMaterialized(tb)")
-        MaterializedTracebackStorage getMaterialized(PTraceback tb) {
-            return (MaterializedTracebackStorage) tb.getTracebackStorage();
-        }
-
-        @Specialization(guards = "!isMaterialized(tb)")
-        MaterializedTracebackStorage getLazy(VirtualFrame frame, PTraceback tb,
-                        @Cached GetPFrameNode getPFrameNode,
-                        @Cached MaterializeFrameNode materializeNode,
-                        @Cached PythonObjectFactory factory) {
-            LazyTracebackStorage storage = (LazyTracebackStorage) tb.getTracebackStorage();
-            PFrame pFrame = storage.getFrame();
-            if (storage.getFrameInfo() != null) {
-                pFrame = getPFrameNode.execute(frame, storage);
-            }
-            MaterializedTracebackStorage materializedStorage = createTracebackFromTruffle(materializeNode, factory, storage, pFrame);
-            if (pFrame == null) {
-                // TopLevelExceptionHandler doesn't have a PFrame, but we'd like to be able to still
-                // use the traceback construction logic. So we allow the frame to be null and just
-                // skip to the next when we encounter it. This recursion should only happen once as
-                // only the top PFrame might be null
-                materializedStorage = execute(frame, materializedStorage.getNext());
-            }
-
-            tb.setStorage(materializedStorage);
-            return materializedStorage;
-        }
-
-        @TruffleBoundary
-        private static MaterializedTracebackStorage createTracebackFromTruffle(MaterializeFrameNode materializeNode, PythonObjectFactory factory, LazyTracebackStorage storage, PFrame pFrame) {
-            int lineno = -2;
-            PTraceback prev = storage.getNextChain();
-            CallTarget currentCallTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
-            for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(storage.getException())) {
-                if (currentCallTarget != null && element.getTarget() == currentCallTarget) {
-                    if (element.getLocation() != null) {
-                        SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
-                        if (sourceSection != null) {
-                            lineno = sourceSection.getStartLine();
-                        }
-                    }
-                    break;
-                }
-                prev = truffleStackTraceElementToPTraceback(materializeNode, factory, prev, element);
-            }
-            return new MaterializedTracebackStorage(pFrame, lineno, prev);
-        }
-
-        public static PTraceback truffleStackTraceElementToPTraceback(MaterializeFrameNode materializeNode, PythonObjectFactory factory, PTraceback prevTraceback, TruffleStackTraceElement element) {
-            Frame tracebackFrame = element.getFrame();
-            // frames may have not been requested
-            if (tracebackFrame != null) {
-                Node location = element.getLocation();
-                // only include frames of non-builtin python functions
-                if (PArguments.isPythonFrame(tracebackFrame) && location != null && !location.getRootNode().isInternal()) {
-                    // create the PFrame and refresh frame values
-                    PFrame escapedFrame = materializeNode.execute(null, location, false, true, tracebackFrame);
-                    prevTraceback = factory.createTraceback(escapedFrame, prevTraceback);
-                }
-            }
-            return prevTraceback;
+        protected static boolean hasTruffleFrame(PTraceback tb) {
+            return tb.getTruffleFrame() != null;
         }
     }
 
@@ -218,8 +156,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, PTraceback self,
-                        @Cached GetMaterializedTracebackNode getMaterializedTracebackNode) {
-            return getMaterializedTracebackNode.execute(frame, self).getFrame();
+                        @Cached GetPFrameNode getPFrameNode) {
+            return getPFrameNode.execute(frame, self);
         }
     }
 
@@ -227,9 +165,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
         @Specialization
-        Object get(VirtualFrame frame, PTraceback self,
-                        @Cached GetMaterializedTracebackNode getMaterializedTracebackNode) {
-            PTraceback next = getMaterializedTracebackNode.execute(frame, self).getNext();
+        Object get(PTraceback self,
+                        @Cached GetTracebackNode getTracebackNode) {
+            if (self.getNext() == null) {
+                return PNone.NONE;
+            }
+            PTraceback next = getTracebackNode.execute(self.getNext());
             return (next != null) ? next : PNone.NONE;
         }
     }
@@ -247,9 +188,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization
-        Object get(VirtualFrame frame, PTraceback self,
-                        @Cached GetMaterializedTracebackNode getMaterializedTracebackNode) {
-            return getMaterializedTracebackNode.execute(frame, self).getLineno();
+        Object get(PTraceback self) {
+            return self.getLineno();
         }
     }
 }

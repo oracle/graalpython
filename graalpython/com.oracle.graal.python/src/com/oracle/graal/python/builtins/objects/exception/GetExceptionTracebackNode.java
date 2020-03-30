@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -49,12 +51,20 @@ import com.oracle.truffle.api.nodes.Node;
  * Use this node to get the traceback object of an exception object. The traceback may need to be
  * created lazily and this node takes care of it.
  */
-public abstract class GetTracebackNode extends Node {
+public abstract class GetExceptionTracebackNode extends Node {
 
     public abstract PTraceback execute(VirtualFrame frame, PBaseException e);
 
     @Specialization
-    static PTraceback doExisting(PBaseException e) {
-        return e.getTraceback();
+    static PTraceback doExisting(PBaseException e,
+                    @Cached GetTracebackNode getTracebackNode) {
+        if (e.getTraceback() == null) {
+            return null;
+        }
+        return getTracebackNode.execute(e.getTraceback());
+    }
+
+    public static GetExceptionTracebackNode create() {
+        return GetExceptionTracebackNodeGen.create();
     }
 }

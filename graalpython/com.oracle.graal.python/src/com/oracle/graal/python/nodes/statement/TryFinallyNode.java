@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
@@ -69,7 +70,7 @@ public class TryFinallyNode extends StatementNode {
         } else {
             boolean executeFinalbody = true;
             PBaseException caughtException = null;
-            PTraceback caughtTraceback = null;
+            LazyTraceback caughtTraceback = null;
             try {
                 body.executeVoid(frame);
             } catch (PException e) {

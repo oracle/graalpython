@@ -49,8 +49,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -97,7 +96,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @Child private CallNode exceptionHookCallNode = CallNode.create();
     @Child private MaterializeFrameNode materializeFrameNode = MaterializeFrameNodeGen.create();
     @Child private PythonObjectFactory factory;
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
@@ -251,12 +250,12 @@ public class TopLevelExceptionHandler extends RootNode {
         return factory;
     }
 
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
+    private GetExceptionTracebackNode ensureGetTracebackNode() {
+        if (getExceptionTracebackNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNodeGen.create());
+            getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
         }
-        return getTracebackNode;
+        return getExceptionTracebackNode;
     }
 
     private Object run(VirtualFrame frame) {

@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -183,7 +184,7 @@ public class WithNode extends StatementNode {
             factory = insert(PythonObjectFactory.create());
         }
         value.reifyException(escapedFrame, factory);
-        PTraceback tb = value.getTraceback();
+        LazyTraceback tb = value.getTraceback();
         Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeBoolean(frame, returnValue)) {

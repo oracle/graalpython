@@ -166,6 +166,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -192,7 +194,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -497,6 +498,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         public Object run(Object module,
                         @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached GetTracebackNode getTracebackNode,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             PythonContext context = getContext();
             ExceptionInfo currentException = context.getCurrentException();
@@ -505,7 +507,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 result = getNativeNullNode.execute(module);
             } else {
                 PBaseException exception = currentException.exception;
-                PTraceback traceback = currentException.traceback;
+                Object traceback = null;
+                if (currentException.traceback != null) {
+                    traceback = getTracebackNode.execute(currentException.traceback);
+                }
+                if (traceback == null) {
+                    traceback = getNativeNullNode.execute(module);
+                }
                 result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback});
                 context.setCurrentException(null);
             }
@@ -1306,7 +1314,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceBackHereNode extends PythonBinaryBuiltinNode {
         @Specialization
         PTraceback tbHere(PFrame frame, PTraceback tb) {
-            return factory().createTraceback(frame, tb);
+            return factory().createTraceback(frame, frame.getLine(), new LazyTraceback(tb));
         }
     }
 

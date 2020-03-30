@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -71,7 +72,7 @@ public final class PBaseException extends PythonObject {
     private final Object[] messageArgs;
 
     private PException exception;
-    private PTraceback traceback;
+    private LazyTraceback traceback;
 
     private PBaseException context;
     private PBaseException cause;
@@ -127,14 +128,18 @@ public final class PBaseException extends PythonObject {
     }
 
     /**
-     * use {@link GetTracebackNode}
+     * use {@link GetExceptionTracebackNode}
      */
-    public PTraceback getTraceback() {
+    public LazyTraceback getTraceback() {
         return traceback;
     }
 
-    public void setTraceback(PTraceback traceback) {
+    public void setTraceback(LazyTraceback traceback) {
         this.traceback = traceback;
+    }
+
+    public void setTraceback(PTraceback traceback) {
+        this.traceback = new LazyTraceback(traceback);
     }
 
     public void clearTraceback() {
@@ -208,7 +213,7 @@ public final class PBaseException extends PythonObject {
      * </p>
      */
     public void reifyException(PFrame pyFrame, PythonObjectFactory factory) {
-        traceback = factory.createTraceback(pyFrame, exception, traceback);
+        traceback = new LazyTraceback(pyFrame, exception, traceback);
     }
 
     // msimacek TODO doc
@@ -232,7 +237,7 @@ public final class PBaseException extends PythonObject {
     public void reifyException(PFrame.Reference curFrameInfo, PythonObjectFactory factory) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
         curFrameInfo.markAsEscaped();
-        traceback = factory.createTraceback(curFrameInfo, exception, traceback);
+        traceback = new LazyTraceback(curFrameInfo, exception, traceback);
     }
 
     @ExportMessage
@@ -285,7 +290,7 @@ public final class PBaseException extends PythonObject {
      * the traceback materialization logic skip the frame.
      * </p>
      **/
-    public PException getExceptionForReraise(PTraceback traceback) {
+    public PException getExceptionForReraise(LazyTraceback traceback) {
         setTraceback(traceback);
         throw PException.fromObject(this, null);
     }

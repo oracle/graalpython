@@ -41,76 +41,72 @@
 package com.oracle.graal.python.builtins.objects.traceback;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PTraceback extends PythonBuiltinObject {
 
-    public interface TracebackStorage {
+    private PFrame frame;
+    private PFrame.Reference frameInfo;
+    private MaterializedFrame truffleFrame;
+    private Node location;
+    private int lineno = -2;
+    private final LazyTraceback next;
+
+    public PTraceback(LazyPythonClass cls, PFrame frame, int lineno, LazyTraceback next) {
+        super(cls);
+        this.frame = frame;
+        this.lineno = lineno;
+        this.next = next;
     }
 
-    public static class MaterializedTracebackStorage implements TracebackStorage {
-        private final PFrame frame;
-        private final int lineno;
-        private final PTraceback next;
-
-        public MaterializedTracebackStorage(PFrame frame, int lineno, PTraceback next) {
-            this.frame = frame;
-            this.lineno = lineno;
-            this.next = next;
-        }
-
-        public PFrame getFrame() {
-            return frame;
-        }
-
-        public int getLineno() {
-            return lineno;
-        }
-
-        public PTraceback getNext() {
-            return next;
-        }
+    public PTraceback(LazyPythonClass cls, PFrame.Reference frameInfo, int lineno, LazyTraceback next) {
+        super(cls);
+        this.frameInfo = frameInfo;
+        this.lineno = lineno;
+        this.next = next;
     }
 
-    public static class LazyTracebackStorage implements TracebackStorage {
-        private final Reference frameInfo;
-        private final PFrame frame;
-        private final PException exception;
-        private final PTraceback nextChain;
+    public PTraceback(LazyPythonClass cls, MaterializedFrame truffleFrame, Node location, LazyTraceback next) {
+        super(cls);
+        this.truffleFrame = truffleFrame;
+        this.location = location;
+        this.next = next;
+    }
 
-        public LazyTracebackStorage(Reference frameInfo, PException exception, PTraceback nextChain) {
-            this.frame = null;
-            this.frameInfo = frameInfo;
-            this.exception = exception;
-            this.nextChain = nextChain;
-        }
+    public PFrame getFrame() {
+        return frame;
+    }
 
-        public LazyTracebackStorage(PFrame frame, PException exception, PTraceback nextChain) {
-            this.frame = frame;
-            this.frameInfo = null;
-            this.exception = exception;
-            this.nextChain = nextChain;
-        }
+    public void setFrame(PFrame frame) {
+        this.frame = frame;
+    }
 
-        public Reference getFrameInfo() {
-            return frameInfo;
-        }
+    public PFrame.Reference getFrameInfo() {
+        return frameInfo;
+    }
 
-        public PFrame getFrame() {
-            return frame;
-        }
+    public int getLineno() {
+        return lineno;
+    }
 
-        public PException getException() {
-            return exception;
-        }
+    public MaterializedFrame getTruffleFrame() {
+        return truffleFrame;
+    }
 
-        public PTraceback getNextChain() {
-            return nextChain;
-        }
+    public Node getLocation() {
+        return location;
+    }
+
+    public LazyTraceback getNext() {
+        return next;
+    }
+
+    public void setLineno(int lineno) {
+        this.lineno = lineno;
     }
 
     public static final String TB_FRAME = "tb_frame";
@@ -122,30 +118,5 @@ public final class PTraceback extends PythonBuiltinObject {
 
     static Object[] getTbFieldNames() {
         return TB_DIR_FIELDS.clone();
-    }
-
-    private TracebackStorage storage;
-
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PException exception, PTraceback nextChain) {
-        super(clazz);
-        storage = new LazyTracebackStorage(frame, exception, nextChain);
-    }
-
-    public PTraceback(LazyPythonClass clazz, Reference frameInfo, PException exception, PTraceback nextChain) {
-        super(clazz);
-        storage = new LazyTracebackStorage(frameInfo, exception, nextChain);
-    }
-
-    public PTraceback(LazyPythonClass clazz, PFrame frame, PTraceback next) {
-        super(clazz);
-        storage = new MaterializedTracebackStorage(frame, frame.getLine(), next);
-    }
-
-    public TracebackStorage getTracebackStorage() {
-        return storage;
-    }
-
-    public void setStorage(TracebackStorage storage) {
-        this.storage = storage;
     }
 }

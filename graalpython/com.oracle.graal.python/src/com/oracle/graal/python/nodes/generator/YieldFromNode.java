@@ -42,8 +42,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.exception.GetTracebackNodeGen;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -81,7 +80,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private LookupAndCallBinaryNode getSendNode;
     @Child private CallNode callSendNode;
 
-    @Child private GetTracebackNode getTracebackNode;
+    @Child private GetExceptionTracebackNode getExceptionTracebackNode;
 
     private final IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
     private final IsBuiltinClassProfile stopIterProfile2 = IsBuiltinClassProfile.create();
@@ -275,12 +274,12 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
         return callSendNode;
     }
 
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
+    private GetExceptionTracebackNode ensureGetTracebackNode() {
+        if (getExceptionTracebackNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNodeGen.create());
+            getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
         }
-        return getTracebackNode;
+        return getExceptionTracebackNode;
     }
 
     public void setIteratorSlot(int slot) {
