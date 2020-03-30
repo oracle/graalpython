@@ -408,24 +408,26 @@ class TestPyErr(CPyExtTestCase):
         callfunction="wrap_PyErr_Fetch_tb_from_python",
         cmpfunc=compare_tracebacks,
     )
-    test_PyErr_Fetch_tb_f_back = CPyExtFunction(
-        _reference_fetch_tb_f_back,
-        lambda: (
-            (lambda: 1 / 0,),
-            (_raise_exception,),
-        ),
-        code="""PyObject* wrap_PyErr_Fetch_tb_f_back(PyObject* fn) {
-            PyObject_CallFunction(fn, NULL);
-            PyObject* typ = NULL;
-            PyObject* val = NULL;
-            PyObject* tb = NULL;
-            PyErr_Fetch(&typ, &val, &tb);
-            return PyObject_GetAttrString(PyObject_GetAttrString(tb, "tb_frame"), "f_back");
-        }
-        """,
-        resultspec="O",
-        argspec='O',
-        arguments=["PyObject* fn"],
-        callfunction="wrap_PyErr_Fetch_tb_f_back",
-        cmpfunc=compare_frame_f_back_chain,
-    )
+
+    # GR-22089
+    # test_PyErr_Fetch_tb_f_back = CPyExtFunction(
+    #     _reference_fetch_tb_f_back,
+    #     lambda: (
+    #         (lambda: 1 / 0,),
+    #         (_raise_exception,),
+    #     ),
+    #     code="""PyObject* wrap_PyErr_Fetch_tb_f_back(PyObject* fn) {
+    #         PyObject_CallFunction(fn, NULL);
+    #         PyObject* typ = NULL;
+    #         PyObject* val = NULL;
+    #         PyObject* tb = NULL;
+    #         PyErr_Fetch(&typ, &val, &tb);
+    #         return PyObject_GetAttrString(PyObject_GetAttrString(tb, "tb_frame"), "f_back");
+    #     }
+    #     """,
+    #     resultspec="O",
+    #     argspec='O',
+    #     arguments=["PyObject* fn"],
+    #     callfunction="wrap_PyErr_Fetch_tb_f_back",
+    #     cmpfunc=compare_frame_f_back_chain,
+    # )

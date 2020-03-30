@@ -116,3 +116,19 @@ def test_code():
 
 def test_builtins():
     assert print == sys._getframe().f_builtins["print"]
+
+
+# GR-22089
+# def test_backref_from_traceback():
+#     def bar():
+#         raise RuntimeError
+#
+#     def foo():
+#         bar()
+#
+#     try:
+#         foo()
+#     except Exception as e:
+#         assert e.__traceback__.tb_frame.f_back.f_code == sys._getframe(0).f_back.f_code
+#         assert e.__traceback__.tb_next.tb_next.tb_frame.f_back.f_code == foo.__code__
+#         assert e.__traceback__.tb_next.tb_frame.f_back.f_code == test_backref_from_traceback.__code__
