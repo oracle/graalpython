@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 from _descriptor import make_named_tuple_class
-from sys import graal_python_is_native
+
 
 stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
@@ -51,7 +51,7 @@ stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
 old_stat = stat
 
 
-@__builtin__
+@__graalpython__.builtin
 def stat(filename, follow_symlinks=True):
     return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
 
@@ -62,9 +62,9 @@ def __dir_entry_stat(self, follow_symlinks=True):
 DirEntry.stat = __dir_entry_stat
 
 
-@__builtin__
+@__graalpython__.builtin
 def lstat(filename):
-    if not graal_python_is_native:
+    if not __graalpython__.is_native:
         from sys import executable as graal_python_executable
         if filename == graal_python_executable:
             return stat_result((0,0,0,0,0,0,0,0,0,0))
@@ -74,12 +74,12 @@ def lstat(filename):
 old_fstat = fstat
 
 
-@__builtin__
+@__graalpython__.builtin
 def fstat(fd):
     return stat_result(old_fstat(fd))
 
 
-@__builtin__
+@__graalpython__.builtin
 def fspath(path):
     """Return the file system path representation of the object.
 
@@ -95,37 +95,37 @@ def fspath(path):
         raise TypeError("expected str, bytes or os.PathLike object, not %r" % type(path))
 
 
-@__builtin__
+@__graalpython__.builtin
 def scandir(path):
     return ScandirIterator(path)
 
 
-@__builtin__
+@__graalpython__.builtin
 def WIFSIGNALED(status):
     return status > 128
 
 
-@__builtin__
+@__graalpython__.builtin
 def WIFEXITED(status):
     return not WIFSIGNALED(status)
 
 
-@__builtin__
+@__graalpython__.builtin
 def WTERMSIG(status):
     return status - 128
 
 
-@__builtin__
+@__graalpython__.builtin
 def WEXITSTATUS(status):
     return status & 127
 
 
-@__builtin__
+@__graalpython__.builtin
 def WIFSTOPPED(status):
     return False
 
 
-@__builtin__
+@__graalpython__.builtin
 def WSTOPSIG(status):
     return 0
 
@@ -136,7 +136,7 @@ uname_result = make_named_tuple_class("posix.uname_result", [
 old_uname = uname
 
 
-@__builtin__
+@__graalpython__.builtin
 def uname():
     return uname_result(old_uname())
 
@@ -146,7 +146,7 @@ terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])
 
 old_get_terminal_size = get_terminal_size
 
-@__builtin__
+@__graalpython__.builtin
 def get_terminal_size(fd = None):
     return terminal_size(old_get_terminal_size(fd))
 

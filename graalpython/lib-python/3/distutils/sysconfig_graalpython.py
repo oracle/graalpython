@@ -62,25 +62,25 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
+    darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
 
     # note: this must be kept in sync with _imp.extension_suffixes
-    so_abi = sys.implementation.cache_tag + "-" + sys.graal_python_platform_id + "-" + sys.implementation._multiarch
+    so_abi = sys.implementation.cache_tag + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
     so_ext = ".so" if not darwin_native else ".dylib"
     assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
 
-    toolchain_cxx = sys.__graal_get_toolchain_path('CXX')
+    toolchain_cxx = __graalpython__.get_toolchain_path('CXX')
     have_cxx = toolchain_cxx is not None
 
     g = {}
-    g['CC'] = sys.__graal_get_toolchain_path('CC')
+    g['CC'] = __graalpython__.get_toolchain_path('CC')
     g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
     g['OPT'] = "-DNDEBUG -O1"
     g['CONFINCLUDEPY'] = get_python_inc()
     g['CPPFLAGS'] = '-I. -I' + get_python_inc()
     g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -O1"
     g['CCSHARED'] = "-fPIC"
-    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % sys.__graal_get_toolchain_path('CC')
+    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_path('CC')
     if darwin_native:
         g['LDSHARED'] = g['LDSHARED_LINUX'] + " -Wl,-undefined,dynamic_lookup"
     else:
@@ -89,8 +89,8 @@ def _init_posix():
     g['EXT_SUFFIX'] = "." + so_abi + so_ext
     g['SHLIB_SUFFIX'] = so_ext
     g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
-    g['AR'] = sys.__graal_get_toolchain_path('AR')
-    g['RANLIB'] = sys.__graal_get_toolchain_path('RANLIB')
+    g['AR'] = __graalpython__.get_toolchain_path('AR')
+    g['RANLIB'] = __graalpython__.get_toolchain_path('RANLIB')
     g['ARFLAGS'] = "rc"
     g['EXE'] = ""
     g['LIBDIR'] = os.path.join(sys.prefix, 'lib')

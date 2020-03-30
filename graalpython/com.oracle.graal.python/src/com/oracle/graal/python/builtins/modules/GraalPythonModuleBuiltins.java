@@ -40,18 +40,405 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+
+import java.io.PrintWriter;
 import java.util.List;
+import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.call.PythonCallNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LanguageInfo;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.NodeVisitor;
+import com.oracle.truffle.llvm.api.Toolchain;
 
-@CoreFunctions(defineModule = "__graalpython__")
+import org.graalvm.nativeimage.ImageInfo;
+
+@CoreFunctions(defineModule = BuiltinNames.__GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
+    public static final String LLVM_LANGUAGE = "llvm";
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return GraalPythonModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put("is_native", TruffleOptions.AOT);
+        // we need these during core initialization, they are re-set in postInitialize
+        postInitialize(core);
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonContext context = core.getContext();
+        PythonModule mod = core.lookupBuiltinModule("__graalpython__");
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            mod.setAttribute("home", context.getLanguage().getHome());
+        }
+        String coreHome = context.getCoreHome();
+        String stdlibHome = context.getStdlibHome();
+        String capiHome = context.getCAPIHome();
+        Env env = context.getEnv();
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+        mod.setAttribute("jython_emulation_enabled", context.getOption(PythonOptions.EmulateJython));
+        mod.setAttribute("host_import_enabled", context.getEnv().isHostLookupAllowed());
+        mod.setAttribute("core_home", coreHome);
+        mod.setAttribute("stdlib_home", stdlibHome);
+        mod.setAttribute("capi_home", capiHome);
+        mod.setAttribute("platform_id", toolchain.getIdentifier());
+    }
+
+    @Builtin(name = "cache_module_code", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class CacheModuleCode extends PythonTernaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CacheModuleCode.class);
+
+        @Specialization
+        public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return doCache(modulename, moduleFile, new String[0], ctxt, lang);
+        }
+
+        @Specialization
+        public Object run(String modulename, String moduleFile, PList modulepath,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("cast") @Cached CastToJavaStringNode castString,
+                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            SequenceStorage sequenceStorage = modulepath.getSequenceStorage();
+            int n = lenNode.execute(sequenceStorage);
+            Object[] pathList = sequenceStorage.getInternalArray();
+            assert n <= pathList.length;
+            String[] paths = new String[n];
+            for (int i = 0; i < n; i++) {
+                paths[i] = castString.execute(pathList[i]);
+            }
+            return doCache(modulename, moduleFile, paths, ctxt, lang);
+        }
+
+        private Object doCache(String modulename, String moduleFile, String[] modulepath, PythonContext ctxt, PythonLanguage lang) {
+            assert !ctxt.isInitialized() : "this can only be called during initialization";
+            final CallTarget ct = lang.cacheCode(moduleFile, () -> null);
+            if (ct == null) {
+                throw raise(NotImplementedError, "cannot cache something we haven't cached before");
+            }
+            return cacheWithModulePath(modulename, modulepath, lang, ct);
+        }
+
+        private static Object cacheWithModulePath(String modulename, String[] modulepath, PythonLanguage lang, final CallTarget ct) {
+            CallTarget cachedCt = lang.cacheCode(modulename, () -> ct, modulepath);
+            if (cachedCt != ct) {
+                LOGGER.log(Level.WARNING, () -> "Invalid attempt to re-cache " + modulename);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        public Object run(String modulename, PCode code, @SuppressWarnings("unused") PNone modulepath,
+                        @CachedLanguage PythonLanguage lang) {
+            final CallTarget ct = code.getRootCallTarget();
+            if (ct == null) {
+                throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
+            }
+            return cacheWithModulePath(modulename, new String[0], lang, ct);
+        }
+
+        @Specialization
+        public Object run(String modulename, PCode code, PList modulepath,
+                        @Shared("cast") @Cached CastToJavaStringNode castString,
+                        @CachedLanguage PythonLanguage lang) {
+            final CallTarget ct = code.getRootCallTarget();
+            if (ct == null) {
+                throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
+            }
+            Object[] pathList = modulepath.getSequenceStorage().getInternalArray();
+            String[] paths = new String[pathList.length];
+            for (int i = 0; i < pathList.length; i++) {
+                paths[i] = castString.execute(pathList[i]);
+            }
+            return cacheWithModulePath(modulename, paths, lang, ct);
+        }
+    }
+
+    @Builtin(name = "has_cached_code", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HasCachedCode extends PythonUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HasCachedCode.class);
+
+        @Specialization
+        public boolean run(String modulename,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @CachedLanguage PythonLanguage lang) {
+            boolean b = ctxt.getOption(PythonOptions.WithCachedSources) && lang.hasCachedCode(modulename);
+            if (b) {
+                LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
+            }
+            return b;
+        }
+    }
+
+    @Builtin(name = "get_cached_code_path", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CachedCodeIsPackage extends PythonUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CachedCodeIsPackage.class);
+
+        @Specialization
+        public Object run(String modulename,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @CachedLanguage PythonLanguage lang) {
+            String[] modulePath = null;
+            if (ctxt.getOption(PythonOptions.WithCachedSources)) {
+                modulePath = lang.cachedCodeModulePath(modulename);
+            }
+            if (modulePath != null) {
+                Object[] outPath = new Object[modulePath.length];
+                System.arraycopy(modulePath, 0, outPath, 0, modulePath.length);
+                LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
+                return factory().createList(outPath);
+            } else {
+                return PNone.NONE;
+            }
+        }
+
+        @Fallback
+        public Object run(@SuppressWarnings("unused") Object modulename) {
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_cached_code", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetCachedCode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object run(String modulename,
+                        @CachedLanguage PythonLanguage lang) {
+            final CallTarget ct = lang.cacheCode(modulename, () -> null);
+            if (ct == null) {
+                throw raise(ImportError, "no cached code for %s", modulename);
+            } else {
+                return factory().createCode((RootCallTarget) ct);
+            }
+        }
+    }
+
+    @Builtin(name = "dump_truffle_ast", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PFunction func) {
+            return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
+        }
+
+        @Specialization(guards = "isFunction(method.getFunction())")
+        @TruffleBoundary
+        public String doIt(PMethod method) {
+            // cast ensured by guard
+            PFunction fun = (PFunction) method.getFunction();
+            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PGenerator gen) {
+            return NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PCode code) {
+            return NodeUtil.printTreeToString(code.getRootNode());
+        }
+
+        @Fallback
+        @TruffleBoundary
+        public Object doit(Object object) {
+            return "truffle ast dump not supported for " + object.toString();
+        }
+
+        protected static boolean isFunction(Object callee) {
+            return callee instanceof PFunction;
+        }
+    }
+
+    @Builtin(name = "current_import", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class CurrentImport extends PythonBuiltinNode {
+        @Specialization
+        String doIt() {
+            return getContext().getCurrentImport();
+        }
+    }
+
+    @Builtin(name = "tdebug", takesVarArgs = true)
+    @GenerateNodeFactory
+    public abstract static class DebugNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public Object doIt(Object[] args) {
+            PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
+            for (int i = 0; i < args.length; i++) {
+                stdout.println(args[i]);
+            }
+            stdout.flush();
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "builtin", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
+        @Child private GetItemNode getNameNode = GetItemNode.create();
+
+        @Specialization
+        public Object doIt(VirtualFrame frame, PFunction func) {
+            PFunction builtinFunc = convertToBuiltin(func);
+            PythonObject globals = func.getGlobals();
+            PythonModule builtinModule;
+            if (globals instanceof PythonModule) {
+                builtinModule = (PythonModule) globals;
+            } else {
+                String moduleName = (String) getNameNode.execute(frame, globals, __NAME__);
+                builtinModule = getCore().lookupBuiltinModule(moduleName);
+                assert builtinModule != null;
+            }
+            return factory().createBuiltinMethod(builtinModule, builtinFunc);
+        }
+
+        @TruffleBoundary
+        public synchronized PFunction convertToBuiltin(PFunction func) {
+            /*
+             * (tfel): To be compatible with CPython, builtin module functions must be bound to
+             * their respective builtin module. We ignore that builtin functions should really be
+             * builtin methods here - it does not hurt if they are normal methods. What does hurt,
+             * however, is if they are not bound, because then using these functions in class field
+             * won't work when they are called from an instance of that class due to the implicit
+             * currying with "self".
+             */
+            Signature signature = func.getSignature();
+            PFunction builtinFunc;
+            if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
+                /*
+                 * If the first parameter is called self, we assume the function does explicitly
+                 * declare the module argument
+                 */
+                builtinFunc = func;
+                func.getFunctionRootNode().accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof PythonCallNode) {
+                            node.replace(((PythonCallNode) node).asSpecialCall());
+                        }
+                        return true;
+                    }
+                });
+            } else {
+                /*
+                 * Otherwise, we create a new function with a signature that requires one extra
+                 * argument in front. We actually modify the function's AST here, so the original
+                 * PFunction cannot be used anymore (its signature won't agree with it's indexed
+                 * parameter reads).
+                 */
+                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
+                functionRootNode = functionRootNode.copyWithNewSignature(signature.createWithSelf());
+                functionRootNode.setRewritten();
+                functionRootNode.accept(new NodeVisitor() {
+
+                    public boolean visit(Node node) {
+                        if (node instanceof ReadVarArgsNode) {
+                            ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
+                            node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
+                        } else if (node instanceof ReadIndexedArgumentNode) {
+                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                        } else if (node instanceof PythonCallNode) {
+                            node.replace(((PythonCallNode) node).asSpecialCall());
+                        }
+                        return true;
+                    }
+                });
+
+                String name = func.getName();
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
+                                new PCode(PythonBuiltinClassType.PCode, Truffle.getRuntime().createCallTarget(functionRootNode)),
+                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
+            }
+
+            return builtinFunc;
+        }
+    }
+
+    @Builtin(name = "get_toolchain_path", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        protected Object getToolPath(String tool) {
+            Env env = getContext().getEnv();
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            TruffleFile toolPath = toolchain.getToolPath(tool);
+            if (toolPath == null) {
+                return PNone.NONE;
+            }
+            return toolPath.toString();
+        }
     }
 }

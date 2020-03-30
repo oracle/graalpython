@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import sys
 
 def load(suffix=""):
     module_name = "_frozen_importlib%s" % suffix
-    filename = sys.graal_python_stdlib_home + ("/importlib/_bootstrap%s.py" % suffix)
+    filename = __graalpython__.stdlib_home + ("/importlib/_bootstrap%s.py" % suffix)
     return __import__(filename, module_name)
 
 
@@ -52,7 +52,7 @@ load("_external")
 importlib = load()
 importlib._install(sys, _imp)
 importlib._install_external_importers()
-sys.modules["builtins"].__import__ = __builtin__(importlib.__import__)
+sys.modules["builtins"].__import__ = __graalpython__.builtin(importlib.__import__)
 
 # Insert our meta finder for caching
 _imp.CachedImportFinder.ModuleSpec = importlib.ModuleSpec

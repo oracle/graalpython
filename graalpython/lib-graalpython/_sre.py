@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -517,33 +517,33 @@ def compile(pattern, flags, code, groups, groupindex, indexgroup):
     return _cpython_sre.compile(pattern, flags, code, groups, groupindex, indexgroup)
 
 
-@__builtin__
+@__graalpython__.builtin
 def getcodesize(*args, **kwargs):
     raise NotImplementedError("_sre.getcodesize is not yet implemented")
 
 
-@__builtin__
+@__graalpython__.builtin
 def getlower(char_ord, flags):
     import _cpython_sre
     return _cpython_sre.getlower(char_ord, flags)
 
 
-@__builtin__
+@__graalpython__.builtin
 def unicode_iscased(codepoint):
     ch = chr(codepoint)
     return ch != ch.lower() or ch != ch.upper()
 
 
-@__builtin__
+@__graalpython__.builtin
 def unicode_tolower(codepoint):
     return ord(chr(codepoint).lower())
 
 
-@__builtin__
+@__graalpython__.builtin
 def ascii_iscased(codepoint):
     return codepoint < 128 and chr(codepoint).isalpha()
 
 
-@__builtin__
+@__graalpython__.builtin
 def ascii_tolower(codepoint):
     return ord(chr(codepoint).lower()) if codepoint < 128 else codepoint

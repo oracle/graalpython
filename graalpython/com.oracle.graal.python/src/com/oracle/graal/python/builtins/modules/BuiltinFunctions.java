@@ -59,12 +59,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTIN__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__DUMP_TRUFFLE_AST__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__JYTHON_CURRENT_IMPORT__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
@@ -75,7 +73,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.List;
@@ -105,12 +102,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -126,8 +119,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -140,7 +131,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -155,7 +145,6 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -163,7 +152,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CoerceToStringNode;
@@ -199,8 +187,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -213,6 +199,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinFunctionsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        builtinConstants.put(__GRAALPYTHON__, core.lookupBuiltinModule(__GRAALPYTHON__));
+        super.initialize(core);
     }
 
     @Override
@@ -615,7 +607,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         throw new IllegalStateException(e);
                     }
                 }
-                setBuiltins.execute(frame, globals, BuiltinNames.__BUILTINS__, builtinsDict);
+                setBuiltins.execute(frame, globals, __BUILTINS__, builtinsDict);
             } else {
                 // This happens during context initialization
                 return;
@@ -1698,21 +1690,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__tdebug__", takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class DebugNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object doIt(Object[] args) {
-            PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
-            for (int i = 0; i < args.length; i++) {
-                stdout.println(args[i]);
-            }
-            stdout.flush();
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"x", "y", "z"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBuiltinNode {
@@ -1820,137 +1797,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 value = add.executeObject(frame, value, nextValue);
             }
-        }
-    }
-
-    @Builtin(name = __BUILTIN__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
-        @Child private GetItemNode getNameNode = GetItemNode.create();
-
-        @Specialization
-        public Object doIt(VirtualFrame frame, PFunction func) {
-            PFunction builtinFunc = convertToBuiltin(func);
-            PythonObject globals = func.getGlobals();
-            PythonModule builtinModule;
-            if (globals instanceof PythonModule) {
-                builtinModule = (PythonModule) globals;
-            } else {
-                String moduleName = (String) getNameNode.execute(frame, globals, __NAME__);
-                builtinModule = getCore().lookupBuiltinModule(moduleName);
-                assert builtinModule != null;
-            }
-            return factory().createBuiltinMethod(builtinModule, builtinFunc);
-        }
-
-        @TruffleBoundary
-        public synchronized PFunction convertToBuiltin(PFunction func) {
-            /*
-             * (tfel): To be compatible with CPython, builtin module functions must be bound to
-             * their respective builtin module. We ignore that builtin functions should really be
-             * builtin methods here - it does not hurt if they are normal methods. What does hurt,
-             * however, is if they are not bound, because then using these functions in class field
-             * won't work when they are called from an instance of that class due to the implicit
-             * currying with "self".
-             */
-            Signature signature = func.getSignature();
-            PFunction builtinFunc;
-            if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
-                /*
-                 * If the first parameter is called self, we assume the function does explicitly
-                 * declare the module argument
-                 */
-                builtinFunc = func;
-                func.getFunctionRootNode().accept(new NodeVisitor() {
-                    public boolean visit(Node node) {
-                        if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
-                        }
-                        return true;
-                    }
-                });
-            } else {
-                /*
-                 * Otherwise, we create a new function with a signature that requires one extra
-                 * argument in front. We actually modify the function's AST here, so the original
-                 * PFunction cannot be used anymore (its signature won't agree with it's indexed
-                 * parameter reads).
-                 */
-                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-                functionRootNode = functionRootNode.copyWithNewSignature(signature.createWithSelf());
-                functionRootNode.setRewritten();
-                functionRootNode.accept(new NodeVisitor() {
-
-                    public boolean visit(Node node) {
-                        if (node instanceof ReadVarArgsNode) {
-                            ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
-                            node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
-                        } else if (node instanceof ReadIndexedArgumentNode) {
-                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                        } else if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
-                        }
-                        return true;
-                    }
-                });
-
-                String name = func.getName();
-                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
-                                new PCode(PythonBuiltinClassType.PCode, Truffle.getRuntime().createCallTarget(functionRootNode)),
-                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
-            }
-
-            return builtinFunc;
-        }
-    }
-
-    @Builtin(name = __DUMP_TRUFFLE_AST__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public String doIt(PFunction func) {
-            return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
-        }
-
-        @Specialization(guards = "isFunction(method.getFunction())")
-        @TruffleBoundary
-        public String doIt(PMethod method) {
-            // cast ensured by guard
-            PFunction fun = (PFunction) method.getFunction();
-            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public String doIt(PGenerator gen) {
-            return NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public String doIt(PCode code) {
-            return NodeUtil.printTreeToString(code.getRootNode());
-        }
-
-        @Fallback
-        @TruffleBoundary
-        public Object doit(Object object) {
-            return "truffle ast dump not supported for " + object.toString();
-        }
-
-        protected static boolean isFunction(Object callee) {
-            return callee instanceof PFunction;
-        }
-    }
-
-    @Builtin(name = __JYTHON_CURRENT_IMPORT__, minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    public abstract static class CurrentImport extends PythonBuiltinNode {
-        @Specialization
-        String doIt() {
-            return getContext().getCurrentImport();
         }
     }
 
