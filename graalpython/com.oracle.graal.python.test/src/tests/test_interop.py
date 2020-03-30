@@ -462,7 +462,7 @@ if sys.implementation.name == "graalpython":
             assert (x != None) == False
             assert x is None
             assert (x is not None) == False
-                        
+
             assert x == y
             assert (x != y) == False
             assert x is y
@@ -503,4 +503,23 @@ if sys.implementation.name == "graalpython":
             h = HashMap()
             assert isinstance(h, HashMap)
             assert isinstance(h, Map)
-        
+
+    def test_foreign_slice_setting():
+        import java
+        il = java.type("int[]")(20)
+        try:
+            il[0:2] = 1
+        except TypeError:
+            assert True
+        else:
+            assert False, "should throw a type error"
+        il[0] = 12
+        assert il[0] == 12
+        il[0:10] = [10] * 10
+        assert list(il) == [10] * 10 + [0] * 10, "not equal"
+        try:
+            il[0] = 1.2
+        except TypeError:
+            assert True
+        else:
+            assert False, "should throw a type error again"
