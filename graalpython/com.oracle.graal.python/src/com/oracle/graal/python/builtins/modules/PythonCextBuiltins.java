@@ -495,10 +495,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyErrFetchNode extends NativeBuiltin {
         @Specialization
-        public Object run(VirtualFrame frame, Object module,
+        public Object run(Object module,
                         @Exclusive @Cached GetClassNode getClassNode,
-                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
-                        @Cached MaterializeFrameNode materializeNode) {
+                        @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             PythonContext context = getContext();
             ExceptionInfo currentException = context.getCurrentException();
             Object result;
@@ -506,17 +505,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 result = getNativeNullNode.execute(module);
             } else {
                 PBaseException exception = currentException.exception;
-                // There is almost no way this exception hasn't been reified if
-                // it has to be. If it came from Python land, it's frame was
-                // reified on the boundary to C. BUT, that being said, someone
-                // could (since this is python_cext API) call this from Python
-                // instead of sys.exc_info() and then it should also work. So we
-                // do do it here if it hasn't been done already.
-                // XXX msimacek
-                exception.setTraceback(null);
-                PFrame escapedFrame = materializeNode.execute(frame, this, true, false);
-                exception.reifyException(escapedFrame, factory());
-                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, exception.getTraceback()});
+                PTraceback traceback = currentException.traceback;
+                result = factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback});
                 context.setCurrentException(null);
             }
             return result;

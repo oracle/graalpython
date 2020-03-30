@@ -2351,7 +2351,8 @@ public abstract class CExtNodes {
 
         public static void transformToNative(PythonContext context, PFrame.Reference frameInfo, PException p, PythonObjectFactory factory) {
             PBaseException pythonException = p.getExceptionObject();
-            pythonException.reifyException(frameInfo, factory);
+            pythonException.reifyException((PFrame) null, factory);
+            frameInfo.markAsEscaped();
             context.setCurrentException(new ExceptionInfo(pythonException, pythonException.getTraceback()));
         }
     }
