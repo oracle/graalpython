@@ -632,7 +632,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PBaseException createBaseException(LazyPythonClass cls) {
-        return trace(new PBaseException(cls, makeStorage(cls), createEmptyTuple()));
+        return trace(new PBaseException(cls, makeStorage(cls)));
     }
 
     /*

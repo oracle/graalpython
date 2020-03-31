@@ -86,6 +86,14 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = null;
     }
 
+    public PBaseException(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
+        this.args = null;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
     public PBaseException(LazyPythonClass cls, DynamicObject storage, String format, Object[] args) {
         super(cls, storage);
         this.args = null;
