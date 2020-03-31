@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,8 +46,9 @@ import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PScandirIterator extends PythonBuiltinObject {
     private boolean closed = false;
@@ -56,8 +57,8 @@ public class PScandirIterator extends PythonBuiltinObject {
     private final String path;
 
     @TruffleBoundary
-    public PScandirIterator(LazyPythonClass cls, String path, DirectoryStream<TruffleFile> stream) {
-        super(cls);
+    public PScandirIterator(LazyPythonClass cls, DynamicObject storage, String path, DirectoryStream<TruffleFile> stream) {
+        super(cls, storage);
         this.path = path;
         this.stream = stream;
         this.iterator = stream.iterator();

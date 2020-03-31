@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PRangeIterator extends PIntegerIterator {
 
@@ -36,8 +37,8 @@ public final class PRangeIterator extends PIntegerIterator {
     final int step;
     int index;
 
-    public PRangeIterator(LazyPythonClass clazz, int start, int stop, int step) {
-        super(clazz);
+    public PRangeIterator(LazyPythonClass clazz, DynamicObject storage, int start, int stop, int step) {
+        super(clazz, storage);
         index = start;
         this.stop = stop;
         this.step = step;
@@ -84,8 +85,8 @@ public final class PRangeIterator extends PIntegerIterator {
         final int step;
         int index;
 
-        public PRangeReverseIterator(LazyPythonClass clazz, int index, int stop, int step) {
-            super(clazz);
+        public PRangeReverseIterator(LazyPythonClass clazz, DynamicObject storage, int index, int stop, int step) {
+            super(clazz, storage);
             this.index = index;
             this.stop = stop;
             this.step = step;

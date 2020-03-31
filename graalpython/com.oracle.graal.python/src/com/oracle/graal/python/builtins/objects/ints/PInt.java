@@ -41,14 +41,15 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
 
     private final BigInteger value;
 
-    public PInt(LazyPythonClass clazz, BigInteger value) {
-        super(clazz);
+    public PInt(LazyPythonClass clazz, DynamicObject storage, BigInteger value) {
+        super(clazz, storage);
         assert value != null;
         this.value = value;
     }

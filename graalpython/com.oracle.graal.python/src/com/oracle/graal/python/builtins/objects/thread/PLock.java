@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,13 +45,14 @@ import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PLock extends AbstractPythonLock {
     private final Semaphore semaphore;
 
     @TruffleBoundary
-    public PLock(LazyPythonClass cls) {
-        super(cls);
+    public PLock(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
         semaphore = new Semaphore(1);
     }
 

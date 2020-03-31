@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,14 +45,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.tukaani.xz.LZMAInputStream;
-import org.tukaani.xz.XZFormatException;
-import org.tukaani.xz.XZInputStream;
-
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
+
+import org.tukaani.xz.LZMAInputStream;
+import org.tukaani.xz.XZFormatException;
+import org.tukaani.xz.XZInputStream;
 
 public class PLZMADecompressor extends PythonObject {
 
@@ -61,8 +62,8 @@ public class PLZMADecompressor extends PythonObject {
     private boolean eof;
     private boolean needsInput;
 
-    public PLZMADecompressor(LazyPythonClass clazz, int format, int memlimit) {
-        super(clazz);
+    public PLZMADecompressor(LazyPythonClass clazz, DynamicObject storage, int format, int memlimit) {
+        super(clazz, storage);
         this.format = format;
         this.memlimit = memlimit;
     }

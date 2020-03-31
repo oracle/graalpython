@@ -416,7 +416,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
                 String name = func.getName();
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
-                                new PCode(PythonBuiltinClassType.PCode, Truffle.getRuntime().createCallTarget(functionRootNode)),
+                                factory().createCode(Truffle.getRuntime().createCallTarget(functionRootNode)),
                                 func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 

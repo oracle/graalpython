@@ -34,6 +34,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(PythonObjectLibrary.class)
@@ -42,8 +43,8 @@ public final class PMethod extends PythonBuiltinObject {
     final Object function;
     private final Object self;
 
-    public PMethod(LazyPythonClass cls, Object self, Object function) {
-        super(cls);
+    public PMethod(LazyPythonClass cls, DynamicObject storage, Object self, Object function) {
+        super(cls, storage);
         this.self = self;
         this.function = function;
     }

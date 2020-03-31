@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,14 +35,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PythonModule extends PythonObject {
-    public PythonModule(LazyPythonClass clazz) {
-        super(clazz);
+    public PythonModule(LazyPythonClass clazz, DynamicObject storage) {
+        super(clazz, storage);
     }
 
     private PythonModule(String moduleName) {
-        super(PythonBuiltinClassType.PythonModule);
+        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.newInstance());
         setAttribute(__NAME__, moduleName);
         setAttribute(__DOC__, PNone.NONE);
         setAttribute(__PACKAGE__, PNone.NONE);

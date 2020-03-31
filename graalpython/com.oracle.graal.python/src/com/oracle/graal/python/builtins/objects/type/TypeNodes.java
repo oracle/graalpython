@@ -93,6 +93,7 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -817,16 +818,36 @@ public abstract class TypeNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
+    @ReportPolymorphism
     public abstract static class GetInstanceShape extends PNodeWithContext {
 
         public abstract Shape execute(LazyPythonClass clazz);
 
-        @Specialization
+        @Specialization(guards = "clazz == cachedClazz", limit = "1")
+        Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+                        @Cached("clazz") PythonBuiltinClassType cachedClazz) {
+            return cachedClazz.getInstanceShape();
+        }
+
+        @Specialization(replaces = "doBuiltinClassTypeCached")
         Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
             return clazz.getInstanceShape();
         }
 
-        @Specialization
+        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
+                        @Cached("clazz") PythonBuiltinClass cachedClazz) {
+            return cachedClazz.getInstanceShape();
+        }
+
+        @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
+        Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
+                        @Cached("clazz") PythonClass cachedClazz) {
+            return cachedClazz.getInstanceShape();
+        }
+
+        @Specialization(replaces = {"doClassCached", "doBuiltinClassCached"})
         Shape doManagedClass(PythonManagedClass clazz) {
             return clazz.getInstanceShape();
         }
@@ -835,15 +856,6 @@ public abstract class TypeNodes {
         Shape doError(@SuppressWarnings("unused") LazyPythonClass clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
-        }
-
-        public static Shape doSlowPath(LazyPythonClass clazz) {
-            if (clazz instanceof PythonBuiltinClassType) {
-                return ((PythonBuiltinClassType) clazz).getInstanceShape();
-            } else if (clazz instanceof PythonManagedClass) {
-                return ((PythonManagedClass) clazz).getInstanceShape();
-            }
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, "cannot get shape of native class");
         }
 
         public static GetInstanceShape create() {

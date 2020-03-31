@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 /**
  * The base class of all Python built-in data types (int, complex, tuple...). Subclasses of
@@ -39,7 +40,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
  */
 public abstract class PythonBuiltinObject extends PythonObject {
 
-    public PythonBuiltinObject(LazyPythonClass cls) {
-        super(cls);
+    public PythonBuiltinObject(LazyPythonClass cls, DynamicObject storage) {
+        super(cls, storage);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public final class PLongSequenceIterator extends PLongIterator {
 
@@ -34,8 +35,8 @@ public final class PLongSequenceIterator extends PLongIterator {
     int index;
     protected boolean stopIterationReached = false;
 
-    public PLongSequenceIterator(LazyPythonClass clazz, LongSequenceStorage sequence) {
-        super(clazz);
+    public PLongSequenceIterator(LazyPythonClass clazz, DynamicObject storage, LongSequenceStorage sequence) {
+        super(clazz, storage);
         this.sequence = sequence;
     }
 

@@ -56,7 +56,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -649,7 +648,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         String value = node.value.indexOf('_') == -1 ? node.value : node.value.replace("_", "");
         if (node.imaginary) {
             double imag = Double.parseDouble(value.substring(0, value.length() - 1));
-            result = new ComplexLiteralNode(new PComplex(PythonBuiltinClassType.PComplex, 0, imag));
+            result = new ComplexLiteralNode(new PComplex(0, imag));
         } else {
             result = new DoubleLiteralNode(Double.parseDouble(value));
         }

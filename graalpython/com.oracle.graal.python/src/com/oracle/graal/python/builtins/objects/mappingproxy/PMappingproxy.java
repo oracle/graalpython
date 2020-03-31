@@ -45,12 +45,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PMappingproxy extends PHashingCollection {
     private final HashingStorage dictStorage;
 
-    public PMappingproxy(LazyPythonClass klass, HashingStorage dictStorage) {
-        super(klass);
+    public PMappingproxy(LazyPythonClass klass, DynamicObject storage, HashingStorage dictStorage) {
+        super(klass, storage);
         this.dictStorage = dictStorage;
     }
 

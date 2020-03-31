@@ -58,6 +58,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PBaseException extends PythonObject {
@@ -77,16 +78,16 @@ public final class PBaseException extends PythonObject {
     /** The frame info of the Python frame that first caught the exception. */
     private PFrame.Reference frameInfo;
 
-    public PBaseException(LazyPythonClass cls, PTuple args) {
-        super(cls);
+    public PBaseException(LazyPythonClass cls, DynamicObject storage, PTuple args) {
+        super(cls, storage);
         this.args = args;
         this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(LazyPythonClass cls, String format, Object[] args) {
-        super(cls);
+    public PBaseException(LazyPythonClass cls, DynamicObject storage, String format, Object[] args) {
+        super(cls, storage);
         this.args = null;
         this.hasMessageFormat = true;
         this.messageFormat = format;

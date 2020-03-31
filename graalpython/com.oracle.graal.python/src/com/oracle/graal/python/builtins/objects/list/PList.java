@@ -34,20 +34,21 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PList extends PMutableSequence {
     private final ListLiteralNode origin;
     private SequenceStorage store;
 
-    public PList(LazyPythonClass cls, SequenceStorage store) {
-        super(cls);
+    public PList(LazyPythonClass cls, DynamicObject storage, SequenceStorage store) {
+        super(cls, storage);
         this.origin = null;
         this.store = store;
     }
 
-    public PList(LazyPythonClass cls, SequenceStorage store, ListLiteralNode origin) {
-        super(cls);
+    public PList(LazyPythonClass cls, DynamicObject storage, SequenceStorage store, ListLiteralNode origin) {
+        super(cls, storage);
         this.origin = origin;
         this.store = store;
     }

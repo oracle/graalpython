@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,13 +43,14 @@ package com.oracle.graal.python.builtins.objects.thread;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.DynamicObject;
 
 public class PThread extends PythonBuiltinObject {
     public static final String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
     private final Thread thread;
 
-    public PThread(LazyPythonClass cls, Thread thread) {
-        super(cls);
+    public PThread(LazyPythonClass cls, DynamicObject storage, Thread thread) {
+        super(cls, storage);
         this.thread = thread;
     }
 

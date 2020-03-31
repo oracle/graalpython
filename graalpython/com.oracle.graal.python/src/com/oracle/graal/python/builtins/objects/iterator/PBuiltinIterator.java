@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.object.DynamicObject;
 
 /**
  * This is the base class for all builtin iterator types that cannot be subclassed from Python code.
@@ -35,8 +36,8 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
 
     private boolean exhausted = false;
 
-    public PBuiltinIterator(LazyPythonClass clazz) {
-        super(clazz);
+    public PBuiltinIterator(LazyPythonClass clazz, DynamicObject storage) {
+        super(clazz, storage);
     }
 
     public void setExhausted() {
