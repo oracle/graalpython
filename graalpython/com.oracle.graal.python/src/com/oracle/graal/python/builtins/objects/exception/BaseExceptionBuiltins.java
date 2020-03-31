@@ -230,7 +230,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             return traceback == null ? PNone.NONE : traceback;
         }
 
-        @Specialization
+        @Specialization(guards = "!isNoValue(tb)")
         public Object setTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
             self.clearTraceback();
             return PNone.NONE;

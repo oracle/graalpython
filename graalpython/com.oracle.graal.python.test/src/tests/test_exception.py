@@ -91,21 +91,18 @@ class ExceptionTests(unittest.TestCase):
 
         e = BaseException().with_traceback(tb)
         self.assertIsInstance(e, BaseException)
-        # TODO this dosn't work yet
-        #self.assertEqual(e.__traceback__, tb)
+        self.assertEqual(e.__traceback__, tb)
 
         e = IndexError(5).with_traceback(tb)
         self.assertIsInstance(e, IndexError)
-        # TODO this dosn't work yet
-        #self.assertEqual(e.__traceback__, tb)
+        self.assertEqual(e.__traceback__, tb)
 
         class MyException(Exception):
             pass
 
         e = MyException().with_traceback(tb)
         self.assertIsInstance(e, MyException)
-        # TODO this dosn't work yet
-        #self.assertEqual(e.__traceback__, tb)
+        self.assertEqual(e.__traceback__, tb)
 
     def test_aliases(self):
         self.assertTrue (IOError is OSError)
