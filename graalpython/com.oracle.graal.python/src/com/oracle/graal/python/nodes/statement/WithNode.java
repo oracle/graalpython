@@ -33,7 +33,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -66,6 +68,7 @@ public class WithNode extends StatementNode {
     @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private MaterializeFrameNode materializeFrameNode;
+    @Child private GetTracebackNode getTracebackNode;
 
     private final BranchProfile noEnter = BranchProfile.create();
     private final BranchProfile noExit = BranchProfile.create();
@@ -177,14 +180,13 @@ public class WithNode extends StatementNode {
         PBaseException value = e.getExceptionObject();
         PythonAbstractClass type = getClassNode.execute(value);
         value.reifyException(escapedFrame);
-        LazyTraceback tb = value.getTraceback();
-        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+        LazyTraceback caughtTraceback = value.getTraceback();
+        PTraceback tb = getTraceback(caughtTraceback);
+        Object returnValue = exitDispatch.execute(frame, exitCallable, new Object[]{withObject, type, value, tb != null ? tb : PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
         // If exit handler returns 'true', suppress
-        if (toBooleanNode.executeBoolean(frame, returnValue)) {
-            return;
-        } else {
-            // else re-raise exception
-            throw e;
+        if (!toBooleanNode.executeBoolean(frame, returnValue)) {
+            // re-raise exception
+            throw value.getExceptionForReraise(caughtTraceback);
         }
     }
 
@@ -200,5 +202,16 @@ public class WithNode extends StatementNode {
             }
             restoreExceptionStateNode.execute(frame, exceptionState);
         }
+    }
+
+    private PTraceback getTraceback(LazyTraceback tb) {
+        if (tb != null) {
+            if (getTracebackNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTracebackNode = insert(GetTracebackNode.create());
+            }
+            return getTracebackNode.execute(tb);
+        }
+        return null;
     }
 }

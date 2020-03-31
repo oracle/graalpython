@@ -64,4 +64,8 @@ public abstract class GetTracebackNode extends Node {
         tb.setTraceback(materializedTraceback);
         return materializedTraceback;
     }
+
+    public static GetTracebackNode create() {
+        return GetTracebackNodeGen.create();
+    }
 }

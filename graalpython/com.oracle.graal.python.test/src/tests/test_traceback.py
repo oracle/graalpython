@@ -330,6 +330,26 @@ def test_with():
     )
 
 
+def test_with_reraise():
+    class cm:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, etype, e, tb):
+            return False
+
+    def test():
+        with cm():
+            raise OSError("test")
+
+    assert_has_traceback(
+        test,
+        [
+            ('test', 'raise OSError("test")'),
+        ]
+    )
+
+
 def test_finally():
     def test():
         try:
