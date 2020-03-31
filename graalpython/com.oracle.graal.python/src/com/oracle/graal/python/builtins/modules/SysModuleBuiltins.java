@@ -72,9 +72,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -85,23 +83,18 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.llvm.api.Toolchain;
 
 import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
-    public static final String LLVM_LANGUAGE = "llvm";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
     public static final String PLATFORM_DARWIN = "darwin";
@@ -140,7 +133,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[" + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
-        builtinConstants.put("graal_python_is_native", TruffleOptions.AOT);
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
                         Double.MAX_VALUE,       // DBL_MAX
@@ -195,13 +187,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (!ImageInfo.inImageBuildtimeCode()) {
             sys.setAttribute("executable", context.getOption(PythonOptions.Executable));
             sys.setAttribute("_base_executable", context.getOption(PythonOptions.Executable));
-            sys.setAttribute("graal_python_home", context.getLanguage().getHome());
         }
-        sys.setAttribute("graal_python_jython_emulation_enabled", context.getOption(PythonOptions.EmulateJython));
-        sys.setAttribute("graal_python_host_import_enabled", context.getEnv().isHostLookupAllowed());
-        sys.setAttribute("graal_python_core_home", coreHome);
-        sys.setAttribute("graal_python_stdlib_home", stdlibHome);
-        sys.setAttribute("graal_python_capi_home", capiHome);
         sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
@@ -222,9 +208,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         Env env = context.getEnv();
         String option = context.getOption(PythonOptions.PythonPath);
-
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
-        Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
 
         boolean isIsolated = context.getOption(PythonOptions.IsolateFlag);
         boolean capiSeparate = !capiHome.equals(coreHome);
@@ -257,7 +240,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         PList sysPaths = core.factory().createList(path);
         sys.setAttribute("path", sysPaths);
-        sys.setAttribute("graal_python_platform_id", toolchain.getIdentifier());
     }
 
     private static String getScriptPath(Env env, String[] args) {
@@ -518,24 +500,4 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return LookupAndCallUnaryNode.create(__SIZEOF__);
         }
     }
-
-    @Builtin(name = "__graal_get_toolchain_path", minNumOfPositionalArgs = 1)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class GetToolPathNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        protected Object getToolPath(String tool) {
-            Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            TruffleFile toolPath = toolchain.getToolPath(tool);
-            if (toolPath == null) {
-                return PNone.NONE;
-            }
-            return toolPath.toString();
-        }
-    }
-
 }

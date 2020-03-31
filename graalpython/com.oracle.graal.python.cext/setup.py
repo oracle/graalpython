@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -53,7 +53,7 @@ cflags_warnings = ["-Wno-int-to-pointer-cast", "-Wno-int-conversion", "-Wno-inco
 libpython_name = "libpython"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
-darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
+darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
 relative_rpath = "@loader_path" if darwin_native else "\$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")

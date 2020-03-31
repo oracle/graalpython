@@ -54,7 +54,7 @@ class PipLoader:
             import os
             result = old_unpack(filename, location, *args, **kwargs)
             package_name = os.path.basename(location)
-            potential_patch = os.path.join(sys.graal_python_core_home, "patches", package_name + ".patch")
+            potential_patch = os.path.join(__graalpython__.core_home, "patches", package_name + ".patch")
             print("Looking for Graal Python patch for " + package_name + " in " + potential_patch)
             if os.path.exists(potential_patch):
                 print("Patching package " + package_name)

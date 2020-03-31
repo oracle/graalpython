@@ -52,7 +52,7 @@ def register_capi_hook(hook):
         hook()
     else:
         _capi_hooks.append(hook)
-    
+
 
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
@@ -126,7 +126,7 @@ def PyModule_GetNameObject(module_obj):
 
 ##################### DICT
 
-@__builtin__
+@__graalpython__.builtin
 def PyDict_New():
     return {}
 
@@ -573,7 +573,7 @@ def PyNumber_InPlaceBinOp(v, w, binop):
     else:
         raise SystemError("unknown in-place binary operator (code=%s)" % binop)
 
-    # nothing else required; the operator will automatically fall back if 
+    # nothing else required; the operator will automatically fall back if
     # no in-place operation is available
     return v
 
@@ -783,14 +783,14 @@ def PyUnicode_Compare(left, right):
         return -1
     else:
         return 1
-    
+
 _codecs_module = None
 
 @may_raise
 def PyUnicode_AsUnicodeEscapeString(string):
     global _codecs_module
     if not _codecs_module:
-        import _codecs as _codecs_module 
+        import _codecs as _codecs_module
     return _codecs_module.unicode_escape_encode(string)[0]
 
 @may_raise(-1)
@@ -1003,8 +1003,8 @@ def AddGetSet(primary, name, getter, setter, doc, closure):
     if getter:
         getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
-            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an 
-            # all args will go through 'to_sulong' then. So, if we don't convert the pointer 
+            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an
+            # all args will go through 'to_sulong' then. So, if we don't convert the pointer
             # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
             return capi_to_java(getter_w(self, to_java(closure)))
 
@@ -1392,7 +1392,7 @@ def PyTraceBack_Here(frame):
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
-    __tdebug__(*args)
+    __graalpython__.tdebug(*args)
 
 
 def PyTruffle_GetBuiltin(name):
@@ -1417,7 +1417,7 @@ def initialize_capi(capi_library):
 
     initialize_member_accessors()
     initialize_datetime_capi()
-    
+
 
 # run C API initialize hooks
 def run_capi_loaded_hooks(capi_library):

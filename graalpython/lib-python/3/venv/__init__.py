@@ -139,12 +139,12 @@ class EnvBuilder:
                 f.write("#!/bin/sh\n")
             f.write(sys.executable)
             f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'" % (
-                sys.graal_python_core_home,
-                sys.graal_python_stdlib_home,
+                __graalpython__.core_home,
+                __graalpython__.stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
-                sys.graal_python_capi_home,
+                __graalpython__.capi_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -156,7 +156,7 @@ class EnvBuilder:
 
         atexit.register(lambda: shutil.rmtree(tempdir, ignore_errors=True))
 
-        dirname = context.python_dir = sys.graal_python_home
+        dirname = context.python_dir = __graalpython__.home
         context.executable = script
 
         if self.symlinks:

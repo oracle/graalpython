@@ -37,13 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-@__builtin__
+@__graalpython__.builtin
 def hasattr(obj, key):
     default = object()
     return getattr(obj, key, default) is not default
 
 
-@__builtin__
+@__graalpython__.builtin
 def any(iterable):
     for i in iterable:
         if i:
@@ -51,7 +51,7 @@ def any(iterable):
     return False
 
 
-@__builtin__
+@__graalpython__.builtin
 def all(iterable):
     for i in iterable:
         if not i:
@@ -59,7 +59,7 @@ def all(iterable):
     return True
 
 
-@__builtin__
+@__graalpython__.builtin
 def filter(func, iterable):
     result = []
     predicate = func if func is not None else lambda a: a
@@ -111,7 +111,7 @@ class map(object):
 from sys import _getframe as __getframe__
 
 
-@__builtin__
+@__graalpython__.builtin
 def vars(*obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
@@ -126,7 +126,7 @@ def vars(*obj):
         raise TypeError("vars() argument must have __dict__ attribute")
 
 
-@__builtin__
+@__graalpython__.builtin
 def format(value, format_spec=''):
     """Return value.__format__(format_spec)
 
@@ -136,7 +136,7 @@ def format(value, format_spec=''):
     return type(value).__format__(value, format_spec)
 
 
-@__builtin__
+@__graalpython__.builtin
 def sorted(iterable, key=None, reverse=False):
     """Return a new list containing all items from the iterable in ascending order.
 
