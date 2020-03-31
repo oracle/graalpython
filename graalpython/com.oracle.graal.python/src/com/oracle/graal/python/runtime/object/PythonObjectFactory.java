@@ -195,7 +195,7 @@ public abstract class PythonObjectFactory extends Node {
         return newInstance(getShapeNode.execute(o));
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     private static final DynamicObject newInstance(Shape shape) {
         return shape.newInstance();
     }
