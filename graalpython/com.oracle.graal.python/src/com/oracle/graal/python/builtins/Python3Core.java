@@ -587,9 +587,9 @@ public final class Python3Core implements PythonCore {
             }
         }
         // now initialize well-known objects
-        pyTrue = new PInt(PythonBuiltinClassType.Boolean, PythonBuiltinClassType.Boolean.newInstance(), BigInteger.ONE);
-        pyFalse = new PInt(PythonBuiltinClassType.Boolean, PythonBuiltinClassType.Boolean.newInstance(), BigInteger.ZERO);
-        pyNaN = new PFloat(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.newInstance(), Double.NaN);
+        pyTrue = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = PythonObjectFactory.getUncached().createFloat(Double.NaN);
     }
 
     private void populateBuiltins() {
