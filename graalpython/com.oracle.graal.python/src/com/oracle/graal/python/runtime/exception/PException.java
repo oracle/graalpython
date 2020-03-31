@@ -42,9 +42,12 @@ package com.oracle.graal.python.runtime.exception;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleException;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class PException extends RuntimeException implements TruffleException {
@@ -104,6 +107,31 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public PBaseException getExceptionObject() {
+        return pythonException;
+    }
+
+    public PBaseException reifyAndGetPythonException(VirtualFrame frame) {
+        return reifyAndGetPythonException(frame, true);
+    }
+
+    public PBaseException reifyAndGetPythonException(VirtualFrame frame, boolean markEscaped) {
+        return reifyAndGetPythonException(frame, markEscaped, true);
+    }
+
+    public PBaseException reifyAndGetPythonException(VirtualFrame frame, boolean markEscaped, boolean addCurrentFrameToTraceback) {
+        PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
+        return reifyAndGetPythonException(info, markEscaped, addCurrentFrameToTraceback);
+    }
+
+    public PBaseException reifyAndGetPythonException(PFrame.Reference info, boolean markEscaped, boolean addCurrentFrameToTraceback) {
+        if (markEscaped) {
+            info.markAsEscaped();
+        }
+        if (addCurrentFrameToTraceback) {
+            pythonException.reifyException(info);
+        } else {
+            pythonException.reifyException((PFrame) null);
+        }
         return pythonException;
     }
 

@@ -42,8 +42,6 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
@@ -119,9 +117,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                     ExceptNode exceptNode = exceptNodes[i];
                     gen.setIndex(frame, exceptIndex, i + 1);
                     if (exceptNode.matchesException(frame, exception)) {
-                        PBaseException exceptionObject = exception.getExceptionObject();
-                        PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                        exceptionObject.reifyException(info);
+                        PBaseException exceptionObject = exception.reifyAndGetPythonException(frame);
                         ExceptionInfo exceptionInfo = new ExceptionInfo(exceptionObject, exceptionObject.getTraceback());
                         gen.setActiveException(frame, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
                         runExceptionHandler(frame, exception, exceptNode, exceptionState);

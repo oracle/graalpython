@@ -42,8 +42,6 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
@@ -77,9 +75,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 getBody().executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
-                PBaseException caughtException = e.getExceptionObject();
-                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                caughtException.reifyException(info);
+                PBaseException caughtException = e.reifyAndGetPythonException(frame);
                 LazyTraceback caughtTraceback = caughtException.getTraceback();
                 ExceptionInfo exceptionInfo = new ExceptionInfo(caughtException, caughtTraceback);
                 gen.setActiveException(frame, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));

@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -317,9 +318,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PException reportImportError(RuntimeException e, String path) {
             StringBuilder sb = new StringBuilder();
-            Object pythonCause = PNone.NONE;
+            PBaseException pythonCause = null;
             if (e instanceof PException) {
-                PBaseException excObj = ((PException) e).getExceptionObject();
+                PBaseException excObj = ((PException) e).reifyAndGetPythonException((PFrame.Reference) null, false, false);
                 pythonCause = excObj;
                 sb.append(callReprNode.executeObject(null, excObj));
             } else {
@@ -329,10 +330,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Throwable cause = e;
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
-                    if (pythonCause != PNone.NONE) {
-                        ((PBaseException) pythonCause).setCause(((PException) e).getExceptionObject());
+                    PBaseException pythonException = ((PException) e).reifyAndGetPythonException((PFrame.Reference) null, false, false);
+                    if (pythonCause != null) {
+                        pythonCause.setCause(pythonException);
                     }
-                    pythonCause = ((PException) e).getExceptionObject();
+                    pythonCause = pythonException;
                 } else {
                     logJavaException(e);
                 }
@@ -342,11 +344,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             }
             Object[] args = new Object[]{path, sb.toString()};
-            PBaseException importExc = factory().createBaseException(ImportError, "cannot load %s: %s", args);
-            if (pythonCause instanceof PBaseException) {
-                importExc.setCause((PBaseException) pythonCause);
+            if (pythonCause != null) {
+                throw raise(ImportError, pythonCause, "cannot load %s: %s", args);
+            } else {
+                throw raise(ImportError, "cannot load %s: %s", args);
             }
-            throw raise(importExc);
         }
     }
 

@@ -1387,7 +1387,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return next.execute(frame, iterator);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
-                throw raise(TypeError, e.getExceptionObject(), "'%p' object is not an iterator", iterator);
+                throw raise(TypeError, e.reifyAndGetPythonException(frame), "'%p' object is not an iterator", iterator);
             }
         }
 

@@ -31,8 +31,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -89,12 +87,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     public void executeExcept(VirtualFrame frame, TruffleException e, boolean reify) {
         if (e instanceof PException) {
             PException pE = (PException) e;
-            PBaseException exceptionObject = pE.getExceptionObject();
-            if (reify) {
-                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                info.markAsEscaped();
-                exceptionObject.reifyException(info);
-            }
+            PBaseException exceptionObject = pE.reifyAndGetPythonException(frame, true, reify);
             SetCaughtExceptionNode.execute(frame, new ExceptionInfo(exceptionObject, exceptionObject.getTraceback()));
             if (exceptName != null) {
                 exceptName.doWrite(frame, exceptionObject);

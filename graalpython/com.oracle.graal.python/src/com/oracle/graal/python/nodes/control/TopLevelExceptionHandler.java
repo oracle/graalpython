@@ -116,7 +116,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
-            printExc(frame, exception);
+            printExc(frame, exception.reifyAndGetPythonException((PFrame.Reference) null, false, false));
             return null;
         } else {
             assert getContext().getCurrentException() == null;
@@ -124,8 +124,8 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 assert !PArguments.isPythonFrame(frame);
-                e.getExceptionObject().reifyException((PFrame) null);
-                printExc(frame, e);
+                PBaseException pythonException = e.reifyAndGetPythonException((PFrame.Reference) null, false, false);
+                printExc(frame, pythonException);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
                 }
@@ -152,15 +152,15 @@ public class TopLevelExceptionHandler extends RootNode {
      * This function is kind-of analogous to PyErr_PrintEx. TODO (timfel): Figure out if we should
      * move this somewhere else
      */
-    private void printExc(VirtualFrame frame, PException e) {
+    private void printExc(VirtualFrame frame, PBaseException pythonException) {
         CompilerDirectives.transferToInterpreter();
         PythonContext theContext = getContext();
         PythonCore core = theContext.getCore();
-        if (IsBuiltinClassProfile.profileClassSlowPath(e.getExceptionObject().getLazyPythonClass(), SystemExit)) {
-            handleSystemExit(frame, e);
+        if (IsBuiltinClassProfile.profileClassSlowPath(pythonException.getLazyPythonClass(), SystemExit)) {
+            handleSystemExit(frame, pythonException);
         }
 
-        PBaseException value = e.getExceptionObject();
+        PBaseException value = pythonException;
         PythonAbstractClass type = value.getPythonClass();
         PTraceback execute = ensureGetTracebackNode().execute(frame, value);
         Object tb = execute != null ? execute : PNone.NONE;
@@ -181,7 +181,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher
-                    throw e;
+                    throw pythonException.getExceptionForReraise(pythonException.getTraceback());
                 }
                 if (!getSourceSection().getSource().isInteractive()) {
                     throw new PythonExitException(this, 1);
@@ -194,16 +194,16 @@ public class TopLevelExceptionHandler extends RootNode {
                 }
             }
         }
-        throw e;
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
-    private void handleSystemExit(VirtualFrame frame, PException e) {
+    private void handleSystemExit(VirtualFrame frame, PBaseException pythonException) {
         PythonContext theContext = getContext();
         if (theContext.getOption(PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }
-        Object attribute = e.getExceptionObject().getAttribute("code");
+        Object attribute = pythonException.getAttribute("code");
         Integer exitcode = null;
         if (attribute instanceof Number) {
             exitcode = ((Number) attribute).intValue();
@@ -220,12 +220,13 @@ public class TopLevelExceptionHandler extends RootNode {
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
             try {
-                theContext.getEnv().err().write(callStrNode.executeObject(frame, e.getExceptionObject()).toString().getBytes());
+                theContext.getEnv().err().write(callStrNode.executeObject(frame, pythonException).toString().getBytes());
                 theContext.getEnv().err().write('\n');
             } catch (IOException e1) {
             }
             throw new PythonExitException(this, 1);
         }
+        PException e = pythonException.getExceptionForReraise(pythonException.getTraceback());
         e.setExit(true);
         throw e;
     }
