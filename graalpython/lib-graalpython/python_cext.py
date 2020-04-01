@@ -981,13 +981,14 @@ getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java_type(primary)
     fset = fget = None
+    closure_converted = to_java(closure)
     if getter:
         getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
             # NOTE: The 'to_java' is intended and correct because this call will do a downcall an
             # all args will go through 'to_sulong' then. So, if we don't convert the pointer
             # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
-            return capi_to_java(getter_w(self, to_java(closure)))
+            return capi_to_java(getter_w(self, closure_converted))
 
         fget = member_getter
     if setter:
