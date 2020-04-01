@@ -1048,7 +1048,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4084,4093]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                       TryFinallyNode SourceSection: [4134,4271]`try:↵        return ...`
                         TryExceptNode SourceSection: None
@@ -1076,7 +1076,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4211,4220]`TypeError`
                                   Identifier: TypeError
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                              NoValueNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4181,4195]`AttributeError`
                               Identifier: AttributeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

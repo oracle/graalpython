@@ -1718,7 +1718,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7571,7581]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [7644,7661]`root = max(roots)`
                       Identifier: root
@@ -2509,7 +2509,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9298,9307]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9369,9469]`if len(args) < 2:↵  ...`
                                       YesNodeGen SourceSection: None
@@ -2533,7 +2533,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9405,9414]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [9469,9492]`cls, func, *args = a...`
                                       ReadLocalVariableNode SourceSection: [9488,9492]`args`
@@ -2589,7 +2589,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9542,9551]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [9599,9617]`args = tuple(args)`
                                       Identifier: args
@@ -2799,7 +2799,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10075,10084]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [10147,10165]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [10161,10165]`args`
@@ -3328,7 +3328,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10952,10961]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11014,11118]`if len(state) != 4:↵...`
                                       YesNodeGen SourceSection: None
@@ -3352,7 +3352,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11052,11061]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [11118,11153]`func, args, kwds, na...`
                                       ReadLocalVariableNode SourceSection: [11148,11153]`state`
@@ -3478,7 +3478,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11374,11383]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [11418,11436]`args = tuple(args)`
                                       Identifier: args
@@ -3748,7 +3748,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12252,12261]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [12508,13009]`if isinstance(func, ...`
                                       YesNodeGen SourceSection: None
@@ -5273,7 +5273,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18087,18096]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [18147,18326]`def decorating_funct...`
                       Identifier: decorating_function
@@ -6947,7 +6947,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [24224,24236]`RuntimeError`
                                     Identifier: RuntimeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [24271,24295]`result.append(candid...`
                               PythonCallNodeGen SourceSection: [24271,24295]`result.append(candid...`
@@ -8503,7 +8503,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [29006,29018]`RuntimeError`
                                         Identifier: RuntimeError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                    NoValueNode SourceSection: None
                                   BlockNode SourceSection: None
                                 BreakNode SourceSection: [29101,29106]`break`
                               BlockNode SourceSection: None
@@ -8954,7 +8954,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [31091,31100]`TypeError`
                                                   Identifier: TypeError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                              NoValueNode SourceSection: None
                                             BlockNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [31334,31344]`func = cls`
                                             Identifier: func

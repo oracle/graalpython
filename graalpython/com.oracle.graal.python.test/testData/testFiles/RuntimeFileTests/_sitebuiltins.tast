@@ -255,7 +255,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [754,764]`SystemExit`
                                           Identifier: SystemExit
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

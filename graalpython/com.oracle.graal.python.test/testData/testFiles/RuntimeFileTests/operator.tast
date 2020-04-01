@@ -1679,7 +1679,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3106,3115]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          EmptyNode SourceSection: None
+                          NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [3125,3137]`return a + b`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -2058,7 +2058,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3648,3658]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [4,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2208,7 +2208,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4267,4276]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          EmptyNode SourceSection: None
+                          NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [4287,4356]`try:↵        return ...`
                       TryExceptNode SourceSection: None
@@ -2356,7 +2356,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4725,4734]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          EmptyNode SourceSection: None
+                          NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [4744,4843]`if val < 0:↵        ...`
                       YesNodeGen SourceSection: None
@@ -2383,7 +2383,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4823,4833]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          EmptyNode SourceSection: None
+                          NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [4843,4853]`return val`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -2523,7 +2523,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5469,5478]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
                                         SetAttributeNodeGen SourceSection: [5526,5547]`self._attrs = (attr,...`
                                           Attribute: _attrs
@@ -3715,7 +3715,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7775,7784]`TypeError`
                                               Identifier: TypeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          EmptyNode SourceSection: None
+                                          NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [7798,7812]`self = args[0]`
                                       Identifier: self
@@ -3763,7 +3763,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7904,7913]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     SetAttributeNodeGen SourceSection: [7954,7975]`self._args = args[2:...`
                                       Attribute: _args
@@ -4463,7 +4463,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9089,9098]`TypeError`
                               Identifier: TypeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          EmptyNode SourceSection: None
+                          NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [9108,9114]`a += b`
                       Identifier: a

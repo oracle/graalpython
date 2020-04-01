@@ -1243,7 +1243,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4922,4927]`error`
                                             Identifier: error
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [4994,5748]`if _simple(av[2]):↵ ...`
                                       YesNodeGen SourceSection: None
@@ -1792,7 +1792,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6471,6476]`error`
                                                       Identifier: error
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                  NoValueNode SourceSection: None
                                                 BlockNode SourceSection: None
                                               ExpressionStatementNode SourceSection: [6537,6545]`emit(lo)`
                                                 PythonCallNodeGen SourceSection: [6537,6545]`emit(lo)`
@@ -2634,7 +2634,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [8856,8861]`error`
                                                           Identifier: error
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      EmptyNode SourceSection: None
+                                                      NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3164,3171]`pattern`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3164,3171]`pattern`
@@ -2943,7 +2943,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9657,9662]`error`
                                               Identifier: error
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          EmptyNode SourceSection: None
+                                          NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [9030,9037]`charset`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [9030,9037]`charset`
@@ -9243,7 +9243,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [26210,26220]`ValueError`
                                                                               Identifier: ValueError
                                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                                          EmptyNode SourceSection: None
+                                                                          NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                                   WriteLocalCellNodeGen SourceSection: [26234,26244]`level -= 1`
                                     Identifier: level

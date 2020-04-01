@@ -263,7 +263,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2174,2188]`AttributeError`
                           Identifier: AttributeError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      EmptyNode SourceSection: None
+                      NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -831,7 +831,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4064,4073]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [4180,4198]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [4194,4198]`args`
@@ -892,7 +892,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4243,4252]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     TryFinallyNode SourceSection: [4313,4545]`try:↵            sel...`
                                       TryExceptNode SourceSection: None
@@ -1784,7 +1784,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6653,6661]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [6693,6711]`root = self.__root`
                                       Identifier: root
@@ -2697,7 +2697,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9246,9254]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [9268,9282]`return default`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -3648,7 +3648,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12821,12830]`TypeError`
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             IfNode SourceSection: [12885,13049]`if not name.isidenti...`
                               NotNodeGen SourceSection: [12888,12911]`not name.isidentifie...`
@@ -3665,7 +3665,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12931,12941]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13049,13197]`if _iskeyword(name):...`
                               YesNodeGen SourceSection: None
@@ -3684,7 +3684,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13088,13098]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [12743,12767]`[typename] + field_n...`
                           GetIteratorNodeGen SourceSection: None
@@ -3742,7 +3742,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13305,13315]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             IfNode SourceSection: [13414,13515]`if name in seen:↵   ...`
                               YesNodeGen SourceSection: None
@@ -3763,7 +3763,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13449,13459]`ValueError`
                                     Identifier: ValueError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             ExpressionStatementNode SourceSection: [13515,13529]`seen.add(name)`
                               PythonCallNodeGen SourceSection: [13515,13529]`seen.add(name)`
@@ -3839,7 +3839,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13682,13691]`TypeError`
                                 Identifier: TypeError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [13744,13877]`field_defaults = dic...`
                           Identifier: field_defaults
@@ -4207,7 +4207,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [14856,14865]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [14929,14942]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -4320,7 +4320,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15201,15211]`ValueError`
                                           Identifier: ValueError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                     BlockNode SourceSection: None
                                   FrameReturnNode SourceSection: [15267,15280]`return result`
                                     WriteLocalVariableNodeGen SourceSection: None
@@ -5049,7 +5049,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [20744,20753]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [20856,20874]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [20870,20874]`args`
@@ -5110,7 +5110,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [20919,20928]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [20989,21020]`super(Counter, self)...`
                                       PythonCallNodeGen SourceSection: [20989,21020]`super(Counter, self)...`
@@ -5441,7 +5441,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22817,22836]`NotImplementedError`
                                             Identifier: NotImplementedError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5509,7 +5509,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23913,23922]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [24023,24041]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [24037,24041]`args`
@@ -5570,7 +5570,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [24086,24095]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [24156,24192]`iterable = args[0] i...`
                                       Identifier: iterable
@@ -5795,7 +5795,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [25484,25493]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [25596,25614]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [25610,25614]`args`
@@ -5856,7 +5856,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [25659,25668]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [25729,25765]`iterable = args[0] i...`
                                       Identifier: iterable
@@ -8297,7 +8297,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [33003,33011]`KeyError`
                                           Identifier: KeyError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9392,7 +9392,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [35077,35085]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [35049,35057]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9465,7 +9465,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [35355,35363]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [35327,35335]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9567,7 +9567,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [35637,35645]`KeyError`
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                            NoValueNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [35609,35617]`KeyError`
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9739,7 +9739,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [36153,36162]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [36266,36284]`self, *args = args`
                                       ReadLocalVariableNode SourceSection: [36280,36284]`args`
@@ -9800,7 +9800,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [36329,36338]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        EmptyNode SourceSection: None
+                                        NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [36399,36716]`if args:↵           ...`
                                       YesNodeGen SourceSection: None
@@ -10100,7 +10100,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [37108,37116]`KeyError`
                                           Identifier: KeyError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                      NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

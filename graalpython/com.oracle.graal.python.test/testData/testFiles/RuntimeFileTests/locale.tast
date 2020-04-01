@@ -373,7 +373,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2764,2769]`Error`
                                     Identifier: Error
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                                NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                             FrameReturnNode SourceSection: [2824,2834]`return 'C'`
                               WriteLocalVariableNodeGen SourceSection: None
@@ -575,7 +575,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3763,3773]`ValueError`
                                       Identifier: ValueError
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
                               ElseNode SourceSection: [3806,3862]`while True:↵        ...`
                                 GeneratorWhileNode SourceSection: None
@@ -2011,7 +2011,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7973,7983]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [8110,8173]`return _format(perce...`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -2143,7 +2143,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8492,8502]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8597,8662]`s = _format('%%.%if'...`
                       Identifier: s
@@ -4158,7 +4158,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGlobalOrBuiltinNodeGen SourceSection: [16198,16208]`ValueError`
                           Identifier: ValueError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      EmptyNode SourceSection: None
+                      NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4628,7 +4628,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19340,19349]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [19390,19426]`return _parse_locale...`
                       WriteLocalVariableNodeGen SourceSection: None

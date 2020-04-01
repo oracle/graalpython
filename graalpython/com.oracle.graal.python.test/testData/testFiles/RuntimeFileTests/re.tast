@@ -1593,7 +1593,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12327,12337]`ValueError`
                                 Identifier: ValueError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                            NoValueNode SourceSection: None
                           BlockNode SourceSection: None
                         FrameReturnNode SourceSection: [12420,12434]`return pattern`
                           WriteLocalVariableNodeGen SourceSection: None
@@ -1622,7 +1622,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12491,12500]`TypeError`
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [12558,12597]`p = sre_compile.comp...`
                       Identifier: p

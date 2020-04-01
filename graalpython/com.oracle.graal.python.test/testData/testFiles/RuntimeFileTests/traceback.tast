@@ -1188,7 +1188,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6338,6348]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        EmptyNode SourceSection: None
+                        NoValueNode SourceSection: None
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [6374,6480]`print_exception(sys....`
                       PythonCallNodeGen SourceSection: [6374,6480]`print_exception(sys....`

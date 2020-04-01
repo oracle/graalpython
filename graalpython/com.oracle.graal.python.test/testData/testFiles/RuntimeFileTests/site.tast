@@ -3696,8 +3696,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ExpressionStatementNode SourceSection: [17708,17712]`pass`
                                   EmptyNode SourceSection: [17708,17712]`pass`
                                 RaiseNodeGen SourceSection: [17747,17752]`raise`
-                                  EmptyNode SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
+                                  NoValueNode SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: exc
                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3838,8 +3838,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 ExpressionStatementNode SourceSection: [18285,18289]`pass`
                                   EmptyNode SourceSection: [18285,18289]`pass`
                                 RaiseNodeGen SourceSection: [18324,18329]`raise`
-                                  EmptyNode SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  NoValueNode SourceSection: None
+                                  NoValueNode SourceSection: None
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: exc
                                 WriteLocalFrameSlotNodeGen SourceSection: None
