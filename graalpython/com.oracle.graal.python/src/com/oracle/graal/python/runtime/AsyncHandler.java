@@ -106,7 +106,7 @@ public class AsyncHandler {
         }
     });
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private boolean hasScheduledAction = false;
+    private volatile boolean hasScheduledAction = false;
     private final Lock executingScheduledActions = new ReentrantLock();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
 
