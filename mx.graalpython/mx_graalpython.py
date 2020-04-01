@@ -1284,10 +1284,10 @@ def python_coverage(args):
         graalvm_dir = os.path.join(os.path.dirname(os.path.dirname(executable)), "jre", "languages", "python")
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov"):
-                with open(f, "r") as lcovfile:
-                    contents = lcovfile.read()
-                with open(f, "w") as lcovfile:
-                    lcovfile.write(contents.replace(graalvm_dir, local_dir))
+                # with open(f, "r") as lcovfile:
+                #     contents = lcovfile.read()
+                # with open(f, "w") as lcovfile:
+                #     lcovfile.write(contents.replace(graalvm_dir, local_dir))
                 cmdargs += ["-a", f]
 
         mx.run(cmdargs)
