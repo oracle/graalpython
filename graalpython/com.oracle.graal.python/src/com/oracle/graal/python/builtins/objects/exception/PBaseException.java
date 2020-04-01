@@ -206,9 +206,9 @@ public final class PBaseException extends PythonObject {
      * Create the traceback for this exception using the provided {@link PFrame} instance (which
      * usually is the frame of the function that caught the exception).
      * <p>
-     * This function (of {@link #reifyException(PFrame.Reference)} must
-     * be called before handing out exceptions into the Python value space because otherwise the
-     * stack will not be correct if the exception object escapes the current function.
+     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
+     * exceptions into the Python value space because otherwise the stack will not be correct if the
+     * exception object escapes the current function.
      * </p>
      */
     public void reifyException(PFrame pyFrame) {
@@ -220,9 +220,9 @@ public final class PBaseException extends PythonObject {
      * Associate this exception with a frame info that represents the {@link PFrame} instance that
      * caught the exception.<br>
      * <p>
-     * In contrast to {@link #reifyException(PFrame)}, this method can be used
-     * if the {@link PFrame} instance isn't already available and if the Truffle frame is also not
-     * available to create the {@link PFrame} instance using the
+     * In contrast to {@link #reifyException(PFrame)}, this method can be used if the {@link PFrame}
+     * instance isn't already available and if the Truffle frame is also not available to create the
+     * {@link PFrame} instance using the
      * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
      * </p>
      * <p>
@@ -285,12 +285,13 @@ public final class PBaseException extends PythonObject {
      * </p>
      *
      * <p>
-     * Reraises shouldn't be visible in the stacktrace. We set the location to null, which will make
-     * the traceback materialization logic skip the frame.
+     * Reraises shouldn't be visible in the stacktrace. We mark them as such.
      * </p>
      **/
     public PException getExceptionForReraise(LazyTraceback traceback) {
         setTraceback(traceback);
-        throw PException.fromObject(this, null);
+        PException newException = PException.fromObject(this, exception.getLocation());
+        newException.setHideLocation(true);
+        return newException;
     }
 }

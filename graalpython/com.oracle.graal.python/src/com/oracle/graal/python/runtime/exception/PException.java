@@ -61,6 +61,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
     private boolean isIncompleteSource;
     private boolean exit;
     private final PBaseException pythonException;
+    private boolean hideLocation = false;
 
     public PException(PBaseException actual, Node node) {
         this.pythonException = actual;
@@ -103,6 +104,14 @@ public final class PException extends RuntimeException implements TruffleExcepti
     @Override
     public Node getLocation() {
         return location;
+    }
+
+    public boolean shouldHideLocation() {
+        return hideLocation;
+    }
+
+    public void setHideLocation(boolean hideLocation) {
+        this.hideLocation = hideLocation;
     }
 
     @Override

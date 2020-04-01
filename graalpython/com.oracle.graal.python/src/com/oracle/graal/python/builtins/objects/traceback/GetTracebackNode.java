@@ -109,7 +109,12 @@ public abstract class GetTracebackNode extends Node {
         int lineno = -2;
         LazyTraceback prev = tb.getNextChain();
         CallTarget currentCallTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
+        boolean skipFirst = tb.getException().shouldHideLocation();
         for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(tb.getException())) {
+            if (skipFirst) {
+                skipFirst = false;
+                continue;
+            }
             if (currentCallTarget != null && element.getTarget() == currentCallTarget) {
                 if (element.getLocation() != null) {
                     SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
