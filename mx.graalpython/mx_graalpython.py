@@ -1238,7 +1238,7 @@ def python_coverage(args):
     if args.truffle:
         executable = python_gvm()
         variants = [
-            {},
+            {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
             {
@@ -1252,9 +1252,9 @@ def python_coverage(args):
             os.unlink(outputlcov)
         cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
         for kwds in variants:
-            variant_str = re.sub(r"[^a-zA-Z]", "_", repr(kwds))
+            variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             for pattern in ["py"]:
-                outfile = os.path.join(SUITE.dir, "coverage_%s_%s.lcov" % (variant_str, pattern))
+                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$$.lcov" % (variant_str, pattern))
                 if os.path.exists(outfile):
                     os.unlink(outfile)
                 extra_args = [
@@ -1264,14 +1264,25 @@ def python_coverage(args):
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=%s" % outfile,
                 ]
-                kwds["args"] = extra_args + kwds.get("args", [])
-                if kwds.pop("tagged", False):
-                    with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                        with _dev_pythonhome_context():
-                            run_python_unittests(executable, **kwds)
-                else:
-                    run_python_unittests(executable, **kwds)
-                cmdargs += ["-a", outfile]
+                with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
+                    if kwds.pop("tagged", False):
+                        with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                            with _dev_pythonhome_context():
+                                run_python_unittests(executable, **kwds)
+                    else:
+                        run_python_unittests(executable, **kwds)
+
+        # some code runs in the suite dir, some in the graalvm home. we merge these manually
+        local_dir = os.path.join(SUITE.dir, "graalpython")
+        graalvm_dir = os.path.join(os.path.dirname(os.path.dirname(executable)), "jre", "languages", "python")
+        for f in os.listdir(SUITE.dir):
+            if f.endswith(".lcov"):
+                with open(f, "r") as lcovfile:
+                    contents = lcovfile.read()
+                with open(f, "w") as lcovfile:
+                    lcovfile.write(contents.replace(graalvm_dir, local_dir))
+                cmdargs += ["-a", f]
+
         mx.run(cmdargs)
         primary = mx.primary_suite()
         info = primary.vc.parent_info(primary.dir)
