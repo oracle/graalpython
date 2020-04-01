@@ -239,6 +239,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         }
 
         @Specialization
+        @ExplodeLoop
         static long doPMmapI64(PMMap mmap, long byteIdx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
                         @Exclusive @Cached CallBinaryMethodNode callGetItemNode,

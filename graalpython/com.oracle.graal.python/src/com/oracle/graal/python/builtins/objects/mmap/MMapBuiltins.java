@@ -78,18 +78,16 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsFactory.InternalLenNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -109,7 +107,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -239,24 +236,23 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBuiltinNode implements ByteReadingNode {
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode implements ByteReadingNode {
 
-        public abstract Object executeObject(VirtualFrame frame, PMMap self, Object idxObj);
+        public abstract Object executeObject(PMMap self, Object idxObj);
 
-        public abstract int executeInt(VirtualFrame frame, PMMap self, Object idxObj);
+        public abstract int executeInt(PMMap self, Object idxObj);
 
-        public abstract long executeLong(VirtualFrame frame, PMMap self, Object idxObj);
+        public abstract long executeLong(PMMap self, Object idxObj);
 
         @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(PMMap self, Object idxObj,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") ReadByteFromChannelNode readByteNode,
-                        @Cached("create()") CoerceToJavaLongNode castToLongNode,
-                        @Cached("create()") InternalLenNode lenNode) {
+                        @Cached("create()") CoerceToJavaLongNode castToLongNode) {
 
             try {
                 long i = castToLongNode.execute(idxObj);
-                long len = lenNode.execute(self);
+                long len = self.getLength();
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
 
@@ -278,10 +274,9 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doSlice(PMMap self, PSlice idx,
-                        @Cached("create()") ReadFromChannelNode readNode,
-                        @Cached("create()") InternalLenNode lenNode) {
+                        @Cached("create()") ReadFromChannelNode readNode) {
             try {
-                long len = lenNode.execute(self);
+                long len = self.getLength();
                 SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
                 SeekableByteChannel channel = self.getChannel();
 
@@ -299,28 +294,23 @@ public class MMapBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
-
-        public static GetItemNode create() {
-            return MMapBuiltinsFactory.GetItemNodeFactory.create(null);
-        }
     }
 
     @Builtin(name = SpecialMethodNames.__SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class SetItemNode extends PythonBuiltinNode implements ByteWritingNode {
+    abstract static class SetItemNode extends PythonTernaryBuiltinNode implements ByteWritingNode {
 
         @Specialization(guards = "!isPSlice(idxObj)")
-        PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
+        PNone doSingle(PMMap self, Object idxObj, Object val,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createIndexError(raise)") WriteByteToChannelNode writeByteNode,
                         @Cached("create()") CoerceToJavaLongNode castToLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Cached("create()") InternalLenNode lenNode,
                         @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {
 
             try {
                 long i = castToLongNode.execute(idxObj);
-                long len = lenNode.execute(self);
+                long len = self.getLength();
                 SeekableByteChannel channel = self.getChannel();
                 long idx = i < 0 ? i + len : i;
 
@@ -332,7 +322,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = PMMap.position(channel);
 
                 PMMap.position(channel, idx);
-                writeByteNode.execute(channel, castToByteNode.execute(frame, val));
+                writeByteNode.execute(channel, castToByteNode.execute(null, val));
 
                 // restore position
                 PMMap.position(channel, oldPos);
@@ -345,14 +335,13 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PIBytesLike val,
+        PNone doSlice(PMMap self, PSlice idx, PIBytesLike val,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached("create()") InternalLenNode lenNode,
                         @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile) {
 
             try {
-                long len = lenNode.execute(self);
+                long len = self.getLength();
                 SliceInfo info = idx.computeIndices(PInt.intValueExact(len));
                 SeekableByteChannel channel = self.getChannel();
 
@@ -364,7 +353,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = PMMap.position(channel);
 
                 PMMap.position(channel, info.start);
-                writeNode.execute(frame, channel, getStorageNode.execute(val), info.length);
+                writeNode.execute(channel, getStorageNode.execute(val), info.length);
 
                 // restore position
                 PMMap.position(channel, oldPos);
@@ -383,11 +372,10 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long len(PMMap self,
-                        @Cached("create()") InternalLenNode lenNode) {
-            return lenNode.execute(self);
+        static long len(PMMap self) {
+            return self.getLength();
         }
     }
 
@@ -449,9 +437,8 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class SizeNode extends PythonBuiltinNode {
 
         @Specialization
-        long size(PMMap self,
-                        @Cached("create()") InternalLenNode lenNode) {
-            return lenNode.execute(self);
+        static long size(PMMap self) {
+            return self.getLength();
         }
     }
 
@@ -556,11 +543,11 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int writeBytesLike(VirtualFrame frame, PMMap self, PIBytesLike bytesLike,
+        int writeBytesLike(PMMap self, PIBytesLike bytesLike,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode) {
             SeekableByteChannel channel = self.getChannel();
-            return writeNode.execute(frame, channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
+            return writeNode.execute(channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -568,7 +555,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             byte[] data = toBytesNode.execute(frame, memoryView);
-            return writeNode.execute(frame, self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
+            return writeNode.execute(self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
         }
     }
 
@@ -722,52 +709,12 @@ public class MMapBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateUncached
-    abstract static class InternalLenNode extends PNodeWithContext implements MMapBaseNode {
-
-        public abstract long execute(PMMap self);
-
-        @Specialization(guards = "self.getLength() == 0")
-        long doFull(PMMap self,
-                        @Cached PRaiseOSErrorNode raise,
-                        @Cached("create()") BranchProfile profile) {
-            try {
-                return PMMap.size(self.getChannel()) - self.getOffset();
-            } catch (IOException e) {
-                profile.enter();
-                throw raise.raiseOSError(null, OSErrorEnum.EIO, e);
-            }
-        }
-
-        @Specialization(guards = "self.getLength() > 0")
-        long doWindow(PMMap self) {
-            return self.getLength();
-        }
-
-        @Specialization
-        long doGeneric(PMMap self,
-                        @Cached PRaiseOSErrorNode raise) {
-            if (self.getLength() == 0) {
-                try {
-                    return PMMap.size(self.getChannel()) - self.getOffset();
-                } catch (IOException e) {
-                    throw raise.raiseOSError(null, OSErrorEnum.EIO, e);
-                }
-            }
-            return self.getLength();
-        }
-
-        public static InternalLenNode create() {
-            return InternalLenNodeGen.create();
-        }
-    }
-
     @Builtin(name = "flush", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object seek(@SuppressWarnings("unused") PMMap self) {
+        static Object seek(@SuppressWarnings("unused") PMMap self) {
             return PNone.NONE;
         }
 
