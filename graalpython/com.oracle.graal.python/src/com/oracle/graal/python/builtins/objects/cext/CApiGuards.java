@@ -56,4 +56,17 @@ public abstract class CApiGuards {
         return object instanceof PythonNativeNull;
     }
 
+    /**
+     * This guard defines the range of integer values for which PInt objects (and in our particular
+     * case, native wrappers) are cached.
+     */
+    public static boolean isSmallInteger(int i) {
+        return -5 <= i && i < 257;
+    }
+
+    /** see {@link #isSmallInteger(int)} */
+    public static boolean isSmallLong(long i) {
+        return -5 <= i && i < 257;
+    }
+
 }

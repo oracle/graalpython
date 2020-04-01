@@ -57,10 +57,12 @@ import org.graalvm.collections.EconomicMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.SubRefCntNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -106,6 +108,13 @@ public final class CApiContext extends CExtContext {
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
     @CompilationFinal private RootCallTarget triggerAsyncActionsCallTarget;
 
+    /**
+     * This cache is used to cache native wrappers for frequently used primitives. This is strictly
+     * defined to be the range {@code [-5, 256]}. CPython does exactly the same (see
+     * {@code PyLong_FromLong}; implemented in macro {@code CHECK_SMALL_INT}).
+     */
+    @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
+
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
@@ -114,6 +123,12 @@ public final class CApiContext extends CExtContext {
         // avoid 0 to be used as ID
         int nullID = nativeObjectWrapperList.reserve();
         assert nullID == 0;
+
+        // initialize primitive native wrapper cache
+        primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
+        for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
+            primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(i - 5);
+        }
 
         context.registerAsyncAction(() -> {
             Reference<?> reference = null;
@@ -202,6 +217,18 @@ public final class CApiContext extends CExtContext {
         }
         traceMallocDomains[oldLength] = new TraceMallocDomain(id);
         return oldLength;
+    }
+
+    public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
+        assert CApiGuards.isSmallInteger(i);
+        PrimitiveNativeWrapper primitiveNativeWrapper = primitiveNativeWrapperCache[i + 5];
+        assert primitiveNativeWrapper.getRefCount() > 0;
+        return primitiveNativeWrapper;
+    }
+
+    public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(long l) {
+        assert CApiGuards.isSmallLong(l);
+        return getCachedPrimitiveNativeWrapper((int) l);
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
