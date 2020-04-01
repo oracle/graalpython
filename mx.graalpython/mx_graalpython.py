@@ -304,27 +304,29 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args or [])
+    return _python_graalvm_launcher(args or [])
 
 
 def python_svm(args=None):
     "Build and run the native graalpython image"
     with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args or [])
+        return _python_graalvm_launcher((args or []) + ["svm"])
 
 
 def python_so(args):
     "Build the native shared object that includes graalpython"
     with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_LIBPOLYGLOT="false", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args)
+        return _python_graalvm_launcher((args or []) + ["svm"])
 
 
 def _python_graalvm_launcher(args):
-    dy = "/vm,/tools,/substratevm"
+    dy = "/vm,/tools"
     if "sandboxed" in args:
         args.remove("sandboxed")
         dy += ",/sulong-managed,/graalpython-enterprise"
+    if "svm" in args:
+        args.remove("svm")
+        dy += ",/substratevm"
     dy = ["--dynamicimports", dy]
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
