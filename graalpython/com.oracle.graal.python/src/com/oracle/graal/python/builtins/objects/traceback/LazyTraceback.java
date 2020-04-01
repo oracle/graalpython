@@ -3,6 +3,11 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.runtime.exception.PException;
 
+/**
+ * A lazy representation of an exception traceback that can be evaluated to a python object by {@link GetTracebackNode}.
+ *
+ * @see GetTracebackNode
+ */
 public class LazyTraceback {
     private final PFrame.Reference frameInfo;
     private final PFrame frame;
