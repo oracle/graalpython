@@ -1300,19 +1300,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // directly called without landing function
     @Builtin(name = "PyTruffle_Unicode_DecodeUTF32", minNumOfPositionalArgs = 5)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
-        @Specialization(guards = "isNoValue(errors)")
-        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
-            return doUnicode(frame, o, size, "strict", byteorder, errorMarker, toSulongNode, getByteArrayNode);
-        }
-
         @Specialization
-        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
+        Object doUnicodeStringErrors(VirtualFrame frame, TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
@@ -1325,6 +1319,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
             } catch (InteropException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.TypeError, "%m", e);
             }
+        }
+
+        @Specialization(replaces = "doUnicodeStringErrors")
+        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, Object errors, int byteorder, Object errorMarker,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
+            Object perrors = asPythonObjectNode.execute(errors);
+            assert perrors == PNone.NO_VALUE || perrors instanceof String;
+            return doUnicodeStringErrors(frame, o, size, perrors == PNone.NO_VALUE ? "strict" : (String) perrors, byteorder, errorMarker, toSulongNode, getByteArrayNode);
         }
 
         @TruffleBoundary
