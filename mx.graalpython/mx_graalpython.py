@@ -382,7 +382,10 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     args += [_graalpytest_driver(), "-v"]
     args += testfiles
     mx.logv(" ".join([python_binary] + args))
-    return mx.run([python_binary] + args, nonZeroIsFatal=True)
+
+    agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
+    with set_env(JAVA_TOOL_OPTIONS=agent_args):
+        return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
 def graalpython_gate_runner(args, tasks):
@@ -1202,8 +1205,6 @@ def mx_post_parse_cmd_line(namespace):
 
 def python_coverage(args):
     "Generate coverage report for our unittests"
-    os.system("which lcov")
-    os.system("which genhtml")
     parser = ArgumentParser(prog='mx python-coverage')
     parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
     parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
@@ -1213,15 +1214,21 @@ def python_coverage(args):
     if args.jacoco:
         jacoco_args = [
             '--jacoco-whitelist-package', 'com.oracle.graal.python',
-            # '--jacoco-exclude-annotation', '@GeneratedBy',
         ]
+        jacoco_gates = (
+            GraalPythonTags.junit,
+            GraalPythonTags.unittest,
+            GraalPythonTags.unittest_multi,
+            GraalPythonTags.unittest_jython,
+            GraalPythonTags.tagged,
+        )
         mx.run_mx(jacoco_args + [
             '--strict-compliance',
             '--dynamicimports', '/compiler',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
-            '--tags', 'python-unittest,python-tagged-unittest,python-junit',
+            '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
             '--jacocout', 'html',
         ])
         if mx.get_env("SONAR_HOST_URL", None):
