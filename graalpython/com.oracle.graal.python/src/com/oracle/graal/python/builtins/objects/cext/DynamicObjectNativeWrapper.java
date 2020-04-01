@@ -203,6 +203,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         return nativeMemberStore;
     }
 
+    @ExportMessage
+    protected boolean isNull(
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+        return lib.getDelegate(this) == PNone.NO_VALUE;
+    }
+
     // READ
     @ExportMessage
     protected boolean hasMembers() {
