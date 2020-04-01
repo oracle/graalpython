@@ -81,10 +81,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetSpecialSingletonPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SetSpecialSingletonPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
@@ -1297,19 +1295,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         public void execute(PythonNativeWrapper obj,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached SetSpecialSingletonPtrNode setSpecialSingletonPtrNode,
                         @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @Cached IsPointerNode isPointerNode) {
             invalidateNode.execute();
             if (!isPointerNode.execute(obj)) {
                 Object ptr = toPyObjectNode.execute(obj);
-                Object delegate = lib.getDelegate(obj);
-                if (profile.profile(PythonLanguage.getSingletonNativePtrIdx(delegate) != -1)) {
-                    setSpecialSingletonPtrNode.execute(delegate, ptr);
-                } else {
-                    obj.setNativePointer(ptr);
-                }
+                obj.setNativePointer(ptr);
             }
         }
     }
@@ -1340,18 +1332,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "!isBoolNativeWrapper(obj)", limit = "1")
         long doFast(PythonNativeWrapper obj,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
-                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
-                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode) {
+                        @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = lib.getNativePointer(obj);
-            if (profile.profile(nativePointer == null)) {
-                // We assume that before someone calls 'asPointer' on the wrapper, 'isPointer' was
-                // checked and returned true. So, for this case we assume that it is one of the
-                // special singletons where we store the pointer in the context.
-                nativePointer = getSpecialSingletonPtrNode.execute(lib.getDelegate(obj));
-                assert nativePointer != null : createAssertionMessage(lib.getDelegate(obj));
-            }
             return ensureLong(interopLib, nativePointer);
         }
 
@@ -1371,16 +1354,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         protected static boolean isBoolNativeWrapper(Object obj) {
             return obj instanceof PrimitiveNativeWrapper && ((PrimitiveNativeWrapper) obj).isBool();
         }
-
-        private static String createAssertionMessage(Object delegate) {
-            CompilerAsserts.neverPartOfCompilation();
-            int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(delegate);
-            if (singletonNativePtrIdx == -1) {
-                return "invalid special singleton object " + delegate;
-            }
-            return "expected special singleton '" + delegate + "' to have a native pointer";
-        }
-
     }
 
     @GenerateUncached

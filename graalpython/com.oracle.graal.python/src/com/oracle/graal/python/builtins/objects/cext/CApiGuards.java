@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 
 public abstract class CApiGuards {
@@ -54,6 +55,10 @@ public abstract class CApiGuards {
 
     public static boolean isNativeNull(Object object) {
         return object instanceof PythonNativeNull;
+    }
+
+    public static boolean isSpecialSingleton(Object delegate) {
+        return PythonLanguage.getSingletonNativeWrapperIdx(delegate) != -1;
     }
 
     /**

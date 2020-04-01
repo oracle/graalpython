@@ -141,7 +141,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -162,7 +161,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 public abstract class CExtNodes {
@@ -408,6 +406,27 @@ public abstract class CExtNodes {
             return object.getPtr();
         }
 
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return doSingleton(cextContext, cachedObject, contextRef);
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            PythonContext context = contextRef.get();
+            PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
+            if (nativeWrapper == null) {
+                // this will happen just once per context and special singleton
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativeWrapper = new PythonObjectNativeWrapper(object);
+                context.setSingletonNativeWrapper(object, nativeWrapper);
+            }
+            return nativeWrapper;
+        }
+
         @Specialization(guards = "object == cachedObject", limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
@@ -421,7 +440,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
@@ -429,7 +448,7 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             assert object != PNone.NO_VALUE;
@@ -439,12 +458,6 @@ public abstract class CExtNodes {
         @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
         static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object) {
             return TruffleObjectNativeWrapper.wrap(object);
-        }
-
-        @Specialization(guards = "isNoValue(object)")
-        static PNone doNoValue(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PNone object) {
-            // TODO(fa): check if this case is still required
-            return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "isFallback(object)")
@@ -621,6 +634,29 @@ public abstract class CExtNodes {
             return ToSulongNode.doNativeNull(cextContext, object);
         }
 
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return doSingleton(cextContext, cachedObject, contextRef);
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            PythonContext context = contextRef.get();
+            PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
+            if (nativeWrapper == null) {
+                // this will happen just once per context and special singleton
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativeWrapper = new PythonObjectNativeWrapper(object);
+                context.setSingletonNativeWrapper(object, nativeWrapper);
+            } else {
+                nativeWrapper.increaseRefCount();
+            }
+            return nativeWrapper;
+        }
+
         @Specialization(guards = "object == cachedObject", limit = "3")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
@@ -634,7 +670,7 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
-        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
@@ -642,7 +678,7 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrapNewRef(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
         }
 
-        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
+        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             assert object != PNone.NO_VALUE;
@@ -653,12 +689,6 @@ public abstract class CExtNodes {
         static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object);
-        }
-
-        @Specialization(guards = "isNoValue(object)")
-        static PNone doNoValue(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PNone object) {
-            // TODO(fa): check if this case is still required
-            return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "isFallback(object)")
@@ -2414,43 +2444,21 @@ public abstract class CExtNodes {
         public abstract boolean execute(PythonNativeWrapper obj);
 
         @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption()"})
-        boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
+        static boolean doFalse(@SuppressWarnings("unused") PythonNativeWrapper obj) {
             return false;
         }
 
         @Specialization(guards = "lib.isNative(obj)", limit = "1")
         @SuppressWarnings("unused")
-        boolean doNative(PythonNativeWrapper obj,
+        static boolean doNative(PythonNativeWrapper obj,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
             return true;
         }
 
-        @Specialization(guards = {"!lib.isNative(obj)", "isSpecialSingleton(lib.getDelegate(obj))"}, limit = "1")
-        boolean doSpecial(PythonNativeWrapper obj,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
-                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode) {
-            return getSpecialSingletonPtrNode.execute(lib.getDelegate(obj)) != null;
-        }
-
-        @Specialization(limit = "1", replaces = {"doNative", "doSpecial"})
-        boolean doGeneric(PythonNativeWrapper obj,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
-                        @Cached GetSpecialSingletonPtrNode getSpecialSingletonPtrNode,
-                        @Cached("createClassProfile()") ValueProfile singletonProfile) {
-            if (lib.isNative(obj)) {
-                return true;
-            } else {
-                Object delegate = singletonProfile.profile(lib.getDelegate(obj));
-                if (isSpecialSingleton(delegate)) {
-                    return getSpecialSingletonPtrNode.execute(delegate) != null;
-                } else {
-                    return false;
-                }
-            }
-        }
-
-        protected static boolean isSpecialSingleton(Object delegate) {
-            return PythonLanguage.getSingletonNativePtrIdx(delegate) != -1;
+        @Specialization(limit = "1", replaces = {"doFalse", "doNative"})
+        static boolean doGeneric(PythonNativeWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
+            return lib.isNative(obj);
         }
 
         protected static Assumption nativeObjectsAllManagedAssumption() {
@@ -2467,50 +2475,6 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
-    public abstract static class GetSpecialSingletonPtrNode extends Node {
-
-        public abstract Object execute(Object obj);
-
-        protected static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
-        }
-
-        // n.b.: since we guard that there is a pointer, we can be sure that
-        // this is a singleton and we can cache it directly
-        @Specialization(guards = {"cachedObj == obj", "ptr != null"}, assumptions = "singleContextAssumption()")
-        @SuppressWarnings("unused")
-        Object doCached(PythonAbstractObject obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("obj") PythonAbstractObject cachedObj,
-                        @Cached("context.getSingletonNativePtr(cachedObj)") Object ptr) {
-            return ptr;
-        }
-
-        @Specialization(replaces = "doCached")
-        Object doAbstract(PythonAbstractObject obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getSingletonNativePtr(obj);
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            return null;
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
-    public abstract static class SetSpecialSingletonPtrNode extends Node {
-
-        public abstract void execute(Object obj, Object ptr);
-
-        @Specialization
-        void doGeneric(PythonAbstractObject obj, Object ptr,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            context.setSingletonNativePtr(obj, ptr);
-        }
-    }
 
     @GenerateUncached
     @TypeSystemReference(PythonTypes.class)

@@ -69,6 +69,7 @@ import java.util.HashSet;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -159,6 +160,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     public final void setNativeWrapper(DynamicObjectNativeWrapper nativeWrapper) {
         assert this.nativeWrapper == null;
+
+        // we must not set the native wrapper for one of the context-insensitive singletons
+        assert !CApiGuards.isSpecialSingleton(this);
+
         this.nativeWrapper = nativeWrapper;
     }
 
