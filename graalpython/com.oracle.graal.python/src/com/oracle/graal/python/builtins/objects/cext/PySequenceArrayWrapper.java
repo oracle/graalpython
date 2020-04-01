@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -175,15 +175,31 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         public abstract Object execute(Object arrayObject, Object idx);
 
-        @Specialization
-        Object doTuple(PTuple tuple, long idx,
+        @Specialization(guards = "idx == cachedIdx", limit = "3")
+        static Object doTupleCachedIdx(PTuple tuple, @SuppressWarnings("unused") long idx,
+                        @Cached("idx") long cachedIdx,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getItemNode.execute(tuple.getSequenceStorage(), cachedIdx));
+        }
+
+        @Specialization(replaces = "doTupleCachedIdx")
+        static Object doTuple(PTuple tuple, long idx,
                         @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.execute(tuple.getSequenceStorage(), idx));
         }
 
-        @Specialization
-        Object doTuple(PList list, long idx,
+        @Specialization(guards = "idx == cachedIdx", limit = "3")
+        static Object doListCachedIdx(PList list, @SuppressWarnings("unused") long idx,
+                        @Cached("idx") long cachedIdx,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getItemNode.execute(list.getSequenceStorage(), cachedIdx));
+        }
+
+        @Specialization(replaces = "doListCachedIdx")
+        static Object doList(PList list, long idx,
                         @Exclusive @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(getItemNode.execute(list.getSequenceStorage(), idx));
@@ -195,7 +211,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
          * {@code uint64_t} since we do not know how many bytes are requested.
          */
         @Specialization
-        long doBytesI64(PIBytesLike bytesLike, long byteIdx,
+        @ExplodeLoop
+        static long doBytesI64(PIBytesLike bytesLike, long byteIdx,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
@@ -210,35 +227,21 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             int i = (int) byteIdx;
             long result = 0;
             SequenceStorage store = profiled.getSequenceStorage();
-            result |= castToJavaLongNode.execute(getItemNode.execute(store, i));
-            if (i + 1 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 1)) << 8L) & 0xFF00L;
-            }
-            if (i + 2 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 2)) << 16L) & 0xFF0000L;
-            }
-            if (i + 3 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 3)) << 24L) & 0xFF000000L;
-            }
-            if (i + 4 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 4)) << 32L) & 0xFF00000000L;
-            }
-            if (i + 5 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 5)) << 40L) & 0xFF0000000000L;
-            }
-            if (i + 6 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 6)) << 48L) & 0xFF000000000000L;
-            }
-            if (i + 7 < len) {
-                result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + 7)) << 56L) & 0xFF00000000000000L;
+
+            for (int j = 0; j < Long.BYTES; j++) {
+                if (i + j < len) {
+                    long shift = Byte.SIZE * j;
+                    long mask = 0xFFL << shift;
+                    result |= (castToJavaLongNode.execute(getItemNode.execute(store, i + j)) << shift) & mask;
+                }
             }
             return result;
         }
 
         @Specialization
-        long doPMmapI64(PMMap mmap, long byteIdx,
+        static long doPMmapI64(PMMap mmap, long byteIdx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Exclusive @Cached CallNode callGetItemNode,
+                        @Exclusive @Cached CallBinaryMethodNode callGetItemNode,
                         @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToJavaLongNode) {
 
             long len = mmap.getLength();
@@ -246,38 +249,23 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
             int i = (int) byteIdx;
             long result = 0;
-            result |= castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx));
-            if (i + 1 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 8L) & 0xFF00L;
-            }
-            if (i + 2 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 16L) & 0xFF0000L;
-            }
-            if (i + 3 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 24L) & 0xFF000000L;
-            }
-            if (i + 4 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 32L) & 0xFF00000000L;
-            }
-            if (i + 5 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 40L) & 0xFF0000000000L;
-            }
-            if (i + 6 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 48L) & 0xFF000000000000L;
-            }
-            if (i + 7 < len) {
-                result |= (castToJavaLongNode.execute(callGetItemNode.execute(null, attrGetItem, mmap, byteIdx)) << 56L) & 0xFF00000000000000L;
+            for (int j = 0; j < Long.BYTES; j++) {
+                if (i + j < len) {
+                    long shift = Byte.SIZE * j;
+                    long mask = 0xFFL << shift;
+                    result |= (castToJavaLongNode.execute(callGetItemNode.executeObject(attrGetItem, mmap, byteIdx)) << shift) & mask;
+                }
             }
             return result;
         }
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)", "!hasByteArrayContent(object)"})
-        Object doGeneric(Object object, long idx,
+        static Object doGeneric(Object object, long idx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Exclusive @Cached CallNode callGetItemNode,
+                        @Exclusive @Cached CallBinaryMethodNode callGetItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.__GETITEM__);
-            return toSulongNode.execute(callGetItemNode.execute(null, attrGetItem, object, idx));
+            return toSulongNode.execute(callGetItemNode.executeObject(attrGetItem, object, idx));
         }
 
         protected static boolean isTuple(Object object) {
