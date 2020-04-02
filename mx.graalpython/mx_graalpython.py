@@ -380,11 +380,17 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
                     testfiles.append(testfile)
 
     args += [_graalpytest_driver(), "-v"]
-    args += testfiles
-    mx.logv(" ".join([python_binary] + args))
 
     agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
-    with set_env(JAVA_TOOL_OPTIONS=agent_args):
+    if agent_args:
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        with set_env(JAVA_TOOL_OPTIONS=agent_args):
+            for testfile in testfiles:
+                mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True)
+    else:
+        args += testfiles
+        mx.logv(" ".join([python_binary] + args))
         return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
@@ -397,7 +403,7 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if platform.system() != 'Darwin':
+            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
                 # TODO: drop condition when python3 is available on darwin
                 mx.log("Running tests with CPython")
                 test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
