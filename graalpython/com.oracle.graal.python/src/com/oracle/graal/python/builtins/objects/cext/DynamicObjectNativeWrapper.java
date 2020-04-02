@@ -1299,9 +1299,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "!isClassInitNativeWrapper(obj)", limit = "1")
         public void execute(PythonNativeWrapper obj,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @Cached IsPointerNode isPointerNode) {
             invalidateNode.execute();
