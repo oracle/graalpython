@@ -235,11 +235,15 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public boolean equals(SequenceStorage other) {
-        if (other.length() != length() || !(other instanceof TupleSequenceStorage)) {
+        if (!(other instanceof TupleSequenceStorage)) {
+            return false;
+        }
+        TupleSequenceStorage otherTuple = (TupleSequenceStorage) other;
+        if (otherTuple.length() != length()) {
             return false;
         }
 
-        PTuple[] otherArray = ((TupleSequenceStorage) other).getInternalPTupleArray();
+        PTuple[] otherArray = otherTuple.getInternalPTupleArray();
         for (int i = 0; i < length(); i++) {
             if (values[i] != otherArray[i]) {
                 return false;

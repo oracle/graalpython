@@ -2134,12 +2134,14 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         SequenceStorage doGeneric(SequenceStorage dest, SequenceStorage left, SequenceStorage right,
+                        @Cached LenNode lenLeft,
+                        @Cached LenNode lenRight,
                         @Cached("createClassProfile()") ValueProfile leftProfile,
                         @Cached("createClassProfile()") ValueProfile rightProfile) {
             SequenceStorage leftProfiled = leftProfile.profile(left);
             SequenceStorage rightProfiled = rightProfile.profile(right);
-            int len1 = leftProfiled.length();
-            int len2 = rightProfiled.length();
+            int len1 = lenLeft.execute(leftProfiled);
+            int len2 = lenRight.execute(rightProfiled);
             for (int i = 0; i < len1; i++) {
                 getSetItemNode().execute(dest, i, getGetItemNode().execute(leftProfiled, i));
             }
@@ -2213,6 +2215,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         SequenceStorage doRight(SequenceStorage left, SequenceStorage right,
+                        @Cached LenNode lenLeft,
+                        @Cached LenNode lenRight,
                         @Cached PRaiseNode raiseNode,
                         @Cached("createClassProfile()") ValueProfile leftProfile,
                         @Cached("createClassProfile()") ValueProfile rightProfile,
@@ -2220,8 +2224,8 @@ public abstract class SequenceStorageNodes {
             try {
                 SequenceStorage leftProfiled = leftProfile.profile(left);
                 SequenceStorage rightProfiled = rightProfile.profile(right);
-                int len1 = leftProfiled.length();
-                int len2 = rightProfiled.length();
+                int len1 = lenLeft.execute(leftProfiled);
+                int len2 = lenRight.execute(rightProfiled);
                 // we eagerly generalize the store to avoid possible cascading generalizations
                 SequenceStorage generalized = generalizeStore(createEmpty(leftProfiled, rightProfiled, Math.addExact(len1, len2)), rightProfiled);
                 return doConcat(generalized, leftProfiled, rightProfiled);
@@ -2233,11 +2237,9 @@ public abstract class SequenceStorageNodes {
 
         private SequenceStorage createEmpty(SequenceStorage l, SequenceStorage r, int len) {
             if (l instanceof EmptySequenceStorage) {
-                return createEmptyNode.execute(r, len);
+                return createEmptyNode.execute(r, len, -1);
             }
-            SequenceStorage empty = createEmptyNode.execute(l, len);
-            empty.ensureCapacity(len);
-            empty.setNewLength(len);
+            SequenceStorage empty = createEmptyNode.execute(l, len, len);
             return empty;
         }
 
@@ -2273,7 +2275,6 @@ public abstract class SequenceStorageNodes {
 
     @ImportStatic(PGuards.class)
     public abstract static class ExtendNode extends SequenceStorageBaseNode {
-        @Child private CreateEmptyNode createEmptyNode = CreateEmptyNode.create();
         @Child private GeneralizationNode genNode;
 
         private final GenNodeSupplier genNodeProvider;
@@ -2297,6 +2298,8 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(getClass(seq))"})
         SequenceStorage doWithStorage(SequenceStorage s, PSequence seq,
                         @Cached PRaiseNode raiseNode,
+                        @Cached LenNode lenLeft,
+                        @Cached LenNode lenRight,
                         @Cached("createClassProfile()") ValueProfile leftProfile,
                         @Cached("createClassProfile()") ValueProfile rightProfile,
                         @Cached("createClassProfile()") ValueProfile sequenceProfile,
@@ -2305,8 +2308,8 @@ public abstract class SequenceStorageNodes {
                         @Cached("create()") ConcatBaseNode concatStoragesNode) {
             SequenceStorage leftProfiled = leftProfile.profile(s);
             SequenceStorage rightProfiled = rightProfile.profile(sequenceProfile.profile(seq).getSequenceStorage());
-            int len1 = leftProfiled.length();
-            int len2 = rightProfiled.length();
+            int len1 = lenLeft.execute(leftProfiled);
+            int len2 = lenRight.execute(rightProfiled);
             SequenceStorage dest = null;
             try {
                 dest = ensureCapacityNode.execute(leftProfiled, Math.addExact(len1, len2));
@@ -2376,7 +2379,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "times <= 0")
         SequenceStorage doZeroRepeat(SequenceStorage s, @SuppressWarnings("unused") int times,
                         @Cached CreateEmptyNode createEmptyNode) {
-            return createEmptyNode.execute(s, 0);
+            return createEmptyNode.execute(s, 0, -1);
         }
 
         /* special but common case: something like '[False] * n' */
@@ -2515,7 +2518,7 @@ public abstract class SequenceStorageNodes {
                         @Cached("create()") LenNode lenNode) {
             try {
                 int len = lenNode.execute(s);
-                SequenceStorage repeated = createEmptyNode.execute(s, Math.multiplyExact(len, times));
+                SequenceStorage repeated = createEmptyNode.execute(s, Math.multiplyExact(len, times), -1);
 
                 for (int i = 0; i < len; i++) {
                     setItemNode.execute(repeated, i, getGetItemNode().execute(s, i));
@@ -2951,7 +2954,7 @@ public abstract class SequenceStorageNodes {
 
         @Child private GetElementType getElementType;
 
-        public abstract SequenceStorage execute(SequenceStorage s, int cap);
+        public abstract SequenceStorage execute(SequenceStorage s, int cap, int len);
 
         private ListStorageType getElementType(SequenceStorage s) {
             if (getElementType == null) {
@@ -3002,49 +3005,94 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isBoolean(s)")
-        BoolSequenceStorage doBoolean(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new BoolSequenceStorage(cap);
+        BoolSequenceStorage doBoolean(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            BoolSequenceStorage ss = new BoolSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isByte(s)")
-        ByteSequenceStorage doByte(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new ByteSequenceStorage(cap);
+        ByteSequenceStorage doByte(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            ByteSequenceStorage ss = new ByteSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isChar(s)")
-        CharSequenceStorage doChar(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new CharSequenceStorage(cap);
+        CharSequenceStorage doChar(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            CharSequenceStorage ss = new CharSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isInt(s)")
-        IntSequenceStorage doInt(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new IntSequenceStorage(cap);
+        IntSequenceStorage doInt(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            IntSequenceStorage ss = new IntSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isLong(s)")
-        LongSequenceStorage doLong(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new LongSequenceStorage(cap);
+        LongSequenceStorage doLong(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            LongSequenceStorage ss = new LongSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isDouble(s)")
-        DoubleSequenceStorage doDouble(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new DoubleSequenceStorage(cap);
+        DoubleSequenceStorage doDouble(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            DoubleSequenceStorage ss = new DoubleSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isList(s)")
-        ListSequenceStorage doList(@SuppressWarnings("unused") SequenceStorage s, int cap) {
+        ListSequenceStorage doList(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
             // TODO not quite accurate in case of native sequence storage
-            return new ListSequenceStorage(cap);
+            ListSequenceStorage ss = new ListSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Specialization(guards = "isTuple(s)")
-        TupleSequenceStorage doTuple(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new TupleSequenceStorage(cap);
+        TupleSequenceStorage doTuple(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            TupleSequenceStorage ss = new TupleSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         @Fallback
-        ObjectSequenceStorage doObject(@SuppressWarnings("unused") SequenceStorage s, int cap) {
-            return new ObjectSequenceStorage(cap);
+        ObjectSequenceStorage doObject(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
+            ObjectSequenceStorage ss = new ObjectSequenceStorage(cap);
+            if (len != -1) {
+                ss.ensureCapacity(len);
+                ss.setNewLength(len);
+            }
+            return ss;
         }
 
         public static CreateEmptyNode create() {
