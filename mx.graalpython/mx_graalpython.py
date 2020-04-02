@@ -1224,7 +1224,6 @@ def python_coverage(args):
         )
         mx.run_mx(jacoco_args + [
             '--strict-compliance',
-            '--dynamicimports', '/compiler',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
