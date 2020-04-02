@@ -55,6 +55,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
@@ -101,10 +102,13 @@ public final class HandleCache implements TruffleObject {
 
         @Specialization(limit = "CACHE_SIZE", //
                         guards = {"handle == cachedHandle", "cachedValue != null"}, //
-                        assumptions = {"singleContextAssumption()", "getHandleValidAssumption(cachedValue)"})
+                        assumptions = "singleContextAssumption()", //
+                        rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper doCachedSingleContext(@SuppressWarnings("unused") HandleCache cache, @SuppressWarnings("unused") long handle,
                         @Cached("handle") @SuppressWarnings("unused") long cachedHandle,
-                        @Cached("resolveHandleUncached(cache, handle)") PythonNativeWrapper cachedValue) {
+                        @Cached("resolveHandleUncached(cache, handle)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+            associationValidAssumption.check();
             return cachedValue;
         }
 
