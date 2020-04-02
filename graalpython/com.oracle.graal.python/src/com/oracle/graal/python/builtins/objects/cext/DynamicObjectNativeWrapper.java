@@ -1282,25 +1282,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     abstract static class ToNativeNode extends Node {
         public abstract void execute(PythonNativeWrapper obj);
 
-        protected static boolean isClassInitNativeWrapper(PythonNativeWrapper obj) {
-            return obj instanceof PythonClassInitNativeWrapper;
-        }
-
-        @Specialization(limit = "1")
-        public void executeClsInit(PythonClassInitNativeWrapper obj,
-                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
-                        @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
-                        @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            if (!lib.isNative(obj)) {
-                obj.setNativePointer(toPyObjectNode.execute(obj));
-            }
-        }
-
-        @Specialization(guards = "!isClassInitNativeWrapper(obj)", limit = "1")
-        public void execute(PythonNativeWrapper obj,
-                        @Shared("toPyObjectNode") @Cached ToPyObjectNode toPyObjectNode,
-                        @Shared("invalidateNode") @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
+        @Specialization
+        static void doPythonNativeWrapper(PythonNativeWrapper obj,
+                        @Cached ToPyObjectNode toPyObjectNode,
+                        @Cached InvalidateNativeObjectsAllManagedNode invalidateNode,
                         @Cached IsPointerNode isPointerNode) {
             invalidateNode.execute();
             if (!isPointerNode.execute(obj)) {
