@@ -45,8 +45,13 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleException;
+import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -62,6 +67,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
     private boolean exit;
     private final PBaseException pythonException;
     private boolean hideLocation = false;
+    private CallTarget tracebackCutoffTarget;
 
     public PException(PBaseException actual, Node node) {
         this.pythonException = actual;
@@ -199,5 +205,17 @@ public final class PException extends RuntimeException implements TruffleExcepti
         if (!profile.profileException(this, error)) {
             throw this;
         }
+    }
+
+    @TruffleBoundary
+    public Iterable<TruffleStackTraceElement> getTruffleStackTrace() {
+        if (tracebackCutoffTarget == null) {
+            tracebackCutoffTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
+        }
+        return TruffleStackTrace.getStackTrace(this);
+    }
+
+    public boolean shouldCutOffTraceback(TruffleStackTraceElement element) {
+        return tracebackCutoffTarget != null && element.getTarget() == tracebackCutoffTarget;
     }
 }

@@ -167,7 +167,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -1314,7 +1313,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceBackHereNode extends PythonBinaryBuiltinNode {
         @Specialization
         PTraceback tbHere(PFrame frame, PTraceback tb) {
-            return factory().createTraceback(frame, frame.getLine(), new LazyTraceback(tb));
+            return factory().createTraceback(frame, frame.getLine(), tb);
         }
     }
 

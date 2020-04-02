@@ -1,10 +1,15 @@
 package com.oracle.graal.python.builtins.objects.traceback;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
- * A lazy representation of an exception traceback that can be evaluated to a python object by {@link GetTracebackNode}.
+ * A lazy representation of an exception traceback that can be evaluated to a python object by
+ * {@link GetTracebackNode}.
  *
  * @see GetTracebackNode
  */
@@ -68,5 +73,12 @@ public class LazyTraceback {
 
     public boolean isMaterialized() {
         return materialized;
+    }
+
+    public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
+        Frame frame = element.getFrame();
+        Node location = element.getLocation();
+        // only include frames of non-builtin python functions
+        return PArguments.isPythonFrame(frame) && location != null && location.getRootNode() != null && !location.getRootNode().isInternal();
     }
 }

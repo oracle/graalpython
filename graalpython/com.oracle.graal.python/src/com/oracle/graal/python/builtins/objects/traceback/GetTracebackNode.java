@@ -1,19 +1,15 @@
 package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleStackTrace;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * <strong>Summary of our implementation of traceback handling</strong>
@@ -84,71 +80,49 @@ public abstract class GetTracebackNode extends Node {
         return tb.getTraceback();
     }
 
-    @Specialization(guards = "!tb.isMaterialized()")
-    PTraceback getLazy(LazyTraceback tb,
-                    @Cached PythonObjectFactory factory) {
-        /*
-         * Truffle stacktrace consists of the frames captured during the unwinding and the frames
-         * that are now on the Java stack. We don't want the frames from the stack to creep in. They
-         * would be incorrect because we are no longer in the location where the exception was
-         * caught, and unwanted because Python doesn't include frames from the active stack in the
-         * traceback. But we still need to peek at the stacktrace element for the current frame,
-         * even though the frame is incorrect (see below why). Truffle doesn't tell us where is the
-         * boundary between exception frames and frames from the Java stack, so we cut it off when
-         * we see the current call target in the stacktrace.
-         *
-         * For the top frame of a traceback, we need to know the location of where the exception
-         * occured in the "try" block. We cannot get it from the frame we capture because it already
-         * "moved" to the "except" block. When unwinding, Truffle captures the frame and location of
-         * each exiting call. When constructing the stacktrace, the location is "moved up". The
-         * element with the bottom frame gets the location from the exception and the other elements
-         * get the location from the frame of the element directly below them. Therefore, the
-         * element for the current frame, even though the frame itself doesn't belong to the
-         * traceback, contains the desired location from which we can get the lineno.
-         */
-        int lineno = -2;
-        LazyTraceback prev = tb.getNextChain();
-        CallTarget currentCallTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
+    // The common case for not yet materialized
+    @Specialization(guards = {"!tb.isMaterialized()", "hasFrame(tb)"})
+    PTraceback createTraceback(LazyTraceback tb,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        PTraceback newTraceback = factory.createTraceback(tb);
+        tb.setTraceback(newTraceback);
+        return newTraceback;
+    }
+
+    // LazyTracebacks without the frame occur on the C boundary and on the top level. When
+    // the exception gets caught by python, the first traceback will always have the frame
+    // from the exception handler, so this specialization should not occur outside the following
+    // situations:
+    // 1) On the top level
+    // 2) When the traceback is requested by C (PyErr_Fetch etc.)
+    // 3) When called back by the traceback's accessors (tb_frame/tb_next/tb_lineno)
+    @TruffleBoundary
+    @Specialization(guards = {"!tb.isMaterialized()", "!hasFrame(tb)"})
+    PTraceback traverse(LazyTraceback tb,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         boolean skipFirst = tb.getException().shouldHideLocation();
-        for (TruffleStackTraceElement element : TruffleStackTrace.getStackTrace(tb.getException())) {
+        for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
             if (skipFirst) {
                 skipFirst = false;
                 continue;
             }
-            if (currentCallTarget != null && element.getTarget() == currentCallTarget) {
-                if (element.getLocation() != null) {
-                    SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
-                    if (sourceSection != null) {
-                        lineno = sourceSection.getStartLine();
-                    }
-                }
+            if (tb.getException().shouldCutOffTraceback(element)) {
                 break;
             }
-            LazyTraceback prevTraceback = prev;
-            Frame tracebackFrame = element.getFrame();
-            // frames may have not been requested
-            if (tracebackFrame != null) {
-                Node location = element.getLocation();
-                // only include frames of non-builtin python functions
-                if (PArguments.isPythonFrame(tracebackFrame) && location != null && !location.getRootNode().isInternal()) {
-                    // The Truffle frame should be already materialized
-                    prevTraceback = new LazyTraceback(factory.createTraceback(tracebackFrame.materialize(), location, prevTraceback));
-                }
+            if (LazyTraceback.elementWantedForTraceback(element)) {
+                return createTraceback(tb, factory);
             }
-            prev = prevTraceback;
         }
-        PTraceback materializedTraceback;
-        if (tb.getFrame() != null) {
-            materializedTraceback = factory.createTraceback(tb.getFrame(), lineno, prev);
-        } else if (tb.getFrameInfo() != null) {
-            materializedTraceback = factory.createTraceback(tb.getFrameInfo(), lineno, prev);
-        } else if (prev != null) {
-            materializedTraceback = execute(prev);
-        } else {
-            materializedTraceback = null;
+        PTraceback newTraceback = null;
+        if (tb.getNextChain() != null) {
+            newTraceback = execute(tb.getNextChain());
         }
-        tb.setTraceback(materializedTraceback);
-        return materializedTraceback;
+        tb.setTraceback(newTraceback);
+        return newTraceback;
+    }
+
+    protected static boolean hasFrame(LazyTraceback tb) {
+        return tb.getFrame() != null || tb.getFrameInfo() != null;
     }
 
     public static GetTracebackNode create() {

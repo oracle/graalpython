@@ -43,38 +43,31 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 public final class PTraceback extends PythonBuiltinObject {
 
     private PFrame frame;
     private PFrame.Reference frameInfo;
-    private MaterializedFrame truffleFrame;
-    private Node location;
+    private PException exception;
     private int lineno = -2;
-    private final LazyTraceback next;
+    private PTraceback next;
+    private LazyTraceback nextChain;
 
-    public PTraceback(LazyPythonClass cls, PFrame frame, int lineno, LazyTraceback next) {
+    public PTraceback(LazyPythonClass cls, PFrame frame, int lineno, PTraceback next) {
         super(cls);
         this.frame = frame;
         this.lineno = lineno;
         this.next = next;
     }
 
-    public PTraceback(LazyPythonClass cls, PFrame.Reference frameInfo, int lineno, LazyTraceback next) {
+    public PTraceback(LazyPythonClass cls, LazyTraceback tb) {
         super(cls);
-        this.frameInfo = frameInfo;
-        this.lineno = lineno;
-        this.next = next;
-    }
-
-    public PTraceback(LazyPythonClass cls, MaterializedFrame truffleFrame, Node location, LazyTraceback next) {
-        super(cls);
-        this.truffleFrame = truffleFrame;
-        this.location = location;
-        this.next = next;
+        this.frame = tb.getFrame();
+        this.frameInfo = tb.getFrameInfo();
+        this.exception = tb.getException();
+        this.nextChain = tb.getNextChain();
     }
 
     public PFrame getFrame() {
@@ -93,20 +86,28 @@ public final class PTraceback extends PythonBuiltinObject {
         return lineno;
     }
 
-    public MaterializedFrame getTruffleFrame() {
-        return truffleFrame;
+    public PException getException() {
+        return exception;
     }
 
-    public Node getLocation() {
-        return location;
+    public LazyTraceback getNextChain() {
+        return nextChain;
     }
 
-    public LazyTraceback getNext() {
+    public PTraceback getNext() {
         return next;
+    }
+
+    public void setNext(PTraceback next) {
+        this.next = next;
     }
 
     public void setLineno(int lineno) {
         this.lineno = lineno;
+    }
+
+    public void clearException() {
+        this.exception = null;
     }
 
     public static final String TB_FRAME = "tb_frame";
