@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -59,9 +60,11 @@ public final class PGenerator extends PythonBuiltinObject {
     private boolean finished;
     private PCode code;
     private int currentCallTarget;
+    private final Object iterator;
+    private final boolean isPRangeIterator;
 
     public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
-                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, PythonObjectFactory factory) {
+                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, PythonObjectFactory factory, Object iterator) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
          */
@@ -90,10 +93,10 @@ public final class PGenerator extends PythonBuiltinObject {
             generatorFrame.setObject(cellVarSlots[i], new PCell(cellVarAssumptions[i]));
         }
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(clazz, name, callTargets, frameDescriptor, arguments, closure);
+        return new PGenerator(clazz, name, callTargets, frameDescriptor, arguments, closure, iterator);
     }
 
-    private PGenerator(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure) {
+    private PGenerator(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
         super(clazz);
         this.name = name;
         this.callTargets = callTargets;
@@ -102,6 +105,8 @@ public final class PGenerator extends PythonBuiltinObject {
         this.arguments = arguments;
         this.closure = closure;
         this.finished = false;
+        this.iterator = iterator;
+        this.isPRangeIterator = iterator != null && iterator instanceof PRangeIterator;
     }
 
     public FrameDescriptor getFrameDescriptor() {
@@ -135,6 +140,14 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public PCell[] getClosure() {
         return closure;
+    }
+
+    public Object getIterator() {
+        return iterator;
+    }
+
+    public boolean isPRangeIterator() {
+        return isPRangeIterator;
     }
 
     @Override

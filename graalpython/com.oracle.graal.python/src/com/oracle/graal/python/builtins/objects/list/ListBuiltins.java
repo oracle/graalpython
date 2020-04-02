@@ -64,10 +64,12 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.Crea
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -81,14 +83,17 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -96,6 +101,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -208,6 +214,38 @@ public class ListBuiltins extends PythonBuiltins {
                 idx++;
             }
             list.setSequenceStorage(new IntSequenceStorage(ary));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "iterable.isPRangeIterator()")
+        PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile stepProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile positiveRangeProfile) {
+            clearStorage(list);
+            Object iterObj = getIteratorNode.executeWith(frame, iterable);
+            SequenceStorage storage = EmptySequenceStorage.INSTANCE;
+
+            PRangeIterator range = (PRangeIterator) iterable.getIterator();
+            final int len = range.getLength(stepProfile, positiveRangeProfile);
+            if (len > 0) {
+                Object value = getNextNode.execute(frame, iterObj);
+                storage = SequenceStorageFactory.createStorage(value, len);
+                storage = appendNode.execute(storage, value, ListGeneralizationNode.SUPPLIER);
+                while (true) {
+                    try {
+                        storage = appendNode.execute(storage, getNextNode.execute(frame, iterObj), ListGeneralizationNode.SUPPLIER);
+                    } catch (PException e) {
+                        e.expectStopIteration(errorProfile);
+                        break;
+                    }
+                }
+            }
+
+            list.setSequenceStorage(storage);
             return PNone.NONE;
         }
 
