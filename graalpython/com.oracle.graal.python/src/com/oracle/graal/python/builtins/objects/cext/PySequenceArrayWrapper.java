@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -242,7 +242,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         @ExplodeLoop
         static long doPMmapI64(PMMap mmap, long byteIdx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Exclusive @Cached CallBinaryMethodNode callGetItemNode,
+                        @Exclusive @Cached CallNode callGetItemNode,
                         @Shared("castToLongNode") @Cached CoerceToJavaLongNode castToJavaLongNode) {
 
             long len = mmap.getLength();
@@ -254,7 +254,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                 if (i + j < len) {
                     long shift = Byte.SIZE * j;
                     long mask = 0xFFL << shift;
-                    result |= (castToJavaLongNode.execute(callGetItemNode.executeObject(attrGetItem, mmap, byteIdx)) << shift) & mask;
+                    result |= (castToJavaLongNode.execute(callGetItemNode.execute(attrGetItem, mmap, byteIdx)) << shift) & mask;
                 }
             }
             return result;
@@ -263,10 +263,10 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"!isTuple(object)", "!isList(object)", "!hasByteArrayContent(object)"})
         static Object doGeneric(Object object, long idx,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Exclusive @Cached CallBinaryMethodNode callGetItemNode,
+                        @Exclusive @Cached CallNode callGetItemNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object attrGetItem = lookupGetItemNode.execute(object, SpecialMethodNames.__GETITEM__);
-            return toSulongNode.execute(callGetItemNode.executeObject(attrGetItem, object, idx));
+            return toSulongNode.execute(callGetItemNode.execute(attrGetItem, object, idx));
         }
 
         protected static boolean isTuple(Object object) {
