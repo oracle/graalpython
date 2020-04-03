@@ -1281,12 +1281,12 @@ def python_coverage(args):
                     "--coverage.OutputFile=%s" % outfile,
                 ]
                 with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
-                    if kwds.pop("tagged", False):
-                        with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                            with _dev_pythonhome_context():
+                    with _dev_pythonhome_context(): # run all our tests in the dev-home, so that lcov has consistent paths
+                        if kwds.pop("tagged", False):
+                            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
                                 run_python_unittests(executable, **kwds)
-                    else:
-                        run_python_unittests(executable, **kwds)
+                        else:
+                            run_python_unittests(executable, **kwds)
 
         # some code runs in the suite dir, some in the graalvm home. we merge these manually
         local_dir = os.path.join(SUITE.dir, "graalpython")
