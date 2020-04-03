@@ -27,6 +27,7 @@ from __future__ import print_function
 import contextlib
 import datetime
 import glob
+import itertools
 import json
 import os
 import platform
@@ -230,6 +231,66 @@ def retag_unittests(args):
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
             mx.run(['tar', 'cJf', filename, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags'])
             mx.run(['scp', filename, parsed_args.upload_results_to.rstrip('/') + '/'])
+
+
+def _read_tags(path='.'):
+    tags = set()
+    tagfiles = glob.glob(os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/*.txt'))
+    for tagfile in tagfiles:
+        with open(tagfile) as f:
+            tags |= {(os.path.basename(tagfile), line.strip()) for line in f if line.strip()}
+    return tags
+
+
+def _write_tags(tags, path='.'):
+    tagdir = os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/')
+    tagfiles = glob.glob(os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/*.txt'))
+    for file in tagfiles:
+        os.unlink(file)
+    for file, tags in itertools.groupby(sorted(tags), key=lambda x: x[0]):
+        with open(os.path.join(tagdir, file), 'w') as f:
+            for tag in tags:
+                f.write(tag[1] + '\n')
+
+
+def _fetch_tags_for_platform(parsed_args, platform):
+    oldpwd = os.getcwd()
+    with tempfile.TemporaryDirectory(prefix='graalpython-update-tags-') as d:
+        os.chdir(d)
+        try:
+            tarfile = 'unittest-tags-{}.tar.bz2'.format(platform)
+            mx.run(['curl', '-O', '{}/{}'.format(parsed_args.tags_directory_url.rstrip('/'), tarfile)])
+            os.mkdir(platform)
+            mx.run(['tar', 'xf', tarfile, '-C', platform])
+            return _read_tags(platform)
+        finally:
+            os.chdir(oldpwd)
+
+
+def update_unittest_tags(args):
+    parser = ArgumentParser('mx python-update-unittest-tags')
+    parser.add_argument('tags_directory_url')
+    parsed_args = parser.parse_args(args)
+
+    current_tags = _read_tags()
+    linux_tags = _fetch_tags_for_platform(parsed_args, 'linux')
+    darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
+
+    # msimacek TODO: this is overly conservative as it wouldn't include tests that are skipped on the other platform
+    result_tags = linux_tags & darwin_tags
+    _write_tags(result_tags)
+
+    diff = linux_tags - darwin_tags
+    if diff:
+        mx.warn("The following tests work only on Linux:\n" + '\n'.join(x[1] for x in diff))
+
+    diff = darwin_tags - linux_tags
+    if diff:
+        mx.warn("The following tests work only on Darwin:\n" + '\n'.join(x[1] for x in diff))
+
+    diff = current_tags - result_tags
+    if diff:
+        mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
@@ -1623,6 +1684,7 @@ mx.update_commands(SUITE, {
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
+    'python-update-unittest-tags': [update_unittest_tags, ''],
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
