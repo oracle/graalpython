@@ -1308,7 +1308,7 @@ def python_coverage(args):
             datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
             rev[:7],
         )
-        mx.run(["/usr/bin/env", "genhtml", "-o", coverage_dir, outputlcov])
+        mx.run(["/usr/bin/env", "genhtml", "--ignore-errors", "source", "-o", coverage_dir, outputlcov])
         if args.truffle_upload_url:
             if not args.truffle_upload_url.endswith("/"):
                 args.truffle_upload_url = args.truffle_upload_url + "/"
