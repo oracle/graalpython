@@ -220,8 +220,16 @@ def python3_unittests(args):
 
 def retag_unittests(args):
     """run the cPython stdlib unittests"""
+    parser = ArgumentParser('mx python-retag-unittests')
+    parser.add_argument('--upload-results-to')
+    parsed_args, remaining_args = parser.parse_known_args(args)
     with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py", '--retag'] + args)
+        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py", '--retag'] + remaining_args)
+    if parsed_args.upload_results_to:
+        with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
+            filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
+            mx.run(['tar', 'cJf', filename, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags'])
+            mx.run(['scp', filename, parsed_args.upload_results_to.rstrip('/') + '/'])
 
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
