@@ -309,9 +309,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
             exec_list.add(sb.toString());
+            String javaOptions = System.getenv("_JAVA_OPTIONS");
+            String javaToolOptions = System.getenv("JAVA_TOOL_OPTIONS");
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
                     arg = arg.replace("suspend=y", "suspend=n");
+                }
+                if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
+                    // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are adeed during
+                    // JVM startup automatically. We do not want to repeat these
+                    // for subprocesses, because they should also pick up those
+                    // variables.
+                    continue;
                 }
                 exec_list.add(arg);
             }
