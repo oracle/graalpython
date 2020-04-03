@@ -382,11 +382,13 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     args += [_graalpytest_driver(), "-v"]
 
     agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
-    # if we leave the excludes, the string is too long and it will be ignored by
-    # the JVM. See
-    # https://github.com/graalvm/graal-jvmci-8/blob/fc8a493bac33d35405c4361a134a812222c3d14b/src/share/vm/runtime/arguments.cpp#L3841
-    agent_args = re.sub("excludes=[^,]+,", "", agent_args)
     if agent_args:
+        # if we leave the excludes, the string is too long and it will be ignored by
+        # the JVM, which ignores JAVA_TOOL_OPTIONS long than 1024 chars silently on JDK8
+        agent_args = re.sub("excludes=[^,]+,", "", agent_args)
+        # we know these can be excluded
+        agent_args += ",excludes=*NodeGen*:*LibraryGen*:*BuiltinsFactory*"
+        assert len(agent_args) < 1024
         # jacoco only dumps the data on exit, and when we run all our unittests
         # at once it generates so much data we run out of heap space
         with set_env(JAVA_TOOL_OPTIONS=agent_args):
