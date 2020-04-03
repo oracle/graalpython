@@ -155,7 +155,11 @@ public abstract class ExceptionStateNodes {
                         PRootNode pRootNode = (PRootNode) rootNode;
                         pRootNode.setNeedsExceptionState();
                         Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
-                        return PArguments.getException(frame);
+                        ExceptionInfo exception = PArguments.getException(frame);
+                        if (exception != null && exception.exception != null) {
+                            exception.exception.markAsEscaped();
+                        }
+                        return exception;
                     }
                     return null;
                 }
@@ -164,6 +168,9 @@ public abstract class ExceptionStateNodes {
         }
 
         private static ExceptionInfo ensure(ExceptionInfo e) {
+            if (e.exception != null) {
+                e.exception.markAsEscaped();
+            }
             return e != ExceptionInfo.NO_EXCEPTION ? e : null;
         }
 

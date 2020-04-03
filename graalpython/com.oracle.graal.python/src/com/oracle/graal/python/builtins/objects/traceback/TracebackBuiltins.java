@@ -224,6 +224,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 }
             }
 
+            assert escapedFrame != null : "Failed to find escaped frame on stack";
             tb.setFrame(escapedFrame);
             return escapedFrame;
         }

@@ -73,10 +73,7 @@ public class TryFinallyNode extends StatementNode {
             } catch (PException e) {
                 exceptionProfile.enter();
                 // any thrown Python exception is visible in the finally block
-                caughtException = e.getExceptionObject();
-                PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
-                info.markAsEscaped();
-                caughtException.reifyException(info);
+                caughtException = e.reifyAndGetPythonException(frame, false);
                 caughtTraceback = caughtException.getTraceback();
                 SetCaughtExceptionNode.execute(frame, new ExceptionInfo(caughtException, caughtException.getTraceback()));
             } catch (ControlFlowException e) {

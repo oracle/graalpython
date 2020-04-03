@@ -228,7 +228,6 @@ public final class PBaseException extends PythonObject {
      */
     public void reifyException(PFrame.Reference curFrameInfo) {
         assert curFrameInfo != PFrame.Reference.EMPTY;
-        curFrameInfo.markAsEscaped();
         traceback = new LazyTraceback(curFrameInfo, exception, traceback);
     }
 
@@ -283,8 +282,15 @@ public final class PBaseException extends PythonObject {
      **/
     public PException getExceptionForReraise(LazyTraceback traceback) {
         setTraceback(traceback);
+        markAsEscaped();
         PException newException = PException.fromObject(this, exception.getLocation());
         newException.setHideLocation(true);
         return newException;
+    }
+
+    public void markAsEscaped() {
+        if (traceback != null && traceback.getFrameInfo() != null) {
+            traceback.getFrameInfo().markAsEscaped();
+        }
     }
 }
