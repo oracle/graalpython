@@ -127,7 +127,9 @@ public final class CApiContext extends CExtContext {
         // initialize primitive native wrapper cache
         primitiveNativeWrapperCache = new PrimitiveNativeWrapper[262];
         for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
-            primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(i - 5);
+            PrimitiveNativeWrapper nativeWrapper = PrimitiveNativeWrapper.createInt(i - 5);
+            nativeWrapper.increaseRefCount();
+            primitiveNativeWrapperCache[i] = nativeWrapper;
         }
 
         context.registerAsyncAction(() -> {
@@ -222,6 +224,7 @@ public final class CApiContext extends CExtContext {
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
         assert CApiGuards.isSmallInteger(i);
         PrimitiveNativeWrapper primitiveNativeWrapper = primitiveNativeWrapperCache[i + 5];
+        primitiveNativeWrapper.increaseRefCount();
         assert primitiveNativeWrapper.getRefCount() > 0;
         return primitiveNativeWrapper;
     }

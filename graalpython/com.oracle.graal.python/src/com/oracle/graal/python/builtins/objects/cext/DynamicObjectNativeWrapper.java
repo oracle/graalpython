@@ -1563,6 +1563,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return (int) (value ^ Double.doubleToRawLongBits(dvalue) ^ state);
         }
 
+        @Override
+        public String toString() {
+            return "PrimitiveNativeWrapper(" + getTypeName() + "(" + value + ")" + ')';
+        }
+
+        private String getTypeName() {
+            if (isIntLike()) {
+                return "int";
+            } else if (isDouble()) {
+                return "float";
+            } else if (isBool()) {
+                return "bool";
+            }
+            return "unknown";
+        }
+
         public static PrimitiveNativeWrapper createBool(boolean val) {
             return new PrimitiveNativeWrapper(PRIMITIVE_STATE_BOOL, PInt.intValue(val));
         }
