@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -183,7 +182,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             Map<String, String> environment = pb.environment();
-            environment.clear();
             for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
                 if (keyValue instanceof PBytes) {
                     // NOTE: passing 'null' frame means we took care of the global state in the
@@ -231,20 +229,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
-        private PList createEnvList() {
-            PDict environ = (PDict) getContext().getCore().lookupBuiltinModule("posix").getAttribute("environ");
-            ArrayList<Object> envList = new ArrayList<>();
-            environ.entries().forEach(entry -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append(new String(toBytes.execute(null, entry.key)));
-                sb.append("=");
-                sb.append(new String(toBytes.execute(null, entry.value)));
-                envList.add(factory().createBytes(sb.toString().getBytes()));
-            });
-            return factory().createList(envList.toArray());
-        }
-
         @Specialization(replaces = "forkExec")
         int forkExecDefault(VirtualFrame frame, Object args, Object executable_list, Object close_fds,
                         Object fdsToKeep, Object cwd, Object env,
@@ -267,7 +251,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             PList actualEnv;
             if (env instanceof PNone) {
-                actualEnv = createEnvList();
+                actualEnv = factory().createList();
             } else {
                 actualEnv = castEnv.execute(frame, env);
             }
