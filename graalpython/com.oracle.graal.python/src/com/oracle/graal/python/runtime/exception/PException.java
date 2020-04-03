@@ -120,24 +120,51 @@ public final class PException extends RuntimeException implements TruffleExcepti
         this.hideLocation = hideLocation;
     }
 
+    /**
+     * Return the associated {@link PBaseException}. This method doesn't ensure traceback
+     * consistency and should be avoided unless you can guarantee that the exception will not escape
+     * to the program. Use {@link PException#reifyAndGetPythonException(VirtualFrame)
+     * reifyAndGetPythonException} family of methods instead.
+     */
     @Override
     public PBaseException getExceptionObject() {
         return pythonException;
     }
 
+    /**
+     * @see PException#reifyAndGetPythonException(PFrame.Reference, boolean, boolean)
+     */
     public PBaseException reifyAndGetPythonException(VirtualFrame frame) {
         return reifyAndGetPythonException(frame, true);
     }
 
+    /**
+     * @see PException#reifyAndGetPythonException(PFrame.Reference, boolean, boolean)
+     */
     public PBaseException reifyAndGetPythonException(VirtualFrame frame, boolean markEscaped) {
         return reifyAndGetPythonException(frame, markEscaped, true);
     }
 
+    /**
+     * @see PException#reifyAndGetPythonException(PFrame.Reference, boolean, boolean)
+     */
     public PBaseException reifyAndGetPythonException(VirtualFrame frame, boolean markEscaped, boolean addCurrentFrameToTraceback) {
         PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
         return reifyAndGetPythonException(info, markEscaped, addCurrentFrameToTraceback);
     }
 
+    /**
+     * Add a traceback segment to the associated {@link PBaseException} to make it suitable for
+     * passing it to the python program and return it. This method should be prefered to
+     * {@link PException#getExceptionObject() getExceptionObject}, which doesn't ensure traceback
+     * correctness.
+     * 
+     * @param info The frame reference to the current frame where the exception was caught.
+     *            Permitted to be null only if the following parameters are false.
+     * @param markEscaped Whether to mark the frame as escaped.
+     * @param addCurrentFrameToTraceback Whether to make the caching frame visible in the traceback.
+     *            Generally wanted for exception handlers in python, unwanted in C.
+     */
     public PBaseException reifyAndGetPythonException(PFrame.Reference info, boolean markEscaped, boolean addCurrentFrameToTraceback) {
         if (markEscaped) {
             info.markAsEscaped();

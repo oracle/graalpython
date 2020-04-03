@@ -72,6 +72,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Use the Truffle stacktrace attached to an exception to populate the information in the
+     * {@link PTraceback} and its tb_next chain as far as the stacktrace goes for this segment.
+     * 
+     * @see GetTracebackNode
+     */
     abstract static class MaterializeTruffleStacktraceNode extends Node {
         public abstract void execute(PTraceback tb);
 
@@ -109,6 +115,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 next = getTracebackNode.execute(tb.getNextChain());
             }
             TruffleStackTraceElement nextElement = null;
+            // The logic of skipping and cutting off frames here and in GetTracebackNode must be the same
             boolean skipFirst = tb.getException().shouldHideLocation();
             for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
                 if (skipFirst) {

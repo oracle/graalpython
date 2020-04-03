@@ -206,31 +206,24 @@ public final class PBaseException extends PythonObject {
      * Create the traceback for this exception using the provided {@link PFrame} instance (which
      * usually is the frame of the function that caught the exception).
      * <p>
-     * This function (of {@link #reifyException(PFrame.Reference)} must be called before handing out
+     * This function (or {@link #reifyException(PFrame.Reference)} must be called before handing out
      * exceptions into the Python value space because otherwise the stack will not be correct if the
      * exception object escapes the current function.
      * </p>
+     *
+     * @param pyFrame The exception handler frame. Permitted to be null, in which case the frame
+     *            will be omitted from the traceback.
      */
     public void reifyException(PFrame pyFrame) {
         traceback = new LazyTraceback(pyFrame, exception, traceback);
     }
 
-    // msimacek TODO doc
     /**
-     * Associate this exception with a frame info that represents the {@link PFrame} instance that
-     * caught the exception.<br>
+     * Create the traceback for this exception using the provided {@link PFrame.Reference} (which
+     * usually is the frame of the function that caught the exception).
      * <p>
-     * In contrast to {@link #reifyException(PFrame)}, this method can be used if the {@link PFrame}
-     * instance isn't already available and if the Truffle frame is also not available to create the
-     * {@link PFrame} instance using the
-     * {@link com.oracle.graal.python.nodes.frame.MaterializeFrameNode}.
-     * </p>
-     * <p>
-     * The most common use case for calling this method is when an exception is thrown in some
-     * Python code but we catch the exception in some interop node (that is certainly adopted by
-     * some foreign language's root node). In this case, we do not want to eagerly create the
-     * {@link PFrame} instance when calling from Python to the foreign language since this could be
-     * expensive. The traceback can then be created lazily from the frame info.
+     * In contrast to {@link #reifyException(PFrame)}, this method can be used without materializing
+     * the frame immediately.
      * </p>
      */
     public void reifyException(PFrame.Reference curFrameInfo) {

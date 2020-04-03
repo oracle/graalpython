@@ -31,26 +31,28 @@ import com.oracle.truffle.api.nodes.Node;
  * caught. It doesn't include the frames above it (to the top). Secondly, the traceback is never
  * frozen. The traceback accumulates more frames when the exception gets reraised. To correct the
  * mismatch between Truffle and Python eception handling, we need to wrap {@link PException}s in
- * {@link LazyTraceback} objects when caught and adhere to rules of exception handling mentioned
- * below.
+ * {@link LazyTraceback} objects when caught and adhere to particular rules of exception handling
+ * mentioned below.
  * </p>
  *
  * <p>
  * {@link LazyTraceback} represents a (possibly empty) traceback segment. It consists of an optional
- * Python frame or frame reference and a {@link PException} which serves as a carrier of the Truffle
- * stack trace. {@link LazyTraceback} forms a linked list that gets prepended a new
- * {@link LazyTraceback} each time the python exception gets reraised, either explicitly (raise
- * statement) or implicitly (for example at the end of finally). Each of these segments needs to
- * have their own distinct {@link PException} to avoid interference, therefore a caught
- * {@link PException} must never be rethrown after being added to the traceback and it must never be
- * added to the traceback multiple times.
+ * Python frame or frame reference to the frame where the exception was caught and a
+ * {@link PException} which serves as a carrier of the Truffle stack trace. {@link LazyTraceback}
+ * forms a linked list that gets prepended a new {@link LazyTraceback} each time the python
+ * exception gets reraised, either explicitly (raise statement) or implicitly (for example, at the
+ * end of finally). Each of these segments needs to have their own distinct {@link PException} to
+ * avoid interference, therefore a caught {@link PException} must never be rethrown after being
+ * added to the traceback and it must never be added to the traceback multiple times.
  * </p>
  *
  * <p>
- * The whole chain of {@link LazyTraceback} objects can be materialized into a linked list
+ * The whole chain of {@link LazyTraceback} objects can be materialized into a linked list of
  * PTraceback objects. Due to all the parts of a segment being optional, it can also materialize to
  * nothing (null/None). The materialization is lazy and is split between {@link GetTracebackNode}
- * and {@link TracebackBuiltins}.
+ * and accessor nodes in {@link TracebackBuiltins}. The purpose of {@link GetTracebackNode} is to do
+ * the minimal amount of work necessary to determine whether the traceback will materialize to
+ * something and is not empty. Then it either returns the {@link PTraceback} object or null.
  * </p>
  *
  * <p>
@@ -100,6 +102,7 @@ public abstract class GetTracebackNode extends Node {
     @Specialization(guards = {"!tb.isMaterialized()", "!hasFrame(tb)"})
     PTraceback traverse(LazyTraceback tb,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
+        // The logic of skipping and cutting off frames here and in MaterializeTruffleStacktraceNode must be the same
         boolean skipFirst = tb.getException().shouldHideLocation();
         for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
             if (skipFirst) {
