@@ -82,6 +82,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -278,6 +280,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Map<String, String> getenv = System.getenv();
         PDict environ = core.factory().createDict();
         for (Entry<String, String> entry : getenv.entrySet()) {
+            if (!ImageInfo.inImageCode()) {
+                // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are adeed during JVM
+                // startup automatically. We do not want to repeat these, they
+                // are already in our ExecutableList if we're running on the
+                // JVM. OTOH, some script may set these explicitly later on. So
+                // whatever they are right now, we'll empty them, so that any
+                // subprocess launched later will not inherit them.
+                if ("_JAVA_OPTIONS".equals(entry.getKey()) || "JAVA_TOOL_OPTIONS".equals(entry.getKey())) {
+                    continue;
+                }
+            }
+
             String value;
             if ("__PYVENV_LAUNCHER__".equals(entry.getKey())) {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
@@ -350,6 +364,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             PDict environ = (PDict) thisModule.getAttribute("environ");
             ProcessBuilder builder = new ProcessBuilder(cmd);
             Map<String, String> environment = builder.environment();
+            environment.clear();
             environ.entries().forEach(entry -> {
                 environment.put(new String(toBytes.execute(null, entry.key)), new String(toBytes.execute(null, entry.value)));
             });
@@ -1481,11 +1496,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "system", minNumOfPositionalArgs = 1)
+    @Builtin(name = "system", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SystemNode.class);
+        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         static final String[] shell;
         static {
@@ -1536,7 +1552,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        int system(String cmd) {
+        int system(PythonModule thisModule, String cmd) {
             PythonContext context = getContext();
             if (!context.isExecutableAccessAllowed()) {
                 return -1;
@@ -1546,6 +1562,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Env env = context.getEnv();
             try {
                 ProcessBuilder pb = new ProcessBuilder(command);
+                PDict environ = (PDict) thisModule.getAttribute("environ");
+                ProcessBuilder builder = new ProcessBuilder(cmd);
+                Map<String, String> environment = pb.environment();
+                environment.clear();
+                environ.entries().forEach(entry -> {
+                    environment.put(new String(toBytes.execute(null, entry.key)), new String(toBytes.execute(null, entry.value)));
+                });
                 pb.directory(new File(env.getCurrentWorkingDirectory().getPath()));
                 PipePump stdout = null, stderr = null;
                 boolean stdsArePipes = !terminalIsInteractive(context);
