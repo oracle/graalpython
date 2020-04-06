@@ -851,13 +851,6 @@ def update_import_cmd(args):
 
     repos_updated = []
 
-    # commit ci if dirty
-    if vc.isDirty(overlaydir):
-        vc.commit(overlaydir, "Update Python imports")
-        repos_updated.append(overlaydir)
-
-    overlaytip = str(vc.tip(overlaydir)).strip()
-
     # now allow dependent repos to hook into update
     output = mx.OutputCapture()
     for repo in repos:
@@ -868,6 +861,13 @@ def update_import_cmd(args):
             mx.run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
         else:
             print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
+
+    # commit ci-overlays if dirty
+    if vc.isDirty(overlaydir):
+        vc.commit(overlaydir, "Update Python imports")
+        repos_updated.append(overlaydir)
+
+    overlaytip = str(vc.tip(overlaydir)).strip()
 
     # update ci import in all our repos, commit the full update
     prev_verbosity = mx._opts.very_verbose
