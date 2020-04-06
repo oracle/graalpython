@@ -852,11 +852,11 @@ def update_import_cmd(args):
     repos_updated = []
 
     # commit ci if dirty
-    overlaytip = str(vc.tip(overlaydir)).strip()
     if vc.isDirty(overlaydir):
         vc.commit(overlaydir, "Update Python imports")
-        overlaytip = str(vc.tip(overlaydir)).strip()
         repos_updated.append(overlaydir)
+
+    overlaytip = str(vc.tip(overlaydir)).strip()
 
     # now allow dependent repos to hook into update
     output = mx.OutputCapture()
@@ -869,7 +869,7 @@ def update_import_cmd(args):
         else:
             print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
-    # update ci import in all our repos, commit the full update, and push verbosely
+    # update ci import in all our repos, commit the full update
     prev_verbosity = mx._opts.very_verbose
     for repo in repos:
         jsonnetfile = os.path.join(repo, "ci.jsonnet")
@@ -877,12 +877,15 @@ def update_import_cmd(args):
             f.write('{ "overlay": "%s" }\n' % overlaytip)
         if vc.isDirty(repo):
             vc.commit(repo, "Update imports")
-            try:
-                mx._opts.very_verbose = True
-                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
-            finally:
-                mx._opts.very_verbose = prev_verbosity
             repos_updated.append(repo)
+
+    # push all repos
+    for repo in repos_updated:
+        try:
+            mx._opts.very_verbose = True
+            vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+        finally:
+            mx._opts.very_verbose = prev_verbosity
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
