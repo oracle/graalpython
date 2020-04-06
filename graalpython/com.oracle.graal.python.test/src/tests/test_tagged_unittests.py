@@ -106,7 +106,9 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_success = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. ok$", re.MULTILINE)
+    # We consider skipped tests as passing in order to avoid a situation where a Linux run
+    # untags a Darwin-only test and vice versa
+    re_success = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. (?:ok|skipped.*)$", re.MULTILINE)
     re_failure = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. (?:ERROR|FAIL)$", re.MULTILINE)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 

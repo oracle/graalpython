@@ -276,7 +276,6 @@ def update_unittest_tags(args):
     linux_tags = _fetch_tags_for_platform(parsed_args, 'linux')
     darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
 
-    # msimacek TODO: this is overly conservative as it wouldn't include tests that are skipped on the other platform
     result_tags = linux_tags & darwin_tags
     _write_tags(result_tags)
 
