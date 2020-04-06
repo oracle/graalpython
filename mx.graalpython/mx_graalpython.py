@@ -863,9 +863,9 @@ def update_import_cmd(args):
     for repo in repos:
         basename = os.path.basename(repo)
         cmdname = "%s-update-import" % basename
-        is_mx_command = mx.run_mx(["help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        is_mx_command = mx.run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
         if is_mx_command:
-            mx.run_mx([cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+            mx.run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
         else:
             print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
