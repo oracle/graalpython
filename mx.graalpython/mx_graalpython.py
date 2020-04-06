@@ -1292,15 +1292,44 @@ def python_coverage(args):
                         else:
                             run_python_unittests(executable, **kwds)
 
-        # some code runs in the suite dir, some in the graalvm home. we merge these manually
-        local_dir = os.path.join(SUITE.dir, "graalpython")
-        graalvm_dir = os.path.join(os.path.dirname(os.path.dirname(executable)), "jre", "languages", "python")
+        # generate a synthetic lcov file that includes all sources with 0
+        # coverage. this is to ensure all sources actuall show up - otherwise,
+        # only loaded sources will be part of the coverage
+        with tempfile.NamedTemporaryFile(mode="w", suffix='.py') as f:
+            f.write("""
+import os
+
+for dirpath, dirnames, filenames in os.walk('{0}'):
+    if "test" in dirnames:
+        dirnames.remove("test")
+    if "tests" in dirnames:
+        dirnames.remove("tests")
+    for filename in filenames:
+        if filename.endswith(".py"):
+            fullname = os.path.join(dirpath, filename)
+            with open(fullname, 'r') as f:
+                try:
+                    compile(f.read(), fullname, 'exec')
+                except BaseException as e:
+                    print('Could not compile', fullname, e)
+            """.format(os.path.join(prefix, "lib-python")))
+            f.flush()
+            with _dev_pythonhome_context():
+                mx.run([
+                    executable,
+                    "-S",
+                    "--experimental-options",
+                    "--coverage",
+                    "--coverage.TrackInternal",
+                    "--coverage.FilterFile=%s/*.py" % prefix,
+                    "--coverage.Output=lcov",
+                    "--coverage.OutputFile=zero.lcov",
+                    f.name
+                ])
+
+        # merge all generated lcov files
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov"):
-                # with open(f, "r") as lcovfile:
-                #     contents = lcovfile.read()
-                # with open(f, "w") as lcovfile:
-                #     lcovfile.write(contents.replace(graalvm_dir, local_dir))
                 cmdargs += ["-a", f]
 
         mx.run(cmdargs)
