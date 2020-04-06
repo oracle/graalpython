@@ -91,8 +91,15 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
 
     public void commit(int idx, NativeObjectReference nativeObjectReference) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        assert nativeObjectWrapperList[idx] == null;
+        assert nativeObjectWrapperList[idx] == null : "cannot overwrite an allocated native object reference slot";
         nativeObjectWrapperList[idx] = nativeObjectReference;
+    }
+
+    public NativeObjectReference resurrect(int idx, NativeObjectReference nativeObjectReference) {
+        assert 0 <= idx && idx < nativeObjectWrapperList.length;
+        NativeObjectReference old = nativeObjectWrapperList[idx];
+        nativeObjectWrapperList[idx] = nativeObjectReference;
+        return old;
     }
 
     @Override
