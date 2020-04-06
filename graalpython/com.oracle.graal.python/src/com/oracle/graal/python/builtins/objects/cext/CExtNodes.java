@@ -128,6 +128,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -137,6 +138,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -2764,6 +2766,7 @@ public abstract class CExtNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class SubRefCntNode extends PNodeWithContext {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
 
         public abstract Object execute(Object object, long value);
 
@@ -2781,7 +2784,10 @@ public abstract class CExtNodes {
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 cApiContext.checkAccess(object, lib);
-                callAddRefCntNode.call(NativeCAPISymbols.FUN_SUBREF, object, value);
+                long newRefcnt = (long) callAddRefCntNode.call(NativeCAPISymbols.FUN_SUBREF, object, value);
+                if (context.getOption(PythonOptions.TraceNativeMemory) && newRefcnt < 0) {
+                    LOGGER.severe(() -> "object has negative ref count: " + CApiContext.asHex(object));
+                }
             }
             return object;
         }
