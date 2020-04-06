@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -106,7 +106,7 @@ public class AsyncHandler {
         }
     });
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private boolean hasScheduledAction = false;
+    private volatile boolean hasScheduledAction = false;
     private final Lock executingScheduledActions = new ReentrantLock();
     private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
 

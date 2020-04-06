@@ -48,20 +48,18 @@ import itertools
 
 
 def main(n, n_threads=503, cycle=itertools.cycle):
-
     def worker(worker_id):
         n = 1
         while True:
-            print(n)
             if n > 0:
                 n = (yield (n - 1))
             else:
                 print(worker_id)
-                raise StopIteration
+                return
 
 
     threadRing = [worker(w) for w in range(1, n_threads + 1)]
-    for t in threadRing: foo = t.next()           # start exec. gen. funcs
+    for t in threadRing: foo = next(t)            # start exec. gen. funcs
     sendFuncRing = [t.send for t in threadRing]   # speed...
     for send in cycle(sendFuncRing):
         try:
@@ -70,5 +68,5 @@ def main(n, n_threads=503, cycle=itertools.cycle):
             break
 
 
-def __bnenchmark__(num=100):
+def __benchmark__(num=100):
     main(num)

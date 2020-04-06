@@ -47,7 +47,7 @@ from re import sub, finditer
 def main(seq):
     ilen = len(seq)
 
-    seq = sub('>.*\n|\n', '', seq) 
+    seq = sub('>.*\n|\n', '', seq)
     clen = len(seq)
 
     variants = (
@@ -61,13 +61,13 @@ def main(seq):
           'agggta[cgt]a|t[acg]taccct',
           'agggtaa[cgt]|[acg]ttaccct')
     for f in variants:
-        print f, sum(1 for i in finditer(f, seq))
+        print(f, sum(1 for i in finditer(f, seq)))
 
     subst = {
           'B' : '(c|g|t)', 'D' : '(a|g|t)',   'H' : '(a|c|t)', 'K' : '(g|t)',
           'M' : '(a|c)',   'N' : '(a|c|g|t)', 'R' : '(a|g)',   'S' : '(c|g)',
           'V' : '(a|c|g)', 'W' : '(a|t)',     'Y' : '(c|t)'}
-    for f, r in subst.items():
+    for f, r in list(subst.items()):
         seq = sub(f, r, seq)
 
     print(ilen)
@@ -76,5 +76,7 @@ def main(seq):
 
 
 def __benchmark__(*args):
-  # main(seq) #  TODO provide proper input 
-  pass
+    import os
+    with open(os.path.join(os.path.dirname(__file__), "knucleotide-input.txt")) as f:
+        seq = f.read()
+    main(seq)

@@ -45,13 +45,14 @@
 # modified by Justin Peel
 
 from collections import defaultdict
+import os
 
 
 def gen_freq(seq, frame, frequencies):
     if frame != 1:
         ns = len(seq) + 1 - frame
         frequencies.clear()
-        for ii in xrange(ns):
+        for ii in range(ns):
             frequencies[seq[ii:ii + frame]] += 1
         return ns, frequencies
     for nucleo in seq:
@@ -62,30 +63,30 @@ def gen_freq(seq, frame, frequencies):
 def sort_seq(seq, length, frequencies):
     n, frequencies = gen_freq(seq, length, frequencies)
 
-    l = sorted(frequencies.items(), reverse=True, key=lambda (seq,freq): (freq,seq))
+    l = sorted(list(frequencies.items()), reverse=True, key=lambda item: item)
 
-    print '\n'.join("%s %.3f" % (st, 100.0*fr/n) for st,fr in l)
-    print
+    print('\n'.join("%s %.3f" % (st, 100.0*fr/n) for st,fr in l))
 
 
 def find_seq(seq, s, frequencies):
     n,t = gen_freq(seq, len(s), frequencies)
-    print "%d\t%s" % (t.get(s, 0), s)
+    print("%d\t%s" % (t.get(s, 0), s))
 
 
-def main(stdin):
+def main():
     frequencies = defaultdict(int)
-    for line in stdin:
-        if line[0] == ">":
-            if line[1:3] == "TH":
-                break
+    with open(os.path.join(os.path.dirname(__file__), "knucleotide-input.txt")) as f:
+        for line in f:
+            if line[0] == ">":
+                if line[1:3] == "TH":
+                    break
 
-    seq = []
-    seq_append = seq.append
-    for line in stdin:
-        if line[0] in ">;":
-            break
-        seq_append(line)
+        seq = []
+        seq_append = seq.append
+        for line in f:
+            if line[0] in ">;":
+                break
+            seq_append(line)
     sequence = "".join(seq).replace('\n','').upper()
 
     for nl in 1,2:
@@ -96,5 +97,4 @@ def main(stdin):
 
 
 def __benchmark__(*args):
-    # main()  # provide proper input 
-    pass 
+    main()
