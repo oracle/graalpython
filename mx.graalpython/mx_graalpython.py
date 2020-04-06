@@ -1260,7 +1260,7 @@ def python_coverage(args):
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
             {
-                "args": ["-v", "--python.WithThread=true", "--python.CAPI=" + _get_capi_home()],
+                "args": ["-v", "--python.WithThread=true"],
                 "paths": ["test_tagged_unittests.py"],
                 "tagged": True
             },
@@ -1284,6 +1284,7 @@ def python_coverage(args):
                 ]
                 with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
                     with _dev_pythonhome_context(): # run all our tests in the dev-home, so that lcov has consistent paths
+                        kwds["args"].append("--python.CAPI=" + _get_capi_home())
                         if kwds.pop("tagged", False):
                             with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
                                 run_python_unittests(executable, **kwds)
