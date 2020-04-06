@@ -981,7 +981,10 @@ getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java_type(primary)
     fset = fget = None
-    closure_converted = to_java(closure)
+
+    # We need to use 'voidptr_to_java' because the 'closure' is of type 'void *' and will be
+    # passed to the C getter function.
+    closure_converted = voidptr_to_java(closure)
     if getter:
         getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):

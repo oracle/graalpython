@@ -319,6 +319,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Called from Python code to convert arguments into a wrapped representation for consumption in
+     * Python.
+     */
+    @Builtin(name = "voidptr_to_java", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class VoidPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object run(Object object,
+                        @Cached CExtNodes.VoidPtrToJavaNode voidPtrtoJavaNode) {
+            return voidPtrtoJavaNode.execute(object);
+        }
+    }
+
     @Builtin(name = "to_java_type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ToJavaClassNode extends ToJavaObjectNode {

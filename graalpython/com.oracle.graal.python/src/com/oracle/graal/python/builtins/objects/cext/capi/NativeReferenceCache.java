@@ -68,6 +68,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.IntValueProfile;
 import com.oracle.truffle.llvm.spi.ReferenceLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -87,12 +88,16 @@ public final class NativeReferenceCache implements TruffleObject {
 
     @ExportMessage
     Object execute(Object[] arguments,
-                    @Cached ResolveNativeReferenceNode resolveNativeReferenceNode) throws ArityException {
-        if (arguments.length != 2) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw ArityException.create(2, arguments.length);
+                    @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
+                    @Cached("createIdentityProfile()") IntValueProfile arityProfile) throws ArityException {
+        int profiledArity = arityProfile.profile(arguments.length);
+        if (profiledArity == 1) {
+            return resolveNativeReferenceNode.execute(arguments[0], steal);
+        } else if (profiledArity == 2) {
+            return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
         }
-        return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw ArityException.create(1, arguments.length);
     }
 
     @GenerateUncached
@@ -108,12 +113,12 @@ public final class NativeReferenceCache implements TruffleObject {
             return execute(pointerObject, NO_REF_CNT, steal);
         }
 
-        @Specialization(guards = "isNativeWrapper(pointerObject)")
+        @Specialization(guards = "isResolved(pointerObject)")
         static Object doNativeWrapper(Object pointerObject, @SuppressWarnings("unused") Object refCnt, @SuppressWarnings("unused") boolean steal) {
             return pointerObject;
         }
 
-        @Specialization(guards = {"!isNativeWrapper(pointerObject)", "ref != null", "isSame(referenceLibrary, pointerObject, ref)"}, //
+        @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(referenceLibrary, pointerObject, ref)"}, //
                         rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
@@ -133,7 +138,7 @@ public final class NativeReferenceCache implements TruffleObject {
             throw InvalidCacheEntry.INSTANCE;
         }
 
-        @Specialization(guards = {"!isNativeWrapper(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
+        @Specialization(guards = {"!isResolved(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
         static Object doGenericIntWithRefCnt(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
@@ -149,7 +154,7 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
-        @Specialization(guards = {"!isNativeWrapper(pointerObject)", "isNoRefCnt(refCnt)"}, replaces = "doCachedPointer")
+        @Specialization(guards = {"!isResolved(pointerObject)", "isNoRefCnt(refCnt)"}, replaces = "doCachedPointer")
         static Object doGenericInt(Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
                         @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
@@ -165,7 +170,7 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
-        @Specialization(guards = "!isNativeWrapper(pointerObject)", replaces = {"doCachedPointer", "doGenericIntWithRefCnt", "doGenericInt"})
+        @Specialization(guards = "!isResolved(pointerObject)", replaces = {"doCachedPointer", "doGenericIntWithRefCnt", "doGenericInt"})
         static Object doGeneric(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongNode castToJavaLongNode,
@@ -219,6 +224,10 @@ public final class NativeReferenceCache implements TruffleObject {
                 return cApiContext.lookupNativeObjectReference(idx);
             }
             return null;
+        }
+
+        static boolean isResolved(Object object) {
+            return CApiGuards.isNativeWrapper(object) || object instanceof String;
         }
 
         static Assumption singleContextAssumption() {

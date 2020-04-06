@@ -207,9 +207,11 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 typedef void* (*cache_t)(uint64_t);
 extern cache_t cache;
 
-typedef void* (*ptr_cache_t)(void *, uint64_t);
+typedef PyObject* (*ptr_cache_t)(PyObject *);
+typedef PyTypeObject* (*type_ptr_cache_t)(PyTypeObject *, int64_t);
 extern ptr_cache_t ptr_cache;
 extern ptr_cache_t ptr_cache_stealing;
+extern type_ptr_cache_t type_ptr_cache;
 
 typedef int (*alloc_upcall_fun_t)(void *, Py_ssize_t);
 extern alloc_upcall_fun_t alloc_upcall;
@@ -228,19 +230,19 @@ Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
 
 
 MUST_INLINE
-void* native_to_java(PyObject* obj) {
+PyObject* native_to_java(PyObject* obj) {
     if (!truffle_cannot_be_handle(obj)) {
         return truffle_managed_from_handle(obj);
     }
-    return ptr_cache(obj, obj != NULL ? obj->ob_refcnt : 0);
+    return ptr_cache(obj);
 }
 
 MUST_INLINE
-void* native_to_java_stealing(PyObject* obj) {
+PyObject* native_to_java_stealing(PyObject* obj) {
     if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
-    return ptr_cache_stealing(obj, obj->ob_refcnt);
+    return ptr_cache_stealing(obj);
 }
 
 
@@ -252,7 +254,7 @@ PyTypeObject* native_type_to_java(PyTypeObject* type) {
 	if (!truffle_cannot_be_handle(type)) {
         return (PyTypeObject *)truffle_managed_from_handle(type);
     }
-    return ptr_cache(type, type->ob_base.ob_base.ob_refcnt);
+    return type_ptr_cache(type, Py_REFCNT(type));
 }
 
 MUST_INLINE
