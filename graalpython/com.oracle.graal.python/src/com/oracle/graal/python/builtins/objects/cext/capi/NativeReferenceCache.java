@@ -120,12 +120,12 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
                         @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
                         @CachedLibrary("ref.ptrObject") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
-            // If this is stealing the reference, we need to fixup the managed reference count.
-            if (stealProfile.profile(steal)) {
-                ref.managedRefCount++;
-            }
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
+                // If this is stealing the reference, we need to fixup the managed reference count.
+                if (stealProfile.profile(steal)) {
+                    ref.managedRefCount++;
+                }
                 return wrapper;
             }
             throw InvalidCacheEntry.INSTANCE;
@@ -185,14 +185,13 @@ public final class NativeReferenceCache implements TruffleObject {
             if (wrapperExistsProfile.profile(idx > 0)) {
                 NativeObjectReference ref = cApiContext.lookupNativeObjectReference(idx);
 
-                // If this is stealing the reference, we need to fixup the managed reference
-                // count.
-                if (stealProfile.profile(steal)) {
-                    ref.managedRefCount++;
-                }
-
                 PythonAbstractObject object = ref.get();
                 if (object != null) {
+                    // If this is stealing the reference, we need to fixup the managed reference
+                    // count.
+                    if (stealProfile.profile(steal)) {
+                        ref.managedRefCount++;
+                    }
                     return object;
                 }
             } else if (idx < 0) {
