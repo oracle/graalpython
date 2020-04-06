@@ -511,7 +511,7 @@ def run_embedded_native_python_test(args=None):
     engine.
     """
     with mx.TempDirCwd(os.getcwd()) as dirname:
-        python_launcher = python_gvm()
+        python_launcher = python_svm()
         graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
         graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
 
