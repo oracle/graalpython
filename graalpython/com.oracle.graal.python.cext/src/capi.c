@@ -312,7 +312,7 @@ PyObject* get_tp_name(PyTypeObject* obj) {
 
 /** to be used from Java code only; reads native 'tp_mro' field */
 PyObject* get_tp_mro(PyTypeObject* obj) {
-	return native_to_java_slim(obj->tp_mro);
+	return native_to_java(obj->tp_mro);
 }
 
 /** to be used from Java code only; reads native 'tp_subclasses' field */

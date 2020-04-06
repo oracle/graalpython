@@ -229,27 +229,15 @@ Py_ssize_t PyTruffle_Type_AddSlots(PyTypeObject* cls, PyObject* slotsTuple);
 
 MUST_INLINE
 void* native_to_java(PyObject* obj) {
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (polyglot_is_string(obj)) {
-        return obj;
-    } else if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
+    if (!truffle_cannot_be_handle(obj)) {
+        return truffle_managed_from_handle(obj);
     }
-    return ptr_cache(obj, obj->ob_refcnt);
+    return ptr_cache(obj, obj != NULL ? obj->ob_refcnt : 0);
 }
 
 MUST_INLINE
 void* native_to_java_stealing(PyObject* obj) {
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (polyglot_is_string(obj)) {
-        return obj;
-    } else if (!truffle_cannot_be_handle(obj)) {
+    if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     }
     return ptr_cache_stealing(obj, obj->ob_refcnt);
@@ -258,14 +246,6 @@ void* native_to_java_stealing(PyObject* obj) {
 
 extern void* native_to_java_exported(PyObject* obj);
 extern void* native_to_java_stealing_exported(PyObject* obj);
-
-MUST_INLINE
-void* native_to_java_slim(PyObject* obj) {
-    if (!truffle_cannot_be_handle(obj)) {
-        return truffle_managed_from_handle(obj);
-    }
-    return ptr_cache(obj, obj != NULL ? obj->ob_refcnt : 0);
-}
 
 MUST_INLINE
 PyTypeObject* native_type_to_java(PyTypeObject* type) {
