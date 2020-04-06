@@ -34,6 +34,7 @@ import platform
 import re
 import shutil
 import sys
+
 PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
 if PY3:
@@ -225,7 +226,16 @@ def retag_unittests(args):
     parser.add_argument('--upload-results-to')
     parsed_args, remaining_args = parser.parse_known_args(args)
     with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py", '--retag'] + remaining_args)
+        with _dev_pythonhome_context():
+            args = [
+                '--experimental-options=true',
+                '--python.CatchAllExceptions=true',
+                '--python.WithThread=true',
+                '--python.CAPI=' + _get_capi_home(),
+                'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
+                '--retag',
+            ]
+            mx.run([python_gvm()] + args + remaining_args)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
@@ -498,7 +508,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                # the tagged unittests must ron in the dev_pythonhome and using
+                # the tagged unittests must run in the dev_pythonhome and using
                 # the dev CAPI, because that's where the tags are
                 with _dev_pythonhome_context():
                     run_python_unittests(
