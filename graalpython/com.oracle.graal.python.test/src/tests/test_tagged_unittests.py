@@ -106,10 +106,7 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    # We consider skipped tests as passing in order to avoid a situation where a Linux run
-    # untags a Darwin-only test and vice versa
-    re_success = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. (?:ok|skipped.*)$", re.MULTILINE)
-    re_failure = re.compile(r"(test\S+) \(([^\s]+)\) \.\.\. (?:ERROR|FAIL)$", re.MULTILINE)
+    re_test_result = re.compile(r"""(test\S+) \(([^\s]+)\)(?:\n.*?)? \.\.\. \b(ok|skipped(?: ["'][^\n]+)?|ERROR|FAIL)$""", re.MULTILINE | re.DOTALL)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
@@ -167,57 +164,59 @@ if __name__ == "__main__":
             print("*stderr*")
             print(p.stderr)
 
-            if repeat < maxrepeats:
-                passing_tests = []
-                failed_tests = []
+            passing_tests = []
+            failed_tests = []
 
-                def get_pass_name(funcname, classname):
-                    try:
-                        imported_test_module = __import__(testmod)
-                    except:
-                        imported_test_module = None
-                    else:
-                        # try hard to get a most specific pattern
-                        classname = "".join(classname.rpartition(testmod)[1:])
-                        clazz = imported_test_module
-                        path_to_class = classname.split(".")[1:]
-                        for part in path_to_class:
-                            clazz = getattr(clazz, part, None)
-                        if clazz:
-                            func = getattr(clazz, funcname, None)
-                            if func:
-                                return func.__qualname__
-                    return funcname
+            def get_pass_name(funcname, classname):
+                try:
+                    imported_test_module = __import__(testmod)
+                except Exception:
+                    pass
+                else:
+                    # try hard to get a most specific pattern
+                    classname = "".join(classname.rpartition(testmod)[1:])
+                    clazz = imported_test_module
+                    path_to_class = classname.split(".")[1:]
+                    for part in path_to_class:
+                        clazz = getattr(clazz, part, None)
+                    if clazz:
+                        func = getattr(clazz, funcname, None)
+                        if func:
+                            return func.__qualname__
+                return funcname
 
-                # n.b.: we add a '*' in the front, so that unittests doesn't add
-                # its own asterisks, because now this is already a pattern
+            stderr = p.stderr.replace("Please note: This Python implementation is in the very early stages, and can run little more than basic benchmarks at this point.\n", '')
 
-                for funcname,classname in re_failure.findall(p.stdout):
-                    failed_tests.append("*" + get_pass_name(funcname, classname))
-                for funcname,classname in re_failure.findall(p.stderr):
-                    failed_tests.append("*" + get_pass_name(funcname, classname))
-
-                for funcname,classname in re_success.findall(p.stdout):
+            # n.b.: we add a '*' in the front, so that unittests doesn't add
+            # its own asterisks, because now this is already a pattern
+            for funcname, classname, result in re_test_result.findall(stderr):
+                # We consider skipped tests as passing in order to avoid a situation where a Linux run
+                # untags a Darwin-only test and vice versa
+                if result == 'ok' or result.startswith('skipped'):
                     passing_tests.append("*" + get_pass_name(funcname, classname))
-                for funcname,classname in re_success.findall(p.stderr):
-                    passing_tests.append("*" + get_pass_name(funcname, classname))
+                else:
+                    failed_tests.append("*" + get_pass_name(funcname, classname))
 
-                # n.b.: unittests uses the __qualname__ of the function as
-                # pattern, which we're trying to do as well. however, sometimes
-                # the same function is shared in multiple test classes, and
-                # fails in some. so we always subtract the failed patterns from
-                # the passed patterns
-                passing_only_patterns = set(passing_tests) - set(failed_tests)
-                with open(tagfile, "w") as f:
-                    for passing_test in sorted(passing_only_patterns):
-                        f.write(passing_test)
-                        f.write("\n")
-                if not passing_only_patterns:
-                    os.unlink(tagfile)
-            else:
-                # we tried the last time and failed, so our tags don't work for
-                # some reason
+            # n.b.: unittests uses the __qualname__ of the function as
+            # pattern, which we're trying to do as well. however, sometimes
+            # the same function is shared in multiple test classes, and
+            # fails in some. so we always subtract the failed patterns from
+            # the passed patterns
+            passing_only_patterns = set(passing_tests) - set(failed_tests)
+            with open(tagfile, "w") as f:
+                for passing_test in sorted(passing_only_patterns):
+                    f.write(passing_test)
+                    f.write("\n")
+            if not passing_only_patterns:
                 os.unlink(tagfile)
 
             if p.returncode == 0:
                 break
+
+        else:
+            # we tried the last time and failed, so our tags don't work for
+            # some reason
+            try:
+                os.unlink(tagfile)
+            except Exception:
+                pass
