@@ -61,7 +61,7 @@ public class PZipBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.StopIteration);
         }
 
-        @Specialization
+        @Specialization(guards = "!isEmpty(self.getIterators())")
         Object doNext(VirtualFrame frame, PZip self,
                         @Cached("create()") GetNextNode next) {
             Object[] iterators = self.getIterators();
