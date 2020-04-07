@@ -302,27 +302,29 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args or [])
+    return _python_graalvm_launcher(args or [])
 
 
 def python_svm(args=None):
     "Build and run the native graalpython image"
     with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args or [])
+        return _python_graalvm_launcher((args or []) + ["svm"])
 
 
 def python_so(args):
     "Build the native shared object that includes graalpython"
     with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_LIBPOLYGLOT="false", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args)
+        return _python_graalvm_launcher((args or []) + ["svm"])
 
 
 def _python_graalvm_launcher(args):
-    dy = "/vm,/tools,/substratevm"
+    dy = "/vm,/tools"
     if "sandboxed" in args:
         args.remove("sandboxed")
         dy += ",/sulong-managed,/graalpython-enterprise"
+    if "svm" in args:
+        args.remove("svm")
+        dy += ",/substratevm"
     dy = ["--dynamicimports", dy]
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
@@ -376,9 +378,24 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
                     testfiles.append(testfile)
 
     args += [_graalpytest_driver(), "-v"]
-    args += testfiles
-    mx.logv(" ".join([python_binary] + args))
-    return mx.run([python_binary] + args, nonZeroIsFatal=True)
+
+    agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
+    if agent_args:
+        # if we leave the excludes, the string is too long and it will be ignored by
+        # the JVM, which ignores JAVA_TOOL_OPTIONS long than 1024 chars silently on JDK8
+        agent_args = re.sub("excludes=[^,]+,", "", agent_args)
+        # we know these can be excluded
+        agent_args += ",excludes=*NodeGen*:*LibraryGen*:*BuiltinsFactory*"
+        assert len(agent_args) < 1024
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        with set_env(JAVA_TOOL_OPTIONS=agent_args):
+            for testfile in testfiles:
+                mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True)
+    else:
+        args += testfiles
+        mx.logv(" ".join([python_binary] + args))
+        return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
 def graalpython_gate_runner(args, tasks):
@@ -390,7 +407,7 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if platform.system() != 'Darwin':
+            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
                 # TODO: drop condition when python3 is available on darwin
                 mx.log("Running tests with CPython")
                 test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
@@ -492,7 +509,7 @@ def run_embedded_native_python_test(args=None):
     engine.
     """
     with mx.TempDirCwd(os.getcwd()) as dirname:
-        python_launcher = python_gvm()
+        python_launcher = python_svm()
         graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
         graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
 
@@ -1197,8 +1214,6 @@ def mx_post_parse_cmd_line(namespace):
 
 def python_coverage(args):
     "Generate coverage report for our unittests"
-    os.system("which lcov")
-    os.system("which genhtml")
     parser = ArgumentParser(prog='mx python-coverage')
     parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
     parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
@@ -1208,15 +1223,20 @@ def python_coverage(args):
     if args.jacoco:
         jacoco_args = [
             '--jacoco-whitelist-package', 'com.oracle.graal.python',
-            # '--jacoco-exclude-annotation', '@GeneratedBy',
         ]
+        jacoco_gates = (
+            GraalPythonTags.junit,
+            GraalPythonTags.unittest,
+            GraalPythonTags.unittest_multi,
+            GraalPythonTags.unittest_jython,
+            GraalPythonTags.tagged,
+        )
         mx.run_mx(jacoco_args + [
             '--strict-compliance',
-            '--dynamicimports', '/compiler',
             '--primary', 'gate',
             '-B=--force-deprecation-as-warning-for-dependencies',
             '--strict-mode',
-            '--tags', 'python-unittest,python-tagged-unittest,python-junit',
+            '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
             '--jacocout', 'html',
         ])
         if mx.get_env("SONAR_HOST_URL", None):
@@ -1233,11 +1253,11 @@ def python_coverage(args):
     if args.truffle:
         executable = python_gvm()
         variants = [
-            {},
+            {"args": []},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
             # {"args": ["--llvm.managed"]},
             {
-                "args": ["-v", "--python.WithThread=true", "--python.CAPI=" + _get_capi_home()],
+                "args": ["-v", "--python.WithThread=true"],
                 "paths": ["test_tagged_unittests.py"],
                 "tagged": True
             },
@@ -1246,27 +1266,69 @@ def python_coverage(args):
         if os.path.exists(outputlcov):
             os.unlink(outputlcov)
         cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
+        prefix = os.path.join(SUITE.dir, "graalpython")
         for kwds in variants:
-            variant_str = re.sub(r"[^a-zA-Z]", "_", repr(kwds))
+            variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             for pattern in ["py"]:
-                outfile = os.path.join(SUITE.dir, "coverage_%s_%s.lcov" % (variant_str, pattern))
+                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$$.lcov" % (variant_str, pattern))
                 if os.path.exists(outfile):
                     os.unlink(outfile)
                 extra_args = [
                     "--coverage",
                     "--coverage.TrackInternal",
-                    "--coverage.FilterFile=*.%s" % pattern,
+                    "--coverage.FilterFile=%s/*.%s" % (prefix, pattern),
                     "--coverage.Output=lcov",
                     "--coverage.OutputFile=%s" % outfile,
                 ]
-                kwds["args"] = extra_args + kwds.get("args", [])
-                if kwds.pop("tagged", False):
-                    with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                        with _dev_pythonhome_context():
+                with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
+                    with _dev_pythonhome_context(): # run all our tests in the dev-home, so that lcov has consistent paths
+                        kwds["args"].append("--python.CAPI=" + _get_capi_home())
+                        if kwds.pop("tagged", False):
+                            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                                run_python_unittests(executable, **kwds)
+                        else:
                             run_python_unittests(executable, **kwds)
-                else:
-                    run_python_unittests(executable, **kwds)
-                cmdargs += ["-a", outfile]
+
+        # generate a synthetic lcov file that includes all sources with 0
+        # coverage. this is to ensure all sources actuall show up - otherwise,
+        # only loaded sources will be part of the coverage
+        with tempfile.NamedTemporaryFile(mode="w", suffix='.py') as f:
+            f.write("""
+import os
+
+for dirpath, dirnames, filenames in os.walk('{0}'):
+    if "test" in dirnames:
+        dirnames.remove("test")
+    if "tests" in dirnames:
+        dirnames.remove("tests")
+    for filename in filenames:
+        if filename.endswith(".py"):
+            fullname = os.path.join(dirpath, filename)
+            with open(fullname, 'r') as f:
+                try:
+                    compile(f.read(), fullname, 'exec')
+                except BaseException as e:
+                    print('Could not compile', fullname, e)
+            """.format(os.path.join(prefix, "lib-python")))
+            f.flush()
+            with _dev_pythonhome_context():
+                mx.run([
+                    executable,
+                    "-S",
+                    "--experimental-options",
+                    "--coverage",
+                    "--coverage.TrackInternal",
+                    "--coverage.FilterFile=%s/*.py" % prefix,
+                    "--coverage.Output=lcov",
+                    "--coverage.OutputFile=zero.lcov",
+                    f.name
+                ])
+
+        # merge all generated lcov files
+        for f in os.listdir(SUITE.dir):
+            if f.endswith(".lcov"):
+                cmdargs += ["-a", f]
+
         mx.run(cmdargs)
         primary = mx.primary_suite()
         info = primary.vc.parent_info(primary.dir)
@@ -1276,7 +1338,7 @@ def python_coverage(args):
             datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
             rev[:7],
         )
-        mx.run(["/usr/bin/env", "genhtml", "-o", coverage_dir, outputlcov])
+        mx.run(["/usr/bin/env", "genhtml", "--prefix", prefix, "--ignore-errors", "source", "-o", coverage_dir, outputlcov])
         if args.truffle_upload_url:
             if not args.truffle_upload_url.endswith("/"):
                 args.truffle_upload_url = args.truffle_upload_url + "/"
