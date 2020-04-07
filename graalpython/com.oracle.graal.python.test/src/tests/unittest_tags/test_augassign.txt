@@ -1,6 +1,6 @@
-testBasic
-testCustomMethods1
-testInDict
-testInList
-testSequences
-test_with_unpacking
+*AugAssignTest.testBasic
+*AugAssignTest.testCustomMethods1
+*AugAssignTest.testInDict
+*AugAssignTest.testInList
+*AugAssignTest.testSequences
+*AugAssignTest.test_with_unpacking

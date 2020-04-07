@@ -1,3 +1,5 @@
+*ArgsTestCase.test_huntrleaks
+*ArgsTestCase.test_huntrleaks_fd_leak
 *ParseArgsTestCase.test_arg
 *ParseArgsTestCase.test_arg_option_arg
 *ParseArgsTestCase.test_coverage
@@ -22,11 +24,11 @@
 *ParseArgsTestCase.test_randseed
 *ParseArgsTestCase.test_runleaks
 *ParseArgsTestCase.test_single
-*ParseArgsTestCase.test_slaveargs
-*ParseArgsTestCase.test_slow
+*ParseArgsTestCase.test_slowest
 *ParseArgsTestCase.test_start
 *ParseArgsTestCase.test_testdir
 *ParseArgsTestCase.test_threshold
+*ParseArgsTestCase.test_timeout
 *ParseArgsTestCase.test_two_options
 *ParseArgsTestCase.test_unknown_option
 *ParseArgsTestCase.test_unrecognized_argument
@@ -35,3 +37,7 @@
 *ParseArgsTestCase.test_verbose2
 *ParseArgsTestCase.test_verbose3
 *ParseArgsTestCase.test_wait
+*ParseArgsTestCase.test_worker_args
+*ProgramsTestCase.test_pcbuild_rt
+*ProgramsTestCase.test_tools_buildbot_test
+*ProgramsTestCase.test_tools_script_run_tests

@@ -1,2 +1,3 @@
+*GCCallbackTests.test_refcount_errors
 *GCTests.test_bug21435
 *GCTests.test_trashcan

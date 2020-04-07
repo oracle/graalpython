@@ -1,8 +1,5 @@
+*ImportTests.test_bug7732
+*ImportTests.test_find_module_encoding
+*ImportTests.test_issue3594
 *ImportTests.test_issue9319
 *ImportTests.test_multiple_calls_to_get_data
-*ReloadTests.test_builtin
-*ReloadTests.test_extension
-*ReloadTests.test_source
-*ReloadTests.test_with_deleted_parent
-*PEP3147Tests.test_cache_from_source
-*PEP3147Tests.test_source_from_cache

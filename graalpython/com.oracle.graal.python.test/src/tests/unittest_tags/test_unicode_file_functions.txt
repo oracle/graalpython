@@ -1,0 +1,2 @@
+*UnicodeFileTests.test_directory
+*UnicodeFileTests.test_rename

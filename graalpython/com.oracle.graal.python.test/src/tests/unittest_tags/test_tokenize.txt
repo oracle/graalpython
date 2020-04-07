@@ -1,8 +1,3 @@
-*TokenizeTest.test_implicit_newline
-*TokenizeTest.test_underscore_literals
-*TestMisc.test_decistmt
-*Test_Tokenize.test__tokenize_decodes_with_specified_encoding
-*Test_Tokenize.test__tokenize_does_not_decode_with_encoding_none
 *TestDetectEncoding.test_bom_no_cookie
 *TestDetectEncoding.test_cookie_first_line_no_bom
 *TestDetectEncoding.test_cookie_second_line_commented_first_line
@@ -20,9 +15,14 @@
 *TestDetectEncoding.test_short_files
 *TestDetectEncoding.test_syntaxerror_latin1
 *TestDetectEncoding.test_utf8_normalization
+*TestMisc.test_decistmt
 *TestTokenize.test_exact_type
 *TestTokenize.test_oneline_defs
 *TestTokenize.test_pathological_trailing_whitespace
 *TestTokenize.test_tokenize
+*Test_Tokenize.test__tokenize_decodes_with_specified_encoding
+*Test_Tokenize.test__tokenize_does_not_decode_with_encoding_none
+*TokenizeTest.test_implicit_newline
+*TokenizeTest.test_underscore_literals
 *UntokenizeTest.test_bad_input_order
 *UntokenizeTest.test_iter_compat

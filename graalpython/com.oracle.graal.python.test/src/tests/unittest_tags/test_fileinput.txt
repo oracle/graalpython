@@ -1,4 +1,5 @@
 *BufferSizesTests.test_buffer_sizes
+*FileInputTests.test__getitem___deprecation
 *FileInputTests.test_close_on_exception
 *FileInputTests.test_context_manager
 *FileInputTests.test_detached_stdin_binary_mode
@@ -7,6 +8,7 @@
 *FileInputTests.test_fileno
 *FileInputTests.test_fileno_when_ValueError_raised
 *FileInputTests.test_files_that_dont_end_with_newline
+*FileInputTests.test_inplace_binary_write_mode
 *FileInputTests.test_iteration_buffering
 *FileInputTests.test_opening_mode
 *FileInputTests.test_pathlib_file
@@ -15,6 +17,7 @@
 *FileInputTests.test_readline_binary_mode
 *FileInputTests.test_readline_buffering
 *FileInputTests.test_zero_byte_files
+*MiscTest.test_all
 *Test_hook_compressed.test_blah_ext
 *Test_hook_compressed.test_bz2_ext_builtin
 *Test_hook_compressed.test_bz2_ext_fake
@@ -22,4 +25,3 @@
 *Test_hook_compressed.test_gz_ext_builtin
 *Test_hook_compressed.test_gz_ext_fake
 *Test_hook_compressed.test_no_ext
-*MiscTest.test_all

@@ -6,6 +6,15 @@
 *RunModuleTestCase.test_main_relative_import
 *RunModuleTestCase.test_package_imported_no_warning
 *RunModuleTestCase.test_pkgutil_walk_packages
+*RunModuleTestCase.test_run_module
+*RunModuleTestCase.test_run_module_alter_sys
+*RunModuleTestCase.test_run_module_in_namespace_package
+*RunModuleTestCase.test_run_name
+*RunModuleTestCase.test_run_namespace_package
+*RunModuleTestCase.test_run_namespace_package_in_namespace_package
+*RunModuleTestCase.test_run_package
+*RunModuleTestCase.test_run_package_alter_sys
+*RunModuleTestCase.test_run_package_in_namespace_package
 *RunModuleTestCase.test_run_package_init_exceptions
 *RunModuleTestCase.test_submodule_imported_warning
 *RunPathTestCase.test_basic_script
@@ -13,5 +22,3 @@
 *RunPathTestCase.test_directory
 *RunPathTestCase.test_directory_compiled
 *RunPathTestCase.test_directory_error
-*RunPathTestCase.test_zipfile
-*RunPathTestCase.test_zipfile_error

@@ -1,8 +1,5 @@
-test_lseek
-test_osstat
-test_seek_read
-test_seekable
-test_lseek
-test_osstat
-test_seek_read
-test_seekable
+*LargeFileTest.test_lseek
+*LargeFileTest.test_osstat
+*LargeFileTest.test_seek_read
+*LargeFileTest.test_seekable
+*wrapper

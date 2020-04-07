@@ -1,9 +1,9 @@
-*NumberTest.test_basic
-*NumberTest.test_values
-*MiscTest.test_exception_message
-*MiscTest.test_misbehavin
-*MiscTest.test_not
 *DictTest.test_dicts
 *ListTest.test_badentry
 *ListTest.test_coverage
 *ListTest.test_goodentry
+*MiscTest.test_exception_message
+*MiscTest.test_misbehavin
+*MiscTest.test_not
+*NumberTest.test_basic
+*NumberTest.test_values

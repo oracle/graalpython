@@ -1,11 +1,8 @@
 test_bytes
 test_case
+test_filter
 test_fnmatchcase
 test_mix_bytes_str
 test_sep
-test_warnings
 test_translate
-test_case
-test_filter
-test_mix_bytes_str
-test_sep
+test_warnings

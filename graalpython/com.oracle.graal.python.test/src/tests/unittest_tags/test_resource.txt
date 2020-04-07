@@ -3,4 +3,6 @@
 *ResourceTest.test_fsize_ismax
 *ResourceTest.test_fsize_toobig
 *ResourceTest.test_linux_constants
+*ResourceTest.test_prlimit
+*ResourceTest.test_prlimit_refcount
 *ResourceTest.test_setrusage_refcount

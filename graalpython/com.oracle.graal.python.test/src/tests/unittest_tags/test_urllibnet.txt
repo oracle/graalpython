@@ -1,0 +1,11 @@
+*URLTimeoutTest.testURLread
+*urlopenNetworkTests.test_bad_address
+*urlopenNetworkTests.test_basic
+*urlopenNetworkTests.test_getcode
+*urlopenNetworkTests.test_geturl
+*urlopenNetworkTests.test_info
+*urlopenNetworkTests.test_readlines
+*urlretrieveNetworkTests.test_basic
+*urlretrieveNetworkTests.test_header
+*urlretrieveNetworkTests.test_reporthook
+*urlretrieveNetworkTests.test_specified_path

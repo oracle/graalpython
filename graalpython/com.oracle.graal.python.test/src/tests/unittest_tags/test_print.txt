@@ -1,1 +1,2 @@
+*TestPrint.test_print
 *TestPrint.test_print_flush

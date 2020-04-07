@@ -1,7 +1,8 @@
 *BaseQueueTestMixin.test_basic
 *BaseQueueTestMixin.test_negative_timeout_raises_exception
 *BaseQueueTestMixin.test_nowait
-*decorator
 *BaseQueueTestMixin.test_queue_task_done
 *BaseQueueTestMixin.test_shrinking_queue
+*BaseSimpleQueueTest.test_basic
 *FailingQueueTest.test_failing_queue
+*_id

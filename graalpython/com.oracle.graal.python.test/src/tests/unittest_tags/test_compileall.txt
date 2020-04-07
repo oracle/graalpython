@@ -4,8 +4,8 @@
 *CompileallTestsBase.test_compile_files
 *CompileallTestsBase.test_compile_path
 *CompileallTestsBase.test_compile_workers_non_positive
-*CompileallTestsBase.test_no_pycache_in_non_package
-*CompileallTestsBase.test_optimize
 *CompileallTestsBase.test_magic_number
 *CompileallTestsBase.test_mtime
+*CompileallTestsBase.test_no_pycache_in_non_package
+*CompileallTestsBase.test_optimize
 *EncodingTest.test_error

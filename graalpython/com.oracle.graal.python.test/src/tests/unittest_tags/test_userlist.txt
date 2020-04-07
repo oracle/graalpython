@@ -1,4 +1,3 @@
-*UserListTest.test_add_specials
 *CommonTest.test_addmul
 *CommonTest.test_append
 *CommonTest.test_bigrepeat
@@ -16,16 +15,17 @@
 *CommonTest.test_extend
 *CommonTest.test_extendedslicing
 *CommonTest.test_getitem
-*UserListTest.test_getitemoverwriteiter
-*UserListTest.test_getslice
-*UserListTest.test_iadd
 *CommonTest.test_imul
 *CommonTest.test_index
 *CommonTest.test_init
 *CommonTest.test_insert
 *CommonTest.test_len
 *CommonTest.test_minmax
-*UserListTest.test_mixedadd
-*UserListTest.test_mixedcmp
 *CommonTest.test_pickle
 *CommonTest.test_pop
+*UserListTest.test_add_specials
+*UserListTest.test_getitemoverwriteiter
+*UserListTest.test_getslice
+*UserListTest.test_iadd
+*UserListTest.test_mixedadd
+*UserListTest.test_mixedcmp

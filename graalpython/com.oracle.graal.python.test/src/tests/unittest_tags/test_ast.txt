@@ -1,1 +1,3 @@
 *AST_Tests.test_AST_garbage_collection
+*AST_Tests.test_field_attr_writable
+*AST_Tests.test_realtype

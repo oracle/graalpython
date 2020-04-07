@@ -1,4 +1,7 @@
 *ExceptionClassTests.test_builtins_new_style
+*ExceptionClassTests.test_interface_multi_arg
+*ExceptionClassTests.test_interface_no_arg
+*ExceptionClassTests.test_interface_single_arg
 *UsageTests.test_catch_BaseException_instance
 *UsageTests.test_catch_non_BaseException
 *UsageTests.test_catch_string

@@ -1,2 +1,2 @@
-test_bug705231
-test_other
+*PowTest.test_bug705231
+*PowTest.test_other

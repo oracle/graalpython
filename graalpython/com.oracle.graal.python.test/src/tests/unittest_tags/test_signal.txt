@@ -1,1 +1,11 @@
 *GenericTests.test_enums
+*WakeupSignalTests.test_pending
+*WakeupSignalTests.test_signum
+*WakeupSignalTests.test_wakeup_fd_during
+*WakeupSignalTests.test_wakeup_fd_early
+*WakeupSignalTests.test_wakeup_write_error
+*WakeupSocketSignalTests.test_send_error
+*WakeupSocketSignalTests.test_socket
+*WakeupSocketSignalTests.test_warn_on_full_buffer
+*WindowsSignalTests.test_issue9324
+*WindowsSignalTests.test_valid_signals

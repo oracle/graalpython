@@ -1,1 +1,1 @@
-test_ignored
+*Test_Ignore.test_ignored

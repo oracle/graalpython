@@ -1,3 +1,4 @@
+*IntTestCases.test_int_subclass_with_index
 *IntTestCases.test_int_subclass_with_int
 *IntTestCases.test_issue31619
 *IntTestCases.test_no_args

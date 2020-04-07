@@ -7,15 +7,10 @@
 *TestBasic.test_clear
 *TestBasic.test_comparisons
 *TestBasic.test_contains
+*TestBasic.test_contains_count_stop_crashes
 *TestBasic.test_copy
 *TestBasic.test_copy_method
 *TestBasic.test_count
 *TestBasic.test_delitem
 *TestBasic.test_extend
 *TestBasic.test_extendleft
-*TestSubclass.test_basics
-*CommonTest.test_addmul
-*CommonTest.test_contains
-*CommonTest.test_contains_fake
-*CommonTest.test_contains_order
-*CommonTest.test_count

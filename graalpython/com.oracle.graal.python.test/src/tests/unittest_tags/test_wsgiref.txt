@@ -1,3 +1,13 @@
+*HandlerTests.testAbstractMethods
+*HandlerTests.testCGIEnviron
+*HandlerTests.testClientConnectionTerminations
+*HandlerTests.testDontResetInternalStateOnException
+*HandlerTests.testEnviron
+*HandlerTests.testScheme
+*HeaderTests.testExtras
+*HeaderTests.testMappingInterface
+*HeaderTests.testRequireList
+*IntegrationTests.test_interrupted_write
 *UtilityTests.testCrossDefaults
 *UtilityTests.testDefaults
 *UtilityTests.testFileWrapper
@@ -5,12 +15,4 @@
 *UtilityTests.testHopByHop
 *UtilityTests.testNormalizedShifts
 *UtilityTests.testSimpleShifts
-*HeaderTests.testExtras
-*HeaderTests.testMappingInterface
-*HeaderTests.testRequireList
-*HandlerTests.testAbstractMethods
-*HandlerTests.testCGIEnviron
-*HandlerTests.testClientConnectionTerminations
-*HandlerTests.testDontResetInternalStateOnException
-*HandlerTests.testEnviron
-*HandlerTests.testScheme
+*UtilityTests.test_filewrapper_getitem_deprecation

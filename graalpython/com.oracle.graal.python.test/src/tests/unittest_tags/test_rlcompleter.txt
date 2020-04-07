@@ -1,5 +1,5 @@
-test_complete
-test_duplicate_globals
-test_excessive_getattr
-test_namespace
-test_uncreated_attr
+*TestRlcompleter.test_complete
+*TestRlcompleter.test_duplicate_globals
+*TestRlcompleter.test_excessive_getattr
+*TestRlcompleter.test_namespace
+*TestRlcompleter.test_uncreated_attr

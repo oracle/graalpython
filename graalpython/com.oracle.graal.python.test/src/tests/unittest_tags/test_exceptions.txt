@@ -1,5 +1,1 @@
-testChainingAttrs
-testExceptionCleanupNames
-testInvalidTraceback
-testKeywordArgs
-testNoneClearsTracebackAttr
+*ExceptionTests.testChainingAttrs
