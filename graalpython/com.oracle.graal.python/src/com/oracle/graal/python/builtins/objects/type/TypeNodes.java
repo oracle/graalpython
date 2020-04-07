@@ -446,7 +446,7 @@ public abstract class TypeNodes {
 
                 @SuppressWarnings("unchecked")
                 public <T> T[] toArray(T[] a) {
-                    if (a.getClass() ==  Object[].class) {
+                    if (a.getClass() == Object[].class) {
                         return (T[]) toArray();
                     } else {
                         throw new UnsupportedOperationException();
