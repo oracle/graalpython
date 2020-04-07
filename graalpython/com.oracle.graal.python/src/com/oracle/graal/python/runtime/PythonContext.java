@@ -51,6 +51,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionKey;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -93,9 +96,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionKey;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);

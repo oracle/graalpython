@@ -422,7 +422,7 @@ public abstract class TypeNodes {
                 @TruffleBoundary
                 public Object[] toArray() {
                     Object[] result = new Object[size()];
-                    Iterator<Object> keys = HashingStorageLibrary.getUncached().keys(dict.getDictStorage());
+                    Iterator<Object> keys = HashingStorageLibrary.getUncached().keys(dict.getDictStorage()).iterator();
                     for (int i = 0; i < result.length; i++) {
                         result[i] = keys.next();
                     }

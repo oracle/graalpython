@@ -956,8 +956,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
+        @GenerateUncached
         static final class EachSubclassAdd extends HashingStorageLibrary.ForEachNode<SubclassAddState> {
-            private static final EachSubclassAdd SINGLETON = new EachSubclassAdd();
+
+            private static final EachSubclassAdd UNCACHED = new EachSubclassAdd();
 
             @Override
             public SubclassAddState execute(Object key, SubclassAddState s) {
@@ -971,11 +973,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
 
             static EachSubclassAdd create() {
-                return SINGLETON;
+                return new EachSubclassAdd();
             }
 
             static EachSubclassAdd getUncached() {
-                return SINGLETON;
+                return UNCACHED;
             }
         }
 

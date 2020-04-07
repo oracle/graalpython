@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -504,82 +503,77 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @ValueType
-        private static final class ReprState {
-            private final PDict self;
+        protected static final class ReprState {
             private final HashingStorage dictStorage;
             private final StringBuilder result;
 
-            ReprState(PDict self, HashingStorage dictStorage, StringBuilder result) {
-                this.self = self;
+            ReprState(HashingStorage dictStorage, StringBuilder result) {
                 this.dictStorage = dictStorage;
                 this.result = result;
             }
         }
 
-        static final class EachRepr extends HashingStorageLibrary.ForEachNode<ReprState> {
-            @Child LookupAndCallUnaryDynamicNode reprKeyNode;
-            @Child LookupAndCallUnaryDynamicNode reprValueNode;
-            @Child CastToJavaStringNode castStr;
-            @Child PRaiseNode raiseNode;
-            @Child HashingStorageLibrary lib;
+        abstract static class EachRepr extends HashingStorageLibrary.ForEachNode<ReprState> {
             private final int limit;
 
             EachRepr(int limit) {
                 this.limit = limit;
             }
 
-            static final EachRepr create(int limit) {
-                return new EachRepr(limit);
+            protected final int getLimit() {
+                return limit;
             }
 
-            @Override
-            public ReprState execute(Object key, ReprState s) {
-                if (lib == null) {
-                    lib = insert(HashingStorageLibrary.getFactory().createDispatched(limit));
-                }
-                Object value = lib.getItem(s.dictStorage, key);
-                if (reprKeyNode == null) {
-                    reprKeyNode = insert(LookupAndCallUnaryDynamicNode.create());
-                }
-                Object keyRepr = reprKeyNode.executeObject(key, __REPR__);
-                if (reprValueNode == null) {
-                    reprValueNode = insert(LookupAndCallUnaryDynamicNode.create());
-                }
-                Object valueRepr = value != s.self ? reprValueNode.executeObject(value, __REPR__) : "{...}";
-                if (castStr == null) {
-                    castStr = insert(CastToJavaStringNodeGen.create());
-                }
-                String keyReprString = castStr.execute(keyRepr);
-                checkString(keyReprString);
-                String valueReprString = castStr.execute(valueRepr);
-                checkString(valueReprString);
+            public abstract ReprState executeReprState(Object key, ReprState arg);
 
-                if (s.result.length() > 0) {
+            @Override
+            public final ReprState execute(Object key, ReprState arg) {
+                return executeReprState(key, arg);
+            }
+
+            @Specialization
+            public ReprState dict(Object key, ReprState s,
+                            @Cached LookupAndCallUnaryDynamicNode reprKeyNode,
+                            @Cached LookupAndCallUnaryDynamicNode reprValueNode,
+                            @Cached CastToJavaStringNode castStr,
+                            @Cached PRaiseNode raiseNode,
+                            @Cached("createBinaryProfile()") ConditionProfile lengthCheck,
+                            @Cached("createBinaryProfile()") ConditionProfile nullKeyCheck,
+                            @Cached("createBinaryProfile()") ConditionProfile nullValueCheck,
+                            @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
+                Object keyRepr = reprKeyNode.executeObject(key, __REPR__);
+                String keyReprString = castStr.execute(keyRepr);
+                if (nullKeyCheck.profile(keyReprString == null)) {
+                    throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", keyRepr);
+                }
+
+                Object value = lib.getItem(s.dictStorage, key);
+                Object valueRepr = value != s.dictStorage ? reprValueNode.executeObject(value, __REPR__) : "{...}";
+                String valueReprString = castStr.execute(valueRepr);
+                if (nullValueCheck.profile(valueReprString == null)) {
+                    throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", valueRepr);
+                }
+
+                // assuming '{' is inserted already
+                if (lengthCheck.profile(s.result.length() > 1)) {
                     sbAppend(s.result, ", ");
                 }
-                s.result.append(keyReprString).append(": ").append(valueReprString);
+                sbAppend(s.result, keyReprString);
+                sbAppend(s.result, ": ");
+                sbAppend(s.result, valueReprString);
                 return s;
             }
 
-            private void checkString(Object strObj) {
-                if (!(strObj instanceof String)) {
-                    if (raiseNode == null) {
-                        raiseNode = insert(PRaiseNode.create());
-                    }
-                    throw raiseNode.raise(PythonErrorType.TypeError, "__repr__ returned non-string (type %s)", strObj);
-                }
-            }
         }
 
         @Specialization(limit = "3") // use same limit as for EachRepr nodes library
         public Object repr(PDict self,
                         @Cached("create(3)") EachRepr consumerNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            StringBuilder result = new StringBuilder();
-            sbAppend(result, "{");
+            StringBuilder keyValue = new StringBuilder("{");
             HashingStorage dictStorage = self.getDictStorage();
-            lib.forEach(dictStorage, consumerNode, new ReprState(self, dictStorage, result));
-            return sbAppend(result, "}").toString();
+            lib.forEach(dictStorage, consumerNode, new ReprState(dictStorage, keyValue));
+            return sbAppend(keyValue, "}").toString();
         }
 
         @TruffleBoundary
