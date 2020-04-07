@@ -132,6 +132,12 @@ class DummyIntable():
         return 0xCAFE
 
 
+class DummyIndexable():
+
+    def __index__(self):
+        return 0xCAFE
+
+
 class DummyIntSubclass(int):
 
     def __int__(self):
@@ -201,6 +207,7 @@ def _default_unarop_args():
         (0xffffffffffffffffffffffffffffffff,),
         (DummyIntable(),),
         (DummyIntSubclass(),),
+        (DummyIndexable(), ),
         (NoNumber(),),
         (DummyFloatable(),),
         (DummyFloatSubclass(),),

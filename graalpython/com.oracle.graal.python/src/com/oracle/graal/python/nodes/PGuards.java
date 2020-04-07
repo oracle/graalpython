@@ -373,11 +373,11 @@ public abstract class PGuards {
     }
 
     public static boolean isDouble(Object obj) {
-        return obj instanceof Long || obj instanceof Integer;
+        return obj instanceof Double;
     }
 
     public static boolean isBoolean(Object obj) {
-        return obj instanceof Long || obj instanceof Integer;
+        return obj instanceof Boolean;
     }
 
     public static boolean isBytes(Object obj) {

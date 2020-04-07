@@ -998,8 +998,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
-        int doGeneric(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean signed, @SuppressWarnings("unused") int targetTypeSize) {
-            return ensureRaiseNativeNode().raiseInt(frame, -1, PythonErrorType.TypeError, "an integer is required", obj);
+        Object doGeneric(Object obj, int signed, long targetTypeSize,
+                        @Cached CExtNodes.AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(obj, signed, (int) targetTypeSize, true);
         }
 
         private int raiseTooLarge(VirtualFrame frame, long targetTypeSize) {

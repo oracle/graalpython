@@ -414,8 +414,8 @@ def PyList_Insert(listObj, i, item):
 ##################### LONG
 
 @may_raise(-1)
-def PyLong_AsPrimitive(n, signed, size):
-    return TrufflePInt_AsPrimitive(int(n), signed, size)
+def PyLong_AsPrimitive(obj, signed, size):
+    return TrufflePInt_AsPrimitive(obj, signed, size)
 
 
 def _PyLong_Sign(n):

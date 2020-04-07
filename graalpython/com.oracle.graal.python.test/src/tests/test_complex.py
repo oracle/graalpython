@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import sys
 import unittest
 from math import atan2
 
@@ -143,6 +143,14 @@ def test_createFromObjects():
         def __complex__(self):
             return 42j
 
+    class CP3:
+        def __float__(self):
+            return 6.0
+
+    class CP4:
+        def __index__(self):
+            return 123
+
     assert CP1(1+4j) == complex(1, 4)
 
     c = CP2(1+4j)
@@ -240,6 +248,9 @@ def test_createFromObjects():
     assert c == complex(-7, 49)
     assert type(c) == CP2
 
+    assert complex(CP3()) == complex(6.0)
+    if sys.version_info >= (3, 8, 0):
+        assert complex(CP4()) == complex(123)
 
 class ComplexTest(unittest.TestCase):
 

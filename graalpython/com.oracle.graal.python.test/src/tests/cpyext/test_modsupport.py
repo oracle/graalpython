@@ -54,6 +54,14 @@ def _reference_typecheck(args, expected_type):
     return args[0][0]
 
 
+class Indexable:
+    def __int__(self):
+        return 456
+
+    def __index__(self):
+        return 123
+
+
 class TestModsupport(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -206,6 +214,7 @@ class TestModsupport(CPyExtTestCase):
             ((0xFFFFFFFFFFFFFFFF, ), 0xFFFFFFFF),
             # will be a big one
             ((0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, ), 0xFFFFFFFF),
+            ((Indexable(), ), 123 if sys.version_info > (3, 8, 0) else 456),
         ),
         code='''
         static unsigned int wrap_PyArg_ParseTuple(PyObject* argTuple, PyObject* expected) {
