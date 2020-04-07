@@ -144,7 +144,7 @@ if __name__ == "__main__":
             testmod = "test." + testfile_stem
             cmd = [timeout, "-s", "9", "60"] + executable + ["-S", "-m"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
-            if retag:
+            if retag and repeat == 0:
                 test_selectors = []
             else:
                 test_selectors = working_selectors(tagfile)
@@ -167,17 +167,7 @@ if __name__ == "__main__":
             print("*stderr*")
             print(p.stderr)
 
-            if p.returncode == 0 and not os.path.exists(tagfile):
-                # if we're re-tagging a test without tags, all passed
-                with open(tagfile, "w") as f:
-                    pass
-                break
-            elif p.returncode == 0:
-                # we ran the tagged tests and they were fine
-                break
-            elif repeat < maxrepeats:
-                # we failed the first run, create a tag file with the passing
-                # tests (if any)
+            if repeat < maxrepeats:
                 passing_tests = []
                 failed_tests = []
 
@@ -219,7 +209,7 @@ if __name__ == "__main__":
                 # the passed patterns
                 passing_only_patterns = set(passing_tests) - set(failed_tests)
                 with open(tagfile, "w") as f:
-                    for passing_test in passing_only_patterns:
+                    for passing_test in sorted(passing_only_patterns):
                         f.write(passing_test)
                         f.write("\n")
                 if not passing_only_patterns:
@@ -228,3 +218,6 @@ if __name__ == "__main__":
                 # we tried the last time and failed, so our tags don't work for
                 # some reason
                 os.unlink(tagfile)
+
+            if p.returncode == 0:
+                break
