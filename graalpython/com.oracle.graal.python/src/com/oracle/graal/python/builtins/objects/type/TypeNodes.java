@@ -434,13 +434,23 @@ public abstract class TypeNodes {
                     throw new UnsupportedOperationException();
                 }
 
+                @TruffleBoundary
                 public Object[] toArray() {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
+                    Object[] result = new Object[size()];
+                    Iterator<Object> keys = HashingStorageLibrary.getUncached().keys(dict.getDictStorage());
+                    for (int i = 0; i < result.length; i++) {
+                        result[i] = keys.next();
+                    }
+                    return result;
                 }
 
+                @SuppressWarnings("unchecked")
                 public <T> T[] toArray(T[] a) {
-                    throw new UnsupportedOperationException();
+                    if (a.getClass() ==  Object[].class) {
+                        return (T[]) toArray();
+                    } else {
+                        throw new UnsupportedOperationException();
+                    }
                 }
 
                 public boolean add(PythonAbstractClass e) {
