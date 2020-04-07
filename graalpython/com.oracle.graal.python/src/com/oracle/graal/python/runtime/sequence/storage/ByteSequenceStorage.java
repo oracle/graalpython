@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -44,12 +44,14 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     public ByteSequenceStorage(byte[] elements, int length) {
+        super(ListStorageType.Byte);
         this.values = elements;
         this.capacity = values.length;
         this.length = length;
     }
 
     public ByteSequenceStorage(int capacity) {
+        super(ListStorageType.Byte);
         this.values = new byte[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -365,10 +367,5 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (byte[]) arrayObject;
-    }
-
-    @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Byte;
     }
 }

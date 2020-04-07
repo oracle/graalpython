@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EnsureCapacityNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetElementTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemDynamicNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
@@ -194,10 +193,9 @@ public abstract class SequenceStorageNodes {
          * Tests if each element of {@code rhs} can be assign to {@code lhs} without casting.
          */
         @Specialization
-        static boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs,
-                        @Cached GetElementType getElementTypeNode) {
-            ListStorageType rhsType = getElementTypeNode.execute(rhs);
-            switch (getElementTypeNode.execute(lhs)) {
+        static boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs) {
+            ListStorageType rhsType = rhs.getElementType();
+            switch (lhs.getElementType()) {
                 case Boolean:
                     return rhsType == Boolean || rhsType == Uninitialized || rhsType == Empty;
                 case Byte:
@@ -242,10 +240,9 @@ public abstract class SequenceStorageNodes {
          * Tests if each element of {@code rhs} can be assign to {@code lhs} without casting.
          */
         @Specialization
-        static boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs,
-                        @Cached GetElementType getElementTypeNode) {
-            ListStorageType rhsType = getElementTypeNode.execute(rhs);
-            switch (getElementTypeNode.execute(lhs)) {
+        static boolean compatibleAssign(SequenceStorage lhs, SequenceStorage rhs) {
+            ListStorageType rhsType = rhs.getElementType();
+            switch (lhs.getElementType()) {
                 case Boolean:
                 case Byte:
                 case Int:
@@ -321,44 +318,44 @@ public abstract class SequenceStorageNodes {
             return lenNode.execute(left) == 0;
         }
 
-        protected static boolean isBoolean(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Boolean;
+        protected static boolean isBoolean(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Boolean;
         }
 
-        protected static boolean isByte(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Byte;
+        protected static boolean isByte(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Byte;
         }
 
-        protected static boolean isByteLike(GetElementType getElementTypeNode, SequenceStorage s) {
-            return isByte(getElementTypeNode, s) || isInt(getElementTypeNode, s) || isLong(getElementTypeNode, s);
+        protected static boolean isByteLike(SequenceStorage s) {
+            return isByte(s) || isInt(s) || isLong(s);
         }
 
-        protected static boolean isChar(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Char;
+        protected static boolean isChar(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Char;
         }
 
-        protected static boolean isInt(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Int;
+        protected static boolean isInt(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Int;
         }
 
-        protected static boolean isLong(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Long;
+        protected static boolean isLong(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Long;
         }
 
-        protected static boolean isDouble(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Double;
+        protected static boolean isDouble(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Double;
         }
 
-        protected static boolean isObject(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Generic;
+        protected static boolean isObject(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Generic;
         }
 
-        protected static boolean isTuple(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Tuple;
+        protected static boolean isTuple(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.Tuple;
         }
 
-        protected static boolean isList(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.List;
+        protected static boolean isList(SequenceStorage s) {
+            return s.getElementType() == ListStorageType.List;
         }
 
         protected static boolean isBoolean(ListStorageType et) {
@@ -743,11 +740,10 @@ public abstract class SequenceStorageNodes {
             return storage.getItemNormalized(idx);
         }
 
-        @Specialization(guards = "isObject(getElementType, storage)", limit = "1")
+        @Specialization(guards = "isObject(storage)", limit = "1")
         protected Object doNativeObject(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
                         @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
-                        @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached BranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -765,18 +761,16 @@ public abstract class SequenceStorageNodes {
         protected int doNativeByte(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
                         @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
-                        @Shared("getElementType") @Cached GetElementType getElementType,
                         @Cached BranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
-            Object result = doNative(storage, idx, lib, verifyNativeItemNode, getElementType, errorProfile, raiseNode);
+            Object result = doNative(storage, idx, lib, verifyNativeItemNode, errorProfile, raiseNode);
             return (byte) result & 0xFF;
         }
 
-        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(getElementType, storage)"}, limit = "1")
+        @Specialization(guards = {"!isByteStorage(storage)", "!isObject(storage)"}, limit = "1")
         protected Object doNative(NativeSequenceStorage storage, int idx,
                         @CachedLibrary("storage.getPtr()") InteropLibrary lib,
                         @Shared("verifyNativeItemNode") @Cached VerifyNativeItemNode verifyNativeItemNode,
-                        @Shared("getElementType") @Cached @SuppressWarnings("unused") GetElementType getElementType,
                         @Cached BranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -2688,7 +2682,6 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected SequenceStorage doGeneric(SequenceStorage s, Object indicationVal,
                         @Cached IsAssignCompatibleNode isAssignCompatibleNode,
-                        @Cached GetElementType getElementType,
                         @Cached("createClassProfile()") ValueProfile valTypeProfile,
                         @Cached PRaiseNode raiseNode) {
 
@@ -2697,7 +2690,7 @@ public abstract class SequenceStorageNodes {
                 return s;
             }
 
-            ListStorageType et = getElementType.execute(s);
+            ListStorageType et = s.getElementType();
             if (val instanceof Byte && SequenceStorageBaseNode.isByteLike(et) ||
                             val instanceof Integer && (SequenceStorageBaseNode.isInt(et) || SequenceStorageBaseNode.isLong(et)) ||
                             val instanceof Long && SequenceStorageBaseNode.isLong(et) ||
@@ -2952,57 +2945,7 @@ public abstract class SequenceStorageNodes {
 
     public abstract static class CreateEmptyNode extends SequenceStorageBaseNode {
 
-        @Child private GetElementType getElementType;
-
         public abstract SequenceStorage execute(SequenceStorage s, int cap, int len);
-
-        private ListStorageType getElementType(SequenceStorage s) {
-            if (getElementType == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getElementType = insert(GetElementType.create());
-            }
-            return getElementType.execute(s);
-        }
-
-        protected boolean isBoolean(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Boolean;
-        }
-
-        protected boolean isInt(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Int;
-        }
-
-        protected boolean isLong(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Long;
-        }
-
-        protected boolean isByte(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Byte;
-        }
-
-        protected boolean isByteLike(SequenceStorage s) {
-            return isByte(s) || isInt(s) || isLong(s);
-        }
-
-        protected boolean isChar(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Char;
-        }
-
-        protected boolean isDouble(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Double;
-        }
-
-        protected boolean isObject(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Generic;
-        }
-
-        protected boolean isTuple(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Tuple;
-        }
-
-        protected boolean isList(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.List;
-        }
 
         @Specialization(guards = "isBoolean(s)")
         BoolSequenceStorage doBoolean(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
@@ -3383,35 +3326,6 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    @GenerateUncached
-    public abstract static class GetElementType extends Node {
-
-        public abstract ListStorageType execute(SequenceStorage s);
-
-        @Specialization(limit = "cacheLimit()", guards = {"s.getClass() == cachedClass"})
-        static ListStorageType doCached(SequenceStorage s,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            return cachedClass.cast(s).getElementType();
-        }
-
-        @Specialization(replaces = "doCached")
-        static ListStorageType doUncached(SequenceStorage s) {
-            return s.getElementType();
-        }
-
-        protected static int cacheLimit() {
-            return SequenceStorageBaseNode.MAX_SEQUENCE_STORAGES;
-        }
-
-        public static GetElementType create() {
-            return GetElementTypeNodeGen.create();
-        }
-
-        public static GetElementType getUncached() {
-            return GetElementTypeNodeGen.getUncached();
-        }
-    }
-
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class ItemIndexNode extends SequenceStorageBaseNode {
 
@@ -3430,9 +3344,8 @@ public abstract class SequenceStorageNodes {
 
         public abstract int execute(VirtualFrame frame, SequenceStorage s, double item, int start, int end);
 
-        @Specialization(guards = "isBoolean(getElementType, s)")
-        int doBoolean(SequenceStorage s, boolean item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
+        @Specialization(guards = "isBoolean(s)")
+        int doBoolean(SequenceStorage s, boolean item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeBoolean(s, i) == item) {
                     return i;
@@ -3441,9 +3354,8 @@ public abstract class SequenceStorageNodes {
             return -1;
         }
 
-        @Specialization(guards = "isByte(getElementType, s)")
-        int doByte(SequenceStorage s, byte item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
+        @Specialization(guards = "isByte(s)")
+        int doByte(SequenceStorage s, byte item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeByte(s, i) == item) {
                     return i;
@@ -3452,9 +3364,8 @@ public abstract class SequenceStorageNodes {
             return -1;
         }
 
-        @Specialization(guards = "isChar(getElementType, s)")
-        int doChar(SequenceStorage s, char item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
+        @Specialization(guards = "isChar(s)")
+        int doChar(SequenceStorage s, char item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeChar(s, i) == item) {
                     return i;
@@ -3463,9 +3374,8 @@ public abstract class SequenceStorageNodes {
             return -1;
         }
 
-        @Specialization(guards = "isInt(getElementType, s)")
-        int doInt(SequenceStorage s, int item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
+        @Specialization(guards = "isInt(s)")
+        int doInt(SequenceStorage s, int item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeInt(s, i) == item) {
                     return i;
@@ -3474,9 +3384,8 @@ public abstract class SequenceStorageNodes {
             return -1;
         }
 
-        @Specialization(guards = "isLong(getElementType, s)")
-        int doLong(SequenceStorage s, long item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
+        @Specialization(guards = "isLong(s)")
+        int doLong(SequenceStorage s, long item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeLong(s, i) == item) {
                     return i;
@@ -3485,9 +3394,8 @@ public abstract class SequenceStorageNodes {
             return -1;
         }
 
-        @Specialization(guards = "isDouble(getElementType, s)")
-        int doDouble(SequenceStorage s, double item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
+        @Specialization(guards = "isDouble(s)")
+        int doDouble(SequenceStorage s, double item, int start, int end) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeDouble(s, i) == item) {
                     return i;

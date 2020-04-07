@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,22 +34,26 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     private double[] values;
 
     public DoubleSequenceStorage() {
+        super(ListStorageType.Double);
         values = new double[]{};
     }
 
     public DoubleSequenceStorage(double[] elements) {
+        super(ListStorageType.Double);
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
     }
 
     public DoubleSequenceStorage(double[] elements, int length) {
+        super(ListStorageType.Double);
         this.values = elements;
         this.capacity = elements.length;
         this.length = length;
     }
 
     public DoubleSequenceStorage(int capacity) {
+        super(ListStorageType.Double);
         this.values = new double[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -262,10 +266,5 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (double[]) arrayObject;
-    }
-
-    @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Double;
     }
 }

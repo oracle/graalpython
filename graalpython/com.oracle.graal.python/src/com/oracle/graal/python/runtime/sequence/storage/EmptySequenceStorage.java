@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class EmptySequenceStorage extends SequenceStorage {
+
+    public EmptySequenceStorage() {
+        super(ListStorageType.Empty);
+    }
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
 
@@ -151,10 +155,5 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public Object getInternalArrayObject() {
         return null;
-    }
-
-    @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Empty;
     }
 }

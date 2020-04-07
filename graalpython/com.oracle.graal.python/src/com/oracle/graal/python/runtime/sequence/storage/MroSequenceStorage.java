@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] values;
 
     public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
+        super(ListStorageType.Generic);
         this.className = className;
         this.values = elements;
         this.capacity = elements.length;
@@ -80,6 +81,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public MroSequenceStorage(String className, int capacity) {
+        super(ListStorageType.Generic);
         this.className = className;
         this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
@@ -250,11 +252,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         this.values = classArray;
         this.length = classArray.length;
         this.capacity = classArray.length;
-    }
-
-    @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Generic;
     }
 
     public Assumption getLookupStableAssumption() {
