@@ -44,7 +44,7 @@ def prints_like_iter(obj):
     assert s.startswith("<class '")
     assert s.endswith("iterator'>")
 
-def test_iter():
+def test_iter_printing_bytes():
     bytes_iterator = type(iter(b''))
     prints_like_iter(bytes_iterator)
     # <class 'bytes_iterator'>
@@ -52,6 +52,7 @@ def test_iter():
     # bytearray_iterator = type(iter(bytearray()))
     # print(bytearray_iterator)
 
+def test_iter_printing_dict():
     dict_iterator = type(iter({}))
     prints_like_iter(dict_iterator)
     # <class 'dict_keyiterator'>
@@ -68,6 +69,7 @@ def test_iter():
     prints_like_iter(dict_itemiterator)
     # <class 'dict_itemiterator'>
 
+def test_iter_printing_list():
     list_iterator = type(iter([]))
     prints_like_iter(list_iterator)
     # <class 'list_iterator'>
@@ -75,6 +77,7 @@ def test_iter():
     # list_reverseiterator = type(iter(reversed([])))
     # prints_like_iter(list_reverseiterator)
 
+def test_iter_printing_range():
     range_iterator = type(iter(range(0)))
     prints_like_iter(range_iterator)
     # <class 'range_iterator'>
@@ -83,18 +86,22 @@ def test_iter():
     prints_like_iter(longrange_iterator)
     # <class 'longrange_iterator'>
 
+def test_iter_printing_set():
     set_iterator = type(iter(set()))
     prints_like_iter(set_iterator)
     # <class 'set_iterator'>
 
+def test_iter_printing_str():
     str_iterator = type(iter(""))
     prints_like_iter(str_iterator)
     # <class 'str_iterator'>
 
+def test_iter_printing_tuple():
     tuple_iterator = type(iter(()))
     prints_like_iter(tuple_iterator)
     # <class 'tuple_iterator'>
 
+def test_iter_printing_zip():
     zip_iterator = type(iter(zip()))
     assert str(zip_iterator) == "<class 'zip'>"
     # <class 'zip'>
