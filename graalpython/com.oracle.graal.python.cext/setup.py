@@ -151,7 +151,7 @@ class Bzip2Depedency(CAPIDependency):
         dest_lib_filename = os.path.join(self.lib_install_dir, self.install_name)
 
         logger.info("Installing dependency %s to %s" % (self.package_name, dest_lib_filename))
-        shutil.move(os.path.join(build_dir, lib_filename), dest_lib_filename)
+        shutil.copy(os.path.join(build_dir, lib_filename), dest_lib_filename)
 
         # also install the include file 'bzlib.h'
         dest_include_filename = os.path.join(self.include_install_dir, self.header_name)
