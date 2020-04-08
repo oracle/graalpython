@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,22 +35,26 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     private long[] values;
 
     public LongSequenceStorage() {
+        super(ListStorageType.Long);
         values = new long[]{};
     }
 
     public LongSequenceStorage(long[] elements) {
+        super(ListStorageType.Long);
         this.values = elements;
         this.capacity = values.length;
         this.length = elements.length;
     }
 
     public LongSequenceStorage(long[] elements, int length) {
+        super(ListStorageType.Long);
         this.values = elements;
         this.capacity = values.length;
         this.length = length;
     }
 
     public LongSequenceStorage(int capacity) {
+        super(ListStorageType.Long);
         this.values = new long[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -267,10 +271,5 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (long[]) arrayObject;
-    }
-
-    @Override
-    public ListStorageType getElementType() {
-        return ListStorageType.Long;
     }
 }

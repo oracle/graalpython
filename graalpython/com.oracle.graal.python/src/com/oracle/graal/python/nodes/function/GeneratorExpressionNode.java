@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -126,11 +126,13 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         Object[] arguments;
+        Object iterator = null;
         if (getIterator == null) {
             arguments = PArguments.create(0);
         } else {
             arguments = PArguments.create(1);
-            PArguments.setArgument(arguments, 0, getIterator.execute(frame));
+            iterator = getIterator.execute(frame);
+            PArguments.setArgument(arguments, 0, iterator);
         }
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
@@ -143,7 +145,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return factory.createGenerator(name, callTargets, frameDescriptor, arguments, closure, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode, iterator);
     }
 
     @Override
