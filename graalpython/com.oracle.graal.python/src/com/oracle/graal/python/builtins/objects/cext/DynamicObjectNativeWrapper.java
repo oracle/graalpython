@@ -63,6 +63,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
+import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -136,6 +137,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -941,15 +943,55 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return allocFunc;
         }
 
-        @Specialization(guards = "eq(TP_SUBCLASSES, key)", limit = "1")
-        @TruffleBoundary
-        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, DynamicObjectNativeWrapper.PythonObjectNativeWrapper value,
-                        @CachedLibrary("value") PythonNativeWrapperLibrary lib) {
-            // TODO more type checking; do fast path
-            PDict dict = (PDict) lib.getDelegate(value);
-            for (Object v : dict.items()) {
-                GetSubclassesNode.doSlowPath(object).add((PythonClass) v);
+        @ValueType
+        private static final class SubclassAddState {
+            private final HashingStorage storage;
+            private final HashingStorageLibrary lib;
+            private final Set<PythonAbstractClass> subclasses;
+
+            private SubclassAddState(HashingStorage storage, HashingStorageLibrary lib, Set<PythonAbstractClass> subclasses) {
+                this.storage = storage;
+                this.lib = lib;
+                this.subclasses = subclasses;
             }
+        }
+
+        @GenerateUncached
+        static final class EachSubclassAdd extends HashingStorageLibrary.ForEachNode<SubclassAddState> {
+
+            private static final EachSubclassAdd UNCACHED = new EachSubclassAdd();
+
+            @Override
+            public SubclassAddState execute(Object key, SubclassAddState s) {
+                setAdd(s.subclasses, (PythonClass) s.lib.getItem(s.storage, key));
+                return s;
+            }
+
+            @TruffleBoundary
+            protected static void setAdd(Set<PythonAbstractClass> set, PythonClass cls) {
+                set.add(cls);
+            }
+
+            static EachSubclassAdd create() {
+                return new EachSubclassAdd();
+            }
+
+            static EachSubclassAdd getUncached() {
+                return UNCACHED;
+            }
+        }
+
+        @Specialization(guards = "eq(TP_SUBCLASSES, key)", limit = "1")
+        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, DynamicObjectNativeWrapper.PythonObjectNativeWrapper value,
+                        @Cached GetSubclassesNode getSubclassesNode,
+                        @Cached EachSubclassAdd eachNode,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
+                        @CachedLibrary("value") PythonNativeWrapperLibrary lib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+            PDict dict = (PDict) lib.getDelegate(value);
+            HashingStorage storage = getStorage.execute(dict);
+            Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
+            hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
             return value;
         }
 

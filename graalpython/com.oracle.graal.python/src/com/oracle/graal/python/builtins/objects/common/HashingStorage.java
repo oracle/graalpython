@@ -51,6 +51,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -320,7 +322,7 @@ public abstract class HashingStorage {
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
-    HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
+    Object forEachUntyped(ForEachNode<Object> node, Object arg) {
         throw new AbstractMethodError("HashingStorage.injectInto");
     }
 
@@ -338,7 +340,7 @@ public abstract class HashingStorage {
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
-    Iterator<Object> keys() {
+    HashingStorageIterable<Object> keys() {
         throw new AbstractMethodError("HashingStorage.keys");
     }
 
@@ -544,8 +546,8 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public Iterator<Object> values(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new ValuesIterator(this, lib);
+    public HashingStorageIterable<Object> values(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new HashingStorageIterable<>(new ValuesIterator(this, lib));
     }
 
     private static final class ValuesIterator implements Iterator<Object> {
@@ -565,19 +567,19 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public Iterator<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
-        return new EntriesIterator(this, lib);
+    public HashingStorageIterable<DictEntry> entries(@CachedLibrary("this") HashingStorageLibrary lib) {
+        return new HashingStorageIterable<>(new EntriesIterator(this, lib));
     }
 
     private static final class EntriesIterator implements Iterator<DictEntry> {
-        private final Iterator<Object> keysIterator;
+        private final HashingStorageIterable.BoundaryIterator<Object> keysIterator;
         private final HashingStorage self;
         private final HashingStorageLibrary lib;
 
         EntriesIterator(HashingStorage self, HashingStorageLibrary lib) {
             this.self = self;
             this.lib = lib;
-            this.keysIterator = lib.keys(self);
+            this.keysIterator = lib.keys(self).iterator();
         }
 
         public boolean hasNext() {

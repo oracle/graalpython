@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -720,16 +721,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, set, iterator));
     }
 
-    public PDictView.PDictItemsIterator createDictItemsIterator(PHashingCollection dict) {
-        return trace(new PDictView.PDictItemsIterator(PythonBuiltinClassType.PDictItemsIterator, dict));
+    public PDictView.PDictItemsIterator createDictItemsIterator(Iterator<DictEntry> iterator) {
+        return trace(new PDictView.PDictItemsIterator(PythonBuiltinClassType.PDictItemsIterator, iterator));
     }
 
     public PDictView.PDictKeysIterator createDictKeysIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictKeysIterator(PythonBuiltinClassType.PDictKeysIterator, dict));
     }
 
-    public PDictView.PDictValuesIterator createDictValuesIterator(PHashingCollection dict) {
-        return trace(new PDictView.PDictValuesIterator(PythonBuiltinClassType.PDictValuesIterator, dict));
+    public PDictView.PDictValuesIterator createDictValuesIterator(Iterator<Object> iterator) {
+        return trace(new PDictView.PDictValuesIterator(PythonBuiltinClassType.PDictValuesIterator, iterator));
     }
 
     public Object createSentinelIterator(Object callable, Object sentinel) {

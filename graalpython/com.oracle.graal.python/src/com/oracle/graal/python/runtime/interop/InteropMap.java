@@ -41,7 +41,6 @@
 package com.oracle.graal.python.runtime.interop;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -94,9 +93,7 @@ public final class InteropMap implements TruffleObject {
     @TruffleBoundary
     public static InteropMap fromPDict(PDict dict) {
         Map<String, Object> map = new HashMap<>();
-        Iterator<HashingStorage.DictEntry> iter = HashingStorageLibrary.getUncached().entries(dict.getDictStorage());
-        while (iter.hasNext()) {
-            HashingStorage.DictEntry e = iter.next();
+        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dict.getDictStorage())) {
             map.put(e.getKey().toString(), e.getValue());
         }
         return new InteropMap(map);

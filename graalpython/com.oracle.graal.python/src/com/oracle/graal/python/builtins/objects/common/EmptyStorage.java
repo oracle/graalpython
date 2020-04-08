@@ -43,7 +43,8 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -100,8 +101,8 @@ public class EmptyStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public HashingStorage[] injectInto(HashingStorage[] firstValue, @SuppressWarnings("unused") InjectIntoNode node) {
-        return firstValue;
+    Object forEachUntyped(@SuppressWarnings("unused") ForEachNode<Object> node, Object arg) {
+        return arg;
     }
 
     @Override
@@ -128,7 +129,7 @@ public class EmptyStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public Iterator<Object> keys() {
-        return KEYS_ITERATOR;
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(KEYS_ITERATOR);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import java.util.Iterator;
+
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -52,6 +54,7 @@ public abstract class PDictView extends PythonBuiltinObject {
     public PDictView(LazyPythonClass clazz, String name, PHashingCollection dict) {
         super(clazz);
         this.name = name;
+        assert dict != null;
         this.dict = dict;
     }
 
@@ -87,8 +90,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictValuesIterator extends PJavaIteratorIterator<Object> {
-        public PDictValuesIterator(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, dict.items().iterator());
+        public PDictValuesIterator(LazyPythonClass clazz, Iterator<Object> iterator) {
+            super(clazz, iterator);
         }
     }
 
@@ -105,8 +108,8 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
-        public PDictItemsIterator(LazyPythonClass clazz, PHashingCollection dict) {
-            super(clazz, dict.entries().iterator());
+        public PDictItemsIterator(LazyPythonClass clazz, Iterator<DictEntry> iterator) {
+            super(clazz, iterator);
         }
     }
 

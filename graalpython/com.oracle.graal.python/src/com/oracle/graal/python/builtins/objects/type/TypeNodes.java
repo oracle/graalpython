@@ -366,6 +366,7 @@ public abstract class TypeNodes {
 
     @TypeSystemReference(PythonTypes.class)
     @ImportStatic(NativeMemberNames.class)
+    @GenerateUncached
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
         public abstract Set<PythonAbstractClass> execute(Object obj);
@@ -382,7 +383,6 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        @TruffleBoundary
         Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpSubclassesNode,
                         @Cached("createClassProfile()") ValueProfile profile) {
@@ -397,21 +397,6 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        public static Set<PythonAbstractClass> doSlowPath(Object obj) {
-            if (obj instanceof PythonManagedClass) {
-                return ((PythonManagedClass) obj).getSubClasses();
-            } else if (obj instanceof PythonBuiltinClassType) {
-                return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getSubClasses();
-            } else if (PGuards.isNativeClass(obj)) {
-                Object tpSubclasses = GetTypeMemberNode.getUncached().execute(obj, NativeMemberNames.TP_SUBCLASSES);
-                if (tpSubclasses instanceof PDict) {
-                    return wrapDict(tpSubclasses);
-                }
-                throw new IllegalStateException("invalid subclasses dict " + tpSubclasses.getClass().getName());
-            }
-            throw new IllegalStateException("unknown type " + obj.getClass().getName());
-        }
-
         private static Set<PythonAbstractClass> wrapDict(Object tpSubclasses) {
             return new Set<PythonAbstractClass>() {
                 private final PDict dict = (PDict) tpSubclasses;
@@ -437,7 +422,7 @@ public abstract class TypeNodes {
                 @TruffleBoundary
                 public Object[] toArray() {
                     Object[] result = new Object[size()];
-                    Iterator<Object> keys = HashingStorageLibrary.getUncached().keys(dict.getDictStorage());
+                    Iterator<Object> keys = HashingStorageLibrary.getUncached().keys(dict.getDictStorage()).iterator();
                     for (int i = 0; i < result.length; i++) {
                         result[i] = keys.next();
                     }
@@ -490,6 +475,10 @@ public abstract class TypeNodes {
 
         public static GetSubclassesNode create() {
             return GetSubclassesNodeGen.create();
+        }
+
+        public static GetSubclassesNode getUncached() {
+            return GetSubclassesNodeGen.getUncached();
         }
 
     }

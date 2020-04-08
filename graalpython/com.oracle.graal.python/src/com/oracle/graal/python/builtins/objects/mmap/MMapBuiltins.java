@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteByteToChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.WriteToChannelNode;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -414,11 +415,12 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone doClose(PMMap self) {
+        PNone doClose(PMMap self,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 close(self);
             } catch (IOException e) {
-                // TODO(fa): ignore ?
+                throw raiseNode.raise(PythonErrorType.BufferError, "cannot close exported pointers exist");
             }
             return PNone.NONE;
         }

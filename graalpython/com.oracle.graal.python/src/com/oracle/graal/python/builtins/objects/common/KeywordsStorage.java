@@ -43,7 +43,8 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -207,25 +208,25 @@ public class KeywordsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public static class InjectInto {
+    static class ForEachUntyped {
         @Specialization(guards = "self.length() == cachedLen", limit = "1")
         @ExplodeLoop
-        static HashingStorage[] cached(KeywordsStorage self, HashingStorage[] firstValue, InjectIntoNode node,
+        static Object cached(KeywordsStorage self, ForEachNode<Object> node, Object arg,
                         @Exclusive @Cached("self.length()") int cachedLen) {
-            HashingStorage[] result = firstValue;
+            Object result = arg;
             for (int i = 0; i < cachedLen; i++) {
                 PKeyword entry = self.keywords[i];
-                result = node.execute(result, entry.getName());
+                result = node.execute(entry.getName(), result);
             }
             return result;
         }
 
         @Specialization(replaces = "cached")
-        static HashingStorage[] generic(KeywordsStorage self, HashingStorage[] firstValue, InjectIntoNode node) {
-            HashingStorage[] result = firstValue;
+        static Object generic(KeywordsStorage self, ForEachNode<Object> node, Object arg) {
+            Object result = arg;
             for (int i = 0; i < self.length(); i++) {
                 PKeyword entry = self.keywords[i];
-                result = node.execute(result, entry.getName());
+                result = node.execute(entry.getName(), result);
             }
             return result;
         }
@@ -273,8 +274,8 @@ public class KeywordsStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public Iterator<Object> keys() {
-        return new KeysIterator(this);
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(new KeysIterator(this));
     }
 
     private static final class KeysIterator implements Iterator<Object> {

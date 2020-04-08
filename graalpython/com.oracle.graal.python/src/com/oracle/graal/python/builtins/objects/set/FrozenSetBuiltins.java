@@ -97,7 +97,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         public Object iter(PBaseSet self,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()));
+            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()).iterator());
         }
     }
 
@@ -120,7 +120,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("create()") GetLazyClassNode getClass) {
             int len = lib.length(self.getDictStorage());
-            Iterator<Object> keys = lib.keys(self.getDictStorage());
+            Iterator<Object> keys = lib.keys(self.getDictStorage()).iterator();
             Object[] keysArray = new Object[len];
             for (int i = 0; keys.hasNext(); i++) {
                 keysArray[i] = keys.next();
@@ -648,9 +648,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             if (gotFrame.profile(frame != null)) {
                 threadState = PArguments.getThreadState(frame);
             }
-            Iterator<Object> keys = hlib.keys(storage);
-            while (keys.hasNext()) {
-                Object key = keys.next();
+            for (Object key : hlib.keys(storage)) {
                 long tmp;
                 if (gotFrame.profile(frame != null)) {
                     tmp = lib.hashWithState(hlib.getItemWithState(storage, key, threadState), threadState);

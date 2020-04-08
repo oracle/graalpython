@@ -44,7 +44,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -209,13 +210,13 @@ public class LocalsStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public HashingStorage[] injectInto(HashingStorage[] firstValue, InjectIntoNode node) {
+    public Object forEachUntyped(ForEachNode<Object> node, Object arg) {
         bailout();
-        HashingStorage[] result = firstValue;
+        Object result = arg;
         for (FrameSlot slot : frame.getFrameDescriptor().getSlots()) {
             Object value = getValue(slot);
             if (value != null) {
-                result = node.execute(result, slot.getIdentifier());
+                result = node.execute(slot.getIdentifier(), result);
             }
         }
         return result;
@@ -279,14 +280,18 @@ public class LocalsStorage extends HashingStorage {
 
     @Override
     @ExportMessage
-    public Iterator<Object> keys() {
-        return new KeysIterator();
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(new LocalsIterator(frame));
     }
 
-    private abstract class LocalsIterator<T> implements Iterator<T> {
-
+    private static class LocalsIterator implements Iterator<Object> {
+        private final MaterializedFrame frame;
         private Iterator<? extends FrameSlot> keys;
         private FrameSlot nextFrameSlot = null;
+
+        LocalsIterator(MaterializedFrame frame) {
+            this.frame = frame;
+        }
 
         @Override
         public boolean hasNext() {
@@ -297,6 +302,11 @@ public class LocalsStorage extends HashingStorage {
                 return loadNext();
             }
             return true;
+        }
+
+        @TruffleBoundary
+        public Object next() {
+            return nextSlot().getIdentifier();
         }
 
         @TruffleBoundary
@@ -333,14 +343,6 @@ public class LocalsStorage extends HashingStorage {
                 keys = frame.getFrameDescriptor().getSlots().iterator();
             }
             return keys;
-        }
-    }
-
-    private class KeysIterator extends LocalsIterator<Object> {
-        @Override
-        @TruffleBoundary
-        public Object next() {
-            return nextSlot().getIdentifier();
         }
     }
 }

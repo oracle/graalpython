@@ -95,7 +95,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         HashingStorage dictStorage = starargs.getDictStorage();
         int length = lib.length(dictStorage);
         Object[] args = new Object[length];
-        Iterator<Object> iterator = lib.keys(dictStorage);
+        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
         for (int i = 0; i < args.length; i++) {
             assert iterator.hasNext();
             args[i] = iterator.next();
@@ -109,7 +109,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         HashingStorage dictStorage = starargs.getDictStorage();
         int length = lib.length(dictStorage);
         Object[] args = new Object[length];
-        Iterator<Object> iterator = lib.keys(dictStorage);
+        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
         for (int i = 0; i < args.length; i++) {
             assert iterator.hasNext();
             args[i] = iterator.next();

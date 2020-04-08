@@ -42,7 +42,6 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +50,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -94,9 +96,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
-
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionKey;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
@@ -405,9 +404,7 @@ public final class PythonContext {
      * run-time package paths.
      */
     private void patchPackagePaths(String from, String to) {
-        Iterator<HashingStorage.DictEntry> iter = HashingStorageLibrary.getUncached().entries(sysModules.getDictStorage());
-        while (iter.hasNext()) {
-            Object v = iter.next().getValue();
+        for (Object v : HashingStorageLibrary.getUncached().values(sysModules.getDictStorage())) {
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);

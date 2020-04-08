@@ -44,7 +44,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -300,32 +301,32 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    static class InjectInto {
+    static class ForEachUntyped {
         @Specialization(guards = "cachedShape == self.store.getShape()", limit = "1")
         @ExplodeLoop
-        static HashingStorage[] cachedLen(DynamicObjectStorage self, HashingStorage[] firstValue, InjectIntoNode node,
+        static Object cachedLen(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyList(self)", dimensions = 1) Object[] keys,
                         @Shared("readNodeInject") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            HashingStorage[] result = firstValue;
+            Object result = firstValue;
             for (int i = 0; i < keys.length; i++) {
                 Object key = keys[i];
-                result = runNode(self, result, key, readNode, node);
+                result = runNode(self, key, result, readNode, node);
             }
             return result;
         }
 
         @Specialization(replaces = "cachedLen")
-        static HashingStorage[] addAll(DynamicObjectStorage self, HashingStorage[] firstValue, InjectIntoNode node,
+        static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Shared("readNodeInject") @Cached ReadAttributeFromDynamicObjectNode readNode) {
-            return cachedLen(self, firstValue, node, self.store.getShape(), keyList(self), readNode);
+            return cachedLen(self, node, firstValue, self.store.getShape(), keyList(self), readNode);
         }
 
-        private static HashingStorage[] runNode(DynamicObjectStorage self, HashingStorage[] acc, Object key, ReadAttributeFromDynamicObjectNode readNode, InjectIntoNode node) {
+        private static Object runNode(DynamicObjectStorage self, Object key, Object acc, ReadAttributeFromDynamicObjectNode readNode, ForEachNode<Object> node) {
             if (key instanceof String) {
                 Object value = readNode.execute(self.store, key);
                 if (value != PNone.NO_VALUE) {
-                    return node.execute(acc, key);
+                    return node.execute(key, acc);
                 }
             }
             return acc;
@@ -348,9 +349,9 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public Iterator<Object> keys(
+    public HashingStorageIterable<Object> keys(
                     @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-        return new KeysIterator(store, readNode);
+        return new HashingStorageIterable<>(new KeysIterator(store, readNode));
     }
 
     private static final class KeysIterator implements Iterator<Object> {
@@ -390,8 +391,9 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public Iterator<DictEntry> entries(@Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
-        return new EntriesIterator(store, readNode);
+    public HashingStorageIterable<DictEntry> entries(
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+        return new HashingStorageIterable<>(new EntriesIterator(store, readNode));
     }
 
     private static final class EntriesIterator implements Iterator<DictEntry> {
@@ -401,9 +403,14 @@ public final class DynamicObjectStorage extends HashingStorage {
         private DictEntry next = null;
 
         public EntriesIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
-            this.keyIter = store.getShape().getKeys().iterator();
+            this.keyIter = getIterator(store.getShape());
             this.store = store;
             this.readNode = readNode;
+        }
+
+        @TruffleBoundary
+        private static Iterator<Object> getIterator(Shape shape) {
+            return shape.getKeys().iterator();
         }
 
         @TruffleBoundary
