@@ -47,14 +47,12 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     private char[] values;
 
     public CharSequenceStorage(char[] elements) {
-        super(ListStorageType.Char);
         this.values = elements;
         this.capacity = values.length;
         this.length = elements.length;
     }
 
     public CharSequenceStorage(int capacity) {
-        super(ListStorageType.Char);
         this.values = new char[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -155,6 +153,11 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (char[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Char;
     }
 
     public void setCharItemNormalized(int idx, char value) {

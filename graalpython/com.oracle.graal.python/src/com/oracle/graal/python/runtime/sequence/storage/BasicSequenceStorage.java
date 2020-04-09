@@ -27,10 +27,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
-    public BasicSequenceStorage(ListStorageType type) {
-        super(type);
-    }
-
     // nominated storage length
     protected int length;
 

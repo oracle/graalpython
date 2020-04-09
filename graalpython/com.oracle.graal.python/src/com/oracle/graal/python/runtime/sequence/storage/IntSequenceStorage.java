@@ -34,26 +34,22 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     private int[] values;
 
     public IntSequenceStorage() {
-        super(ListStorageType.Int);
         values = new int[]{};
     }
 
     public IntSequenceStorage(int[] elements) {
-        super(ListStorageType.Int);
         this.values = elements;
         this.capacity = values.length;
         this.length = elements.length;
     }
 
     public IntSequenceStorage(int[] elements, int length) {
-        super(ListStorageType.Int);
         this.values = elements;
         this.capacity = values.length;
         this.length = length;
     }
 
     public IntSequenceStorage(int capacity) {
-        super(ListStorageType.Int);
         this.values = new int[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -266,5 +262,10 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (int[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Int;
     }
 }
