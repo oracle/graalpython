@@ -483,7 +483,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
-            return nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getFun0());
+            return nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
         }
 
         @Specialization(guards = "!isNativeWrapper(callable)")
@@ -522,7 +522,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         static boolean isDecoratedManagedFunction(Object obj) {
-            return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getFun0());
+            return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
         }
 
         private static ExternalFunctionNode createExternalFunctionRootNode(PythonLanguage lang, String name, Object callable, ConvertArgsToSulongNode convertArgsNode) {

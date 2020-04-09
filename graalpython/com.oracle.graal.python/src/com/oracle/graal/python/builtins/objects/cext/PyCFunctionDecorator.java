@@ -52,33 +52,33 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class PyCFunctionDecorator implements TruffleObject {
 
-    final Object fun0;
-    final Object fun1;
+    final Object nativeFunction;
+    final Object resultConverter;
 
-    public PyCFunctionDecorator(Object fun0, Object fun1) {
-        this.fun0 = fun0;
-        this.fun1 = fun1;
+    public PyCFunctionDecorator(Object nativeFunction, Object resultConverter) {
+        this.nativeFunction = nativeFunction;
+        this.resultConverter = resultConverter;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isExecutable() {
+    boolean isExecutable() {
         return true;
     }
 
     @ExportMessage
-    public Object execute(Object[] arguments,
-                    @CachedLibrary("this.fun0") InteropLibrary interopLib0,
-                    @CachedLibrary("this.fun1") InteropLibrary interopLib1) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-        Object res = interopLib0.execute(fun0, arguments);
-        return interopLib1.execute(fun1, res);
+    Object execute(Object[] arguments,
+                    @CachedLibrary("this.nativeFunction") InteropLibrary nativeFunctionLib,
+                    @CachedLibrary("this.resultConverter") InteropLibrary resultConverterLib) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+        Object res = nativeFunctionLib.execute(nativeFunction, arguments);
+        return resultConverterLib.execute(resultConverter, res);
     }
 
-    public Object getFun0() {
-        return fun0;
+    public Object getNativeFunction() {
+        return nativeFunction;
     }
 
-    public Object getFun1() {
-        return fun1;
+    public Object getResultConverter() {
+        return resultConverter;
     }
 }
