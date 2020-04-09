@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNod
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
@@ -128,6 +129,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached ExecutePositionalStarargsInteropNode posStarargsNode,
                         @Exclusive @Cached ExpandKeywordStarargsNode expandKwargsNode) throws ArityException {
             if (arguments.length != 3) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, arguments.length);
             }
 
@@ -165,6 +167,7 @@ public abstract class ManagedMethodWrappers {
                         @Exclusive @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Exclusive @Cached PythonAbstractObject.PExecuteNode executeNode) throws ArityException, UnsupportedMessageException {
             if (arguments.length != 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(1, arguments.length);
             }
 

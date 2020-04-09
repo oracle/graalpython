@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -90,6 +91,7 @@ public final class HandleCache implements TruffleObject {
     public Object execute(Object[] arguments,
                     @Cached GetOrInsertNode getOrInsertNode) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         if (arguments.length != 1) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw ArityException.create(1, arguments.length);
         }
         return getOrInsertNode.execute(this, (long) arguments[0]);

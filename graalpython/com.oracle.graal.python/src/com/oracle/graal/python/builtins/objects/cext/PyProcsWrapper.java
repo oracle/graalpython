@@ -138,6 +138,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached AddRefCntNode incRefNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             try {
@@ -166,6 +167,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached BranchProfile errorProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             if (arityProfile.profile(arguments.length != 3)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(3, arguments.length);
             }
             try {
@@ -201,6 +203,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached ToSulongNode nullToSulongNode) throws ArityException {
             if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             assert arguments[1] instanceof Number;

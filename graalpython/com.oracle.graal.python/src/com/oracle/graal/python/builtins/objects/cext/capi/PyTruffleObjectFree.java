@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -75,6 +76,7 @@ public class PyTruffleObjectFree implements TruffleObject {
     Object execute(Object[] arguments,
                     @Cached FreeNode freeNode) throws ArityException {
         if (arguments.length != 1) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw ArityException.create(1, arguments.length);
         }
         return freeNode.execute(arguments[0]);

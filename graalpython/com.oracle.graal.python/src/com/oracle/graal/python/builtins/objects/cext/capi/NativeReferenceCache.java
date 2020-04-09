@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -87,10 +88,11 @@ public final class NativeReferenceCache implements TruffleObject {
     @ExportMessage
     Object execute(Object[] arguments,
                     @Cached ResolveNativeReferenceNode resolveNativeReferenceNode) throws ArityException {
-        if (arguments.length == 2) {
-            return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
+        if (arguments.length != 2) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw ArityException.create(2, arguments.length);
         }
-        throw ArityException.create(2, arguments.length);
+        return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
     }
 
     @GenerateUncached

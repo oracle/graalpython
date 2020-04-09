@@ -82,6 +82,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Cached(value = "getAllocationReporter(contextRef)", allowUncached = true) AllocationReporter reporter) throws ArityException {
         if (arguments.length != 2) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw ArityException.create(2, arguments.length);
         }
 
