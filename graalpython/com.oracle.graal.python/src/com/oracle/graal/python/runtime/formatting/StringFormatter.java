@@ -169,7 +169,7 @@ public class StringFormatter {
 
         // We need to do a full subtype-check because native objects may inherit from tuple but have
         // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        boolean tupleArgs = IsSubtypeNodeGen.getUncached().execute(GetLazyClassNode.getUncached().execute(args1), PythonBuiltinClassType.PTuple);
+        boolean tupleArgs = PGuards.isPTuple(args1) || IsSubtypeNodeGen.getUncached().execute(GetLazyClassNode.getUncached().execute(args1), PythonBuiltinClassType.PTuple);
         assert tupleArgs || !PGuards.isPTuple(args1);
         if (tupleArgs) {
             // We will simply work through the tuple elements
