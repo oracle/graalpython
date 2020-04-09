@@ -758,11 +758,12 @@ def delete_self_if_testdownstream(args):
 
 def update_import(name, suite_py, rev="origin/master"):
     parent = os.path.join(SUITE.dir, "..")
+    dep_dir = None
     for dirpath, dirnames, _ in os.walk(parent):
         if os.path.sep in os.path.relpath(dirpath, parent):
             dirnames.clear() # we're looking for siblings or sibling-subdirs
-        elif name in dirnames:
-            dep_dir = os.path.join(os.path.join(dirpath))
+        elif name in dirnames and os.path.isdir(os.path.join(dirpath, name, "mx.%s" % name)):
+            dep_dir = dirpath
             break
     if not dep_dir:
         mx.warn("could not find suite %s to update" % name)
@@ -851,7 +852,7 @@ def update_import_cmd(args):
         d = {}
         with open(suite_py) as f:
             exec(f.read(), d, d) # pylint: disable=exec-used;
-        for suite in dict["suite"].get("imports", {}).get("suites", []):
+        for suite in d["suite"].get("imports", {}).get("suites", []):
             import_name = suite["name"]
             if suite.get("version") and import_name not in local_names:
                 imports_to_update.add(import_name)
@@ -868,25 +869,25 @@ def update_import_cmd(args):
 
     repos_updated = []
 
-    # commit ci if dirty
-    overlaytip = str(vc.tip(overlaydir)).strip()
-    if vc.isDirty(overlaydir):
-        vc.commit(overlaydir, "Update Python imports")
-        overlaytip = str(vc.tip(overlaydir)).strip()
-        repos_updated.append(overlaydir)
-
     # now allow dependent repos to hook into update
     output = mx.OutputCapture()
     for repo in repos:
         basename = os.path.basename(repo)
         cmdname = "%s-update-import" % basename
-        is_mx_command = mx.run_mx(["help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        is_mx_command = mx.run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
         if is_mx_command:
-            mx.run_mx([cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+            mx.run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
         else:
             print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
 
-    # update ci import in all our repos, commit the full update, and push verbosely
+    # commit ci-overlays if dirty
+    if vc.isDirty(overlaydir):
+        vc.commit(overlaydir, "Update Python imports")
+        repos_updated.append(overlaydir)
+
+    overlaytip = str(vc.tip(overlaydir)).strip()
+
+    # update ci import in all our repos, commit the full update
     prev_verbosity = mx._opts.very_verbose
     for repo in repos:
         jsonnetfile = os.path.join(repo, "ci.jsonnet")
@@ -894,12 +895,15 @@ def update_import_cmd(args):
             f.write('{ "overlay": "%s" }\n' % overlaytip)
         if vc.isDirty(repo):
             vc.commit(repo, "Update imports")
-            try:
-                mx._opts.very_verbose = True
-                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
-            finally:
-                mx._opts.very_verbose = prev_verbosity
             repos_updated.append(repo)
+
+    # push all repos
+    for repo in repos_updated:
+        try:
+            mx._opts.very_verbose = True
+            vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+        finally:
+            mx._opts.very_verbose = prev_verbosity
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
