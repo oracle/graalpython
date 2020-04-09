@@ -22,6 +22,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import sys
+import _thread
 
 
 BLOCKLEN = 62
@@ -75,6 +76,7 @@ class deque(object):
         else:
             raise ValueError("maxlen must be non-negative")
 
+        self._mutex = _thread.RLock()
         self._maxlen = sys.maxsize if maxlen is None else maxlen
         self.leftblock = Block(None, None)
         self.rightblock = self.leftblock
@@ -87,6 +89,14 @@ class deque(object):
         if iterable is not None:
             self.extend(iterable)
 
+    def synchronized(fun):
+        def fun_synchronized(self, *args):
+            with self._mutex:
+                return fun(self, *args)
+        return fun_synchronized
+
+
+    @synchronized
     def pop(self):
         """Remove and return the rightmost element."""
         if self.len == 0:
@@ -123,16 +133,19 @@ class deque(object):
         if lock is not self._lock:
             raise RuntimeError("deque mutated during iteration")
 
+    @synchronized
     def _trimleft(self):
         if self.len > self._maxlen:
             self.popleft()
             assert self.len == self._maxlen
 
+    @synchronized
     def _trimright(self):
         if self.len > self._maxlen:
             self.pop()
             assert self.len == self._maxlen
 
+    @synchronized
     def append(self, x):
         """Add an element to the right side of the deque."""
         ri = self.rightindex + 1
@@ -147,6 +160,7 @@ class deque(object):
         self._trimleft()
         self._modified()
 
+    @synchronized
     def appendleft(self, x):
         """Add an element to the left side of the deque."""
         li = self.leftindex - 1
@@ -161,6 +175,7 @@ class deque(object):
         self._trimright()
         self._modified()
 
+    @synchronized
     def clear(self):
         """Remove all elements from the deque."""
         self.leftblock = Block(None, None)
@@ -170,6 +185,7 @@ class deque(object):
         self.len = 0
         self._modified()
 
+    @synchronized
     def count(self, v):
         """Return number of occurrences of value."""
         b = self.leftblock
@@ -194,6 +210,7 @@ class deque(object):
 
         return count
 
+    @synchronized
     def extend(self, iterable):
         """Extend the right side of the deque with elements from the iterable"""
         # Handle case where id(deque) == id(iterable)
@@ -228,6 +245,7 @@ class deque(object):
     def __hash__(self):
         raise TypeError("unhashable type: '%s'" % self.__name__)
 
+    @synchronized
     def extendleft(self, iterable):
         """Extend the left side of the deque with elements from the iterable"""
         # Handle case where id(deque) == id(iterable)
@@ -242,6 +260,7 @@ class deque(object):
                 break
             self.appendleft(obj)
 
+    @synchronized
     def popleft(self):
         """Remove and return the leftmost element."""
         if self.len == 0:
@@ -266,6 +285,7 @@ class deque(object):
         self._modified()
         return obj
 
+    @synchronized
     def remove(self, x):
         """Remove first occurrence of value."""
         block = self.leftblock
@@ -286,6 +306,7 @@ class deque(object):
                 index = 0
         raise ValueError("deque.remove(x): x not in deque")
 
+    @synchronized
     def reverse(self):
         """Reverse *IN PLACE*."""
         li = self.leftindex
@@ -303,6 +324,7 @@ class deque(object):
                 rb = rb.leftlink
                 ri = BLOCKLEN - 1
 
+    @synchronized
     def rotate(self, n=1):
         """Rotate the deque n steps to the right (default n=1).  If n is negative, rotates left."""
         len = self.len
@@ -343,6 +365,7 @@ class deque(object):
             maxlen_repr = ', maxlen=%d' % (self.maxlen,)
         return '%s(%s%s)' % (type(self).__name__, list_repr, maxlen_repr)
 
+    @synchronized
     def __compare__(self, other, op):
         if not isinstance(other, deque):
             return NotImplemented
@@ -415,6 +438,7 @@ class deque(object):
         if idx < 0 or idx >= self.len:
             raise IndexError("deque index out of range")
 
+    @synchronized
     def index(self, v, start=0, stop=None):
         if stop is None:
             stop = self.len
@@ -517,6 +541,7 @@ class deque(object):
         self._check_index(idx)
         self.delitem(idx)
 
+    @synchronized
     def copy(self):
         """Return a shallow copy of a deque."""
         if self._maxlen == sys.maxsize:
@@ -551,6 +576,8 @@ class deque(object):
             return None
         else:
             return self._maxlen
+
+    del synchronized
 
 
 class _DequeIter(object):
