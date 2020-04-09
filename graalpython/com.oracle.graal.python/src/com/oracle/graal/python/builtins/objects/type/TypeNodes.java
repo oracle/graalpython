@@ -357,7 +357,6 @@ public abstract class TypeNodes {
     }
 
     @TypeSystemReference(PythonTypes.class)
-    @ImportStatic(NativeMemberNames.class)
     @GenerateUncached
     public abstract static class GetSubclassesNode extends PNodeWithContext {
 
