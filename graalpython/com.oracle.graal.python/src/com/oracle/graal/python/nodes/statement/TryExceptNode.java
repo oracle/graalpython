@@ -41,7 +41,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -143,6 +142,11 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     throw e;
                 } else {
                     PException pe = PException.fromObject(getBaseException(e), this);
+                    // Re-attach truffle stacktrace
+                    pe.initCause(e.getCause());
+                    // Host exceptions have their stacktrace already filled in, call this to set the
+                    // cutoff point to the catch site
+                    pe.getTruffleStackTrace();
                     try {
                         catchException(frame, pe, exceptionState);
                     } catch (PException pe_thrown) {
