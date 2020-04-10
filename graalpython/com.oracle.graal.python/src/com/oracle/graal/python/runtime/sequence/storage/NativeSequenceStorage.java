@@ -53,11 +53,13 @@ public class NativeSequenceStorage extends SequenceStorage {
     /* allocated capacity */
     protected int capacity;
 
+    protected final ListStorageType elementType;
+
     public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
-        super(elementType);
         this.ptr = ptr;
         this.capacity = capacity;
         this.len = length;
+        this.elementType = elementType;
     }
 
     public Object getPtr() {
@@ -74,6 +76,11 @@ public class NativeSequenceStorage extends SequenceStorage {
 
     public void setCapacity(int capacity) {
         this.capacity = capacity;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return elementType;
     }
 
     @Override

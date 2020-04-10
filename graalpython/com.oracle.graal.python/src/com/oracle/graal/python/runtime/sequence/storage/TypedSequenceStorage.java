@@ -27,10 +27,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 public abstract class TypedSequenceStorage extends BasicSequenceStorage {
 
-    public TypedSequenceStorage(ListStorageType type) {
-        super(type);
-    }
-
     @Override
     public final ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
         return new ObjectSequenceStorage(getInternalArray());

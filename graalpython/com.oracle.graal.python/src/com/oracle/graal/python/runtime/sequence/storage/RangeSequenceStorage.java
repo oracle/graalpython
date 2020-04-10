@@ -47,7 +47,6 @@ public class RangeSequenceStorage extends SequenceStorage {
     private final PRange range;
 
     public RangeSequenceStorage(PRange range) {
-        super(ListStorageType.Int);
         this.range = range;
     }
 
@@ -78,6 +77,11 @@ public class RangeSequenceStorage extends SequenceStorage {
     @Override
     public Object getInternalArrayObject() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Int;
     }
 
     @Override

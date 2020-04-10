@@ -32,7 +32,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     private boolean[] values;
 
     public BoolSequenceStorage() {
-        super(ListStorageType.Boolean);
         values = new boolean[]{};
     }
 
@@ -41,14 +40,12 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     public BoolSequenceStorage(boolean[] elements, int length) {
-        super(ListStorageType.Boolean);
         this.values = elements;
         this.capacity = values.length;
         this.length = length;
     }
 
     public BoolSequenceStorage(int capacity) {
-        super(ListStorageType.Boolean);
         this.values = new boolean[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -261,5 +258,10 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (boolean[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Boolean;
     }
 }

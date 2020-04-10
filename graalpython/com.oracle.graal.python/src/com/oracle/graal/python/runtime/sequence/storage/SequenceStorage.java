@@ -27,16 +27,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 public abstract class SequenceStorage {
 
-    protected final ListStorageType elementType;
-
-    public SequenceStorage(ListStorageType type) {
-        this.elementType = type;
-    }
-
-    public final ListStorageType getElementType() {
-        return elementType;
-    }
-
     public enum ListStorageType {
         Uninitialized,
         Empty,
@@ -85,6 +75,8 @@ public abstract class SequenceStorage {
      * storage object.
      */
     public abstract Object getInternalArrayObject();
+
+    public abstract ListStorageType getElementType();
 
     public abstract Object[] getInternalArray();
 

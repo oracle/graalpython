@@ -35,10 +35,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 
 public final class EmptySequenceStorage extends SequenceStorage {
 
-    public EmptySequenceStorage() {
-        super(ListStorageType.Empty);
-    }
-
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
 
     @Override
@@ -155,5 +151,10 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public Object getInternalArrayObject() {
         return null;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Empty;
     }
 }

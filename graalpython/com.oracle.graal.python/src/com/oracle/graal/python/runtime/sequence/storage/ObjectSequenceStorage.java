@@ -34,21 +34,18 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     private Object[] values;
 
     public ObjectSequenceStorage(Object[] elements) {
-        super(ListStorageType.Generic);
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
     }
 
     public ObjectSequenceStorage(Object[] elements, int length) {
-        super(ListStorageType.Generic);
         this.values = elements;
         this.capacity = elements.length;
         this.length = length;
     }
 
     public ObjectSequenceStorage(int capacity) {
-        super(ListStorageType.Generic);
         this.values = new Object[capacity];
         this.capacity = capacity;
         this.length = 0;
@@ -200,5 +197,10 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (Object[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Generic;
     }
 }
