@@ -25,8 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.List;
 
@@ -105,6 +107,38 @@ public final class SetBuiltins extends PythonBuiltins {
         Object doReverse(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("create(__OR__)") LookupAndCallBinaryNode callOr) {
             return callOr.executeObject(frame, other, self);
+        }
+    }
+
+    @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class AndNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "1")
+        Object doSet(@SuppressWarnings("unused") VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(lib.intersect(self.getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
+        Object doReverse(VirtualFrame frame, PBaseSet self, Object other,
+                        @Cached("create(__AND__)") LookupAndCallBinaryNode callAnd) {
+            return callAnd.executeObject(frame, other, self);
+        }
+    }
+
+    @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class XorNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "1")
+        Object doSet(@SuppressWarnings("unused") VirtualFrame frame, PBaseSet self, PBaseSet other,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createSet(lib.xor(self.getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
+        Object doReverse(VirtualFrame frame, PBaseSet self, Object other,
+                        @Cached("create(__XOR__)") LookupAndCallBinaryNode callXor) {
+            return callXor.executeObject(frame, other, self);
         }
     }
 
