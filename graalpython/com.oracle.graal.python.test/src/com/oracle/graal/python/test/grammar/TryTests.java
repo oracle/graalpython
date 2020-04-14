@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.test.grammar;
 
 import org.junit.Test;
 
+import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
 public class TryTests {
@@ -184,5 +185,11 @@ public class TryTests {
                         "finally: pass\n";
 
         assertPrints("", source);
+    }
+
+    @Test
+    public void tryGrammarError() {
+        assertLastLineErrorContains("SyntaxError", "try: 1+1\n");
+        assertLastLineErrorContains("SyntaxError", "try:\n 1+1\n");
     }
 }
