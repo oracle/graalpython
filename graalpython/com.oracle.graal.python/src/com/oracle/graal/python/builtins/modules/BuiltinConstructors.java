@@ -336,168 +336,128 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ComplexNode extends PythonBuiltinNode {
 
         @Child private GetLazyClassNode getClassNode;
-        @Child private CoerceToDoubleNode castRealNode;
-        @Child private CoerceToDoubleNode castImagNode;
         @Child private LookupAndCallUnaryNode callComplexFunc;
-        @Child private CoerceToDoubleNode fallbackCoerce;
+        @Child private CoerceToDoubleNode firstArgCoerceToDouble;
+        @Child private CoerceToDoubleNode secondArgCoerceToDouble;
 
         private final IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-        private IsBuiltinClassProfile isComplexTypeProfile;
-        private IsBuiltinClassProfile profile;
-        private BranchProfile errorProfile;
+        @CompilationFinal private IsBuiltinClassProfile isComplexTypeProfile;
 
-        protected boolean isPrimitiveComplex(LazyPythonClass cls) {
-            return isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex);
-        }
-
-        @Specialization
-        PComplex complexFromIntInt(LazyPythonClass cls, int real, int imaginary) {
-            if (isPrimitiveComplex(cls)) {
+        private PComplex createComplex(LazyPythonClass cls, double real, double imaginary) {
+            if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
                 return factory().createComplex(real, imaginary);
             }
             return factory().createComplex(cls, real, imaginary);
         }
 
-        @Specialization
-        PComplex complexFromLongLong(LazyPythonClass cls, long real, long imaginary) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real, imaginary);
-            }
-            return factory().createComplex(cls, real, imaginary);
-        }
-
-        @Specialization
-        PComplex complexFromLongLong(LazyPythonClass cls, PInt real, PInt imaginary) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real.doubleValue(), imaginary.doubleValue());
-            }
-            return factory().createComplex(cls, real.doubleValue(), imaginary.doubleValue());
-        }
-
-        @Specialization
-        PComplex complexFromDoubleDouble(LazyPythonClass cls, double real, double imaginary) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real, imaginary);
-            }
-            return factory().createComplex(cls, real, imaginary);
-        }
-
-        @Specialization
-        PComplex complexFromDouble(LazyPythonClass cls, double real, @SuppressWarnings("unused") PNone image) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real, 0);
-            }
-            return factory().createComplex(cls, real, 0);
-        }
-
-        @Specialization
-        PComplex complexFromInt(LazyPythonClass cls, int real, @SuppressWarnings("unused") PNone image) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real, 0);
-            }
-            return factory().createComplex(cls, real, 0);
-        }
-
-        @Specialization
-        PComplex complexFromLong(LazyPythonClass cls, long real, @SuppressWarnings("unused") PNone image) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real, 0);
-            }
-            return factory().createComplex(cls, real, 0);
-        }
-
-        @Specialization
-        PComplex complexFromLong(LazyPythonClass cls, PInt real, @SuppressWarnings("unused") PNone image) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(real.doubleValue(), 0);
-            }
-            return factory().createComplex(cls, real.doubleValue(), 0);
-        }
-
-        @Specialization
-        PComplex complexFromLongComplex(LazyPythonClass cls, long one, PComplex two) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(one - two.getImag(), two.getReal());
-            }
-            return factory().createComplex(cls, one - two.getImag(), two.getReal());
-        }
-
-        @Specialization
-        PComplex complexFromPIntComplex(LazyPythonClass cls, PInt one, PComplex two) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(one.doubleValue() - two.getImag(), two.getReal());
-            }
-            return factory().createComplex(cls, one.doubleValue() - two.getImag(), two.getReal());
-        }
-
-        @Specialization
-        PComplex complexFromDoubleComplex(LazyPythonClass cls, double one, PComplex two) {
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(one - two.getImag(), two.getReal());
-            }
-            return factory().createComplex(cls, one - two.getImag(), two.getReal());
-        }
-
-        @Specialization
-        PComplex complexFromComplexLong(VirtualFrame frame, LazyPythonClass cls, PComplex one, long two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(value.getReal(), value.getImag() + two);
-            }
-            return factory().createComplex(cls, value.getReal(), value.getImag() + two);
-        }
-
-        @Specialization
-        PComplex complexFromComplexDouble(VirtualFrame frame, LazyPythonClass cls, PComplex one, double two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(value.getReal(), value.getImag() + two);
-            }
-            return factory().createComplex(cls, value.getReal(), value.getImag() + two);
-        }
-
-        @Specialization
-        PComplex complexFromComplexPInt(VirtualFrame frame, LazyPythonClass cls, PComplex one, PInt two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(value.getReal(), value.getImag() + two.doubleValue());
-            }
-            return factory().createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
-        }
-
-        @Specialization
-        PComplex complexFromComplex(VirtualFrame frame, LazyPythonClass cls, PComplex number, @SuppressWarnings("unused") PNone image) {
-            PComplex value = getComplexNumberFromObject(frame, number);
-            if (isPrimitiveComplex(cls)) {
+        private PComplex createComplex(LazyPythonClass cls, PComplex value) {
+            if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
                 return value;
             }
             return factory().createComplex(cls, value.getReal(), value.getImag());
         }
 
-        @Specialization
-        PComplex complexFromComplexComplex(VirtualFrame frame, LazyPythonClass cls, PComplex one, PComplex two) {
-            PComplex value = getComplexNumberFromObject(frame, one);
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(value.getReal() - two.getImag(), value.getImag() + two.getReal());
-            }
-            return factory().createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
-        }
-
-        @Specialization
+        @Specialization(guards = {"isNoValue(real)", "isNoValue(imag)"})
         @SuppressWarnings("unused")
-        PComplex complexFromNone(LazyPythonClass cls, PNone real, PNone image) {
-            if (real == PNone.NONE) {
-                throw raise(TypeError, "complex() first argument must be a string or a number, not '%p'", real);
-            }
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(0, 0);
-            }
-            return factory().createComplex(cls, 0, 0);
+        PComplex complexFromNone(LazyPythonClass cls, PNone real, PNone imag) {
+            return createComplex(cls, 0, 0);
         }
 
         @Specialization
-        PComplex complexFromObjectObject(LazyPythonClass cls, String real, Object imaginary) {
-            if (!(imaginary instanceof PNone)) {
+        PComplex complexFromIntInt(LazyPythonClass cls, int real, int imaginary) {
+            return createComplex(cls, real, imaginary);
+        }
+
+        @Specialization
+        PComplex complexFromLongLong(LazyPythonClass cls, long real, long imaginary) {
+            return createComplex(cls, real, imaginary);
+        }
+
+        @Specialization
+        PComplex complexFromLongLong(LazyPythonClass cls, PInt real, PInt imaginary) {
+            return createComplex(cls, real.doubleValue(), imaginary.doubleValue());
+        }
+
+        @Specialization
+        PComplex complexFromDoubleDouble(LazyPythonClass cls, double real, double imaginary) {
+            return createComplex(cls, real, imaginary);
+        }
+
+        @Specialization(guards = "isNoValue(imag)")
+        PComplex complexFromDouble(LazyPythonClass cls, double real, @SuppressWarnings("unused") PNone imag) {
+            return createComplex(cls, real, 0);
+        }
+
+        @Specialization(guards = "isNoValue(imag)")
+        PComplex complexFromInt(LazyPythonClass cls, int real, @SuppressWarnings("unused") PNone imag) {
+            return createComplex(cls, real, 0);
+        }
+
+        @Specialization(guards = "isNoValue(imag)")
+        PComplex complexFromLong(LazyPythonClass cls, long real, @SuppressWarnings("unused") PNone imag) {
+            return createComplex(cls, real, 0);
+        }
+
+        @Specialization(guards = "isNoValue(imag)")
+        PComplex complexFromLong(LazyPythonClass cls, PInt real, @SuppressWarnings("unused") PNone imag) {
+            return createComplex(cls, real.doubleValue(), 0);
+        }
+
+        @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
+        PComplex complexFromObject(VirtualFrame frame, LazyPythonClass cls, Object number, @SuppressWarnings("unused") PNone imag) {
+            PComplex value = getComplexNumberFromObject(frame, number);
+            return createComplex(cls, value);
+        }
+
+        @Specialization
+        PComplex complexFromLongComplex(LazyPythonClass cls, long one, PComplex two) {
+            return createComplex(cls, one - two.getImag(), two.getReal());
+        }
+
+        @Specialization
+        PComplex complexFromPIntComplex(LazyPythonClass cls, PInt one, PComplex two) {
+            return createComplex(cls, one.doubleValue() - two.getImag(), two.getReal());
+        }
+
+        @Specialization
+        PComplex complexFromDoubleComplex(LazyPythonClass cls, double one, PComplex two) {
+            return createComplex(cls, one - two.getImag(), two.getReal());
+        }
+
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexLong(VirtualFrame frame, LazyPythonClass cls, Object one, long two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
+            return createComplex(cls, value.getReal(), value.getImag() + two);
+        }
+
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexDouble(VirtualFrame frame, LazyPythonClass cls, Object one, double two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
+            return createComplex(cls, value.getReal(), value.getImag() + two);
+        }
+
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexPInt(VirtualFrame frame, LazyPythonClass cls, Object one, PInt two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
+            return createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
+        }
+
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexComplex(VirtualFrame frame, LazyPythonClass cls, Object one, PComplex two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
+            return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
+        }
+
+        @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
+        PComplex complexFromComplexObject(VirtualFrame frame, LazyPythonClass cls, Object one, Object two) {
+            PComplex oneValue = getComplexNumberFromObject(frame, one);
+            double twoValue = getSecondArgCoerceToDouble().execute(frame, two);
+            return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue);
+        }
+
+        @Specialization
+        PComplex complexFromString(LazyPythonClass cls, String real, Object imaginary) {
+            if (imaginary != PNone.NO_VALUE) {
                 throw raise(TypeError, "complex() can't take second arg if first is a string");
             }
             return convertStringToComplex(real, cls);
@@ -513,39 +473,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private IsBuiltinClassProfile getIsComplexTypeProfile() {
             if (isComplexTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 isComplexTypeProfile = IsBuiltinClassProfile.create();
             }
             return isComplexTypeProfile;
-        }
-
-        private BranchProfile getErrorProfile() {
-            if (errorProfile == null) {
-                errorProfile = BranchProfile.create();
-            }
-            return errorProfile;
-        }
-
-        private CoerceToDoubleNode getCastRealNode() {
-            if (castRealNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castRealNode = insert(CoerceToDoubleNode.create());
-            }
-            return castRealNode;
-        }
-
-        private CoerceToDoubleNode getCastImagNode() {
-            if (castImagNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castImagNode = insert(CoerceToDoubleNode.create());
-            }
-            return castImagNode;
-        }
-
-        private IsBuiltinClassProfile getProfile() {
-            if (profile == null) {
-                profile = IsBuiltinClassProfile.create();
-            }
-            return profile;
         }
 
         private LookupAndCallUnaryNode getCallComplexFunc() {
@@ -556,14 +487,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callComplexFunc;
         }
 
-        private CoerceToDoubleNode getFallbackCoerce() {
-            if (fallbackCoerce == null) {
+        private CoerceToDoubleNode getFirstArgCoerceToDouble() {
+            if (firstArgCoerceToDouble == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                fallbackCoerce = insert(CoerceToDoubleNode.create(val -> {
+                firstArgCoerceToDouble = insert(CoerceToDoubleNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "complex() first argument must be a string or a number, not '%p'", val);
                 }));
             }
-            return fallbackCoerce;
+            return firstArgCoerceToDouble;
+        }
+
+        private CoerceToDoubleNode getSecondArgCoerceToDouble() {
+            if (secondArgCoerceToDouble == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                secondArgCoerceToDouble = insert(CoerceToDoubleNode.create(val -> {
+                    throw raise(PythonBuiltinClassType.TypeError, "complex() second argument must be a number, not '%p'", val);
+                }));
+            }
+            return secondArgCoerceToDouble;
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
@@ -572,9 +513,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else {
                 Object result = getCallComplexFunc().executeObject(frame, object);
                 if (result != PNone.NO_VALUE) {
-                    if (getIsComplexTypeProfile().profileClass(getGetClassNode().execute(object), PythonBuiltinClassType.PComplex)) {
-                        return (PComplex) result;
-                    }
                     if (result instanceof PComplex) {
                         // TODO we need pass here deprecation warning
                         // DeprecationWarning: __complex__ returned non-complex (type %p).
@@ -590,44 +528,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // the class extending PComplex but doesn't have __complex__ method
                     return (PComplex) object;
                 }
-                return factory().createComplex(getFallbackCoerce().execute(frame, object), 0.0);
+                return factory().createComplex(getFirstArgCoerceToDouble().execute(frame, object), 0.0);
             }
         }
 
         @Fallback
-        Object complexGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object realObj, Object imaginaryObj) {
-            boolean noImag = PGuards.isNoValue(imaginaryObj);
-            if (noImag) {
-                if (getIsComplexTypeProfile().profileClass(getGetClassNode().execute(realObj), PythonBuiltinClassType.PComplex)) {
-                    return realObj;
-                }
-                Object result = getCallComplexFunc().executeObject(frame, realObj);
-                if (result != PNone.NO_VALUE && result instanceof PComplex) {
-                    return result;
-                }
-            }
-            try {
-                double real = getCastRealNode().execute(frame, realObj);
-                double imag = !noImag ? getCastImagNode().execute(frame, imaginaryObj) : 0.0;
-                if (isPrimitiveComplex((LazyPythonClass) cls)) {
-                    return factory().createComplex(real, imag);
-                }
-                return factory().createComplex((LazyPythonClass) cls, real, imag);
-            } catch (PException e) {
-                getErrorProfile().enter();
-                e.expect(PythonBuiltinClassType.TypeError, getProfile());
-                if (!(PGuards.isString(realObj) || PGuards.isInteger(realObj) || PGuards.isPInt(realObj) || PGuards.isDouble(realObj))) {
-                    throw raise(TypeError, "complex() first argument must be a string or a number, not '%p'", realObj);
-                }
-                if (!((PGuards.isInteger(imaginaryObj) || PGuards.isPInt(imaginaryObj) || PGuards.isDouble(imaginaryObj)))) {
-                    throw raise(TypeError, "complex() second argument must be a number, not '%p'", imaginaryObj);
-                }
-                throw raise(TypeError, "can't convert real %s imag %s", realObj, imaginaryObj);
-            }
-        }
-
-        protected static boolean isExactComplexType(GetLazyClassNode getClassNode, PComplex obj) {
-            return getClassNode.execute(obj) == PythonBuiltinClassType.PComplex;
+        @SuppressWarnings("unused")
+        Object complexGeneric(Object cls, Object realObj, Object imaginaryObj) {
+            throw raise(TypeError, "complex.__new__(X): X is not a type object (%p)", cls);
         }
 
         // Taken from Jython PyString's __complex__() method
@@ -794,10 +702,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(ValueError, "malformed string for complex() %s", str.substring(s));
             }
 
-            if (isPrimitiveComplex(cls)) {
-                return factory().createComplex(x, y);
-            }
-            return factory().createComplex(cls, x, y);
+            return createComplex(cls, x, y);
         }
 
         // Taken from Jython PyString directly

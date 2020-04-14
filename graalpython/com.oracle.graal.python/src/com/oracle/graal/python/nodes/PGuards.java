@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -358,6 +359,10 @@ public abstract class PGuards {
 
     public static boolean isPNone(Object obj) {
         return obj instanceof PNone;
+    }
+
+    public static boolean isPComplex(Object obj) {
+        return obj instanceof PComplex;
     }
 
     public static boolean isPTuple(Object obj) {
