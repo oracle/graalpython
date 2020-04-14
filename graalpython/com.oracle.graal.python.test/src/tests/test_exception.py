@@ -185,6 +185,49 @@ class ExceptionTests(unittest.TestCase):
         except TypeError:
             pass
 
+    def test_generator(self):
+        def gen():
+            try:
+                1 / 0
+            except Exception as e:
+                yield 1
+                raise
+        g = gen()
+        self.assertEqual(next(g), 1)
+        self.assertRaises(ZeroDivisionError, lambda: next(g))
+
+    def test_generator_nested(self):
+        def gen():
+            try:
+                1 / 0
+            except Exception:
+                yield 1
+                try:
+                    int("t")
+                except Exception:
+                    yield 2
+                raise
+        g = gen()
+        self.assertEqual(next(g), 1)
+        self.assertEqual(next(g), 2)
+        self.assertRaises(ZeroDivisionError, lambda: next(g))
+
+    def test_generator_finally(self):
+        def gen():
+            try:
+                1 / 0
+            finally:
+                yield 1
+                try:
+                    int("t")
+                except Exception:
+                    yield 2
+
+        g = gen()
+        self.assertEqual(next(g), 1)
+        self.assertEqual(next(g), 2)
+        self.assertRaises(ZeroDivisionError, lambda: next(g))
+
     # Not working yet. GR-21850
     # def test_implicit_chaining(self):
     #     try:
