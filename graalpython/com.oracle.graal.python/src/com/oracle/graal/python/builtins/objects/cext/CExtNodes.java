@@ -1777,14 +1777,14 @@ public abstract class CExtNodes {
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Cached LookupAndCallUnaryDynamicNode callIntNode,
                         @Cached AsNativePrimitiveNode recursive,
-                        @Exclusive @Cached BranchProfile noIndexProfile,
+                        @Exclusive @Cached BranchProfile noIntProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
             Object result = callIndexNode.executeObject(obj, SpecialMethodNames.__INDEX__);
             if (result == PNone.NO_VALUE) {
-                noIndexProfile.enter();
                 result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
                 if (result == PNone.NO_VALUE) {
+                    noIntProfile.enter();
                     throw raiseNode.raise(PythonErrorType.TypeError, "an integer is required (got type %p)", result);
                 }
             }
