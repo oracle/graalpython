@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,14 @@
 package com.oracle.graal.python.parser.antlr;
 
 import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.IntervalSet;
 
+import com.oracle.graal.python.parser.antlr.Python3Parser.Single_inputContext;
 import com.oracle.graal.python.runtime.PythonParser.PIncompleteSourceException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -74,6 +77,12 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
                 throw handleRecognitionException;
             }
         }
+        if (isInteractive(recognizer)) {
+            PIncompleteSourceException handleRecognitionException = handleInteractiveException(recognizer);
+            if (handleRecognitionException != null) {
+                throw handleRecognitionException;
+            }
+        }
         if (offendingSymbol instanceof Token) {
             throw new RuntimeException(entireMessage, new EmptyRecognitionException(entireMessage, recognizer, (Token) offendingSymbol));
         }
@@ -85,6 +94,40 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
             return new PIncompleteSourceException(message, cause, line);
         }
         return null;
+    }
+
+    private static PIncompleteSourceException handleInteractiveException(Recognizer<?, ?> recognizer) {
+        if (isOpened(((Python3Parser) recognizer).getTokenStream())) {
+            return new PIncompleteSourceException("", null, -1);
+        }
+        return null;
+    }
+
+    private static ParserRuleContext getRootCtx(ParserRuleContext ctx) {
+        ParserRuleContext c = ctx;
+        while (c.getParent() != null) {
+            c = c.getParent();
+        }
+        return c;
+    }
+
+    private static boolean isInteractive(Recognizer<?, ?> recognizer) {
+        if (!(recognizer instanceof Python3Parser)) {
+            return false;
+        }
+        ParserRuleContext ctx = getRootCtx(((Python3Parser) recognizer).getContext());
+        if (ctx instanceof Single_inputContext) {
+            return ((Single_inputContext) ctx).interactive;
+        }
+        return false;
+    }
+
+    /**
+     * @return true if there are an open '(', '[' or '{'.
+     */
+    private static boolean isOpened(TokenStream input) {
+        final Python3Lexer lexer = (Python3Lexer) input.getTokenSource();
+        return lexer.isOpened();
     }
 
     private static class EmptyRecognitionException extends RecognitionException {

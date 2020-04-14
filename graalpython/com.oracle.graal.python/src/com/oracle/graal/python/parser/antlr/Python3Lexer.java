@@ -219,6 +219,10 @@ public class Python3Lexer extends Lexer {
 	    return tokens.isEmpty() ? next : tokens.poll();
 	  }
 
+	  public boolean isOpened() {
+		  return opened > 0;
+	  }
+
 	  private Token createDedent() {
 	    CommonToken dedent = commonToken(Python3Parser.DEDENT, "");
 	    dedent.setLine(this.lastToken.getLine());
