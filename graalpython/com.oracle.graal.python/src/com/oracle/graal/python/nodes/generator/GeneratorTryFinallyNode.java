@@ -59,10 +59,12 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     @Child private RestoreExceptionStateNode restoreExceptionStateNode;
 
     private final int finallyFlag;
+    private final int activeExceptionIndex;
 
-    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag) {
+    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag, int activeExceptionIndex) {
         super(body, finalbody);
         this.finallyFlag = finallyFlag;
+        this.activeExceptionIndex = activeExceptionIndex;
     }
 
     @Override
@@ -78,13 +80,13 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 PBaseException caughtException = e.reifyAndGetPythonException(frame);
                 LazyTraceback caughtTraceback = caughtException.getTraceback();
                 ExceptionInfo exceptionInfo = new ExceptionInfo(caughtException, caughtTraceback);
-                gen.setActiveException(frame, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
+                gen.setActiveException(frame, activeExceptionIndex, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
                 ExceptionStateNodes.SetCaughtExceptionNode.execute(frame, exceptionInfo);
             }
             gen.setActive(frame, finallyFlag, true);
             executeFinalBody(frame);
         }
-        ExceptionState activeException = gen.getActiveException(frame);
+        ExceptionState activeException = gen.getActiveException(frame, activeExceptionIndex);
         reset(frame);
         if (activeException != null) {
             throw activeException.exc.exception.getExceptionForReraise(activeException.exc.traceback);
@@ -101,7 +103,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     public void reset(VirtualFrame frame) {
         gen.setActive(frame, finallyFlag, false);
-        gen.setActiveException(frame, null);
+        gen.setActiveException(frame, activeExceptionIndex, null);
     }
 
     private RestoreExceptionStateNode ensureRestoreExceptionState() {

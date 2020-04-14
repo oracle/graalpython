@@ -136,12 +136,12 @@ final class GeneratorAccessNode extends Node {
         getControlData(frame).setIteratorAt(iteratorSlot, value);
     }
 
-    public ExceptionState getActiveException(VirtualFrame frame) {
-        return getControlData(frame).getActiveException();
+    public ExceptionState getActiveException(VirtualFrame frame, int slot) {
+        return getControlData(frame).getActiveException(slot);
     }
 
-    public void setActiveException(VirtualFrame frame, ExceptionState ex) {
-        getControlData(frame).setActiveException(ex);
+    public void setActiveException(VirtualFrame frame, int slot, ExceptionState ex) {
+        getControlData(frame).setActiveException(slot, ex);
     }
 
     public static GeneratorAccessNode create() {

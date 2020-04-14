@@ -64,12 +64,14 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     private final int exceptFlag;
     private final int elseFlag;
     private final int exceptIndex;
+    private final int activeExceptionIndex;
 
-    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, int exceptFlag, int elseFlag, int exceptIndex) {
+    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, int exceptFlag, int elseFlag, int exceptIndex, int activeExceptionIndex) {
         super(body, exceptNodes, orelse);
         this.exceptFlag = exceptFlag;
         this.elseFlag = elseFlag;
         this.exceptIndex = exceptIndex;
+        this.activeExceptionIndex = activeExceptionIndex;
     }
 
     @Override
@@ -77,7 +79,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         ExceptionState exceptionState = saveExceptionStateNode.execute(frame);
 
         if (gen.isActive(frame, exceptFlag)) {
-            catchExceptionInGenerator(frame, gen.getActiveException(frame).exc.exception.getException(), exceptionState);
+            catchExceptionInGenerator(frame, gen.getActiveException(frame, activeExceptionIndex).exc.exception.getException(), exceptionState);
             reset(frame);
             return;
         }
@@ -119,7 +121,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                     if (exceptNode.matchesException(frame, exception)) {
                         PBaseException exceptionObject = exception.reifyAndGetPythonException(frame);
                         ExceptionInfo exceptionInfo = new ExceptionInfo(exceptionObject, exceptionObject.getTraceback());
-                        gen.setActiveException(frame, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
+                        gen.setActiveException(frame, activeExceptionIndex, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
                         runExceptionHandler(frame, exception, exceptNode, exceptionState);
                         wasHandled = true;
                     }
@@ -171,6 +173,6 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         gen.setActive(frame, elseFlag, false);
         gen.setActive(frame, exceptFlag, false);
         gen.setIndex(frame, exceptIndex, 0);
-        gen.setActiveException(frame, null);
+        gen.setActiveException(frame, activeExceptionIndex, null);
     }
 }

@@ -54,12 +54,14 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     private final int withObjectSlot;
     private final int enterSlot;
     private final int yieldSlot;
+    private final int activeExceptionSlot;
 
-    public GeneratorWithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext, int enterSlot, int withObjectSlot, int yieldSlot) {
+    public GeneratorWithNode(WriteNode targetNode, StatementNode body, ExpressionNode withContext, int enterSlot, int withObjectSlot, int yieldSlot, int activeExceptionSlot) {
         super(targetNode, body, withContext);
         this.enterSlot = enterSlot;
         this.withObjectSlot = withObjectSlot;
         this.yieldSlot = yieldSlot;
+        this.activeExceptionSlot = activeExceptionSlot;
     }
 
     @Override
@@ -76,11 +78,11 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     protected ExceptionState doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
         if (!gen.isActive(frame, enterSlot)) {
             ExceptionState activeException = super.doEnter(frame, withObject, enterCallable);
-            gen.setActiveException(frame, activeException);
+            gen.setActiveException(frame, activeExceptionSlot, activeException);
             gen.setActive(frame, enterSlot, true);
             return activeException;
         } else {
-            return gen.getActiveException(frame);
+            return gen.getActiveException(frame, activeExceptionSlot);
         }
     }
 
@@ -106,7 +108,7 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
             gen.setActive(frame, yieldSlot, false);
         } else {
             reset(frame);
-            gen.setActiveException(frame, exceptionState);
+            gen.setActiveException(frame, activeExceptionSlot, exceptionState);
             super.doLeave(frame, withObject, exceptionState, gotException, exitCallable);
         }
     }
