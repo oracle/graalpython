@@ -1,2 +1,2 @@
-test_yiq_roundtrip
-test_yiq_values
+*ColorsysTest.test_yiq_roundtrip
+*ColorsysTest.test_yiq_values

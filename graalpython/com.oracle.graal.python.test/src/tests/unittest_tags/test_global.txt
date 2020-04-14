@@ -1,1 +1,1 @@
-test4
+*GlobalTests.test4

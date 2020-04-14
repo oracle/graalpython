@@ -1,2 +1,3 @@
 *PropertyTests.test_property_decorator_baseclass
 *PropertyTests.test_property_decorator_subclass
+*PropertyTests.test_refleaks_in___init__

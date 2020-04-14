@@ -1,4 +1,4 @@
-test_contextmanager
-test_iterating
-test_keywords
-test_return_code
+*PopenTest.test_contextmanager
+*PopenTest.test_iterating
+*PopenTest.test_keywords
+*PopenTest.test_return_code

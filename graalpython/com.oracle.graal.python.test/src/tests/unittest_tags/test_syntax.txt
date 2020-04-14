@@ -2,3 +2,5 @@
 *SyntaxTestCase.test_kwargs_last
 *SyntaxTestCase.test_kwargs_last2
 *SyntaxTestCase.test_kwargs_last3
+*SyntaxTestCase.test_return_outside_function
+*SyntaxTestCase.test_yield_outside_function

@@ -1,0 +1,5 @@
+*TestCRLFNewlines.test_tell
+*TestGenericUnivNewlines.test_read
+*TestGenericUnivNewlines.test_readline
+*TestGenericUnivNewlines.test_readlines
+*TestGenericUnivNewlines.test_seek

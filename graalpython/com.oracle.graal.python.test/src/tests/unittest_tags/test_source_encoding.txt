@@ -1,5 +1,7 @@
 *MiscSourceEncodingTest.test_20731
 *MiscSourceEncodingTest.test_bad_coding2
 *MiscSourceEncodingTest.test_compilestring
+*MiscSourceEncodingTest.test_file_parse
+*MiscSourceEncodingTest.test_issue3297
 *MiscSourceEncodingTest.test_issue4626
 *MiscSourceEncodingTest.test_issue7820

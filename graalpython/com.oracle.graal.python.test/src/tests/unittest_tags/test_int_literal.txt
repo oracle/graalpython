@@ -1,6 +1,6 @@
-test_bin_baseline
-test_bin_unsigned
-test_hex_baseline
-test_hex_unsigned
-test_oct_baseline
-test_oct_unsigned
+*TestHexOctBin.test_bin_baseline
+*TestHexOctBin.test_bin_unsigned
+*TestHexOctBin.test_hex_baseline
+*TestHexOctBin.test_hex_unsigned
+*TestHexOctBin.test_oct_baseline
+*TestHexOctBin.test_oct_unsigned

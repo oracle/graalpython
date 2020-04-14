@@ -1,7 +1,7 @@
-*GcdTest.testMisc
 *FractionTest.testApproximateCos1
 *FractionTest.testApproximatePi
 *FractionTest.testBigComplexComparisons
+*FractionTest.testBoolGuarateesBoolReturn
 *FractionTest.testComparisons
 *FractionTest.testComparisonsDummyFloat
 *FractionTest.testComparisonsDummyRational
@@ -12,9 +12,13 @@
 *FractionTest.testInit
 *FractionTest.testInitFromDecimal
 *FractionTest.testInitFromFloat
+*FractionTest.testLargeArithmetic
 *FractionTest.testLimitDenominator
 *FractionTest.testMixedEqual
 *FractionTest.testMixedLess
 *FractionTest.testMixedLessEqual
 *FractionTest.testMixingWithDecimal
 *FractionTest.testStringification
+*FractionTest.test_as_integer_ratio
+*FractionTest.test_copy_deepcopy_pickle
+*GcdTest.testMisc

@@ -1,7 +1,0 @@
-test_parse_datetime
-test_parse_overview
-test_parse_overview_fmt
-test_module_all_attribute
-test_bad_welcome
-test_service_permanently_unavailable
-test_service_temporarily_unavailable

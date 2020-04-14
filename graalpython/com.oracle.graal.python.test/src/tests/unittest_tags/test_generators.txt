@@ -1,6 +1,10 @@
-*GeneratorTest.test_copy
-*GeneratorTest.test_pickle
 *ExceptionTest.test_except_next
 *ExceptionTest.test_except_throw
 *ExceptionTest.test_return_stopiteration
 *ExceptionTest.test_return_tuple
+*ExceptionTest.test_stopiteration_error
+*ExceptionTest.test_tutorial_stopiteration
+*FinalizationTest.test_lambda_generator
+*GeneratorTest.test_copy
+*GeneratorTest.test_pickle
+*SignalAndYieldFromTest.test_raise_and_yield_from

@@ -1,1 +1,1 @@
-test_bytecode
+*ModuleFinderTest.test_bytecode

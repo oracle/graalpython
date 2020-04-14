@@ -1,0 +1,1 @@
+*EINTRTests.test_all

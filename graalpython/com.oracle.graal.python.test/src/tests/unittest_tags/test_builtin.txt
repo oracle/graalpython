@@ -1,3 +1,2 @@
-test_all
-test_any
-test_bin
+*BuiltinTest.test_all
+*BuiltinTest.test_any

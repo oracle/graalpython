@@ -1,1 +1,6 @@
-test_uhyper
+*ConversionErrorTest.test_double
+*ConversionErrorTest.test_float
+*ConversionErrorTest.test_pack_int
+*ConversionErrorTest.test_pack_uint
+*ConversionErrorTest.test_uhyper
+*XDRTest.test_xdr

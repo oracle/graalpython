@@ -1,0 +1,2 @@
+*TestAlternateInput.test_file_with_missing_final_nl
+*TestAlternateInput.test_input_reset_at_EOF

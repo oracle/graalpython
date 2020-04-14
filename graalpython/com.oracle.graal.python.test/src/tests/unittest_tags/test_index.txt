@@ -1,1 +1,1 @@
-test_basic
+*BaseTestCase.test_basic

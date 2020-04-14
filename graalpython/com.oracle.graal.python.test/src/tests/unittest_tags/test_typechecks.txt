@@ -1,6 +1,6 @@
-testIsInstanceActual
-testIsInstanceBuiltin
-testIsSubclassActual
-testIsSubclassBuiltin
-testIsSubclassInternal
-testSubclassBehavior
+*TypeChecksTest.testIsInstanceActual
+*TypeChecksTest.testIsInstanceBuiltin
+*TypeChecksTest.testIsSubclassActual
+*TypeChecksTest.testIsSubclassBuiltin
+*TypeChecksTest.testIsSubclassInternal
+*TypeChecksTest.testSubclassBehavior

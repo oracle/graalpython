@@ -1,0 +1,15 @@
+*MiscTests.test_bpo_31728
+*MiscTests.test_del_attribute
+*MiscTests.test_iterparse_leaks
+*MiscTests.test_parser_ref_cycle
+*MiscTests.test_setstate_leaks
+*MiscTests.test_trashcan
+*MiscTests.test_xmlpullparser_leaks
+*SizeofTest.test_element
+*SizeofTest.test_element_with_attrib
+*SizeofTest.test_element_with_children
+*TestAcceleratorImported.test_correct_import_cET
+*TestAcceleratorImported.test_correct_import_cET_alias
+*TestAcceleratorImported.test_parser_comes_from_C
+*TestAliasWorking.test_alias_working
+*wrapper

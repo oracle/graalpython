@@ -1,0 +1,5 @@
+*DirCompareTestCase.test_cmpfiles
+*DirCompareTestCase.test_default_ignores
+*DirCompareTestCase.test_dircmp
+*DirCompareTestCase.test_report_full_closure
+*DirCompareTestCase.test_report_partial_closure

@@ -2,9 +2,7 @@
 *CgiTests.testQSAndFormDataFile
 *CgiTests.testQSAndUrlEncode
 *CgiTests.test_all
-*CgiTests.test_deprecated_parse_qs
-*CgiTests.test_deprecated_parse_qsl
-*CgiTests.test_escape
+*CgiTests.test_field_storage_multipart_no_content_length
 *CgiTests.test_fieldstorage_as_context_manager
 *CgiTests.test_fieldstorage_invalid
 *CgiTests.test_fieldstorage_multipart

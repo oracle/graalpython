@@ -1,4 +1,4 @@
-test_1
-test_3
-test_4
-test_8
+*TestPkg.test_1
+*TestPkg.test_3
+*TestPkg.test_4
+*TestPkg.test_8

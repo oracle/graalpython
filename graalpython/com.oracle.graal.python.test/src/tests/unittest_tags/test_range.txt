@@ -1,7 +1,1 @@
-*RangeTest.test_empty
-*RangeTest.test_invalid_invocation
-*RangeTest.test_issue11845
-*RangeTest.test_odd_bug
-*RangeTest.test_range
-*RangeTest.test_range_iterators_invocation
-*RangeTest.test_repr
+*RangeTest.test_attributes

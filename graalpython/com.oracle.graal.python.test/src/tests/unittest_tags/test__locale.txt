@@ -1,1 +1,4 @@
-test_float_parsing
+*_LocaleTests.test_float_parsing
+*_LocaleTests.test_lc_numeric_basic
+*_LocaleTests.test_lc_numeric_localeconv
+*_LocaleTests.test_lc_numeric_nl_langinfo

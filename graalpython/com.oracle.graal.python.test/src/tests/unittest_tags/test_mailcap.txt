@@ -1,8 +1,8 @@
-test_listmailcapfiles
-test_lookup
-test_readmailcapfile
-test_subst
-test_mock_getcaps
-test_system_mailcap
-test_findmatch
-test_test
+*FindmatchTest.test_findmatch
+*FindmatchTest.test_test
+*GetcapsTest.test_mock_getcaps
+*GetcapsTest.test_system_mailcap
+*HelperFunctionTest.test_listmailcapfiles
+*HelperFunctionTest.test_lookup
+*HelperFunctionTest.test_readmailcapfile
+*HelperFunctionTest.test_subst

@@ -1,2 +1,14 @@
-testEmptyPipeline1
-testSimplePipe2
+*SimplePipeTests.testBadAppendOptions
+*SimplePipeTests.testBadOpenMode
+*SimplePipeTests.testBadPrependOptions
+*SimplePipeTests.testClone
+*SimplePipeTests.testEmptyPipeline1
+*SimplePipeTests.testEmptyPipeline2
+*SimplePipeTests.testEmptyPipeline3
+*SimplePipeTests.testReadOpenSink
+*SimplePipeTests.testRepr
+*SimplePipeTests.testSetDebug
+*SimplePipeTests.testSimplePipe1
+*SimplePipeTests.testSimplePipe2
+*SimplePipeTests.testSimplePipe3
+*SimplePipeTests.testWriteOpenSource

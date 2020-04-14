@@ -1,0 +1,5 @@
+*CloseSocketTest.test_close
+*OtherNetworkTests.test_ftp
+*OtherNetworkTests.test_redirect_url_withfrag
+*OtherNetworkTests.test_sites_no_connection_close
+*OtherNetworkTests.test_urlwithfrag
