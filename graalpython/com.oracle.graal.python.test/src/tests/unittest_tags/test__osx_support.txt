@@ -1,0 +1,10 @@
+*Test_OSXSupport.test__check_for_unavailable_sdk
+*Test_OSXSupport.test__find_build_tool
+*Test_OSXSupport.test__find_executable
+*Test_OSXSupport.test__get_system_version
+*Test_OSXSupport.test__override_all_archs
+*Test_OSXSupport.test__remove_original_values
+*Test_OSXSupport.test__remove_universal_flags
+*Test_OSXSupport.test__save_modified_value
+*Test_OSXSupport.test__save_modified_value_unchanged
+*Test_OSXSupport.test_get_platform_osx

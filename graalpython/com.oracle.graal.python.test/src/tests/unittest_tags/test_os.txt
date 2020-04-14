@@ -7,4 +7,3 @@
 *FileTests.test_replace
 *MiscTests.test_getcwd
 *MiscTests.test_getcwd_long_path
-*wrapper

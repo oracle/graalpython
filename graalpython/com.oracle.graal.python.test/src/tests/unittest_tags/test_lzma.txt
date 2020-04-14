@@ -10,4 +10,3 @@
 *FileTestCase.test_init_with_filename
 *FileTestCase.test_init_with_preset_and_filters
 *FileTestCase.test_init_with_x_mode
-*wrapper

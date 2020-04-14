@@ -1,2 +1,2 @@
-test_attributes
-test_names
+*FutureTest.test_attributes
+*FutureTest.test_names

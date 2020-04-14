@@ -12,8 +12,10 @@
 *HandlerTests.test_full_url_setter
 *HandlerTests.test_http
 *HandlerTests.test_http_body_empty_seq
+*HandlerTests.test_http_closed
 *HandlerTests.test_http_doubleslash
 *HandlerTests.test_http_handler_debuglevel
+*HandlerTests.test_invalid_closed
 *HandlerTests.test_invalid_redirect
 *HandlerTests.test_osx_proxy_bypass
 *HandlerTests.test_proxy
@@ -26,6 +28,7 @@
 *HandlerTests.test_relative_redirect
 *HandlerTests.test_unsupported_auth_basic_handler
 *HandlerTests.test_unsupported_auth_digest_handler
+*MiscTests.test_HTTPError_interface
 *MiscTests.test_build_opener
 *MiscTests.test_issue16464
 *MiscTests.test_parse_proxy
@@ -38,6 +41,7 @@
 *OpenerDirectorTests.test_processors
 *OpenerDirectorTests.test_raise
 *RequestHdrsTests.test_password_manager
+*RequestHdrsTests.test_password_manager_default_port
 *RequestTests.test_data
 *RequestTests.test_deleting_data_should_remove_content_length
 *RequestTests.test_get_full_url

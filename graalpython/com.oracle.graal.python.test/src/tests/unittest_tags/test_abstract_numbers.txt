@@ -1,3 +1,3 @@
-test_complex
-test_float
-test_int
+*TestNumbers.test_complex
+*TestNumbers.test_float
+*TestNumbers.test_int

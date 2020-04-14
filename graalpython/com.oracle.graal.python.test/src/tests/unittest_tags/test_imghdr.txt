@@ -1,3 +1,11 @@
+*TestImghdr.test_bad_args
+*TestImghdr.test_closed_file
+*TestImghdr.test_data
 *TestImghdr.test_file_pos
+*TestImghdr.test_invalid_headers
+*TestImghdr.test_missing_file
 *TestImghdr.test_output_stream
+*TestImghdr.test_pathlike_filename
+*TestImghdr.test_register_test
+*TestImghdr.test_string_data
 *TestImghdr.test_unseekable

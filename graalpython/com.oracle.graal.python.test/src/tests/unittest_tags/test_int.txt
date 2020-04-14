@@ -1,3 +1,4 @@
+*IntTestCases.test_int_base_bad_types
 *IntTestCases.test_int_subclass_with_index
 *IntTestCases.test_int_subclass_with_int
 *IntTestCases.test_issue31619

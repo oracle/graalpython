@@ -1,4 +1,3 @@
-*AbstractSourceEncodingTest.test_default_coding
 *MiscSourceEncodingTest.test_20731
 *MiscSourceEncodingTest.test_bad_coding2
 *MiscSourceEncodingTest.test_compilestring

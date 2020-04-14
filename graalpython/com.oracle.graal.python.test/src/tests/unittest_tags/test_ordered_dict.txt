@@ -16,6 +16,7 @@
 *OrderedDictTests.test_init_calls
 *OrderedDictTests.test_issue24347
 *OrderedDictTests.test_issue24348
+*OrderedDictTests.test_issue24667
 *OrderedDictTests.test_iterators
 *OrderedDictTests.test_iterators_empty
 *OrderedDictTests.test_move_to_end
@@ -34,3 +35,4 @@
 *OrderedDictTests.test_sorted_iterators
 *OrderedDictTests.test_views
 *OrderedDictTests.test_yaml_linkage
+*PurePythonGeneralMappingTests.test_popitem

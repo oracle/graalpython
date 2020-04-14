@@ -1,3 +1,4 @@
+*ThreadedImportTests.test_circular_imports
 *ThreadedImportTests.test_import_hangers
 *ThreadedImportTests.test_parallel_meta_path
 *ThreadedImportTests.test_parallel_module_init

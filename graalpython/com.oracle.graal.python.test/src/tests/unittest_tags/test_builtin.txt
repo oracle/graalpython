@@ -1,3 +1,2 @@
 *BuiltinTest.test_all
 *BuiltinTest.test_any
-*BuiltinTest.test_bin

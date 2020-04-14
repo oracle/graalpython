@@ -23,4 +23,14 @@
 *GeneralModuleTests.test_getaddrinfo_ipv6_scopeid_numeric
 *GeneralModuleTests.test_getaddrinfo_ipv6_scopeid_symbolic
 *GeneralModuleTests.test_getnameinfo
+*GeneralModuleTests.test_getnameinfo_ipv6_scopeid_numeric
+*GeneralModuleTests.test_getnameinfo_ipv6_scopeid_symbolic
+*GeneralModuleTests.test_getsockaddrarg
+*GeneralModuleTests.test_host_resolution
+*GeneralModuleTests.test_host_resolution_bad_address
+*GeneralModuleTests.test_listen_backlog
+*GeneralModuleTests.test_makefile_invalid_mode
+*GeneralModuleTests.test_makefile_mode
+*GeneralModuleTests.test_pickle
+*GeneralModuleTests.test_repr
 *ThreadedVSOCKSocketStreamTest.testStream

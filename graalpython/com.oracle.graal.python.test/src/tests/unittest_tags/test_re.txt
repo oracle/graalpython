@@ -25,5 +25,6 @@
 *ReTests.test_category
 *ReTests.test_compile
 *ReTests.test_constants
+*ReTests.test_dollar_matches_twice
 *ReTests.test_enum
 *ReTests.test_flags

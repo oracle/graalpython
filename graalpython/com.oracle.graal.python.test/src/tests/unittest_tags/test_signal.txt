@@ -8,4 +8,5 @@
 *WakeupSocketSignalTests.test_socket
 *WakeupSocketSignalTests.test_warn_on_full_buffer
 *WindowsSignalTests.test_issue9324
+*WindowsSignalTests.test_keyboard_interrupt_exit_code
 *WindowsSignalTests.test_valid_signals

@@ -1,0 +1,6 @@
+*LocaleCoercionTests.test_LC_ALL_set_to_C
+*LocaleCoercionTests.test_PYTHONCOERCECLOCALE_not_set
+*LocaleCoercionTests.test_PYTHONCOERCECLOCALE_not_zero
+*LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_one
+*LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_warn
+*LocaleCoercionTests.test_PYTHONCOERCECLOCALE_set_to_zero

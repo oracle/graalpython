@@ -1,2 +1,4 @@
-test_addinfo
-test_addinfourl
+*TestResponse.test_addclosehook
+*TestResponse.test_addinfo
+*TestResponse.test_addinfourl
+*TestResponse.test_with

@@ -34,4 +34,3 @@
 *TimeRETests.test_pattern_escaping
 *TimeRETests.test_whitespace_substitution
 *getlang_Tests.test_basic
-*inner

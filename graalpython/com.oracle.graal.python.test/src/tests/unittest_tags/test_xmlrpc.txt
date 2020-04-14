@@ -11,6 +11,12 @@
 *FaultTestCase.test_dotted_attribute
 *FaultTestCase.test_repr
 *HelperTestCase.test_escape
+*SimpleXMLRPCDispatcherTestCase.test_call_dispatch_func
+*SimpleXMLRPCDispatcherTestCase.test_call_instance_func
+*SimpleXMLRPCDispatcherTestCase.test_call_registered_func
+*SimpleXMLRPCDispatcherTestCase.test_cannot_locate_func
+*SimpleXMLRPCDispatcherTestCase.test_instance_has_no_func
+*SimpleXMLRPCDispatcherTestCase.test_registered_func_is_none
 *XMLRPCTestCase.test_dump_bad_dict
 *XMLRPCTestCase.test_dump_big_int
 *XMLRPCTestCase.test_dump_big_long

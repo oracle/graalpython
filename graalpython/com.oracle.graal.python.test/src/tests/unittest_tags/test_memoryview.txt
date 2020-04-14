@@ -1,9 +1,0 @@
-*AbstractMemoryTests.test_attributes_readonly
-*AbstractMemoryTests.test_attributes_writable
-*AbstractMemoryTests.test_delitem
-*AbstractMemoryTests.test_getbuf_fail
-*AbstractMemoryTests.test_iter
-*AbstractMemoryTests.test_release
-*AbstractMemoryTests.test_tobytes
-*AbstractMemoryTests.test_tolist
-*AbstractMemoryTests.test_writable_readonly

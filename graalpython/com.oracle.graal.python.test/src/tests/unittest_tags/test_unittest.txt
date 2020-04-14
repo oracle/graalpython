@@ -1,9 +1,0 @@
-*testAssertDictContainsSubset
-*testAssertIn
-*testAssertIs
-*testAssertIsNone
-*testAssertIsNot
-*testAssertMultiLineEqual
-*testAssertRaisesRegex
-*testAssertRegex
-*testAssertSetEqual

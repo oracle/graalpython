@@ -19,4 +19,3 @@
 *RoundTestCase.test_previous_round_bugs
 *UnknownFormatTestCase.test_double_specials_dont_unpack
 *UnknownFormatTestCase.test_float_specials_dont_unpack
-*inner

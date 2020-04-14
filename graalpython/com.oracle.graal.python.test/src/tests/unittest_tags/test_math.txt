@@ -18,3 +18,9 @@
 *MathTests.testFloor
 *MathTests.testFmod
 *MathTests.testFrexp
+*MathTests.testFsum
+*MathTests.testGcd
+*MathTests.testHypot
+*MathTests.testIsfinite
+*MathTests.testIsinf
+*MathTests.testIsnan

@@ -21,13 +21,6 @@
 *NullcontextTestCase.test_nullcontext
 *TestAbstractContextManager.test_enter
 *TestAbstractContextManager.test_structural_subclassing
-*TestBaseExitStack.test_body_exception_suppress
-*TestBaseExitStack.test_close
-*TestBaseExitStack.test_dont_reraise_RuntimeError
-*TestBaseExitStack.test_enter_context
-*TestBaseExitStack.test_excessive_nesting
-*TestBaseExitStack.test_exit_exception_chaining
-*TestBaseExitStack.test_exit_exception_chaining_suppress
 *TestContextDecorator.test_contextdecorator
 *TestContextDecorator.test_contextdecorator_as_mixin
 *TestContextDecorator.test_contextdecorator_with_exception

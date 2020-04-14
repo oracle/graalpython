@@ -1,5 +1,6 @@
-test_bad_types
-test_invert
-test_negation_of_exponentiation
-test_no_overflow
-test_positive
+*UnaryOpTestCase.test_bad_types
+*UnaryOpTestCase.test_invert
+*UnaryOpTestCase.test_negation_of_exponentiation
+*UnaryOpTestCase.test_negative
+*UnaryOpTestCase.test_no_overflow
+*UnaryOpTestCase.test_positive

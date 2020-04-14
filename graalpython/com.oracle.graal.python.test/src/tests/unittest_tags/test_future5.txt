@@ -1,2 +1,2 @@
-test_print_function
-test_unicode_literals
+*TestMultipleFeatures.test_print_function
+*TestMultipleFeatures.test_unicode_literals

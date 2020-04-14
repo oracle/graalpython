@@ -1,3 +1,2 @@
 *EpollSelectorTestCase.test_register_file
 *KqueueSelectorTestCase.test_register_bad_fd
-*ScalableSelectorMixIn.test_above_fd_setsize

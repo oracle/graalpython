@@ -1,3 +1,6 @@
+*OperatorPickleTestCase.test_attrgetter
+*OperatorPickleTestCase.test_itemgetter
+*OperatorPickleTestCase.test_methodcaller
 *OperatorTestCase.test_abs
 *OperatorTestCase.test_add
 *OperatorTestCase.test_attrgetter

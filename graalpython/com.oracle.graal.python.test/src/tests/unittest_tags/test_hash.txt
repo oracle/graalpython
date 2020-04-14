@@ -7,5 +7,3 @@
 *MemoryviewHashRandomizationTests.test_empty_string
 *StrHashRandomizationTests.test_empty_string
 *StrHashRandomizationTests.test_ucs2_string
-*StringlikeHashRandomizationTests.test_fixed_hash
-*StringlikeHashRandomizationTests.test_long_fixed_hash

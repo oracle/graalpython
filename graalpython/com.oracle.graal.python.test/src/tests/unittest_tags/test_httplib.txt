@@ -1,7 +1,13 @@
 *BasicTest.test_bad_status_repr
+*BasicTest.test_blocksize_request
+*BasicTest.test_blocksize_send
 *BasicTest.test_chunked
 *BasicTest.test_chunked_extension
 *BasicTest.test_chunked_head
+*BasicTest.test_chunked_missing_end
+*BasicTest.test_chunked_sync
+*BasicTest.test_chunked_trailers
+*BasicTest.test_content_length_sync
 *BasicTest.test_early_eof
 *BasicTest.test_epipe
 *BasicTest.test_error_leak
@@ -18,6 +24,8 @@
 *BasicTest.test_partial_reads
 *BasicTest.test_partial_reads_incomplete_body
 *BasicTest.test_partial_reads_no_content_length
+*BasicTest.test_putrequest_override_encoding
+*BasicTest.test_putrequest_override_validation
 *BasicTest.test_read1_bound_content_length
 *BasicTest.test_read1_content_length
 *BasicTest.test_read_head

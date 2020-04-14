@@ -14,3 +14,14 @@
 *TestBasic.test_delitem
 *TestBasic.test_extend
 *TestBasic.test_extendleft
+*TestBasic.test_gc_doesnt_blowup
+*TestBasic.test_getitem
+*TestBasic.test_hash
+*TestBasic.test_iadd
+*TestBasic.test_imul
+*TestBasic.test_index
+*TestBasic.test_index_bug_24913
+*TestBasic.test_init
+*TestBasic.test_len
+*TestBasic.test_long_steadystate_queue_popleft
+*TestBasic.test_long_steadystate_queue_popright

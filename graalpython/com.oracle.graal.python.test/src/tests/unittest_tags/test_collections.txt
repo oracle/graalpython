@@ -2,6 +2,7 @@
 *TestChainMap.test_bool
 *TestChainMap.test_constructor
 *TestChainMap.test_dict_coercion
+*TestChainMap.test_new_child
 *TestChainMap.test_order_preservation
 *TestChainMap.test_ordering
 *TestCollectionABCs.test_ByteString

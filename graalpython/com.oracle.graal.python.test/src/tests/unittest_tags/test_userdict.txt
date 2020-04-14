@@ -1,13 +1,3 @@
-*TestHashMappingProtocol.test_eq
-*TestHashMappingProtocol.test_fromkeys
-*TestHashMappingProtocol.test_getitem
-*TestMappingProtocol.test_bool
-*TestMappingProtocol.test_clear
-*TestMappingProtocol.test_constructor
-*TestMappingProtocol.test_contains
-*TestMappingProtocol.test_copy
-*TestMappingProtocol.test_items
-*TestMappingProtocol.test_len
 *UserDictTest.test_all
 *UserDictTest.test_init
 *UserDictTest.test_missing

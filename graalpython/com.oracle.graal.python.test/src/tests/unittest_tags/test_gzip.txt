@@ -6,6 +6,7 @@
 *TestGzip.test_compress_mtime
 *TestGzip.test_compresslevel_metadata
 *TestGzip.test_decompress
+*TestGzip.test_decompress_limited
 *TestGzip.test_exclusive_write
 *TestGzip.test_fileobj_from_fdopen
 *TestGzip.test_fileobj_mode
@@ -43,4 +44,3 @@
 *TestOpen.test_newline
 *TestOpen.test_pathlike_file
 *TestOpen.test_text_modes
-*wrapper

@@ -1,3 +1,0 @@
-*TestFilemode.test_fifo
-*TestFilemode.test_file_attribute_constants
-*TestFilemode.test_socket

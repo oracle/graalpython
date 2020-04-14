@@ -1,0 +1,2 @@
+*TestUnicodeFiles.test_directories
+*TestUnicodeFiles.test_single_files

@@ -9,5 +9,6 @@
 *TestSysConfig.test_get_platform
 *TestSysConfig.test_get_scheme_names
 *TestSysConfig.test_main
+*TestSysConfig.test_platform_in_subprocess
 *TestSysConfig.test_srcdir_independent_of_cwd
 *TestSysConfig.test_user_similar

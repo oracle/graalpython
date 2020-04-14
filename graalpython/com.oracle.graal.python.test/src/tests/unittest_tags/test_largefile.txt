@@ -2,4 +2,3 @@
 *LargeFileTest.test_osstat
 *LargeFileTest.test_seek_read
 *LargeFileTest.test_seekable
-*wrapper

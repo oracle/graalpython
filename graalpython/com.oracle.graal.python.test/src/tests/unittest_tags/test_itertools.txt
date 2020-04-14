@@ -1,2 +1,1 @@
 *TestBasicOps.test_bug_7244
-*wrapper

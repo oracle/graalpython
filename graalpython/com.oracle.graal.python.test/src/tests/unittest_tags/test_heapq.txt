@@ -1,10 +1,2 @@
-*TestHeap.test_comparison_operator
-*TestHeap.test_empty_merges
-*TestHeap.test_heapify
-*TestHeap.test_heappop_max
-*TestHeap.test_heappushpop
-*TestHeap.test_heapsort
-*TestHeap.test_merge
-*TestHeap.test_merge_does_not_suppress_index_error
 *TestModules.test_c_functions
 *TestModules.test_py_functions
