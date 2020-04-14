@@ -51,6 +51,9 @@ tokens { INDENT, DEDENT }
   // wether we have expanded EOF to include necessary DEDENTS and a NEWLINE
   private boolean expandedEOF = false;
 
+  private boolean longQuote1 = false; // """
+  private boolean longQuote2 = false; // '''
+
   @Override
   public void emit(Token t) {
     super.setToken(t);
@@ -93,7 +96,19 @@ tokens { INDENT, DEDENT }
   }
 
   public boolean isOpened() {
-	  return opened > 0;
+	  return this.opened > 0 || this.longQuote1 || this.longQuote2;
+  }
+
+  private void usedQuote1() {
+	if (!this.longQuote2){
+		this.longQuote1 = !this.longQuote1;
+	}
+  }
+
+  private void usedQuote2() {
+	if (!this.longQuote1){
+		this.longQuote2 = !this.longQuote2;
+	}
   }
 
   private Token createDedent() {
@@ -1801,6 +1816,8 @@ LEFT_SHIFT_ASSIGN : '<<=';
 RIGHT_SHIFT_ASSIGN : '>>=';
 POWER_ASSIGN : '**=';
 IDIV_ASSIGN : '//=';
+LONG_QUOTES1 : '"""' {usedQuote1();};
+LONG_QUOTES2 : '\'\'\'' {usedQuote2();};
 
 SKIP_
  : ( SPACES | COMMENT | LINE_JOINING ) -> skip

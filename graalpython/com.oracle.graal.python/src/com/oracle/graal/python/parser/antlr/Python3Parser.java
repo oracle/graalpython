@@ -84,8 +84,8 @@ public class Python3Parser extends Parser {
 		EQUALS=74, GT_EQ=75, LT_EQ=76, NOT_EQ_1=77, NOT_EQ_2=78, AT=79, ARROW=80, 
 		ADD_ASSIGN=81, SUB_ASSIGN=82, MULT_ASSIGN=83, AT_ASSIGN=84, DIV_ASSIGN=85, 
 		MOD_ASSIGN=86, AND_ASSIGN=87, OR_ASSIGN=88, XOR_ASSIGN=89, LEFT_SHIFT_ASSIGN=90, 
-		RIGHT_SHIFT_ASSIGN=91, POWER_ASSIGN=92, IDIV_ASSIGN=93, SKIP_=94, UNKNOWN_CHAR=95, 
-		INDENT=96, DEDENT=97;
+		RIGHT_SHIFT_ASSIGN=91, POWER_ASSIGN=92, IDIV_ASSIGN=93, LONG_QUOTES1=94, 
+		LONG_QUOTES2=95, SKIP_=96, UNKNOWN_CHAR=97, INDENT=98, DEDENT=99;
 	public static final int
 		RULE_single_input = 0, RULE_file_input = 1, RULE_eval_input = 2, RULE_decorator = 3, 
 		RULE_decorators = 4, RULE_decorated = 5, RULE_async_funcdef = 6, RULE_funcdef = 7, 
@@ -142,7 +142,7 @@ public class Python3Parser extends Parser {
 			"'|'", "'^'", "'&'", "'<<'", "'>>'", "'+'", "'-'", "'/'", "'%'", "'//'", 
 			"'~'", "'{'", "'}'", "'<'", "'>'", "'=='", "'>='", "'<='", "'<>'", "'!='", 
 			"'@'", "'->'", "'+='", "'-='", "'*='", "'@='", "'/='", "'%='", "'&='", 
-			"'|='", "'^='", "'<<='", "'>>='", "'**='", "'//='"
+			"'|='", "'^='", "'<<='", "'>>='", "'**='", "'//='", "'\"\"\"'", "'''''"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -161,8 +161,8 @@ public class Python3Parser extends Parser {
 			"GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", "NOT_EQ_1", "NOT_EQ_2", "AT", 
 			"ARROW", "ADD_ASSIGN", "SUB_ASSIGN", "MULT_ASSIGN", "AT_ASSIGN", "DIV_ASSIGN", 
 			"MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", "LEFT_SHIFT_ASSIGN", 
-			"RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", "IDIV_ASSIGN", "SKIP_", "UNKNOWN_CHAR", 
-			"INDENT", "DEDENT"
+			"RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", "IDIV_ASSIGN", "LONG_QUOTES1", 
+			"LONG_QUOTES2", "SKIP_", "UNKNOWN_CHAR", "INDENT", "DEDENT"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -8371,7 +8371,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3c\u0657\4\2\t\2\4"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3e\u0657\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
@@ -8771,8 +8771,8 @@ public class Python3Parser extends Parser {
 		"d\63\2\u03c4\u03c5\b\62\1\2\u03c5\u03c7\3\2\2\2\u03c6\u03be\3\2\2\2\u03c6"+
 		"\u03c2\3\2\2\2\u03c7\u03c8\3\2\2\2\u03c8\u03c9\b\62\1\2\u03c9c\3\2\2\2"+
 		"\u03ca\u03d5\b\63\1\2\u03cb\u03d6\5&\24\2\u03cc\u03cd\7\'\2\2\u03cd\u03cf"+
-		"\7b\2\2\u03ce\u03d0\5$\23\2\u03cf\u03ce\3\2\2\2\u03d0\u03d1\3\2\2\2\u03d1"+
-		"\u03cf\3\2\2\2\u03d1\u03d2\3\2\2\2\u03d2\u03d3\3\2\2\2\u03d3\u03d4\7c"+
+		"\7d\2\2\u03ce\u03d0\5$\23\2\u03cf\u03ce\3\2\2\2\u03d0\u03d1\3\2\2\2\u03d1"+
+		"\u03cf\3\2\2\2\u03d1\u03d2\3\2\2\2\u03d2\u03d3\3\2\2\2\u03d3\u03d4\7e"+
 		"\2\2\u03d4\u03d6\3\2\2\2\u03d5\u03cb\3\2\2\2\u03d5\u03cc\3\2\2\2\u03d6"+
 		"\u03d7\3\2\2\2\u03d7\u03d8\b\63\1\2\u03d8e\3\2\2\2\u03d9\u03da\5n8\2\u03da"+
 		"\u03e1\b\64\1\2\u03db\u03dc\7\r\2\2\u03dc\u03dd\5n8\2\u03dd\u03de\7\17"+

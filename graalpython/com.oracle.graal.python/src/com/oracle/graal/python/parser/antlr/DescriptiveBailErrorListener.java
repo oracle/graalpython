@@ -41,6 +41,7 @@
 package com.oracle.graal.python.parser.antlr;
 
 import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
@@ -78,7 +79,7 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
             }
         }
         if (isInteractive(recognizer)) {
-            PIncompleteSourceException handleRecognitionException = handleInteractiveException(recognizer);
+            PIncompleteSourceException handleRecognitionException = handleInteractiveException(recognizer, offendingSymbol);
             if (handleRecognitionException != null) {
                 throw handleRecognitionException;
             }
@@ -96,8 +97,8 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
         return null;
     }
 
-    private static PIncompleteSourceException handleInteractiveException(Recognizer<?, ?> recognizer) {
-        if (isOpened(((Python3Parser) recognizer).getTokenStream())) {
+    private static PIncompleteSourceException handleInteractiveException(Recognizer<?, ?> recognizer, Object offendingSymbol) {
+        if (isOpened(((Python3Parser) recognizer).getTokenStream()) || isBackslash(offendingSymbol)) {
             return new PIncompleteSourceException("", null, -1);
         }
         return null;
@@ -128,6 +129,18 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
     private static boolean isOpened(TokenStream input) {
         final Python3Lexer lexer = (Python3Lexer) input.getTokenSource();
         return lexer.isOpened();
+    }
+
+    private static final int BACKSLASH = '\\';
+
+    private static boolean isBackslash(Object offendingSymbol) {
+        if (offendingSymbol instanceof Token) {
+            CharStream cs = ((Token) offendingSymbol).getInputStream();
+            if (cs.size() > 2 && cs.LA(-2) == BACKSLASH) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class EmptyRecognitionException extends RecognitionException {
