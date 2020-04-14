@@ -406,6 +406,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
         PComplex complexFromObject(VirtualFrame frame, LazyPythonClass cls, Object number, @SuppressWarnings("unused") PNone imag) {
             PComplex value = getComplexNumberFromObject(frame, number);
+            if (value == null) {
+                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, number), 0.0);
+            }
             return createComplex(cls, value);
         }
 
@@ -427,24 +430,36 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isString(one)")
         PComplex complexFromComplexLong(VirtualFrame frame, LazyPythonClass cls, Object one, long two) {
             PComplex value = getComplexNumberFromObject(frame, one);
+            if (value == null) {
+                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), two);
+            }
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
         @Specialization(guards = "!isString(one)")
         PComplex complexFromComplexDouble(VirtualFrame frame, LazyPythonClass cls, Object one, double two) {
             PComplex value = getComplexNumberFromObject(frame, one);
+            if (value == null) {
+                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), two);
+            }
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
         @Specialization(guards = "!isString(one)")
         PComplex complexFromComplexPInt(VirtualFrame frame, LazyPythonClass cls, Object one, PInt two) {
             PComplex value = getComplexNumberFromObject(frame, one);
+            if (value == null) {
+                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), two.doubleValue());
+            }
             return createComplex(cls, value.getReal(), value.getImag() + two.doubleValue());
         }
 
         @Specialization(guards = "!isString(one)")
         PComplex complexFromComplexComplex(VirtualFrame frame, LazyPythonClass cls, Object one, PComplex two) {
             PComplex value = getComplexNumberFromObject(frame, one);
+            if (value == null) {
+                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one) - two.getImag(), two.getReal());
+            }
             return createComplex(cls, value.getReal() - two.getImag(), value.getImag() + two.getReal());
         }
 
@@ -452,6 +467,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         PComplex complexFromComplexObject(VirtualFrame frame, LazyPythonClass cls, Object one, Object two) {
             PComplex oneValue = getComplexNumberFromObject(frame, one);
             double twoValue = getSecondArgCoerceToDouble().execute(frame, two);
+            if (oneValue == null) {
+                return createComplex(cls, getFirstArgCoerceToDouble().execute(frame, one), twoValue);
+            }
             return createComplex(cls, oneValue.getReal(), oneValue.getImag() + twoValue);
         }
 
@@ -528,7 +546,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // the class extending PComplex but doesn't have __complex__ method
                     return (PComplex) object;
                 }
-                return factory().createComplex(getFirstArgCoerceToDouble().execute(frame, object), 0.0);
+                return null;
             }
         }
 
@@ -1347,7 +1365,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object createInt(VirtualFrame frame, LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone base,
+        Object createInt(LazyPythonClass cls, double arg, @SuppressWarnings("unused") PNone base,
                         @Cached("createFloatInt()") FloatBuiltins.IntNode floatToIntNode) {
             Object result = floatToIntNode.executeWithDouble(arg);
             return createInt(cls, result);
