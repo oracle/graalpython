@@ -195,4 +195,10 @@ public class HashingTest {
         assertPrints("", source);
     }
 
+    @Test
+    public void setAndTest() {
+        assertPrints("{2}\n", "print({2, 3} ^ {3})\n");
+        assertPrints("{'c', 'b'}\n", "print({'a', 'c'} ^ frozenset({'a', 'b'}))\n");
+        assertPrints("frozenset({'b'})\n", "print(frozenset({'a', 'c'}) ^ {'a', 'b', 'c'})\n");
+    }
 }
