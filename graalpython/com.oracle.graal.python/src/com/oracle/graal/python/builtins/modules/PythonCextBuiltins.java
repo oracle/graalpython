@@ -167,6 +167,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -485,6 +486,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
+            getContext().setCurrentException(new ExceptionInfo(val, (LazyTraceback) null));
+            return PNone.NONE;
+        }
+
+        @Specialization
         Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
             getContext().setCurrentException(new ExceptionInfo(val, tb));
             return PNone.NONE;
@@ -575,7 +582,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object run(LazyPythonClass typ, PBaseException val, PTraceback tb) {
+        Object run(LazyPythonClass typ, PBaseException val, Object tb) {
             if (val.getException() != null) {
                 ExceptionUtils.printPythonLikeStackTrace(val.getException());
             }
@@ -789,8 +796,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                     }
                 } else {
-                    currentException.exception.setTraceback(currentException.traceback);
-                    throw PException.fromObject(currentException.exception, this);
+                    throw currentException.exception.getExceptionForReraise(currentException.traceback);
                 }
             } else if (errOccurred) {
                 // consume exception
@@ -1314,6 +1320,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         PTraceback tbHere(PFrame frame, PTraceback tb) {
             return factory().createTraceback(frame, frame.getLine(), tb);
+        }
+
+        @Specialization
+        PTraceback tbHere(PFrame frame, @SuppressWarnings("unused") PNone tb) {
+            return factory().createTraceback(frame, frame.getLine(), null);
         }
     }
 
