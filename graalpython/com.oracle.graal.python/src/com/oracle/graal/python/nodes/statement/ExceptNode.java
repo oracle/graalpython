@@ -85,14 +85,12 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, TruffleException e, boolean reify) {
-        if (e instanceof PException) {
+        if (reify && e instanceof PException) {
             PException pE = (PException) e;
-            PBaseException exceptionObject = pE.reifyAndGetPythonException(frame, exceptName != null, reify);
+            PBaseException exceptionObject = pE.reifyAndGetPythonException(frame, exceptName != null);
             SetCaughtExceptionNode.execute(frame, new ExceptionInfo(exceptionObject, exceptionObject.getTraceback()));
-            if (exceptName != null) {
-                exceptName.doWrite(frame, exceptionObject);
-            }
-        } else if (exceptName != null) {
+        }
+        if (exceptName != null) {
             exceptName.doWrite(frame, e.getExceptionObject());
         }
         body.executeVoid(frame);

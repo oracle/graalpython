@@ -137,22 +137,21 @@ def test_reraise_direct():
     )
 
 
-# Yielding in except currently doesn't work as expected, see GR-22107
-# def test_reraise_direct_generator():
-#     def reraise():
-#         try:
-#             raise RuntimeError("test")
-#         except Exception:
-#             yield 1
-#             raise
-#
-#     assert_has_traceback(
-#         lambda: list(reraise()),
-#         [
-#             ('<lambda>', 'lambda: list(reraise()),'),
-#             ('reraise', 'raise RuntimeError("test")'),
-#         ]
-#     )
+def test_reraise_direct_generator():
+    def reraise():
+        try:
+            raise RuntimeError("test")
+        except Exception:
+            yield 1
+            raise
+
+    assert_has_traceback(
+        lambda: list(reraise()),
+        [
+            ('<lambda>', 'lambda: list(reraise()),'),
+            ('reraise', 'raise RuntimeError("test")'),
+        ]
+    )
 
 
 def test_reraise_direct_no_accumulate():
@@ -397,28 +396,28 @@ def test_reraise_from_finally():
         ]
     )
 
-# Not working yet. See GR-22103
-# def test_finally_generator():
-#     def test():
-#         try:
-#             raise OSError("test")
-#         except:
-#             raise sys.exc_info()[1]  # except
-#         finally:
-#             try:
-#                 yield
-#                 raise sys.exc_info()[1]  # finally
-#             except Exception as e:
-#                 pass
-#
-#     assert_has_traceback(
-#         lambda: list(test()),
-#         [
-#             ('<lambda>', 'lambda: list(test()),'),
-#             ('test', 'raise sys.exc_info()[1]  # except'),
-#             ('test', 'raise OSError("test")'),
-#         ]
-#     )
+
+def test_finally_generator():
+    def test():
+        try:
+            raise OSError("test")
+        except:
+            raise sys.exc_info()[1]  # except
+        finally:
+            try:
+                yield
+                raise sys.exc_info()[1]  # finally
+            except Exception as e:
+                pass
+
+    assert_has_traceback(
+        lambda: list(test()),
+        [
+            ('<lambda>', 'lambda: list(test()),'),
+            ('test', 'raise sys.exc_info()[1]  # except'),
+            ('test', 'raise OSError("test")'),
+        ]
+    )
 
 
 def test_reraise_from_finally_generator():
