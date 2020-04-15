@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2020, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -887,11 +887,11 @@ try_stmt
             SSTNode finallyStatement = null; 
         }
 	(
-		( except_clause 
-                    { push($except_clause.result); } )+
+		( except_clause { push($except_clause.result); } )+
 		( 'else' ':' suite { elseStatement = $suite.result; } )?
-	)?
-	( 'finally' ':' suite { finallyStatement = $suite.result; } )?
+		( 'finally' ':' suite { finallyStatement = $suite.result; } )? |
+		  'finally' ':' suite { finallyStatement = $suite.result; }
+	)
 	{ push(new TrySSTNode($body.result, getArray(start, ExceptSSTNode[].class), elseStatement, finallyStatement, getStartIndex($ctx), getLastIndex($ctx))); }
 ;
 
