@@ -122,7 +122,10 @@ def test_basic_traceback_generator():
 def test_reraise_direct():
     def reraise():
         try:
-            raise RuntimeError("test")
+            try:
+                raise RuntimeError("test")
+            except Exception:
+                raise
         except Exception:
             raise
 

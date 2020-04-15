@@ -82,8 +82,8 @@ public abstract class GetTracebackNode extends Node {
         return tb.getTraceback();
     }
 
-    // The common case for not yet materialized
-    @Specialization(guards = {"!tb.isMaterialized()", "hasFrame(tb)"})
+    // The simple case when we have both the frame and the exception location
+    @Specialization(guards = {"!tb.isMaterialized()", "!mayBeEmpty(tb)"})
     PTraceback createTraceback(LazyTraceback tb,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
         PTraceback newTraceback = factory.createTraceback(tb);
@@ -91,30 +91,34 @@ public abstract class GetTracebackNode extends Node {
         return newTraceback;
     }
 
-    // LazyTracebacks without the frame occur on the C boundary and on the top level. When
-    // the exception gets caught by python, the first traceback will always have the frame
-    // from the exception handler, so this specialization should not occur outside the following
-    // situations:
-    // 1) On the top level
-    // 2) When the traceback is requested by C (PyErr_Fetch etc.)
-    // 3) When called back by the traceback's accessors (tb_frame/tb_next/tb_lineno)
+    // The complex case when we have to peek at the Truffle stacktrace to know whether this
+    // traceback segment is not empty
+    // This happens when:
+    // 1) On the top-level (we don't have the catching frame)
+    // 2) On the C boundary (we don't want to show the catching frame)
+    // 3) After raise without arguments or after implicit reraise at the end of finally, __exit__...
+    // (we don't want to show the reraise location)
     @TruffleBoundary
-    @Specialization(guards = {"!tb.isMaterialized()", "!hasFrame(tb)"})
+    @Specialization(guards = {"!tb.isMaterialized()", "mayBeEmpty(tb)"})
     PTraceback traverse(LazyTraceback tb,
                     @Shared("factory") @Cached PythonObjectFactory factory) {
-        // The logic of skipping and cutting off frames here and in MaterializeTruffleStacktraceNode must be the same
+        // The logic of skipping and cutting off frames here and in MaterializeTruffleStacktraceNode
+        // must match
         boolean skipFirst = tb.getException().shouldHideLocation();
         for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
+            if (tb.getException().shouldCutOffTraceback(element)) {
+                break;
+            }
             if (skipFirst) {
                 skipFirst = false;
                 continue;
             }
-            if (tb.getException().shouldCutOffTraceback(element)) {
-                break;
-            }
             if (LazyTraceback.elementWantedForTraceback(element)) {
                 return createTraceback(tb, factory);
             }
+        }
+        if (hasFrame(tb) && !skipFirst) {
+            return createTraceback(tb, factory);
         }
         PTraceback newTraceback = null;
         if (tb.getNextChain() != null) {
@@ -124,7 +128,11 @@ public abstract class GetTracebackNode extends Node {
         return newTraceback;
     }
 
-    protected static boolean hasFrame(LazyTraceback tb) {
+    protected static boolean mayBeEmpty(LazyTraceback tb) {
+        return !hasFrame(tb) || tb.getException().shouldHideLocation();
+    }
+
+    private static boolean hasFrame(LazyTraceback tb) {
         return tb.getFrame() != null || tb.getFrameInfo() != null;
     }
 

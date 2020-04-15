@@ -118,10 +118,6 @@ public final class TracebackBuiltins extends PythonBuiltins {
             // The logic of skipping and cutting off frames here and in GetTracebackNode must be the same
             boolean skipFirst = tb.getException().shouldHideLocation();
             for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
-                if (skipFirst) {
-                    skipFirst = false;
-                    continue;
-                }
                 if (tb.getException().shouldCutOffTraceback(element)) {
                     if (element.getLocation() != null) {
                         SourceSection sourceSection = element.getLocation().getEncapsulatingSourceSection();
@@ -130,6 +126,10 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         }
                     }
                     break;
+                }
+                if (skipFirst) {
+                    skipFirst = false;
+                    continue;
                 }
                 if (nextElement != null) {
                     PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
