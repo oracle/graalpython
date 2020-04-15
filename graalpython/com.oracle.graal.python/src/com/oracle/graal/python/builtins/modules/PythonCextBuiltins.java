@@ -61,7 +61,7 @@ import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;

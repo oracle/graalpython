@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.Python3Core;

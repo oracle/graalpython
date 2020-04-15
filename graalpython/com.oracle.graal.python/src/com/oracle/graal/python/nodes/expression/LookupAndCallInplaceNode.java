@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
