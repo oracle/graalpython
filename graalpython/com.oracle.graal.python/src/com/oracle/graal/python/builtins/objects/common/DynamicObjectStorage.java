@@ -344,6 +344,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @Override
     @ExportMessage
+    @TruffleBoundary
     public HashingStorage copy() {
         return new DynamicObjectStorage(store.copy(store.getShape()));
     }

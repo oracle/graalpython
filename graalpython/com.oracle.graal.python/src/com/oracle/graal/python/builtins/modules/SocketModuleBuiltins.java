@@ -55,8 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -93,6 +91,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
@@ -381,6 +381,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getservbyname", parameterNames = {"servicename", "protocolname"})
     @GenerateNodeFactory
     public abstract static class GetServByNameNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization(guards = {"isNoValue(protocolName)"})
         Object getServByName(String serviceName, @SuppressWarnings("unused") PNone protocolName) {
             if (services == null) {

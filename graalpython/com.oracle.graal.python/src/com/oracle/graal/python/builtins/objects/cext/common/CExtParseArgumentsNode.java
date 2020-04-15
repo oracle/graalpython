@@ -84,6 +84,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -794,13 +795,18 @@ public abstract class CExtParseArgumentsNode {
                 if (arg instanceof String) {
                     singleChar = ((String) arg).charAt(0);
                 } else if (arg instanceof PString) {
-                    singleChar = ((PString) arg).getCharSequence().charAt(0);
+                    singleChar = charFromPString(arg);
                 } else {
                     throw raise(raiseNode, SystemError, "unsupported string type: %s", arg.getClass());
                 }
                 writeOutVarNode.writeInt32(varargs, state.outIndex, (int) singleChar);
             }
             return state.incrementOutIndex();
+        }
+
+        @TruffleBoundary
+        private static char charFromPString(Object arg) {
+            return ((PString) arg).getCharSequence().charAt(0);
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_F")
@@ -914,12 +920,17 @@ public abstract class CExtParseArgumentsNode {
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, "%s returned an unexpected return code; expected 'int' but was %s", funName, rc.getClass());
             }
-            int i = ((Number) rc).intValue();
+            int i = intValue((Number) rc);
             if (i == -1) {
                 throw raise(raiseNode, TypeError, "read-write bytes-like object");
             } else if (i == -2) {
                 throw raise(raiseNode, TypeError, "contiguous buffer");
             }
+        }
+
+        @TruffleBoundary
+        private static int intValue(Number rc) {
+            return rc.intValue();
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_P")

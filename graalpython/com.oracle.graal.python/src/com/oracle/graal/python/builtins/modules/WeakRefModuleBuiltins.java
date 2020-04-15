@@ -184,7 +184,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                 return queue;
             } else {
                 if (getContext().getCore().isInitialized()) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("the weak reference queue was modified!");
                 } else {
                     // returning a null reference queue is fine, it just means

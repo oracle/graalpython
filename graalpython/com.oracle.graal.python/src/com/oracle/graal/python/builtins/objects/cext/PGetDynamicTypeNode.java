@@ -141,7 +141,7 @@ abstract class GetSulongTypeNode extends PNodeWithContext {
     private static Object getSulongTypeForClass(PythonManagedClass pythonClass) {
         Object sulongType = pythonClass.getSulongType();
         if (sulongType == null) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             sulongType = findBuiltinClass(pythonClass);
             if (sulongType == null) {
                 throw new IllegalStateException("sulong type for " + GetNameNode.getUncached().execute(pythonClass) + " was not registered");

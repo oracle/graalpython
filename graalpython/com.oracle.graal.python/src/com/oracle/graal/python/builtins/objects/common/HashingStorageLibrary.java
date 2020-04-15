@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
@@ -78,6 +79,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public int lengthWithState(HashingStorage self, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.lengthWithState");
         }
         return length(self);
@@ -117,6 +119,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public Object getItemWithState(HashingStorage self, Object key, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.getItemWithState");
         }
         return getItem(self, key);
@@ -139,6 +142,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public HashingStorage setItemWithState(HashingStorage self, Object key, Object value, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.setItemWithState");
         }
         return setItem(self, key, value);
@@ -160,6 +164,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public HashingStorage delItemWithState(HashingStorage self, Object key, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.delItem");
         }
         return delItem(self, key);
@@ -238,6 +243,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public boolean equalsWithState(HashingStorage self, HashingStorage other, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.equalsWithState");
         }
         return equals(self, other);
@@ -256,6 +262,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public int compareKeysWithState(HashingStorage self, HashingStorage other, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.compareKeysWithState");
         }
         return compareKeys(self, other);
@@ -274,6 +281,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public int compareEntriesWithState(HashingStorage self, HashingStorage other, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.compareEntriesWithState");
         }
         return compareEntries(self, other);
@@ -291,6 +299,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public HashingStorage intersectWithState(HashingStorage self, HashingStorage other, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.intersectWithState");
         }
         return intersect(self, other);
@@ -319,6 +328,7 @@ public abstract class HashingStorageLibrary extends Library {
      */
     public HashingStorage diffWithState(HashingStorage self, HashingStorage other, ThreadState state) {
         if (state == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError("HashingStorageLibrary.diffWithState");
         }
         return diff(self, other);

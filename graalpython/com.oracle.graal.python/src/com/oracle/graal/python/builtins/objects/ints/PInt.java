@@ -57,10 +57,12 @@ public final class PInt extends PythonBuiltinObject {
         return value;
     }
 
+    @TruffleBoundary(allowInlining = true)
     public boolean isOne() {
         return value.equals(BigInteger.ONE);
     }
 
+    @TruffleBoundary(allowInlining = true)
     public boolean isZero() {
         return value.equals(BigInteger.ZERO);
     }
@@ -273,7 +275,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final long longValue(BigInteger integer) {
+    public static final long longValue(BigInteger integer) {
         return integer.longValue();
     }
 
@@ -309,6 +311,10 @@ public final class PInt extends PythonBuiltinObject {
 
     public boolean isZeroOrNegative() {
         return value.signum() <= 0;
+    }
+
+    public boolean isNegative() {
+        return value.signum() < 0;
     }
 
     public static int intValue(boolean bool) {
@@ -384,6 +390,19 @@ public final class PInt extends PythonBuiltinObject {
 
     public static boolean isIntRange(long val) {
         return val == (int) val;
+    }
+
+    public BigInteger abs() {
+        if (value.signum() < 0) {
+            return abs(value);
+        } else {
+            return value;
+        }
+    }
+
+    @TruffleBoundary
+    private static BigInteger abs(BigInteger value) {
+        return value.abs();
     }
 
     public boolean isNative() {

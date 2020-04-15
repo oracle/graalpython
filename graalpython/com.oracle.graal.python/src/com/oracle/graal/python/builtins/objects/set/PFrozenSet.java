@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public class PFrozenSet extends PBaseSet {
 
@@ -49,6 +50,7 @@ public class PFrozenSet extends PBaseSet {
     public void setDictStorage(HashingStorage newStorage) {
         // ignore if storage stays unchanged
         if (newStorage != getDictStorage()) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException("frozenSet is unmodifiable");
         }
     }

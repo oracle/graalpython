@@ -93,6 +93,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongNode.CannotCastException;
 import com.oracle.graal.python.nodes.util.ChannelNodes;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadByteFromChannelNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
@@ -633,6 +635,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
+                        @Shared("castLong") @Cached CastToJavaLongNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
@@ -642,8 +645,8 @@ public class MMapBuiltins extends PythonBuiltins {
                 SequenceStorage needle = sub.getSequenceStorage();
                 int len2 = needle.length();
 
-                long s = castToLong(starting, 0);
-                long e = castToLong(ending, len1);
+                long s = castToLong(castLong, starting, 0);
+                long e = castToLong(castLong, ending, len1);
 
                 long start = s < 0 ? s + len1 : s;
                 long end = e < 0 ? e + len1 : e;
@@ -675,14 +678,15 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         long find(PMMap primary, int sub, Object starting, @SuppressWarnings("unused") Object ending,
+                        @Shared("castLong") @Cached CastToJavaLongNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             try {
                 SeekableByteChannel channel = primary.getChannel();
                 long len1 = PMMap.size(channel);
 
-                long s = castToLong(starting, 0);
-                long e = castToLong(ending, len1);
+                long s = castToLong(castLong, starting, 0);
+                long e = castToLong(castLong, ending, len1);
 
                 long start = s < 0 ? s + len1 : s;
                 long end = Math.max(e < 0 ? e + len1 : e, len1);
@@ -701,18 +705,12 @@ public class MMapBuiltins extends PythonBuiltins {
             }
         }
 
-        // TODO(fa): use node
-        private static long castToLong(Object obj, long defaultVal) {
-            if (obj instanceof Integer || obj instanceof Long) {
-                return ((Number) obj).longValue();
-            } else if (obj instanceof PInt) {
-                try {
-                    return ((PInt) obj).longValueExact();
-                } catch (ArithmeticException e) {
-                    return defaultVal;
-                }
+        private static long castToLong(CastToJavaLongNode castLong, Object obj, long defaultVal) {
+            try {
+                return castLong.execute(obj);
+            } catch (CannotCastException e) {
+                return defaultVal;
             }
-            return defaultVal;
         }
 
         private SequenceStorageNodes.GetItemNode getGetRightItemNode() {

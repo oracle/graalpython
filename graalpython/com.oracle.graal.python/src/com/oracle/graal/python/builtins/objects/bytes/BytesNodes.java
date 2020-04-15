@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoi
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -423,14 +424,16 @@ public abstract class BytesNodes {
     public static class FromSequenceNode extends Node {
 
         @Child private FromSequenceStorageNode fromSequenceStorageNode;
+        @Child private SequenceNodes.GetSequenceStorageNode getSequenceStorageNode;
 
         public byte[] execute(VirtualFrame frame, PSequence sequence) {
             if (fromSequenceStorageNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 fromSequenceStorageNode = insert(FromSequenceStorageNode.create());
+                getSequenceStorageNode = insert(SequenceNodes.GetSequenceStorageNode.create());
             }
 
-            return fromSequenceStorageNode.execute(frame, sequence.getSequenceStorage());
+            return fromSequenceStorageNode.execute(frame, getSequenceStorageNode.execute(sequence));
         }
 
         public static FromSequenceNode create() {

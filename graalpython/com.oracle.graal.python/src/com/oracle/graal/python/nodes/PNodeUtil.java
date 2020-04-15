@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -49,7 +50,7 @@ public class PNodeUtil {
 
             current = current.getParent();
         }
-
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException();
     }
 

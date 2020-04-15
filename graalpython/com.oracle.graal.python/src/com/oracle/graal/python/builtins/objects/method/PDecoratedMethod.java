@@ -76,12 +76,12 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
     }
 
     public String getName() {
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     public Signature getSignature() {
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 }

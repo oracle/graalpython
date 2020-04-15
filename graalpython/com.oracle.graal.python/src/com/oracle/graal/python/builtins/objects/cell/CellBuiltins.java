@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -65,6 +67,8 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
@@ -78,10 +82,11 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean eq(PCell self, PCell other,
+        public boolean eq(VirtualFrame frame, PCell self, PCell other,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("create()") GetRefNode getRefL,
                         @Cached("create()") GetRefNode getRefR) {
-            return getRefL.execute(self).equals(getRefR.execute(other));
+            return lib.equalsWithState(getRefL.execute(self), getRefR.execute(other), lib, PArguments.getThreadState(frame));
         }
 
         @SuppressWarnings("unused")
@@ -98,10 +103,11 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NeqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean neq(PCell self, PCell other,
+        public boolean neq(VirtualFrame frame, PCell self, PCell other,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("create()") GetRefNode getRefL,
                         @Cached("create()") GetRefNode getRefR) {
-            return !getRefL.execute(self).equals(getRefR.execute(other));
+            return !lib.equalsWithState(getRefL.execute(self), getRefR.execute(other), lib, PArguments.getThreadState(frame));
         }
 
         @SuppressWarnings("unused")

@@ -180,7 +180,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                     try {
                         lib.setDict(globals, dict);
                     } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreter();
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException(e);
                     }
                 }
@@ -271,7 +271,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             try {
                 lib.setDict(self, mapping);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
             return PNone.NONE;
@@ -286,7 +286,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                 try {
                     lib.setDict(self, dict);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException(e);
                 }
             }

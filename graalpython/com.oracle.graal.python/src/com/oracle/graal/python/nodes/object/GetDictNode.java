@@ -76,7 +76,7 @@ public abstract class GetDictNode extends PNodeWithContext {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         }

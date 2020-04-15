@@ -171,6 +171,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setServerSocket(ServerSocketChannel serverSocket) {
         if (this.getSocket() != null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new Error();
         }
         this.serverSocket = serverSocket;
@@ -178,6 +179,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setSocket(SocketChannel socket) {
         if (this.getServerSocket() != null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new Error();
         }
         this.socket = socket;

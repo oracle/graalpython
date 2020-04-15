@@ -96,6 +96,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Ignore
     public final boolean equals(PSequence other) {
+        CompilerAsserts.neverPartOfCompilation();
         PSequence otherSeq = other;
         SequenceStorage otherStore = otherSeq.getSequenceStorage();
         return store.equals(otherStore);

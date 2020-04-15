@@ -130,11 +130,11 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         Object delegate = lib.getDelegate(this);
         if (delegate instanceof Integer) {
             if (index == 0) {
-                return ((Number) delegate).intValue();
+                return ((Integer) delegate).intValue();
             }
         } else if (delegate instanceof Long) {
             if (index >= 0 && index < 2) {
-                return ((Number) delegate).intValue();
+                return ((Long) delegate).intValue();
             }
         } else {
             byte[] bytes = ((PInt) delegate).toByteArray();

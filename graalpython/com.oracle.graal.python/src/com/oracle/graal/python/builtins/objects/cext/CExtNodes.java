@@ -205,6 +205,7 @@ public abstract class CExtNodes {
          * typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
          */
         protected String getTypenamePrefix() {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
@@ -224,6 +225,7 @@ public abstract class CExtNodes {
             try {
                 return toJavaNode.execute(interopLibrary.execute(importCAPISymbolNode.execute(functionName), toSulongNode.execute(object), arg));
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("C subtype_new function failed", e);
             }
         }
@@ -305,6 +307,7 @@ public abstract class CExtNodes {
                 try {
                     return (Double) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PY_FLOAT_AS_DOUBLE), toSulongNode.execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("C object conversion function failed", e);
                 }
             }
@@ -849,7 +852,7 @@ public abstract class CExtNodes {
             try {
                 return (int) interopLibrary.execute(importCAPISymbolNode.execute(FUN_PTR_COMPARE), a, b, op) != 0;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(FUN_PTR_COMPARE + " didn't work!");
             }
         }

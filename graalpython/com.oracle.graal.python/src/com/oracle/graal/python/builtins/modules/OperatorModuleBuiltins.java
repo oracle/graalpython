@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -199,8 +200,9 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doSequence(VirtualFrame frame, PSequence value, Object index,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            return getItemNode.execute(frame, value.getSequenceStorage(), index);
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+            return getItemNode.execute(frame, getStorage.execute(value), index);
         }
 
         @Specialization

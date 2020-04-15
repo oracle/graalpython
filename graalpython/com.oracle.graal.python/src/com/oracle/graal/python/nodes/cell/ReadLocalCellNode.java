@@ -107,7 +107,7 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
 
         @Fallback
         Object read(Object cell) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Expected a cell, got: " + cell.toString() + " instead.");
         }
     }

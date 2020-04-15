@@ -104,7 +104,7 @@ public final class PCell extends PythonAbstractObject {
 
     @Override
     public int compareTo(Object o) {
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 

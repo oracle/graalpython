@@ -296,10 +296,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             PythonAbstractClass type = getClass.execute(self);
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
-            if (moduleName != PNone.NO_VALUE && !moduleName.equals(BuiltinNames.BUILTINS)) {
-                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
+            if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
+                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, System.identityHashCode(self));
             }
-            return strFormat("<%s object at 0x%x>", qualName, self.hashCode());
+            return strFormat("<%s object at 0x%x>", qualName, System.identityHashCode(self));
         }
 
         @TruffleBoundary
@@ -520,7 +520,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 try {
                     lib.setDict(self, dict);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException(e);
                 }
             }
@@ -533,7 +533,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
             return PNone.NONE;

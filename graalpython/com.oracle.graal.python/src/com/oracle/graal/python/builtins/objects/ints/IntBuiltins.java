@@ -819,7 +819,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         PInt doPInt(PInt left, PInt right, @SuppressWarnings("unused") PNone none) {
             try {
-                return factory().createInt(op(left.getValue(), right.getValue().longValueExact()));
+                return factory().createInt(op(left.getValue(), right.longValueExact()));
             } catch (ArithmeticException e) {
                 // fall through to normal computation
             }

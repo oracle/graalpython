@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PRLock extends AbstractPythonLock {
-    private class InternalReentrantLock extends ReentrantLock {
+    private static class InternalReentrantLock extends ReentrantLock {
         private static final long serialVersionUID = 2531000884985514112L;
 
         @TruffleBoundary
@@ -64,13 +64,19 @@ public final class PRLock extends AbstractPythonLock {
 
     public PRLock(LazyPythonClass cls) {
         super(cls);
-        this.lock = new InternalReentrantLock();
+        this.lock = allocateLock();
+    }
+
+    @TruffleBoundary
+    private static InternalReentrantLock allocateLock() {
+        return new InternalReentrantLock();
     }
 
     public boolean isOwned() {
         return lock.isHeldByCurrentThread();
     }
 
+    @TruffleBoundary
     public int getCount() {
         return lock.getHoldCount();
     }
@@ -79,6 +85,7 @@ public final class PRLock extends AbstractPythonLock {
         return lock.getOwnerId();
     }
 
+    @TruffleBoundary
     public void releaseAll() {
         while (lock.getHoldCount() > 0) {
             lock.unlock();

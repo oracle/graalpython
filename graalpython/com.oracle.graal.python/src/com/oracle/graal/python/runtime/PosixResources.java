@@ -330,6 +330,7 @@ public class PosixResources {
         return fd2;
     }
 
+    @TruffleBoundary(allowInlining = true)
     public boolean fsync(int fd) {
         return files.getOrDefault(fd, null) != null;
     }

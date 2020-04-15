@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -1016,8 +1017,9 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, PSequence self, Object other,
-                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
-            return containsNode.execute(frame, self.getSequenceStorage(), other);
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached SequenceStorageNodes.ContainsNode containsNode) {
+            return containsNode.execute(frame, getStorage.execute(self), other);
         }
     }
 

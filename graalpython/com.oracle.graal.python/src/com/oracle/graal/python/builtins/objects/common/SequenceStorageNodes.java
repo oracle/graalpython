@@ -524,7 +524,7 @@ public abstract class SequenceStorageNodes {
             if (factoryMethod != null) {
                 return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length), factory);
             }
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
@@ -649,7 +649,7 @@ public abstract class SequenceStorageNodes {
             if (factoryMethod != null) {
                 return factoryMethod.apply(getItemSliceNode.execute(storage, info.start, info.stop, info.step, info.length), factory);
             }
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
@@ -915,7 +915,7 @@ public abstract class SequenceStorageNodes {
                 try {
                     setItemScalarNode.execute(generalized, normalized, value);
                 } catch (SequenceStoreException e1) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException();
                 }
                 return generalized;
@@ -1066,7 +1066,7 @@ public abstract class SequenceStorageNodes {
                 try {
                     setItemScalarNode.execute(generalized, normalized, value);
                 } catch (SequenceStoreException e1) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException();
                 }
                 return generalized;
@@ -2247,7 +2247,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return concatBaseNode.execute(dest, leftProfiled, rightProfiled);
             } catch (SequenceStoreException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("generalized sequence storage cannot take value: " + e.getIndicationValue());
             }
         }
@@ -2296,28 +2296,25 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(getClass(seq))"})
-        SequenceStorage doWithStorage(SequenceStorage s, PSequence seq,
+        SequenceStorage doWithStorage(SequenceStorage left, PSequence seq,
                         @Cached PRaiseNode raiseNode,
                         @Cached LenNode lenLeft,
                         @Cached LenNode lenRight,
-                        @Cached("createClassProfile()") ValueProfile leftProfile,
-                        @Cached("createClassProfile()") ValueProfile rightProfile,
-                        @Cached("createClassProfile()") ValueProfile sequenceProfile,
-                        @Cached("create()") EnsureCapacityNode ensureCapacityNode,
-                        @Cached("create()") BranchProfile overflowErrorProfile,
-                        @Cached("create()") ConcatBaseNode concatStoragesNode) {
-            SequenceStorage leftProfiled = leftProfile.profile(s);
-            SequenceStorage rightProfiled = rightProfile.profile(sequenceProfile.profile(seq).getSequenceStorage());
-            int len1 = lenLeft.execute(leftProfiled);
-            int len2 = lenRight.execute(rightProfiled);
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached BranchProfile overflowErrorProfile,
+                        @Cached ConcatBaseNode concatStoragesNode) {
+            SequenceStorage right = getStorage.execute(seq);
+            int len1 = lenLeft.execute(left);
+            int len2 = lenRight.execute(right);
             SequenceStorage dest = null;
             try {
-                dest = ensureCapacityNode.execute(leftProfiled, Math.addExact(len1, len2));
-                return concatStoragesNode.execute(dest, s, rightProfiled);
+                dest = ensureCapacityNode.execute(left, Math.addExact(len1, len2));
+                return concatStoragesNode.execute(dest, left, right);
             } catch (SequenceStoreException e) {
                 dest = generalizeStore(dest, e.getIndicationValue());
                 dest = ensureCapacityNode.execute(dest, Math.addExact(len1, len2));
-                return concatStoragesNode.execute(dest, s, rightProfiled);
+                return concatStoragesNode.execute(dest, left, right);
             } catch (ArithmeticException e) {
                 overflowErrorProfile.enter();
                 throw raiseNode.raise(PythonErrorType.OverflowError);
@@ -2933,7 +2930,7 @@ public abstract class SequenceStorageNodes {
                     generalized.setNewLength(len + 1);
                     return generalized;
                 } catch (SequenceStoreException e1) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException();
                 }
             }
@@ -3127,7 +3124,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         NativeSequenceStorage doObject(@SuppressWarnings("unused") NativeSequenceStorage s, @SuppressWarnings("unused") int cap) {
             // TODO re-allocate native memory
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException();
         }
 
@@ -3232,7 +3229,7 @@ public abstract class SequenceStorageNodes {
             try {
                 getGetItemSliceNode().execute(storage, info);
             } catch (SequenceStoreException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }
@@ -3810,6 +3807,7 @@ public abstract class SequenceStorageNodes {
                             break;
                         }
                         default:
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {

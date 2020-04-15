@@ -74,7 +74,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
             writeToCellNode.execute((PCell) localValue, value);
             return;
         }
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("Expected a cell, got: " + localValue.toString() + " instead.");
     }
 

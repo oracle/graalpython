@@ -2472,6 +2472,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             if (sequenceStorage instanceof MroSequenceStorage) {
                 ((MroSequenceStorage) sequenceStorage).lookupChanged();
             } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid MRO object for native type \"" + name + "\"");
             }
             return PNone.NONE;
@@ -2575,16 +2576,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 ParsePosition pp = new ParsePosition(0);
                 Number parse = parse(source, pp);
                 if (parse != null) {
-                    return factory().createTuple(new Object[]{parse.doubleValue(), pp.getIndex()});
+                    return factory().createTuple(new Object[]{doubleValue(parse), pp.getIndex()});
                 }
             } else {
                 try {
                     Number parse = parse(source);
-                    return factory().createTuple(new Object[]{parse.doubleValue()});
+                    return factory().createTuple(new Object[]{doubleValue(parse)});
                 } catch (ParseException e) {
                 }
             }
             return raiseNative(frame, getNativeNullNode.execute(module), PythonBuiltinClassType.ValueError, "could not convert string to float: %s", source);
+        }
+
+        @TruffleBoundary
+        private static double doubleValue(Number parse) {
+            return parse.doubleValue();
         }
 
         @TruffleBoundary
@@ -2624,12 +2630,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                Object reprString = callReprNode.executeObject(frame, val, "." + precision + Character.toString((char) formatCode));
+                Object reprString = callReprNode.executeObject(frame, val, joinFormatCode(formatCode, precision));
                 return createResult(new CStringWrapper(castToStringNode.execute(reprString)), val);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute(module);
             }
+        }
+
+        @TruffleBoundary
+        private static String joinFormatCode(int formatCode, int precision) {
+            return "." + precision + Character.toString((char) formatCode);
         }
 
         private PTuple createResult(Object str, double val) {

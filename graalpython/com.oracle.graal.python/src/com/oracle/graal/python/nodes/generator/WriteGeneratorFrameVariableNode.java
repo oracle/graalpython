@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.frame.FrameSlotNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNodeGen.WriteGeneraterFrameSlotNodeGen;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -59,26 +60,31 @@ public abstract class WriteGeneratorFrameVariableNode extends StatementNode impl
 
         @Override
         public final Object execute(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final int executeInt(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final long executeLong(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final double executeDouble(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final boolean executeBoolean(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 

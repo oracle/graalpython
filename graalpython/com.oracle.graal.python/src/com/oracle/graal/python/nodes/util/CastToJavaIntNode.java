@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNodeGen.CastToJavaIntLossyNodeGen;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -71,10 +72,12 @@ public abstract class CastToJavaIntNode extends PNodeWithContext {
     public abstract int execute(Object x);
 
     protected int toIntInternal(@SuppressWarnings("unused") long x) {
+        CompilerAsserts.neverPartOfCompilation();
         throw new IllegalStateException("should not be reached");
     }
 
     protected int toIntInternal(@SuppressWarnings("unused") PInt x) {
+        CompilerAsserts.neverPartOfCompilation();
         throw new IllegalStateException("should not be reached");
     }
 

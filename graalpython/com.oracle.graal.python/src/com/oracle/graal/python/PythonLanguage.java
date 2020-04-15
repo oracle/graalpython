@@ -339,6 +339,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return new ForeignLanguageView(value);
             }
         } catch (UnsupportedMessageException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException(e);
         }
     }

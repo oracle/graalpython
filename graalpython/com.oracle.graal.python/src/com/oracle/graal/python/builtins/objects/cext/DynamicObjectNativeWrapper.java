@@ -842,6 +842,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     throw raise.raise(PythonBuiltinClassType.TypeError, e);
                 }
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
@@ -1058,6 +1059,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
                 interopLib.writeMember(PythonNativeObject.cast(delegateObj).getPtr(), key, value);
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 

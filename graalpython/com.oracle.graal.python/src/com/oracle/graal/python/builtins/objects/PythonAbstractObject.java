@@ -336,11 +336,10 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     }
 
     @ExportMessage
-    public long getArraySize(
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) throws UnsupportedMessageException {
+    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) throws UnsupportedMessageException {
         // since a call to this method must be preceded by a call to 'hasArrayElements', we just
         // assume that a length exists
-        long len = getArraySizeSafe(callLenNode);
+        long len = lib.length(this);
         if (len >= 0) {
             return len;
         }
@@ -350,34 +349,33 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
 
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return isInBounds(callLenNode, getItemNode, idx);
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
+        return isInBounds(lib.length(this), getItemNode, idx);
     }
 
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, getItemNode, idx);
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
     }
 
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(callLenNode, getItemNode, idx);
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(lib.length(this), getItemNode, idx);
     }
 
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
-                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
-                    @Shared("callLenNode") @Cached LookupAndCallUnaryDynamicNode callLenNode) {
-        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(callLenNode, getItemNode, idx);
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode) {
+        return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
     }
 
-    private boolean isInBounds(LookupAndCallUnaryDynamicNode callLenNode, PInteropSubscriptNode getItemNode, long idx) {
-        long len = getArraySizeSafe(callLenNode);
+    private boolean isInBounds(int len, PInteropSubscriptNode getItemNode, long idx) {
         if (0 <= idx && idx < len) {
             try {
                 getItemNode.execute(this, idx);
@@ -388,16 +386,6 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         } else {
             return false;
         }
-    }
-
-    private long getArraySizeSafe(LookupAndCallUnaryDynamicNode callLenNode) {
-        Object lenObj = callLenNode.executeObject(this, __LEN__);
-        if (lenObj instanceof Number) {
-            return ((Number) lenObj).longValue();
-        } else if (lenObj instanceof PInt) {
-            return ((PInt) lenObj).longValueExact();
-        }
-        return -1;
     }
 
     @ExportMessage
@@ -878,7 +866,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         try {
             longResult = castToLong.execute(result); // this is a lossy cast
         } catch (CastToJavaLongNode.CannotCastException e) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
         try {

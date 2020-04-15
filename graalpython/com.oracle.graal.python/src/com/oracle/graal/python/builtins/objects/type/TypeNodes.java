@@ -392,7 +392,7 @@ public abstract class TypeNodes {
             if (profiled instanceof PDict) {
                 return wrapDict(profiled);
             }
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("invalid subclasses dict " + profiled.getClass().getName());
         }
 
@@ -434,6 +434,7 @@ public abstract class TypeNodes {
                     if (a.getClass() == Object[].class) {
                         return (T[]) toArray();
                     } else {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new UnsupportedOperationException();
                     }
                 }
@@ -447,26 +448,32 @@ public abstract class TypeNodes {
                 }
 
                 public boolean remove(Object o) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new UnsupportedOperationException();
                 }
 
                 public boolean containsAll(Collection<?> c) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new UnsupportedOperationException();
                 }
 
                 public boolean addAll(Collection<? extends PythonAbstractClass> c) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new UnsupportedOperationException();
                 }
 
                 public boolean retainAll(Collection<?> c) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new UnsupportedOperationException();
                 }
 
                 public boolean removeAll(Collection<?> c) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new UnsupportedOperationException();
                 }
 
                 public void clear() {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new UnsupportedOperationException();
                 }
 

@@ -64,7 +64,7 @@ public abstract class ReadVariableNode extends FrameSlotNode implements ReadLoca
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 nodeCost = NodeCost.MONOMORPHIC;
             }
-            if (frameSlot.getIdentifier().equals(RETURN_SLOT_ID)) {
+            if (RETURN_SLOT_ID.equals(frameSlot.getIdentifier())) {
                 value = PNone.NONE;
             } else {
                 if (raise == null) {

@@ -68,6 +68,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -1181,6 +1182,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return factory().createInt(cls, ((PInt) value).getValue());
                 }
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Unexpected type");
         }
 
@@ -1479,7 +1481,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (isPrimitiveInt(cls)) {
                 return arg;
             } else {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("cannot wrap void ptr in int subclass");
             }
         }
@@ -1683,6 +1685,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return PythonNativeClass.cast(cls);
                 }
             }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("class needs native allocation but has not native base class");
         }
 
@@ -2221,7 +2224,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else if (globals instanceof PDict) {
                 nameAttr = hlib.getItem(((PDict) globals).getDictStorage(), __NAME__);
             } else {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid globals object");
             }
             return ensureCastToStringNode().execute(nameAttr);
@@ -2817,7 +2820,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FrameTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call() {
-            throw new RuntimeException("cannot call constructor of frame type");
+            throw raise(RuntimeError, "cannot call constructor of frame type");
         }
     }
 
@@ -2826,7 +2829,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call() {
-            throw new RuntimeException("cannot call constructor of traceback type");
+            throw raise(RuntimeError, "cannot call constructor of traceback type");
         }
     }
 
@@ -2927,7 +2930,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CellTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call() {
-            throw new RuntimeException("cannot call constructor of cell type");
+            throw raise(RuntimeError, "cannot call constructor of cell type");
         }
     }
 

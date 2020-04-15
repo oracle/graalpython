@@ -182,10 +182,15 @@ public abstract class StringNodes {
                 // read the native data
                 Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
-                return ((Number) result).intValue();
+                return intValue((Number) result);
             }
             // the object's type is not a subclass of 'str'
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, "bad argument type for built-in operation");
+        }
+
+        @TruffleBoundary
+        private static int intValue(Number result) {
+            return result.intValue();
         }
     }
 

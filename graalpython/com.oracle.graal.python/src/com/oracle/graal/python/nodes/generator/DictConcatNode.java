@@ -85,11 +85,11 @@ public abstract class DictConcatNode extends ExpressionNode {
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
                     HashingStorageLibrary firstlib, HashingStorageLibrary otherlib) {
-        ThreadState state = PArguments.getThreadState(frame);
         HashingStorage dictStorage = dict.getDictStorage();
         for (Object key : other.keys()) {
             Object value;
             if (hasFrame.profile(frame != null)) {
+                ThreadState state = PArguments.getThreadState(frame);
                 value = otherlib.getItemWithState(other.getDictStorage(), key, state);
                 dictStorage = firstlib.setItemWithState(dictStorage, key, value, state);
             } else {
