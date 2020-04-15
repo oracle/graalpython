@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
@@ -204,7 +203,7 @@ public abstract class StringNodes {
                         @Cached PRaiseNode raiseNode) {
             String result = castToJavaStringNode.execute(self);
             if (errorProfile.profile(result == null)) {
-                throw raiseNode.execute(PythonBuiltinClassType.TypeError, PNone.NO_VALUE, errMsgFormat, errMsgArgs);
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
             return result;
         }
