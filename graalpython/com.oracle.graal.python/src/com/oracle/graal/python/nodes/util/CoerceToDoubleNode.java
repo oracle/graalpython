@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.util.function.Function;
+
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -63,11 +65,22 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @ImportStatic(MathGuards.class)
 public abstract class CoerceToDoubleNode extends PNodeWithContext {
     @Child private LookupAndCallUnaryNode callFloatNode;
+    @Child private LookupAndCallUnaryNode callIndexNode;
+
+    private final Function<Object, Double> typeErrorHandler;
+
+    public CoerceToDoubleNode(Function<Object, Double> typeErrorHandler) {
+        this.typeErrorHandler = typeErrorHandler;
+    }
 
     public abstract double execute(VirtualFrame frame, Object x);
 
     public static CoerceToDoubleNode create() {
-        return CoerceToDoubleNodeGen.create();
+        return CoerceToDoubleNodeGen.create(null);
+    }
+
+    public static CoerceToDoubleNode create(Function<Object, Double> trypeErrorHandler) {
+        return CoerceToDoubleNodeGen.create(trypeErrorHandler);
     }
 
     @Specialization
@@ -98,15 +111,37 @@ public abstract class CoerceToDoubleNode extends PNodeWithContext {
             callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
         }
         Object result = callFloatNode.executeObject(frame, x);
-        if (result == PNone.NO_VALUE) {
+        if (result != PNone.NO_VALUE) {
+            if (result instanceof PFloat) {
+                return ((PFloat) result).getValue();
+            }
+            if (result instanceof Float || result instanceof Double) {
+                return (double) result;
+            }
+            throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
+        }
+
+        if (callIndexNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
+        }
+        result = callIndexNode.executeObject(frame, x);
+        if (result != PNone.NO_VALUE) {
+            if (result instanceof Integer) {
+                return ((Integer) result).doubleValue();
+            } else if (result instanceof Long) {
+                return ((Long) result).doubleValue();
+            } else if (result instanceof Boolean) {
+                return (Boolean) result ? 1.0 : 0.0;
+            } else if (result instanceof PInt) {
+                return toDouble((PInt) result, raise);
+            }
+            throw raise.raise(TypeError, " __index__ returned non-int (type %p)", result);
+        }
+        if (typeErrorHandler == null) {
             throw raise.raise(TypeError, "must be real number, not %p", x);
+        } else {
+            return typeErrorHandler.apply(x);
         }
-        if (result instanceof PFloat) {
-            return ((PFloat) result).getValue();
-        }
-        if (result instanceof Float || result instanceof Double) {
-            return (double) result;
-        }
-        throw raise.raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
     }
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -95,6 +95,10 @@ def test_int_from_custom():
         def __int__(self):
             return 0xBADF00D
 
+    class Indexable:
+        def __index__(self):
+            return 4
+
     class NoInt():
         pass
 
@@ -108,6 +112,9 @@ def test_int_from_custom():
         assert False, "converting non-integer to integer must not be possible"
     except BaseException as e:
         assert type(e) == TypeError, "expected type error, was: %r" % type(e)
+    if sys.version_info >= (3, 8, 0):
+        assert int(Indexable()) == 4
+
 
 def test_int_bit_length():
     assert (int(0)).bit_length() == 0

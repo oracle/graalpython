@@ -1774,18 +1774,24 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32", "doPIntToInt64"})
         static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize, boolean exact,
+                        @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Cached LookupAndCallUnaryDynamicNode callIntNode,
                         @Cached AsNativePrimitiveNode recursive,
+                        @Exclusive @Cached BranchProfile noIntProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
-            Object result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
+            Object result = callIndexNode.executeObject(obj, SpecialMethodNames.__INDEX__);
             if (result == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonErrorType.TypeError, "an integer is required (got type %p)", result);
+                result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
+                if (result == PNone.NO_VALUE) {
+                    noIntProfile.enter();
+                    throw raiseNode.raise(PythonErrorType.TypeError, "an integer is required (got type %p)", result);
+                }
             }
             // n.b. this check is important to avoid endless recursions; it will ensure that
             // 'doGeneric' is not triggered in the recursive node
             if (!(isIntegerType(result))) {
-                throw raiseNode.raise(PythonErrorType.TypeError, "__int__ returned non-int (type %p)", result);
+                throw raiseNode.raise(PythonErrorType.TypeError, "__index__ returned non-int (type %p)", result);
             }
             return recursive.execute(result, signed, targetTypeSize, exact);
         }

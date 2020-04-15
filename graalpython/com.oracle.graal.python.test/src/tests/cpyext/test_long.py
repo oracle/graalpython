@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -103,6 +103,15 @@ class DummyIntSubclass(float):
         return 0xBABE
 
 
+class DummyIndexable:
+
+    def __int__(self):
+        return 0xDEAD
+
+    def __index__(self):
+        return 0xBEEF
+
+
 class TestPyLong(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -119,6 +128,7 @@ class TestPyLong(CPyExtTestCase):
             (DummyIntable(), 0xCAFE),
             (DummyIntSubclass(), 0xBABE),
             (DummyNonInt(), -1),
+            (DummyIndexable(), 0xBEEF if sys.version_info >= (3, 8, 0) else 0xDEAD),
         ),
         code='''int wrap_PyLong_AsLong(PyObject* obj, long expected) {
             long res = PyLong_AsLong(obj);
