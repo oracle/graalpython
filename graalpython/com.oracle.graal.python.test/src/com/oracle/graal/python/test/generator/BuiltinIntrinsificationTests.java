@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -37,5 +37,19 @@ public class BuiltinIntrinsificationTests {
                         "    ll = list(i for i in range(5))\n" + //
                         "print(ll)";
         assertPrints("[0, 1, 2, 3, 4]\n", source);
+    }
+
+    @Test
+    public void simpleListCompCondition() {
+        String source = "ll = list(i for i in range(5) if i % 2 == 0)\n" + //
+                        "print(ll)";
+        assertPrints("[0, 2, 4]\n", source);
+    }
+
+    @Test
+    public void emptyListComp() {
+        String source = "ll = list(i for i in range(5) if i == 6)\n" + //
+                        "print(ll)";
+        assertPrints("[]\n", source);
     }
 }
