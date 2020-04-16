@@ -67,6 +67,7 @@ public final class PBaseException extends PythonObject {
     private PTuple args; // can be null for lazily generated message
 
     // in case of lazily generated messages, these will be used to construct the message:
+    private final boolean hasMessageFormat;
     private final String messageFormat;
     private final Object[] messageArgs;
 
@@ -79,6 +80,7 @@ public final class PBaseException extends PythonObject {
     public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
         this.args = args;
+        this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
@@ -86,6 +88,7 @@ public final class PBaseException extends PythonObject {
     public PBaseException(LazyPythonClass cls, String format, Object[] args) {
         super(cls);
         this.args = null;
+        this.hasMessageFormat = true;
         this.messageFormat = format;
         this.messageArgs = args;
     }
@@ -142,6 +145,10 @@ public final class PBaseException extends PythonObject {
 
     public String getMessageFormat() {
         return messageFormat;
+    }
+
+    public boolean hasMessageFormat() {
+        return hasMessageFormat;
     }
 
     public Object[] getMessageArgs() {

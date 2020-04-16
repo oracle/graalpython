@@ -192,4 +192,17 @@ public class TryTests {
         assertLastLineErrorContains("SyntaxError", "try: 1+1\n");
         assertLastLineErrorContains("SyntaxError", "try:\n 1+1\n");
     }
+
+    @Test
+    public void tryZeroArgLen() {
+        assertPrints("0\n", "try:\n" +
+                        "   assert False\n" +
+                        "except AssertionError as e:\n" +
+                        "   print(len(e.args))\n");
+
+        assertPrints("1\n", "try:\n" +
+                        "   assert False, \"\"\n" +
+                        "except AssertionError as e:\n" +
+                        "   print(len(e.args))\n");
+    }
 }

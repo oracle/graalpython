@@ -89,7 +89,7 @@ public class AssertNode extends StatementNode {
     }
 
     private PException assertionFailed(VirtualFrame frame) {
-        String assertionMessage = "";
+        String assertionMessage = null;
         if (message != null) {
             try {
                 Object messageObj = message.execute(frame);
@@ -112,6 +112,9 @@ public class AssertNode extends StatementNode {
         if (raise == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raise = insert(PRaiseNode.create());
+        }
+        if (assertionMessage == null) {
+            return raise.raise(AssertionError);
         }
         return raise.raise(AssertionError, assertionMessage);
     }
