@@ -1534,19 +1534,23 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
         public abstract Object execute(Object object, String attrName);
 
         @Specialization
-        Object doIt(Object object, String attrName,
+        static Object doIt(Object object, String attrName,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                        @Cached CallNode callGetattributeNode,
+                        @Cached CallBinaryMethodNode callGetattributeNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGetattrNode,
-                        @Cached CallNode callGetattrNode,
-                        @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+                        @Cached CallBinaryMethodNode callGetattrNode,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile hasGetattrProfile) {
             try {
                 Object attrGetattribute = lookupGetattributeNode.execute(object, __GETATTRIBUTE__);
-                return callGetattributeNode.execute(null, attrGetattribute, object, attrName);
+                return callGetattributeNode.executeObject(attrGetattribute, object, attrName);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
                 Object attrGetattr = lookupGetattrNode.execute(object, __GETATTR__);
-                return callGetattrNode.execute(null, attrGetattr, object, attrName);
+                if (hasGetattrProfile.profile(attrGetattr != PNone.NO_VALUE)) {
+                    return callGetattrNode.executeObject(attrGetattr, object, attrName);
+                }
+                throw pe;
             }
         }
 
