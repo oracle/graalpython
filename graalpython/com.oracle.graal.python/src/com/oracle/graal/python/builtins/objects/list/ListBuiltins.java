@@ -230,17 +230,24 @@ public class ListBuiltins extends PythonBuiltins {
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PRangeIterator range = (PRangeIterator) iterable.getIterator();
-            final int len = range.getLength(stepProfile, positiveRangeProfile);
-            if (len > 0) {
-                Object value = getNextNode.execute(frame, iterObj);
-                storage = SequenceStorageFactory.createStorage(value, len);
-                storage = appendNode.execute(storage, value, ListGeneralizationNode.SUPPLIER);
-                while (true) {
-                    try {
-                        storage = appendNode.execute(storage, getNextNode.execute(frame, iterObj), ListGeneralizationNode.SUPPLIER);
-                    } catch (PException e) {
-                        e.expectStopIteration(errorProfile);
-                        break;
+            final int estimatedMaxLen = range.getLength(stepProfile, positiveRangeProfile);
+            if (estimatedMaxLen > 0) {
+                Object value = null;
+                try {
+                    value = getNextNode.execute(frame, iterObj);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                }
+                if (value != null) {
+                    storage = SequenceStorageFactory.createStorage(value, estimatedMaxLen);
+                    storage = appendNode.execute(storage, value, ListGeneralizationNode.SUPPLIER);
+                    while (true) {
+                        try {
+                            storage = appendNode.execute(storage, getNextNode.execute(frame, iterObj), ListGeneralizationNode.SUPPLIER);
+                        } catch (PException e) {
+                            e.expectStopIteration(errorProfile);
+                            break;
+                        }
                     }
                 }
             }
