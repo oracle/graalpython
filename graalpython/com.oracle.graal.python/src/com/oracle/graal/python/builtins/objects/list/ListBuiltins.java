@@ -112,6 +112,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
@@ -217,24 +218,26 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "iterable.isPRangeIterator()")
+        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class)
         PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
                         @Cached GetIteratorNode getIteratorNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile stepProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile positiveRangeProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile positiveRangeProfile) throws UnexpectedResultException {
             clearStorage(list);
             Object iterObj = getIteratorNode.executeWith(frame, iterable);
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PRangeIterator range = (PRangeIterator) iterable.getIterator();
             final int estimatedMaxLen = range.getLength(stepProfile, positiveRangeProfile);
+            int realLen = 0;
             if (estimatedMaxLen > 0) {
                 Object value = null;
                 try {
                     value = getNextNode.execute(frame, iterObj);
+                    realLen++;
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                 }
@@ -244,6 +247,7 @@ public class ListBuiltins extends PythonBuiltins {
                     while (true) {
                         try {
                             storage = appendNode.execute(storage, getNextNode.execute(frame, iterObj), ListGeneralizationNode.SUPPLIER);
+                            realLen++;
                         } catch (PException e) {
                             e.expectStopIteration(errorProfile);
                             break;
@@ -253,7 +257,11 @@ public class ListBuiltins extends PythonBuiltins {
             }
 
             list.setSequenceStorage(storage);
-            return PNone.NONE;
+            if (realLen == estimatedMaxLen) {
+                return PNone.NONE;
+            } else {
+                throw new UnexpectedResultException(PNone.NONE);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
