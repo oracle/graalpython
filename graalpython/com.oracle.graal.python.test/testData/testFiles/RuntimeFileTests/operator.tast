@@ -73,10 +73,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
         WriteNameNodeGen SourceSection: None
           Identifier: _abs
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [1080,1133]`def lt(a, b):↵    "S...`
         Identifier: lt
         FunctionDefinitionNode Name: lt SourceSection: None
@@ -4193,10 +4192,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [1,partial,Illegal]
                                             EmptyNode SourceSection: None
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __getattribute__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __getattr__
+                                          GetAnyAttributeNodeGen SourceSection: None
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
                                         FrameReturnNode SourceSection: [8623,8693]`return partial(self....`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -5186,10 +5184,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             WriteNameNodeGen SourceSection: None
               Identifier: __doc__
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10090,10101]`__lt__ = lt`
         Identifier: __lt__

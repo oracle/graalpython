@@ -36,10 +36,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _eq
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       ImportFromNode SourceSection: [1059,1102]`from keyword import ...`
         Importee: keyword
         Level: 0
@@ -47,10 +46,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _iskeyword
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [1110,1121]`sys as _sys`
         Identifier: _sys
         ImportExpression SourceSection: None
@@ -68,10 +66,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _proxy
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       ImportFromNode SourceSection: [1182,1259]`from itertools impor...`
         Importee: itertools
         Level: 0
@@ -85,10 +82,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _starmap
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       ImportFromNode SourceSection: [1260,1313]`from reprlib import ...`
         Importee: reprlib
         Level: 0
@@ -96,10 +92,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _recursive_repr
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       TryFinallyNode SourceSection: [1315,1444]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [1324,1354]`from _collections im...`
@@ -109,10 +104,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: deque
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [1379,1383]`pass`
               EmptyNode SourceSection: [1379,1383]`pass`
@@ -141,10 +135,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: defaultdict
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [1514,1518]`pass`
               EmptyNode SourceSection: [1514,1518]`pass`
@@ -3346,10 +3339,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: OrderedDict
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [10936,10940]`pass`
               EmptyNode SourceSection: [10936,10940]`pass`
@@ -4950,10 +4942,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: _count_elements
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [18074,18078]`pass`
               EmptyNode SourceSection: [18074,18078]`pass`
