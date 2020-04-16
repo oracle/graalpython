@@ -22,10 +22,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         WriteNameNodeGen SourceSection: None
           Identifier: MAXGROUPS
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [515,1619]`class error(Exceptio...`
         Identifier: error
         PythonCallNodeGen SourceSection: [515,1619]`class error(Exceptio...`

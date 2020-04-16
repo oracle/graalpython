@@ -16,7 +16,6 @@ ModuleRootNode Name: <module 'relativeImport06'> SourceSection: [0,22]`from ..pk
           WriteNameNodeGen SourceSection: None
             Identifier: name
             EmptyNode SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattr__
+          GetAnyAttributeNodeGen SourceSection: None
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattribute__

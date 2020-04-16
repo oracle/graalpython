@@ -958,10 +958,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
         WriteNameNodeGen SourceSection: None
           Identifier: __getframe__
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [3680,4271]`@__graalpython__.bui...`
         Identifier: vars
         PythonCallNodeGen SourceSection: [3680,3704]`@__graalpython__.bui...`

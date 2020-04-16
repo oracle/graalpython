@@ -19,7 +19,6 @@ ModuleRootNode Name: <module 'fromImport17'> SourceSection: [0,56]`from sys.path
           WriteNameNodeGen SourceSection: None
             Identifier: my_basename
             EmptyNode SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattr__
+          GetAnyAttributeNodeGen SourceSection: None
+            LookupAndCallBinaryNodeGen SourceSection: None
+              Op: __getattribute__

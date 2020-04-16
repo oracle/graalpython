@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetAnyAttributeNodeGen;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetFixedAttributeNodeGen;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
@@ -59,6 +61,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChild(value = "object", type = ExpressionNode.class)
 public abstract class GetAttributeNode extends ExpressionNode implements ReadNode {
@@ -108,12 +111,68 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
 
     public abstract ExpressionNode getObject();
 
-    public abstract static class GetFixedAttributeNode extends Node {
+    abstract static class GetAttributeBaseNode extends Node {
+
+        @Child private LookupInheritedAttributeNode lookupGetattrNode;
+        @Child private CallBinaryMethodNode callBinaryMethodNode;
+
+        @CompilationFinal private ConditionProfile hasGetattrProfile;
+
+        int dispatchGetAttrOrRethrowInt(VirtualFrame frame, Object object, Object key, PException pe) throws UnexpectedResultException {
+            return ensureCallGetattrNode().executeInt(frame, lookupGetattrOrRethrow(object, pe), object, key);
+        }
+
+        long dispatchGetAttrOrRethrowLong(VirtualFrame frame, Object object, Object key, PException pe) throws UnexpectedResultException {
+            return ensureCallGetattrNode().executeLong(frame, lookupGetattrOrRethrow(object, pe), object, key);
+        }
+
+        boolean dispatchGetAttrOrRethrowBool(VirtualFrame frame, Object object, Object key, PException pe) throws UnexpectedResultException {
+            return ensureCallGetattrNode().executeBool(frame, lookupGetattrOrRethrow(object, pe), object, key);
+        }
+
+        Object dispatchGetAttrOrRethrowObject(VirtualFrame frame, Object object, Object key, PException pe) {
+            return ensureCallGetattrNode().executeObject(frame, lookupGetattrOrRethrow(object, pe), object, key);
+        }
+
+        /** Lookup {@code __getattr__} or rethrow {@code pe} if it does not exist. */
+        private Object lookupGetattrOrRethrow(Object object, PException pe) {
+            Object getattrAttribute = ensureLookupGetattrNode().execute(object);
+            if (ensureHasGetattrProfile().profile(getattrAttribute == PNone.NO_VALUE)) {
+                throw pe;
+            }
+            return getattrAttribute;
+        }
+
+        private LookupInheritedAttributeNode ensureLookupGetattrNode() {
+            if (lookupGetattrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupGetattrNode = insert(LookupInheritedAttributeNode.create(__GETATTR__));
+            }
+            return lookupGetattrNode;
+        }
+
+        private CallBinaryMethodNode ensureCallGetattrNode() {
+            if (callBinaryMethodNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callBinaryMethodNode = insert(CallBinaryMethodNode.create());
+            }
+            return callBinaryMethodNode;
+        }
+
+        private ConditionProfile ensureHasGetattrProfile() {
+            if (hasGetattrProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasGetattrProfile = ConditionProfile.createBinaryProfile();
+            }
+            return hasGetattrProfile;
+        }
+    }
+
+    public abstract static class GetFixedAttributeNode extends GetAttributeBaseNode {
 
         private final String key;
 
         @Child private LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-        @Child private LookupAndCallBinaryNode dispatchGetAttr;
         @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
         public GetFixedAttributeNode(String key) {
@@ -138,7 +197,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeInt(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(frame, object, key);
+                return dispatchGetAttrOrRethrowInt(frame, object, key, pe);
             }
         }
 
@@ -148,7 +207,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeLong(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(frame, object, key);
+                return dispatchGetAttrOrRethrowLong(frame, object, key, pe);
             }
         }
 
@@ -158,7 +217,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeBool(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeBool(frame, object, key);
+                return dispatchGetAttrOrRethrowBool(frame, object, key, pe);
             }
         }
 
@@ -168,16 +227,8 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeObject(frame, object, key);
+                return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
-        }
-
-        private LookupAndCallBinaryNode getDispatchGetAttr() {
-            if (dispatchGetAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatchGetAttr = insert(LookupAndCallBinaryNode.create(__GETATTR__));
-            }
-            return dispatchGetAttr;
         }
 
         public static GetFixedAttributeNode create(String key) {
@@ -185,10 +236,9 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
         }
     }
 
-    public abstract static class GetAnyAttributeNode extends Node {
+    public abstract static class GetAnyAttributeNode extends GetAttributeBaseNode {
 
         @Child private LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-        @Child private LookupAndCallBinaryNode dispatchGetAttr;
         @CompilationFinal private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
         public abstract int executeInt(VirtualFrame frame, Object object, Object key) throws UnexpectedResultException;
@@ -205,7 +255,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeInt(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(frame, object, key);
+                return dispatchGetAttrOrRethrowInt(frame, object, key, pe);
             }
         }
 
@@ -215,7 +265,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeLong(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeInt(frame, object, key);
+                return dispatchGetAttrOrRethrowLong(frame, object, key, pe);
             }
         }
 
@@ -225,7 +275,7 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeBool(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeBool(frame, object, key);
+                return dispatchGetAttrOrRethrowBool(frame, object, key, pe);
             }
         }
 
@@ -235,16 +285,8 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return getDispatchGetAttr().executeObject(frame, object, key);
+                return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
-        }
-
-        private LookupAndCallBinaryNode getDispatchGetAttr() {
-            if (dispatchGetAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatchGetAttr = insert(LookupAndCallBinaryNode.create(__GETATTR__));
-            }
-            return dispatchGetAttr;
         }
 
         public static GetAnyAttributeNode create() {

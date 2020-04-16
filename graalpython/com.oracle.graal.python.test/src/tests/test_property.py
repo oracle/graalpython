@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -88,6 +88,13 @@ class Y(X):
         X.prop_x.fset(self, ax)
 
 
+ERROR_FROM_GETTER = "ERROR FROM GETTER"
+class Z:
+    @property
+    def prop_x(self):
+        raise AttributeError(ERROR_FROM_GETTER)
+
+
 def test_properties():
     c = C(10)
     assert c.prop_x == 10
@@ -114,3 +121,11 @@ def test_properties():
     assert not_found
 
     assert X.prop_x is not Y.prop_x
+
+
+def test_property_error():
+    try:
+        Z().prop_x
+    except BaseException as e:
+        assert isinstance(e, AttributeError), "did not get AttributeError, was %s" % type(e)
+        assert str(e) == ERROR_FROM_GETTER, "did not get expected error message; was %s" % str(e)

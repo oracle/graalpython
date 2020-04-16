@@ -43,10 +43,9 @@ ModuleRootNode Name: <module 'fromImportInFn03'> SourceSection: [0,54]`def fn():
                           WriteLocalFrameSlotNodeGen SourceSection: None
                             Frame: [0,my_dirname,Illegal]
                           EmptyNode SourceSection: None
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __getattribute__
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __getattr__
+                        GetAnyAttributeNodeGen SourceSection: None
+                          LookupAndCallBinaryNodeGen SourceSection: None
+                            Op: __getattribute__
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

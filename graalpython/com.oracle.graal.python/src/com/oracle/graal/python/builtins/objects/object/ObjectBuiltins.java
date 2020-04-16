@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
@@ -426,15 +425,6 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         public static GetAttributeNode create() {
             return GetAttributeNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object getattr(Object object, Object key) {
-            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
         }
     }
 
