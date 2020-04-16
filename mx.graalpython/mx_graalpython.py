@@ -1545,7 +1545,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             args.append("-v")
         elif mx._opts.quiet:
             args.append("-q")
-        args += ["-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
+        args += ["--python.WithThread", "-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
