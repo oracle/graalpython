@@ -77,6 +77,8 @@ def assert_has_traceback(code, expected_elements):
         code()
     except Exception:
         stack = traceback.TracebackException(*sys.exc_info()).stack
+    else:
+        assert False, "The code didn't raise an exception"
     expected_elements = [('assert_has_traceback', 'code()')] + expected_elements
     actual_elements = []
     for frame in stack:
@@ -441,6 +443,101 @@ def test_reraise_from_finally_generator():
             ('reraise_from_finally', 'raise sys.exc_info()[1]  # finally'),
             ('reraise_from_finally', 'raise sys.exc_info()[1]  # except'),
             ('reraise_from_finally', 'raise OSError("test")'),
+        ]
+    )
+
+
+def test_generator_throw():
+    def test():
+        try:
+            yield 1
+        except Exception as e:
+            raise e
+
+    g = test()
+    next(g)
+
+    assert_has_traceback(
+        lambda: g.throw(OverflowError),
+        [
+            ('<lambda>', 'lambda: g.throw(OverflowError),'),
+            ('test', 'raise e'),
+            ('test', 'yield 1'),
+        ]
+    )
+
+
+def test_generator_throw_reraise():
+    def test():
+        try:
+            yield 1
+        except Exception:
+            raise
+
+    g = test()
+    next(g)
+
+    assert_has_traceback(
+        lambda: g.throw(OverflowError),
+        [
+            ('<lambda>', 'lambda: g.throw(OverflowError),'),
+            ('test', 'yield 1'),
+        ]
+    )
+
+
+def test_generator_throw_existing():
+    try:
+        raise OverflowError
+    except Exception as e:
+        exc = e
+
+    def test():
+        yield 1
+
+    g = test()
+    next(g)
+
+    assert_has_traceback(
+        lambda: g.throw(exc),
+        [
+            ('<lambda>', 'lambda: g.throw(exc),'),
+            ('test', 'yield 1'),
+            ('test_generator_throw_existing', 'raise OverflowError'),
+        ]
+    )
+
+def test_generator_throw_with_traceback():
+    try:
+        raise NameError
+    except Exception as e:
+        tb = e.__traceback__
+
+    def test():
+        yield 1
+
+    g = test()
+    next(g)
+
+    assert_has_traceback(
+        lambda: g.throw(OverflowError, OverflowError("foo"), tb),
+        [
+            ('<lambda>', 'lambda: g.throw(OverflowError, OverflowError("foo"), tb),'),
+            ('test', 'yield 1'),
+            ('test_generator_throw_with_traceback', 'raise NameError'),
+        ]
+    )
+
+
+def test_generator_throw_unstarted():
+    def test():
+        yield 1
+
+    assert_has_traceback(
+        lambda: test().throw(OverflowError),
+        [
+            ('<lambda>', 'lambda: test().throw(OverflowError),'),
+            ('test', 'def test():'),
         ]
     )
 
