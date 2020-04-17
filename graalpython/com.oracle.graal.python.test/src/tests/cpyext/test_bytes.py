@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -255,5 +255,85 @@ class TestPyBytes(CPyExtTestCase):
         argspec="OO",
         arguments=["PyObject* bytesObj", "PyObject* expected"],
         callfunction="mutate_bytes",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyBytes_Resize = CPyExtFunction(
+        lambda args: args[0][:args[1]],
+        lambda: (
+            (b"hello_beatiful_world", 5),
+        ),
+        code="""
+        PyObject* wrap_PyBytes_Resize(PyObject* bytesObj, Py_ssize_t new_size) {
+            /* we need to create a fresh bytes object */
+            PyObject* res = PyBytes_FromString(PyBytes_AsString(bytesObj));
+            _PyBytes_Resize(&res, new_size);
+            return res;
+        }
+        """,
+        resultspec="O",
+        argspec="On",
+        arguments=["PyObject* bytesObj", "Py_ssize_t new_size"],
+        callfunction="wrap_PyBytes_Resize",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyBytes_Resize_NativeStorage = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (b"hello_beatiful_world", b"hello_world"),
+        ),
+        code="""
+        #include <stdio.h>
+        
+        /* Copies content from 'smaller' to 'larger_content' and returns a pointer to the last char. */
+        static char* do_pointer_arithmetics(char* larger_content, PyObject* smaller) {
+            char* smaller_content = PyBytes_AS_STRING(smaller);
+            Py_ssize_t smaller_len = PyBytes_Size(smaller);
+            
+            // 'smaller_len + 1' also contains the null byte
+            memcpy(larger_content, smaller_content, smaller_len + 1);
+            return larger_content + smaller_len;
+        }
+        
+        PyObject* resize_bytes(PyObject* larger, PyObject* smaller) {
+            char* data;
+            char* dummy;
+            char* end_ptr;
+            Py_ssize_t len;
+            Py_ssize_t new_len;
+            PyObject* larger_copy;
+            
+            Py_INCREF(larger);
+            Py_INCREF(smaller);
+            
+            /* we need to create a fresh bytes object */
+            larger_copy = PyBytes_FromString(PyBytes_AsString(larger));
+            Py_DECREF(larger);
+            
+            len = PyBytes_Size(larger_copy) + 1;
+            
+            dummy = (char*) calloc(len, sizeof(char));
+            data = PyBytes_AS_STRING(larger_copy);
+            
+            /* this will force the bytes object's content to native */
+            snprintf(data, len, "%s", dummy);
+            free(dummy);
+            
+            /* copy smaller data and return the pointer to the last char */
+            end_ptr = do_pointer_arithmetics(data, smaller);
+            Py_DECREF(smaller);
+            
+            /* compute new size */
+            new_len = (Py_ssize_t) (end_ptr - PyBytes_AS_STRING(larger_copy));
+            _PyBytes_Resize(&larger_copy, new_len);
+            memcpy(PyBytes_AS_STRING(larger_copy), data, new_len * sizeof(char));
+            return larger_copy;
+        }
+        """,
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* larger", "PyObject* smaller"],
+        callfunction="resize_bytes",
         cmpfunc=unhandled_error_compare
     )
