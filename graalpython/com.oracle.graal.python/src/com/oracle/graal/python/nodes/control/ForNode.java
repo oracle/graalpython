@@ -53,10 +53,11 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
-
+    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal FrameSlot iteratorSlot;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child ForNextElementNode nextElement;
@@ -84,8 +85,9 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             contextRef = lookupContextReference(PythonLanguage.class);
+            asyncProfile = BranchProfile.create();
         }
-        contextRef.get().triggerAsyncActions(frame, this);
+        contextRef.get().triggerAsyncActions(frame, asyncProfile);
         return true;
     }
 }

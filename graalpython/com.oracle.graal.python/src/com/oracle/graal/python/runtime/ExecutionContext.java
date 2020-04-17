@@ -323,7 +323,7 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
-            if (frame == null || context == null) {
+            if (frame == null || context == null || callNode == null) {
                 return null;
             }
             PFrame.Reference info = null;

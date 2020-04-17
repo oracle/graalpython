@@ -54,6 +54,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
+    @CompilationFinal private BranchProfile asyncProfile;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final int iteratorSlot;
@@ -98,11 +99,6 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
         }
 
         Object nextIterator = null;
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        PythonContext context = contextRef.get();
         int count = 0;
         try {
             while (true) {
@@ -118,7 +114,12 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 if (CompilerDirectives.inInterpreter()) {
                     count++;
                 }
-                context.triggerAsyncActions(frame, this);
+                if (contextRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asyncProfile = BranchProfile.create();
+                    contextRef = lookupContextReference(PythonLanguage.class);
+                }
+                contextRef.get().triggerAsyncActions(frame, asyncProfile);
             }
             return;
         } catch (YieldException e) {
