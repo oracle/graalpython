@@ -53,6 +53,7 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
@@ -106,9 +107,10 @@ abstract class ForNextElementNode extends PNodeWithContext {
 
     @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
     protected boolean doIntegerIterator(VirtualFrame frame, PIntegerIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PIntegerIterator> clazz) {
+                    @Cached("iterator.getClass()") Class<? extends PIntegerIterator> clazz,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
         PIntegerIterator profiledIterator = clazz.cast(iterator);
-        if (!profiledIterator.hasNext()) {
+        if (!profile.profile(profiledIterator.hasNext())) {
             profiledIterator.setExhausted();
             return false;
         }
@@ -118,9 +120,10 @@ abstract class ForNextElementNode extends PNodeWithContext {
 
     @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
     protected boolean doLongIterator(VirtualFrame frame, PLongIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PLongIterator> clazz) {
+                    @Cached("iterator.getClass()") Class<? extends PLongIterator> clazz,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
         PLongIterator profiledIterator = clazz.cast(iterator);
-        if (!profiledIterator.hasNext()) {
+        if (!profile.profile(profiledIterator.hasNext())) {
             profiledIterator.setExhausted();
             return false;
         }
@@ -130,9 +133,10 @@ abstract class ForNextElementNode extends PNodeWithContext {
 
     @Specialization(guards = "iterator.getClass() == clazz", limit = "99")
     protected boolean doDoubleIterator(VirtualFrame frame, PDoubleIterator iterator,
-                    @Cached("iterator.getClass()") Class<? extends PDoubleIterator> clazz) {
+                    @Cached("iterator.getClass()") Class<? extends PDoubleIterator> clazz,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
         PDoubleIterator profiledIterator = clazz.cast(iterator);
-        if (!profiledIterator.hasNext()) {
+        if (!profile.profile(profiledIterator.hasNext())) {
             profiledIterator.setExhausted();
             return false;
         }
