@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.util;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.util.function.Function;
+import com.oracle.graal.python.util.Function;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;

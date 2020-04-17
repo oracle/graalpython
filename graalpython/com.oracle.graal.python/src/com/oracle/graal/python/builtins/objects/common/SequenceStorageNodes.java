@@ -54,8 +54,8 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;

@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;

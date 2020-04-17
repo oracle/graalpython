@@ -76,7 +76,7 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.List;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;

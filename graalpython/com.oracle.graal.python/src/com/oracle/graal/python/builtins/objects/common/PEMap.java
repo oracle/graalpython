@@ -42,9 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.function.BiFunction;
-
-import org.graalvm.collections.MapCursor;
+import com.oracle.graal.python.util.BiFunction;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.DictKey;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -53,6 +51,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+
+import org.graalvm.collections.MapCursor;
 
 @SuppressWarnings("javadoc")
 /**
