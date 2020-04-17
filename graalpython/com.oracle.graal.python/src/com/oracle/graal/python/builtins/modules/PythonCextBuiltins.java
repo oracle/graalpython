@@ -2396,9 +2396,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyType_IsSubtype", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ImportStatic(PythonOptions.class)
     abstract static class PyType_IsSubtype extends PythonBinaryBuiltinNode {
-
-        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization(guards = {"a == cachedA", "b == cachedB"})
         static int doCached(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PythonNativeWrapper a, @SuppressWarnings("unused") PythonNativeWrapper b,
@@ -2408,19 +2407,34 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(replaces = "doCached")
+        protected static Class<?> getClazz(Object v) {
+            return v.getClass();
+        }
+
+        @Specialization(replaces = "doCached", guards = {"cachedClassA == getClazz(a)", "cachedClassB == getClazz(b)"}, limit = "getVariableArgumentInlineCacheLimit()")
+        int doCachedClass(VirtualFrame frame, Object a, Object b,
+                        @Cached("getClazz(a)") Class<?> cachedClassA,
+                        @Cached("getClazz(b)") Class<?> cachedClassB,
+                        @Cached ToJavaNode leftToJavaNode,
+                        @Cached ToJavaNode rightToJavaNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            Object ua = leftToJavaNode.execute(cachedClassA.cast(a));
+            Object ub = rightToJavaNode.execute(cachedClassB.cast(b));
+            return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
+        }
+
+        @Specialization(replaces = {"doCached", "doCachedClass"})
         int doGeneric(VirtualFrame frame, Object a, Object b,
                         @Cached ToJavaNode leftToJavaNode,
-                        @Cached ToJavaNode rightToJavaNode) {
+                        @Cached ToJavaNode rightToJavaNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
             Object ua = leftToJavaNode.execute(a);
             Object ub = rightToJavaNode.execute(b);
             return isSubtypeNode.execute(frame, ua, ub) ? 1 : 0;
         }
 
-        static int doSlow(VirtualFrame frame, Object derived, Object cls) {
-            Object ua = ToJavaNodeGen.getUncached().execute(derived);
-            Object ub = ToJavaNodeGen.getUncached().execute(cls);
-            return IsSubtypeNodeGen.getUncached().execute(frame, ua, ub) ? 1 : 0;
+        int doSlow(VirtualFrame frame, Object derived, Object cls) {
+            return doGeneric(frame, derived, cls, ToJavaNodeGen.getUncached(), ToJavaNodeGen.getUncached(), IsSubtypeNodeGen.getUncached());
         }
     }
 
