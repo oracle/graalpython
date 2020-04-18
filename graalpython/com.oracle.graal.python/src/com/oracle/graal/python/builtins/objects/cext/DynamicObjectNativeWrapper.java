@@ -134,6 +134,8 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -610,12 +612,22 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_SVAL, key)")
-        Object doObSval(PBytes object, @SuppressWarnings("unused") String key) {
+        Object doObSval(PBytes object, @SuppressWarnings("unused") String key,
+                        @Cached("createClassProfile()") ValueProfile classProfile) {
+            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
+            if (sequenceStorage instanceof NativeSequenceStorage) {
+                return ((NativeSequenceStorage) sequenceStorage).getPtr();
+            }
             return new PySequenceArrayWrapper(object, 1);
         }
 
         @Specialization(guards = "eq(OB_START, key)")
-        Object doObStart(PByteArray object, @SuppressWarnings("unused") String key) {
+        Object doObStart(PByteArray object, @SuppressWarnings("unused") String key,
+                        @Cached("createClassProfile()") ValueProfile classProfile) {
+            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
+            if (sequenceStorage instanceof NativeSequenceStorage) {
+                return ((NativeSequenceStorage) sequenceStorage).getPtr();
+            }
             return new PySequenceArrayWrapper(object, 1);
         }
 
@@ -632,7 +644,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
-        Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
+        Object doObItem(PSequence object, @SuppressWarnings("unused") String key,
+                        @Cached("createClassProfile()") ValueProfile classProfile) {
+            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
+            if (sequenceStorage instanceof NativeSequenceStorage) {
+                return ((NativeSequenceStorage) sequenceStorage).getPtr();
+            }
             return new PySequenceArrayWrapper(object, 4);
         }
 
