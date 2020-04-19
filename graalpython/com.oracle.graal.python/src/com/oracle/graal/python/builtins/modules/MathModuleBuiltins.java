@@ -306,27 +306,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double copySignPIL(PInt magnitude, long sign) {
-            return Math.copySign(magnitude.getValue().doubleValue(), sign);
+            return Math.copySign(magnitude.doubleValue(), sign);
         }
 
         @Specialization
         public double copySignPID(PInt magnitude, double sign) {
-            return Math.copySign(magnitude.getValue().doubleValue(), sign);
+            return Math.copySign(magnitude.doubleValue(), sign);
         }
 
         @Specialization
         public double copySignLPI(long magnitude, PInt sign) {
-            return Math.copySign(magnitude, sign.getValue().doubleValue());
+            return Math.copySign(magnitude, sign.doubleValue());
         }
 
         @Specialization
         public double copySignDPI(double magnitude, PInt sign) {
-            return Math.copySign(magnitude, sign.getValue().doubleValue());
+            return Math.copySign(magnitude, sign.doubleValue());
         }
 
         @Specialization
         public double copySignPIPI(PInt magnitude, PInt sign) {
-            return Math.copySign(magnitude.getValue().doubleValue(), sign.getValue().doubleValue());
+            return Math.copySign(magnitude.doubleValue(), sign.doubleValue());
         }
 
         @Specialization(guards = "!isNumber(magnitude) || !isNumber(sign)")
@@ -499,7 +499,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected boolean isNegative(PInt value) {
-            return value.getValue().compareTo(BigInteger.ZERO) < 0;
+            return value.isNegative();
         }
 
         protected boolean isNegative(double value) {
@@ -511,7 +511,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected boolean isOvf(PInt value) {
-            return value.getValue().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0;
+            return value.compareTo(Long.MAX_VALUE) > 0;
         }
 
         protected static FactorialNode create() {
@@ -624,10 +624,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         public double fmodDPI(double left, PInt right) {
             raiseMathDomainError(Double.isInfinite(left));
-            double rvalue = right.getValue().doubleValue();
+            double rvalue = right.doubleValue();
             raiseMathDomainError(rvalue == 0);
             return left % rvalue;
         }
@@ -649,32 +648,30 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double fmodLPI(long left, PInt right) {
-            double rvalue = right.getValue().doubleValue();
+            double rvalue = right.doubleValue();
             raiseMathDomainError(rvalue == 0);
             return left % rvalue;
         }
 
         @Specialization
         public double fmodPIPI(PInt left, PInt right) {
-            double rvalue = right.getValue().doubleValue();
+            double rvalue = right.doubleValue();
             raiseMathDomainError(rvalue == 0);
-            double lvalue = left.getValue().doubleValue();
+            double lvalue = left.doubleValue();
             return lvalue % rvalue;
         }
 
         @Specialization
-        @TruffleBoundary
         public double fmodPIL(PInt left, long right) {
             raiseMathDomainError(right == 0);
-            double lvalue = left.getValue().doubleValue();
+            double lvalue = left.doubleValue();
             return lvalue % right;
         }
 
         @Specialization
-        @TruffleBoundary
         public double fmodPID(PInt left, double right) {
             raiseMathDomainError(right == 0);
-            double lvalue = left.getValue().doubleValue();
+            double lvalue = left.doubleValue();
             return lvalue % right;
         }
 
@@ -969,9 +966,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         public double ldexpPIPI(PInt mantissa, PInt exp) {
-            double dm = mantissa.getValue().doubleValue();
+            double dm = mantissa.doubleValue();
             return exceptInfinity(Math.scalb(dm, makeInt(exp)), dm);
         }
 
@@ -982,7 +978,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double ldexpPIL(PInt mantissa, long exp) {
-            double dm = mantissa.getValue().doubleValue();
+            double dm = mantissa.doubleValue();
             return exceptInfinity(Math.scalb(dm, makeInt(exp)), dm);
         }
 
@@ -1196,17 +1192,22 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt gcd(long x, PInt y) {
-            return factory().createInt(BigInteger.valueOf(x).gcd(y.getValue()));
+            return factory().createInt(op(PInt.longToBigInteger(x), y.getValue()));
         }
 
         @Specialization
         PInt gcd(PInt x, long y) {
-            return factory().createInt(x.getValue().gcd(BigInteger.valueOf(y)));
+            return factory().createInt(op(x.getValue(), PInt.longToBigInteger(y)));
+        }
+
+        @TruffleBoundary
+        private static BigInteger op(BigInteger x, BigInteger y) {
+            return x.gcd(y);
         }
 
         @Specialization
         PInt gcd(PInt x, PInt y) {
-            return factory().createInt(x.getValue().gcd(y.getValue()));
+            return factory().createInt(op(x.getValue(), y.getValue()));
         }
 
         @Specialization
@@ -1757,9 +1758,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         public PInt fabs(PInt value) {
-            BigInteger xabs = value.getValue().abs();
+            BigInteger xabs = value.abs();
             return factory().createInt(xabs);
         }
 

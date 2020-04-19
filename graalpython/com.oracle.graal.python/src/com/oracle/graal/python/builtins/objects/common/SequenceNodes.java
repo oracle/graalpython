@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -50,8 +51,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceNodes {
 
@@ -61,10 +62,10 @@ public abstract class SequenceNodes {
 
         public abstract int execute(PSequence seq);
 
-        @Specialization
+        @Specialization(limit = "1")
         int doPString(PString str,
-                        @Cached("createClassProfile()") ValueProfile charSequenceProfile) {
-            return charSequenceProfile.profile(str.getCharSequence()).length();
+                        @CachedLibrary("str") PythonObjectLibrary lib) {
+            return lib.length(str);
         }
 
         @Specialization
@@ -74,8 +75,9 @@ public abstract class SequenceNodes {
 
         @Specialization(guards = {"!isPString(seq)", "!isPRange(seq)"})
         int doWithStorage(PSequence seq,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(seq.getSequenceStorage());
+            return lenNode.execute(getStorage.execute(seq));
         }
 
         public static LenNode create() {
@@ -105,12 +107,16 @@ public abstract class SequenceNodes {
 
         @Specialization(guards = "!isPSequence(seq)")
         static SequenceStorage doFallback(@SuppressWarnings("unused") Object seq) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("cannot get sequence storage of non-sequence object");
         }
 
         static boolean isPSequence(Object object) {
             return object instanceof PSequence;
+        }
+
+        public static GetSequenceStorageNode create() {
+            return SequenceNodesFactory.GetSequenceStorageNodeGen.create();
         }
     }
 

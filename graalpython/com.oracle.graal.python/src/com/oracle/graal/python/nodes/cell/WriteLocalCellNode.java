@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,14 +27,18 @@ package com.oracle.graal.python.nodes.cell;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -74,7 +78,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
             writeToCellNode.execute((PCell) localValue, value);
             return;
         }
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("Expected a cell, got: " + localValue.toString() + " instead.");
     }
 
@@ -83,21 +87,32 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
         return frameSlot.getIdentifier();
     }
 
+    @ImportStatic(PythonOptions.class)
+    @ReportPolymorphism
     abstract static class WriteToCellNode extends Node {
 
         public abstract void execute(PCell cell, Object value);
 
-        @Specialization(guards = "cell == cachedCell", limit = "1")
-        void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
-                        @Cached("cell") PCell cachedCell) {
-            doWriteGeneric(cachedCell, value);
+        protected static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        @Specialization(guards = "cell.isEffectivelyFinalAssumption() == effectivelyFinalAssumption", limit = "1", assumptions = "effectivelyFinalAssumption")
+        @Specialization(guards = "cell == cachedCell", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption")
+        void doWriteCached(@SuppressWarnings("unused") PCell cell, Object value,
+                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
+                        @Cached("cell") PCell cachedCell) {
+            if (value == NO_VALUE) {
+                cachedCell.clearRef(cachedCell.isEffectivelyFinalAssumption());
+            } else {
+                cachedCell.setRef(value, cachedCell.isEffectivelyFinalAssumption());
+            }
+        }
+
+        @Specialization(guards = "cell.isEffectivelyFinalAssumption() == effectivelyFinalAssumption", limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "effectivelyFinalAssumption")
         void doWriteCachedAssumption(PCell cell, Object value,
                         @SuppressWarnings("unused") @Cached("cell.isEffectivelyFinalAssumption()") Assumption effectivelyFinalAssumption) {
             if (value == NO_VALUE) {
-                cell.clearRef();
+                cell.clearRef(effectivelyFinalAssumption);
             } else {
                 cell.setRef(value, effectivelyFinalAssumption);
             }

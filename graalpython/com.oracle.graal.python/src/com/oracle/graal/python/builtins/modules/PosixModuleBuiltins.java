@@ -419,7 +419,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int getPid() {
             // TODO: this needs to be implemented properly at some point (consider managed execution
             // as well)
-            return getContext().hashCode();
+            return System.identityHashCode(getContext());
         }
     }
 
@@ -921,21 +921,26 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes((int) fileMode);
             try {
-                SeekableByteChannel fc;
-                TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-                if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
-                    truffleFile = getContext().getEnv().createTempFile(truffleFile, null, null);
-                    options.remove(StandardOpenOption.CREATE_NEW);
-                    options.remove(StandardOpenOption.DELETE_ON_CLOSE);
-                    options.add(StandardOpenOption.CREATE);
-                    getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
-                }
-
-                fc = truffleFile.newByteChannel(options, attributes);
-                return getResources().open(truffleFile, fc);
+                return doOpenFile(pathname, options, attributes);
             } catch (Exception e) {
                 throw raiseOSError(frame, e, pathname);
             }
+        }
+
+        @TruffleBoundary
+        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>>[] attributes) throws IOException {
+            SeekableByteChannel fc;
+            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
+                truffleFile = getContext().getEnv().createTempFile(truffleFile, null, null);
+                options.remove(StandardOpenOption.CREATE_NEW);
+                options.remove(StandardOpenOption.DELETE_ON_CLOSE);
+                options.add(StandardOpenOption.CREATE);
+                getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
+            }
+
+            fc = truffleFile.newByteChannel(options, attributes);
+            return getResources().open(truffleFile, fc);
         }
 
         @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1256,6 +1261,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object exit(int status) {
             throw new PythonExitException(this, status);
@@ -1409,15 +1415,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private void setMtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
             try {
-                truffleFile.setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
+                truffleFile.setLastModifiedTime(fileTimeFrom(mtime));
             } catch (Exception e) {
                 throw raiseOSError(frame, e, truffleFile.getName());
             }
         }
 
+        @TruffleBoundary
+        private static FileTime fileTimeFrom(long mtime) {
+            return FileTime.from(mtime, TimeUnit.SECONDS);
+        }
+
         private void setAtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
             try {
-                truffleFile.setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
+                truffleFile.setLastAccessTime(fileTimeFrom(mtime));
             } catch (Exception e) {
                 throw raiseOSError(frame, e, truffleFile.getName());
             }
@@ -1885,6 +1896,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
 
         @Specialization
+        @TruffleBoundary
         String getStrError(int errno) {
             if (STR_ERROR_MAP.isEmpty()) {
                 for (OSErrorEnum error : OSErrorEnum.values()) {

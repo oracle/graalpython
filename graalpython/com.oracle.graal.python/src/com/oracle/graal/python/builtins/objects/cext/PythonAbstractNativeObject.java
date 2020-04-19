@@ -210,7 +210,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     throw raiseNode.raise(PythonBuiltinClassType.TypeError, "__dict__ must have been set to a dictionary, not a '%p'", javaDict);
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("could not run our core function to get the dict of a native object", e);
             }
         }

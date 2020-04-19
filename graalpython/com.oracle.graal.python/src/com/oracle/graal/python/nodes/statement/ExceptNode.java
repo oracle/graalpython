@@ -50,6 +50,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -95,13 +96,18 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
                 exceptName.doWrite(frame, exceptionObject);
             }
         } else if (exceptName != null) {
-            exceptName.doWrite(frame, e.getExceptionObject());
+            exceptName.doWrite(frame, getExceptionObject(e));
         }
         body.executeVoid(frame);
         if (exceptName != null) {
             exceptName.doWrite(frame, null);
         }
         throw ExceptionHandledException.INSTANCE;
+    }
+
+    @TruffleBoundary
+    private static Object getExceptionObject(TruffleException e) {
+        return e.getExceptionObject();
     }
 
     public boolean matchesException(VirtualFrame frame, TruffleException e) {

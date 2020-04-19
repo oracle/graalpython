@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -615,7 +616,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                             type,
                             missingCnt == 1 ? "" : "s",
                             missingCnt == 1 ? missingNames[0]
-                                            : String.join("', '", Arrays.copyOf(missingNames, missingCnt - 1)) + (missingCnt == 2 ? "' and '" : "', and '") + missingNames[missingCnt - 1]);
+                                            : joinArgNames(missingNames, missingCnt));
+        }
+
+        @TruffleBoundary
+        private static String joinArgNames(String[] missingNames, int missingCnt) {
+            return String.join("', '", Arrays.copyOf(missingNames, missingCnt - 1)) + (missingCnt == 2 ? "' and '" : "', and '") + missingNames[missingCnt - 1];
         }
 
         protected static boolean checkIterations(int input_argcount, int co_argcount) {
@@ -847,7 +853,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 return getter.fromPFunction((PFunction) function);
             }
         }
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("cannot create arguments for non-function-or-method");
     }
 

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -73,7 +74,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -89,6 +89,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -451,36 +452,26 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
-        @Child private CoerceToIntegerNode castToIntNode = CoerceToIntegerNode.create();
-
         @Specialization(guards = "isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
+                        @Shared("library") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
-            return checkResult(result);
+            return checkResult(frame, callSizeofNode.executeObject(frame, object), lib);
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
+                        @Shared("library") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
-            Object result = castToIntNode.execute(callSizeofNode.executeObject(frame, object));
+            Object result = callSizeofNode.executeObject(frame, object);
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }
-            return checkResult(result);
+            return checkResult(frame, result, lib);
         }
 
-        private Object checkResult(Object result) {
-            long value = -1;
-            if (result instanceof Number) {
-                value = ((Number) result).longValue();
-            } else if (result instanceof PInt) {
-                try {
-                    value = ((PInt) result).longValueExact();
-                } catch (ArithmeticException e) {
-                    // fall through
-                }
-            }
+        private Object checkResult(VirtualFrame frame, Object result, PythonObjectLibrary lib) {
+            int value = lib.asSizeWithState(result, PArguments.getThreadState(frame));
             if (value < 0) {
                 throw raise(ValueError, "__sizeof__() should return >= 0");
             }

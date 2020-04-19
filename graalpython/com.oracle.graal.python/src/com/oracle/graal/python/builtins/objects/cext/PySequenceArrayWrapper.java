@@ -416,10 +416,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "isPSequence(lib.getDelegate(object))", limit = "1")
         Object doPSequence(PySequenceArrayWrapper object,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
             PSequence sequence = (PSequence) lib.getDelegate(object);
-            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(sequence.getSequenceStorage());
+            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence));
             if (nativeStorage == null) {
                 CompilerDirectives.transferToInterpreter();
                 throw new AssertionError("could not allocate native storage");

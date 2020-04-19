@@ -473,7 +473,7 @@ public class ComplexBuiltins extends PythonBuiltins {
         boolean doComplexInt(PComplex left, PInt right) {
             if (left.getImag() == 0) {
                 try {
-                    return left.getReal() == right.getValue().longValueExact();
+                    return left.getReal() == right.longValueExact();
                 } catch (ArithmeticException e) {
                     // do nothing -> return false;
                 }

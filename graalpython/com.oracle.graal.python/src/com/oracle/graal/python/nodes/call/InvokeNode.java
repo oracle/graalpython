@@ -129,14 +129,14 @@ abstract class DirectInvokeNode extends InvokeNode {
 
         if (state == 0x1) {
             if (!isNullFrame) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("Invoke node was initialized for a null frame. Cannot use it with non-null frame now.");
             }
             return true;
         }
         assert state == 0x2;
         if (isNullFrame) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Invoke node was initialized for a non-null frame. Cannot use it with null frame now.");
         }
         return false;

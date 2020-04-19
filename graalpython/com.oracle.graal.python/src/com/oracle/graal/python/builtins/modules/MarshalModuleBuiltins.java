@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -248,6 +249,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         public abstract void execute(VirtualFrame frame, Object x, int version, DataOutputStream buffer);
 
+        @Child private CastToJavaStringNode castStrNode;
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
         private IsBuiltinClassProfile isBuiltinProfile;
@@ -476,12 +478,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } else {
                 interned = new Object[values.length];
                 for (int i = 0; i < interned.length; i++) {
-                    if (values[i] instanceof String) {
-                        interned[i] = new InternedString((String) values[i]);
-                    } else if (values[i] instanceof PString) {
-                        interned[i] = new InternedString(((PString) values[i]).getValue());
+                    if (castStrNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        castStrNode = insert(CastToJavaStringNode.create());
+                    }
+                    Object value = values[i];
+                    String strValue = castStrNode.execute(value);
+                    if (strValue != null) {
+                        interned[i] = new InternedString(strValue);
                     } else {
-                        interned[i] = values[i];
+                        interned[i] = value;
                     }
                 }
             }

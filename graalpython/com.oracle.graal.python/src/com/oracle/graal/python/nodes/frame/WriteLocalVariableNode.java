@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNodeGen.WriteLocalFrameSlotNodeGen;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -48,26 +49,31 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
 
         @Override
         public final Object execute(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final int executeInt(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final long executeLong(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final double executeDouble(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 
         @Override
         public final boolean executeBoolean(VirtualFrame frame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException();
         }
 

@@ -182,10 +182,15 @@ public abstract class StringNodes {
                 // read the native data
                 Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbols.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
-                return ((Number) result).intValue();
+                return intValue((Number) result);
             }
             // the object's type is not a subclass of 'str'
             throw raiseNode.raise(PythonBuiltinClassType.TypeError, "bad argument type for built-in operation");
+        }
+
+        @TruffleBoundary
+        private static int intValue(Number result) {
+            return result.intValue();
         }
     }
 
@@ -282,13 +287,13 @@ public abstract class StringNodes {
                         @Cached IsBuiltinClassProfile errorProfile0,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile3) {
+                        @Cached CastToJavaStringNode castStrNode) {
 
             try {
                 Object iterator = getIterator.executeWith(frame, iterable);
                 StringBuilder str = new StringBuilder();
                 try {
-                    append(str, checkItem(next.execute(frame, iterator), 0, errorProfile3, raise));
+                    append(str, checkItem(next.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return "";
@@ -304,7 +309,7 @@ public abstract class StringNodes {
                         return toString(str);
                     }
                     append(str, string);
-                    append(str, checkItem(value, i++, errorProfile3, raise));
+                    append(str, checkItem(value, i++, castStrNode, raise));
                 }
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
@@ -312,11 +317,13 @@ public abstract class StringNodes {
             }
         }
 
-        private static String checkItem(Object item, int pos, ConditionProfile profile, PRaiseNode raise) {
-            if (profile.profile(PGuards.isString(item))) {
-                return item.toString();
+        private static String checkItem(Object item, int pos, CastToJavaStringNode castNode, PRaiseNode raise) {
+            String result = castNode.execute(item);
+            if (result != null) {
+                return result;
+            } else {
+                throw raise.raise(TypeError, INVALID_SEQ_ITEM, pos, item);
             }
-            throw raise.raise(TypeError, INVALID_SEQ_ITEM, pos, item);
         }
 
         @TruffleBoundary(allowInlining = true)

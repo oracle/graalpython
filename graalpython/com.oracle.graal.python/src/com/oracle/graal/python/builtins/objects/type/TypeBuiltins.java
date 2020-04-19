@@ -544,7 +544,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 try {
                     lib.setDict(self, dict);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException(e);
                 }
             } else if (dict instanceof PDict) {
