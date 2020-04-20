@@ -112,6 +112,10 @@ public final class PException extends RuntimeException implements TruffleExcepti
         return location;
     }
 
+    public void setLocation(Node location) {
+        this.location = location;
+    }
+
     public boolean shouldHideLocation() {
         return hideLocation;
     }

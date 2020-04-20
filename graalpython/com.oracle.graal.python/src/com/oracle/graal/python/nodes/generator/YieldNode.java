@@ -57,7 +57,10 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
                 return PNone.NONE;
             } else if (specialArgument instanceof PException) {
                 gotException.enter();
-                throw (PException) specialArgument;
+                PException exception = (PException) specialArgument;
+                // The exception needs to appear as if raised from the yield
+                ((PException) specialArgument).setLocation(this);
+                throw exception;
             } else {
                 gotValue.enter();
                 return specialArgument;

@@ -507,6 +507,7 @@ def test_generator_throw_existing():
         ]
     )
 
+
 def test_generator_throw_with_traceback():
     try:
         raise NameError
