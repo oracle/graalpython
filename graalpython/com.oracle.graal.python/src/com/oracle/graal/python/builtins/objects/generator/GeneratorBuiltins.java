@@ -42,7 +42,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -69,6 +72,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -172,6 +176,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @Builtin(name = "throw", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class ThrowNode extends PythonBuiltinNode {
+
+        @Child private MaterializeFrameNode materializeFrameNode;
+
         @ImportStatic({PGuards.class, SpecialMethodNames.class})
         public abstract static class PrepareExceptionNode extends Node {
             public abstract PBaseException execute(VirtualFrame frame, Object type, Object value);
@@ -285,16 +292,37 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         private Object doThrow(PGenerator self, PBaseException instance) {
-            // Pass it to the generator where it will be rethrown by the last yield
-            PException pException = PException.fromObject(instance, this);
-            PArguments.setSpecialArgument(self.getArguments(), pException);
-            return resumeGenerator(self);
+            if (self.isStarted()) {
+                // Pass it to the generator where it will be thrown by the last yield, the location
+                // will be filled there
+                PException pException = PException.fromObject(instance, null);
+                PArguments.setSpecialArgument(self.getArguments(), pException);
+                return resumeGenerator(self);
+            } else {
+                // Unstarted generator, we cannot pass the exception into the generator as there is
+                // nothing that would handle it.
+                // Instead, we throw the exception here and fake entering the generator by adding
+                // its frame to the traceback manually.
+                Node location = self.getCurrentCallTarget().getRootNode();
+                MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                PFrame pFrame = ensureMaterializeFrameNode().execute(null, location, false, false, generatorFrame);
+                instance.setTraceback(new LazyTraceback(pFrame, PException.fromObject(instance, location), instance.getTraceback()));
+                throw PException.fromObject(instance, location);
+            }
         }
 
         @Specialization(guards = {"!isPNone(tb)", "!isPTraceback(tb)"})
         @SuppressWarnings("unused")
         Object doError(VirtualFrame frame, PGenerator self, Object typ, Object val, Object tb) {
             throw raise(TypeError, "throw() third argument must be a traceback object");
+        }
+
+        private MaterializeFrameNode ensureMaterializeFrameNode() {
+            if (materializeFrameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeFrameNode = insert(MaterializeFrameNode.create());
+            }
+            return materializeFrameNode;
         }
     }
 

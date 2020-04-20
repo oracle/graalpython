@@ -126,6 +126,10 @@ public final class PGenerator extends PythonBuiltinObject {
         return callTargets[currentCallTarget];
     }
 
+    public boolean isStarted() {
+        return currentCallTarget != 0;
+    }
+
     public Object[] getArguments() {
         return arguments;
     }
