@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -84,6 +83,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
     private static Object resumeGenerator(PGenerator self) {
         try {
             return self.getCurrentCallTarget().call(self.getArguments());
+        } catch (PException e) {
+            self.markAsFinished();
+            throw e;
         } finally {
             self.setNextCallTarget();
             PArguments.setSpecialArgument(self.getArguments(), null);
@@ -110,8 +112,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
-        private final IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
-
         protected static CallTargetInvokeNode createDirectCall(CallTarget target) {
             return CallTargetInvokeNode.create(target, false, true);
         }
@@ -134,7 +134,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Object[] arguments = self.getArguments();
                 return call.execute(frame, null, null, arguments);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
             } finally {
@@ -152,7 +151,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 Object[] arguments = self.getArguments();
                 return call.execute(frame, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
-                e.expectStopIteration(errorProfile);
                 self.markAsFinished();
                 throw e;
             } finally {
