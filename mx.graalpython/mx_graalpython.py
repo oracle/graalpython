@@ -1244,6 +1244,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
+            # build_args=['-H:+RemoveSaturatedTypeFlows'],
+            # build_args=['-H:+TruffleCheckBlackListedMethods'],
             build_args=[],
             language='python',
         )
@@ -1543,8 +1545,10 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         args = []
         if mx._opts.verbose:
             args.append("-v")
-        elif mx._opts.quiet:
-            args.append("-q")
+        else:
+            # always add "-q" if not verbose to suppress hello message
+            args.append("-q") 
+
         args += ["--python.WithThread", "-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)

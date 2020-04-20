@@ -116,6 +116,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     @Abstract
     public LazyPythonClass getLazyPythonClass(Object receiver) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
@@ -214,6 +215,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public long hashWithState(Object receiver, ThreadState threadState) {
         if (threadState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new AbstractMethodError(receiver.getClass().getCanonicalName());
         }
         return hash(receiver);

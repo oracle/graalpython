@@ -42,7 +42,7 @@ code = """
 
 typedef struct {
     PyObject_HEAD;
-    int payload;
+    int64_t payload[1024*1024];
 } NativeTypeObject;
 
 
@@ -54,12 +54,12 @@ static PyTypeObject NativeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
         "NativeType.NativeType",
     sizeof(NativeTypeObject),       /* tp_basicsize */
-    0,                          /* tp_itemsize */
-    0,                          /* tp_dealloc */
+    0,                              /* tp_itemsize */
+    0,                              /* tp_dealloc */
     0,
     0,
     0,
-    0,                          /* tp_reserved */
+    0,                              /* tp_reserved */
     0,
     0,
     0,
@@ -72,24 +72,24 @@ static PyTypeObject NativeType = {
     0,
     Py_TPFLAGS_DEFAULT,
     0,
-    0,              /* tp_traverse */
-    0,                 /* tp_clear */
-    0,           /* tp_richcompare */
-    0,                          /* tp_weaklistoffset */
-    0,                  /* tp_iter */
-    0,              /* tp_iternext */
+    0,                              /* tp_traverse */
+    0,                              /* tp_clear */
+    0,                              /* tp_richcompare */
+    0,                              /* tp_weaklistoffset */
+    0,                              /* tp_iter */
+    0,                              /* tp_iternext */
     NativeType_methods,             /* tp_methods */
-    NULL,                       /* tp_members */
-    0,                          /* tp_getset */
-    0,                          /* tp_base */
-    0,                  /* tp_dict */
-    0,                          /* tp_descr_get */
-    0,                          /* tp_descr_set */
-    0,                          /* tp_dictoffset */
-    0,                  /* tp_init */
-    PyType_GenericAlloc,        /* tp_alloc */
-    PyType_GenericNew,          /* tp_new */
-    PyObject_Del,               /* tp_free */
+    NULL,                           /* tp_members */
+    0,                              /* tp_getset */
+    0,                              /* tp_base */
+    0,                              /* tp_dict */
+    0,                              /* tp_descr_get */
+    0,                              /* tp_descr_set */
+    0,                              /* tp_dictoffset */
+    0,                              /* tp_init */
+    PyType_GenericAlloc,            /* tp_alloc */
+    PyType_GenericNew,              /* tp_new */
+    PyObject_Del,                   /* tp_free */
 };
 
 static PyModuleDef NativeTypemodule = {
@@ -105,16 +105,13 @@ PyInit_c_instantiation(void)
 {
     PyObject* m;
 
-
     if (PyType_Ready(&NativeType) < 0)
         return NULL;
-
 
     m = PyModule_Create(&NativeTypemodule);
     if (m == NULL)
         return NULL;
 
-    Py_INCREF(&NativeType);
     PyModule_AddObject(m, "NativeType", (PyObject *)&NativeType);
     return m;
 }
@@ -125,7 +122,7 @@ PyInit_c_instantiation(void)
 ccompile("c_instantiation", code)
 import c_instantiation
 
-def iterate_list(ll, num):
+def iterate_list(num):
     types = []
     for t in range(num):
         obj = c_instantiation.NativeType()
@@ -134,7 +131,7 @@ def iterate_list(ll, num):
 
 
 def measure(num):
-    types = iterate_list(list(range(num)), num)
+    types = iterate_list(num)
     print("last type: " + types[-1].__name__)
 
 

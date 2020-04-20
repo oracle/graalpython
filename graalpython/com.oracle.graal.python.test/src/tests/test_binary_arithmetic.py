@@ -195,3 +195,14 @@ def test_comparison_numeric_types():
             assert (a != b) == (i != j)
             assert (a > b) == (i > j)
             assert (a >= b) == (i >= j)
+
+def test_sub():
+    x = 1<<66
+    y = 1
+    assert x - y == 73786976294838206463
+    assert y - x == -73786976294838206463
+
+    assert int.__sub__(x, y) == 73786976294838206463
+    assert int.__rsub__(y, x) == 73786976294838206463
+
+

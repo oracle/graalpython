@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -171,6 +171,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setServerSocket(ServerSocketChannel serverSocket) {
         if (this.getSocket() != null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new Error();
         }
         this.serverSocket = serverSocket;
@@ -178,6 +179,7 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setSocket(SocketChannel socket) {
         if (this.getServerSocket() != null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new Error();
         }
         this.socket = socket;

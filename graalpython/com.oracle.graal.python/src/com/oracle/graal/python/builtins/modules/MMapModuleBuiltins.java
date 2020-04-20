@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMMap;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.io.IOException;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -89,7 +89,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ACCESS_COPY", ACCESS_COPY);
     }
 
-    @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "tagname", "access", "offset"}, constructsClass = PMMap)
+    @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "tagname", "access", "offset"}, constructsClass = PythonBuiltinClassType.PMMap)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MMapNode extends PythonBuiltinNode {
@@ -115,7 +115,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset])
         @Specialization(guards = "fd >= 0")
-        PMMap doFile(LazyPythonClass clazz, long fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
+        PMMap doFile(LazyPythonClass clazz, long fd, long length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") int access, long offset) {
             checkLength(length);
             int ifd;
             try {
@@ -135,7 +135,19 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             try {
                 fileChannel = truffleFile.newByteChannel(options);
                 position(fileChannel, offset);
-                return factory().createMMap(clazz, fileChannel, length, offset);
+
+                long actualLen;
+                if (length == 0) {
+                    try {
+                        actualLen = PMMap.size(fileChannel) - offset;
+                    } catch (IOException e) {
+                        throw raiseOSError(null, OSErrorEnum.EIO, e);
+                    }
+                } else {
+                    actualLen = length;
+                }
+
+                return factory().createMMap(clazz, fileChannel, actualLen, offset);
             } catch (IOException e) {
                 throw raise(ValueError, "cannot mmap file");
             }
@@ -164,7 +176,7 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             return fd < -1;
         }
 
-        private void checkLength(int length) {
+        private void checkLength(long length) {
             if (length < 0) {
                 invalidLengthProfile.enter();
                 throw raise(PythonBuiltinClassType.OverflowError, "memory mapped length must be positive");

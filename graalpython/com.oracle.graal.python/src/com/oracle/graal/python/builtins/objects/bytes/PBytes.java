@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -96,6 +96,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Ignore
     public final boolean equals(PSequence other) {
+        CompilerAsserts.neverPartOfCompilation();
         PSequence otherSeq = other;
         SequenceStorage otherStore = otherSeq.getSequenceStorage();
         return store.equals(otherStore);

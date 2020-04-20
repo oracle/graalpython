@@ -63,7 +63,7 @@ public abstract class PMutableSequence extends PSequence {
 
     @Override
     public void setSequenceStorage(SequenceStorage store) {
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 

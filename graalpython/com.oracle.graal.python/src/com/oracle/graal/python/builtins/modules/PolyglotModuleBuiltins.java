@@ -359,6 +359,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object read(Object receiver, Object key) {
             try {
                 if (key instanceof String) {
@@ -378,6 +379,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object write(Object receiver, Object key, Object value) {
             try {
                 if (key instanceof String) {
@@ -398,6 +400,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class removeNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         Object remove(Object receiver, Object key) {
             try {
                 if (key instanceof String) {

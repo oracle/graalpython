@@ -41,6 +41,7 @@
 package com.oracle.graal.python.runtime.sequence.storage;
 
 import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public class RangeSequenceStorage extends SequenceStorage {
 
@@ -61,6 +62,7 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public void setNewLength(int length) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -76,6 +78,7 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public Object getInternalArrayObject() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -86,11 +89,13 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -105,21 +110,25 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void reverse() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -133,6 +142,7 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage other) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -143,11 +153,13 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public void ensureCapacity(int newCapacity) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void copyItem(int idxTo, int idxFrom) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 

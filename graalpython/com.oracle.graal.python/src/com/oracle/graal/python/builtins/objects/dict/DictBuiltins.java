@@ -317,8 +317,9 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class MissingNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object run(Object self, PString key) {
-            throw raise(KeyError, "%s", key.getValue());
+        Object run(Object self, PString key,
+                        @Cached CastToJavaStringNode castStr) {
+            throw raise(KeyError, "%s", castStr.execute(key));
         }
 
         @SuppressWarnings("unused")

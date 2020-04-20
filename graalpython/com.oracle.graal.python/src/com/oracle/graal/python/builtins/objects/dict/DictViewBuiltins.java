@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -240,10 +241,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     protected abstract static class DictViewRichcompareNode extends PythonBinaryBuiltinNode {
         protected boolean reverse() {
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("subclass should have implemented reverse");
         }
 
         protected boolean lenCompare(@SuppressWarnings("unused") int lenSelf, @SuppressWarnings("unused") int lenOther) {
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("subclass should have implemented lenCompare");
         }
 

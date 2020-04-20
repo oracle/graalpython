@@ -275,6 +275,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     RootCallTarget callTarget = ((PBuiltinFunction) ((PBuiltinMethod) isinstanceFunc).getFunction()).getCallTarget();
                     catchesFunction = new CatchesFunction(callTarget, caughtClasses);
                 } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("isinstance was redefined, cannot check exceptions");
                 }
             }

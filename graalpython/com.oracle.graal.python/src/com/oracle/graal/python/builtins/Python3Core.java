@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -540,7 +540,7 @@ public final class Python3Core implements PythonCore {
     private PythonBuiltinClass initializeBuiltinClass(PythonBuiltinClassType type) {
         int index = type.ordinal();
         if (builtinTypes[index] == null) {
-            if (type.getBase() == type) {
+            if (type.getBase() == null) {
                 // object case
                 builtinTypes[index] = new PythonBuiltinClass(type, null);
             } else {

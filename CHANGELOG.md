@@ -9,6 +9,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Improve performance of tuples with primitive elements
 * Improve performance of using Python sequences from other GraalVM languages
 * Improve performance of dictionaries and sets
+* Improve performance of allocations for list comprehensions with range iterators
 * Support `cProfile` and `trace` modules through the GraalVM CPU sampler and coverage, respectively
 * Support NumPy on macOS
 * Support setuptools-scm and pytz.timezone
@@ -19,10 +20,13 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Fix DirEntry.stat
 * Fix passing non-ASCII strings to `gethostbyname`
 * Fix `help(numpy)` to work again in the interactive REPL
+* Fix multi-line continuation in the REPL for opening parens
+* Fix `select.select` for pipes
 * Polyglot: Rethrow AttributeError as UnknownIdentifierException in invokeMember
 * Jython mode: treat Java `null` as identical to Python `None` when comparing with the `is` operator
 * Jython mode: `isinstance` now works with Java classes and objects
 * Improve errno handling in `posix` module
+* Move all GraalPython specific functions on `sys` or `builtins` to the `__graalpython__` module
 
 ## Version 20.0.0
 

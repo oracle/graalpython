@@ -146,7 +146,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
-        Object remove(VirtualFrame frame, PBaseSet self, Object key,
+        Object remove(VirtualFrame frame, PSet self, Object key,
                         @Cached BranchProfile updatedStorage,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -182,7 +182,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
-        Object discard(VirtualFrame frame, PBaseSet self, Object key,
+        Object discard(VirtualFrame frame, PSet self, Object key,
                         @Cached BranchProfile updatedStorage,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
@@ -216,7 +216,7 @@ public final class SetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PopNode extends PythonUnaryBuiltinNode {
 
-        protected void removeItem(VirtualFrame frame, PBaseSet self, Object key,
+        protected void removeItem(VirtualFrame frame, PSet self, Object key,
                         HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
@@ -243,7 +243,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        Object remove(VirtualFrame frame, PBaseSet self,
+        Object remove(VirtualFrame frame, PSet self,
                         @Cached BranchProfile updatedStorage,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {

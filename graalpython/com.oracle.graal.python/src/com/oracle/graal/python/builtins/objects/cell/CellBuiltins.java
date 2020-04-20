@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,16 +56,21 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
@@ -78,10 +84,11 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean eq(PCell self, PCell other,
+        public boolean eq(VirtualFrame frame, PCell self, PCell other,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("create()") GetRefNode getRefL,
                         @Cached("create()") GetRefNode getRefR) {
-            return getRefL.execute(self).equals(getRefR.execute(other));
+            return lib.equalsWithState(getRefL.execute(self), getRefR.execute(other), lib, PArguments.getThreadState(frame));
         }
 
         @SuppressWarnings("unused")
@@ -98,10 +105,11 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NeqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean neq(PCell self, PCell other,
+        public boolean neq(VirtualFrame frame, PCell self, PCell other,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("create()") GetRefNode getRefL,
                         @Cached("create()") GetRefNode getRefR) {
-            return !getRefL.execute(self).equals(getRefR.execute(other));
+            return !lib.equalsWithState(getRefL.execute(self), getRefR.execute(other), lib, PArguments.getThreadState(frame));
         }
 
         @SuppressWarnings("unused")
@@ -163,8 +171,13 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GetRefNode extends Node {
         public abstract Object execute(PCell self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.isEffectivelyFinalAssumption()", limit = "1")
+        protected static Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.isEffectivelyFinalAssumption()", "singleContextAssumption"}, limit = "1")
         Object cached(@SuppressWarnings("unused") PCell self,
+                        @SuppressWarnings("unused") @Cached("singleContextAssumption()") Assumption singleContextAssumption,
                         @SuppressWarnings("unused") @Cached("self") PCell cachedSelf,
                         @Cached("self.getRef()") Object ref) {
             return ref;

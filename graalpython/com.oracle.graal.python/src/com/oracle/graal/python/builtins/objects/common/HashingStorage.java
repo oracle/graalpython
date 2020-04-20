@@ -299,48 +299,56 @@ public abstract class HashingStorage {
 
     @ExportMessage
     int length() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.length");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     Object getItemWithState(Object key, ThreadState state) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.getItem");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.setItemWithState");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.delItemWithState");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     Object forEachUntyped(ForEachNode<Object> node, Object arg) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.injectInto");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     HashingStorage clear() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.clear");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     HashingStorage copy() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.copy");
     }
 
     @SuppressWarnings({"unused", "static-method"})
     @ExportMessage
     HashingStorageIterable<Object> keys() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError("HashingStorage.keys");
     }
 

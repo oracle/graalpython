@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,9 +48,9 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
     return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
                                                "PyCFunction_NewEx",
                                                polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                               pytruffle_decorate_function(native_to_java(ml->ml_meth), native_to_java_exported),
+                                               pytruffle_decorate_function(native_pointer_to_java(ml->ml_meth), native_to_java_stealing_exported),
                                                get_method_flags_wrapper(ml->ml_flags),
-                                               self,
+                                               native_to_java(self),
                                                native_to_java(module),
-                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
+                                               ml->ml_doc ? polyglot_from_string(ml->ml_doc, SRC_CS) : native_to_java(Py_None)));
 }

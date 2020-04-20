@@ -47,18 +47,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Consumer;
+import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
-
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -96,6 +94,9 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+
+import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.options.OptionKey;
 
 public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
@@ -213,8 +214,8 @@ public final class PythonContext {
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
 
-    /* native pointers for context-insensitive singletons like PNone.NONE */
-    private final Object[] singletonNativePtrs = new Object[PythonLanguage.getNumberOfSpecialSingletons()];
+    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
+    @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
     private final PosixResources resources;
@@ -231,7 +232,7 @@ public final class PythonContext {
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
-        this.handler = new AsyncHandler(language);
+        this.handler = new AsyncHandler(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
         this.resources.setEnv(env);
         this.in = env.in();
@@ -257,7 +258,6 @@ public final class PythonContext {
         return globalId.incrementAndGet();
     }
 
-    @SuppressWarnings("unchecked")
     public <T> T getOption(OptionKey<T> key) {
         if (CompilerDirectives.inInterpreter()) {
             return getEnv().getOptions().get(key);
@@ -454,6 +454,7 @@ public final class PythonContext {
         try {
             PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
         } catch (UnsupportedMessageException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("This cannot happen - the main module doesn't accept a __dict__", e);
         }
 
@@ -761,6 +762,10 @@ public final class PythonContext {
         handler.triggerAsyncActions(frame, location);
     }
 
+    public AsyncHandler getAsyncHandler() {
+        return handler;
+    }
+
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
         handler.registerAction(actionSupplier);
     }
@@ -775,14 +780,14 @@ public final class PythonContext {
         return assumption;
     }
 
-    public void setSingletonNativePtr(PythonAbstractObject obj, Object nativePtr) {
-        assert PythonLanguage.getSingletonNativePtrIdx(obj) != -1 : "invalid special singleton object";
-        assert singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] == null;
-        singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] = nativePtr;
+    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonNativeWrapper nativePtr) {
+        assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
+        assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
+        singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
     }
 
-    public Object getSingletonNativePtr(PythonAbstractObject obj) {
-        int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(obj);
+    public PythonNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
+        int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
             return singletonNativePtrs[singletonNativePtrIdx];
         }

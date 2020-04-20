@@ -52,17 +52,12 @@ static PyObject* nc_method_varargs(PyObject* self, PyObject* args, PyObject* kwd
     long lval = 0;
     long lval2 = 0;
 
-    Py_XINCREF(args);
-    Py_XINCREF(kwds);
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "Oil:uff", kwdnames, &longobj, &ival, &lval)) {
         return NULL;
     }
-    Py_XDECREF(args);
-    Py_XDECREF(kwds);
     lval2 = PyLong_AsLong(longobj);
-    result = PyLong_FromLong(lval2 + ival + lval);
-    Py_INCREF(result);
-    return result;
+    Py_DECREF(longobj);
+    return PyLong_FromLong(lval2 + ival + lval);
 }
 
 static PyObject* nc_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {

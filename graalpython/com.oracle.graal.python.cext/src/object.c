@@ -44,14 +44,6 @@ PyObject* PyObject_SelfIter(PyObject* obj) {
     return obj;
 }
 
-PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
-    PyObject* newInstance;
-    newInstance = cls->tp_alloc(cls, 0);
-    newInstance->ob_refcnt = 0;
-    Py_TYPE(newInstance) = cls;
-    return newInstance;
-}
-
 /*
 None is a non-NULL undefined value.
 There is (and should be!) no way to create other objects of this type,
@@ -138,33 +130,8 @@ PyObject _Py_NotImplementedStruct = {
     1, &_PyNotImplemented_Type
 };
 
-PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
-	Py_ssize_t size = cls->tp_basicsize + cls->tp_itemsize * nitems;
-    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
-    if(cls->tp_dictoffset) {
-    	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
-    }
-    Py_TYPE(newObj) = cls;
-    if (nitems > 0) {
-        ((PyVarObject*)newObj)->ob_size = nitems;
-    }
-    return newObj;
-}
-
 int PyObject_GenericInit(PyObject* self, PyObject* args, PyObject* kwds) {
     return self;
-}
-
-void* PyObject_Malloc(size_t size) {
-    return calloc(size, 1);
-}
-
-void* PyObject_Realloc(void *ptr, size_t new_size) {
-	return realloc(ptr, new_size);
-}
-
-void PyObject_Free(void* ptr) {
-    free(ptr);
 }
 
 UPCALL_ID(PyObject_Size);
@@ -234,6 +201,7 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
         if (strlen(fmt) == 1) {
+            Py_XINCREF(singleArg);
             PyTuple_SetItem(args, 0, singleArg);
         }
     }
@@ -253,6 +221,7 @@ PyObject* _PyObject_CallFunction_SizeT(PyObject* callable, const char* fmt, ...)
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
         if (strlen(fmt) == 1) {
+            Py_XINCREF(singleArg);
             PyTuple_SetItem(args, 0, singleArg);
         }
     }
@@ -264,7 +233,9 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     // the arguments are given as a variable list followed by NULL
     PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
     for (int i = 1; i < polyglot_get_arg_count() - 1; i++) {
-        PyTuple_SetItem(args, i - 1, polyglot_get_arg(i));
+        PyObject* arg = (PyObject*) polyglot_get_arg(i);
+        Py_XINCREF(arg);
+        PyTuple_SetItem(args, i - 1, arg);
     }
     return PyObject_CallObject(callable, args);
 }
@@ -302,8 +273,11 @@ PyObject* _PyObject_CallMethod_SizeT(PyObject* object, const char* method, const
 PyObject * _PyObject_FastCallDict(PyObject *func, PyObject *const *args, size_t nargs, PyObject *kwargs) {
 	PyObject* targs = PyTuple_New(nargs);
 	Py_ssize_t i;
+	PyObject* arg;
 	for(i=0; i < nargs; i++) {
-		PyTuple_SetItem(targs, i, args[i]);
+	    arg = args[i];
+	    Py_XINCREF(arg);
+		PyTuple_SetItem(targs, i, arg);
 	}
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", native_to_java_slim(func), native_to_java_slim(targs), native_to_java_slim(kwargs));
 }
@@ -312,8 +286,10 @@ PyObject* PyObject_Type(PyObject* obj) {
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("type", SRC_CS), native_to_java(obj));
 }
 
+typedef PyObject* (*getitem_fun_t)(PyObject*, PyObject*);
+UPCALL_TYPED_ID(PyObject_GetItem, getitem_fun_t);
 PyObject* PyObject_GetItem(PyObject* obj, PyObject* key) {
-    return UPCALL_O(native_to_java(obj), polyglot_from_string("__getitem__", SRC_CS), native_to_java(key));
+    return _jls_PyObject_GetItem(native_to_java(obj), native_to_java(key));
 }
 
 UPCALL_ID(PyObject_SetItem);
@@ -550,13 +526,16 @@ PyObject* _PyObject_New(PyTypeObject *tp) {
 }
 
 void PyObject_GC_Track(void *tp) {
+	(void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GC_Track", tp);
 }
 
 void PyObject_GC_Del(void *tp) {
+	PyObject_Free(tp);
 }
 
 
 void PyObject_GC_UnTrack(void *tp) {
+	(void) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GC_Untrack", tp);
 }
 
 PyObject* _PyObject_GC_New(PyTypeObject *tp) {
@@ -576,6 +555,14 @@ _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     if (op == NULL)
         return (PyVarObject *)PyErr_NoMemory();
     return PyObject_INIT_VAR(op, tp, nitems);
+}
+
+void Py_IncRef(PyObject *o) {
+    Py_XINCREF(o);
+}
+
+void Py_DecRef(PyObject *o) {
+    Py_XDECREF(o);
 }
 
 PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
@@ -633,3 +620,16 @@ PyObject * _PyObject_NextNotImplemented(PyObject *self) {
     return NULL;
 }
 
+#undef _Py_Dealloc
+
+void
+_Py_Dealloc(PyObject *op)
+{
+    destructor dealloc = Py_TYPE(op)->tp_dealloc;
+#ifdef Py_TRACE_REFS
+    _Py_ForgetReference(op);
+#else
+    _Py_INC_TPFREES(op);
+#endif
+    (*dealloc)(op);
+}

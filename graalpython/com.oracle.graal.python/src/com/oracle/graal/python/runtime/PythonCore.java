@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@
 PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
 
 /* tuple type */
-PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS, sizeof(PyTupleObject) - sizeof(PyObject *), PyTruffle_Tuple_Alloc);
+PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS, sizeof(PyTupleObject) - sizeof(PyObject *), PyTruffle_Tuple_Alloc, 0, 0);
 
 /* Tuples */
 UPCALL_ID(PyTuple_New);
@@ -52,14 +52,17 @@ PyObject* PyTuple_New(Py_ssize_t size) {
     return UPCALL_CEXT_O(_jls_PyTuple_New, size);
 }
 
-UPCALL_ID(PyTuple_SetItem);
+
+UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
-    return UPCALL_CEXT_I(_jls_PyTuple_SetItem, native_to_java(tuple), position, native_to_java(item));
+    /* We cannot use 'UPCALL_CEXT_I' because that would assume borrowed references.
+       But this function steals the references, so we call without a landing function. */
+    return _jls_PyTuple_SetItem(native_to_java(tuple), position, native_to_java_stealing(item));
 }
 
 UPCALL_ID(PyTuple_GetItem);
 PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return UPCALL_CEXT_O(_jls_PyTuple_GetItem, native_to_java(tuple), position);
+    return UPCALL_CEXT_BORROWED(_jls_PyTuple_GetItem, native_to_java(tuple), position);
 }
 
 UPCALL_ID(PyTuple_Size);
@@ -80,6 +83,7 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     }
     for (int i = 0; i < n; i++) {
         PyObject *o = polyglot_get_arg(i+1);
+        Py_XINCREF(o);
         PyTuple_SetItem(result, i, o);
     }
     return result;
@@ -89,7 +93,9 @@ MUST_INLINE
 PyObject* PyTruffle_Tuple_Pack(int dummy, va_list vlist, void **argv, int argc) {
     PyObject *result = PyTuple_New(argc);
     for (int i = 0; i < argc; i++) {
-        PyTuple_SetItem(result, i, (PyObject*) argv[i]);
+        PyObject *o = (PyObject*) argv[i];
+        Py_XINCREF(o);
+        PyTuple_SetItem(result, i, o);
     }
     return result;
 }
@@ -121,17 +127,18 @@ PyObject * tuple_subtype_new(PyTypeObject *type, PyObject *iterable) {
         return NULL;
     }
     newobj->ob_item = (PyObject **) ((char *)newobj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
+
+    // This polyglot type cast is important such that we can directly read and
+    // write members of the pointer from Java code.
+    // Note: the return type is 'PyObject*' to be compatible with CPython
     newobj = polyglot_from_PyTupleObject(newobj);
+
     for (i = 0; i < n; i++) {
         item = PyTuple_GetItem(tmp, i);
         Py_INCREF(item);
         PyTuple_SetItem((PyObject*)newobj, i, item);
     }
     Py_DECREF(tmp);
-
-    // This polyglot type cast is important such that we can directly read and
-    // write members of the pointer from Java code.
-    // Note: the return type is 'PyObject*' to be compatible with CPython
     return (PyObject*) newobj;
 }
 
@@ -157,10 +164,7 @@ PyObject* PyTruffle_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems) {
     if(cls->tp_dictoffset) {
     	*((PyObject **) ((char *)newObj + cls->tp_dictoffset)) = NULL;
     }
-    Py_TYPE(newObj) = cls;
-    if (nitems > 0) {
-        ((PyVarObject*)newObj)->ob_size = nitems;
-    }
+    PyObject_INIT_VAR(newObj, cls, nitems);
     return newObj;
 }
 

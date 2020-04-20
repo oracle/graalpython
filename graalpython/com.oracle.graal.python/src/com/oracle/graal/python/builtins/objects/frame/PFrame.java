@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -212,6 +212,10 @@ public final class PFrame extends PythonBuiltinObject {
     public void setBackref(PFrame.Reference backref) {
         assert this.backref == null || this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
         this.backref = backref;
+    }
+
+    public void setLine(int line) {
+        this.line = line;
     }
 
     @TruffleBoundary

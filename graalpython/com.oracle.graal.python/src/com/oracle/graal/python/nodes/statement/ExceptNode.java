@@ -48,6 +48,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -85,19 +86,28 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, TruffleException e, boolean reify) {
-        if (reify && e instanceof PException) {
+        if (e instanceof PException) {
             PException pE = (PException) e;
-            PBaseException exceptionObject = pE.reifyAndGetPythonException(frame, exceptName != null);
-            SetCaughtExceptionNode.execute(frame, new ExceptionInfo(exceptionObject, exceptionObject.getTraceback()));
-        }
-        if (exceptName != null) {
-            exceptName.doWrite(frame, e.getExceptionObject());
+            if (reify) {
+                PBaseException exceptionObject = pE.reifyAndGetPythonException(frame, exceptName != null);
+                SetCaughtExceptionNode.execute(frame, new ExceptionInfo(exceptionObject, exceptionObject.getTraceback()));
+            }
+            if (exceptName != null) {
+                exceptName.doWrite(frame, e.getExceptionObject());
+            }
+        } else if (exceptName != null) {
+            exceptName.doWrite(frame, getExceptionObject(e));
         }
         body.executeVoid(frame);
         if (exceptName != null) {
             exceptName.doWrite(frame, null);
         }
         throw ExceptionHandledException.INSTANCE;
+    }
+
+    @TruffleBoundary
+    private static Object getExceptionObject(TruffleException e) {
+        return e.getExceptionObject();
     }
 
     public boolean matchesException(VirtualFrame frame, TruffleException e) {

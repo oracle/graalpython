@@ -76,7 +76,7 @@ import java.io.PrintStream;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.List;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -398,7 +398,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * Added temporarily to skip translation/execution errors in unit testing
              */
 
-            if (object.equals(GraalPythonTranslationErrorNode.MESSAGE)) {
+            if (GraalPythonTranslationErrorNode.MESSAGE.equals(object)) {
                 return true;
             }
 
@@ -603,7 +603,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     try {
                         lib.setDict(builtins, builtinsDict);
                     } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreter();
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException(e);
                     }
                 }
@@ -1444,7 +1444,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (element instanceof Byte) {
                 return (byte) element;
             }
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("got a bytes-like with non-byte elements");
         }
     }
@@ -1860,7 +1860,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     try {
                         lib.setDict(globals, dict);
                     } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreter();
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException(e);
                     }
                 }

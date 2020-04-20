@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class LongSequenceStorage extends TypedSequenceStorage {
@@ -122,13 +123,17 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void insertItem(int idx, Object val) throws SequenceStoreException {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-        if (value instanceof Long) {
-            insertLongItem(idx, (long) value);
+        long value;
+        if (val instanceof Integer) {
+            value = (int) val;
+        } else if (val instanceof BigInteger) {
+            value = PInt.longValue((BigInteger) val);
+        } else if (val instanceof Long) {
+            value = (long) val;
         } else {
-            throw new SequenceStoreException(value);
+            throw new SequenceStoreException(val);
         }
+        insertLongItem(idx, value);
     }
 
     public void insertLongItem(int idx, long value) {

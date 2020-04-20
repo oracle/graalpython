@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
-/**
- * Used to wrap {@link PythonClass} just for the time when a natively defined type is processed in
- * {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry these two
- * objects.
- */
-public class PythonClassInitNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
-
-    public PythonClassInitNativeWrapper(PythonClass object) {
-        super(object);
-    }
-
-    @Override
-    @TruffleBoundary
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return String.format("PythonClassNativeInitWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
-    }
+@FunctionalInterface
+public interface Supplier<R> extends java.util.function.Supplier<R> {
 }

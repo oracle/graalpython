@@ -101,6 +101,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -110,6 +111,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, asInt(left), right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -119,6 +121,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, asInt(left), right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -128,6 +131,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, asDouble(left), right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -137,6 +141,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, asInt(right)));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -146,6 +151,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -155,6 +161,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -164,6 +171,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -173,6 +181,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, asInt(right)));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -182,6 +191,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -191,6 +201,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -200,6 +211,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -209,6 +221,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, asDouble(right)));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -218,6 +231,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -227,6 +241,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }
@@ -236,6 +251,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
         }
     }

@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -247,7 +248,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         boolean operator(String self, String other) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not be reached");
         }
     }
@@ -513,7 +514,7 @@ public final class StringBuiltins extends PythonBuiltins {
         // the actual operation; will be overridden by subclasses
         @SuppressWarnings("unused")
         protected boolean doIt(String text, String substr, int start, int stop) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not reach");
         }
 
@@ -532,7 +533,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         protected String getErrorMessage() {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not reach");
         }
 
@@ -710,13 +711,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         protected int find(String self, String findStr) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not be reached");
         }
 
         @SuppressWarnings("unused")
         protected int findWithBounds(String self, String str, int start, int end) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not be reached");
         }
     }
@@ -825,7 +826,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static PDict doDict(PDict from, Object to, Object z) {
             // TODO implement dict case; see CPython 'unicodeobject.c' function
             // 'unicode_maketrans_impl'
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("not yet implemented");
         }
 
@@ -2180,6 +2181,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class CasefoldNode extends PythonUnaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         static String doString(String self) {
             // TODO(fa) implement properly using 'unicodedata_db' (see 'unicodeobject.c' function
             // 'unicode_casefold_impl')

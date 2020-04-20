@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -149,9 +150,14 @@ public abstract class CExtParseArgumentsNode {
                         @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") String cachedFormat,
                         @Cached(value = "getChars(format)", allowUncached = true, dimensions = 1) char[] chars,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
+                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(funName, argv, kwds, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
+                PDict kwdsDict = null;
+                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                    kwdsDict = (PDict) kwds;
+                }
+                doParsingExploded(funName, argv, kwdsDict, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -161,12 +167,17 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial")
         int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
+                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 char[] chars = getChars(format);
+                PDict kwdsDict = null;
+                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                    kwdsDict = (PDict) kwds;
+                }
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);
                 for (int i = 0; i < format.length(); i++) {
-                    state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
+                    state = convertArg(state, kwdsDict, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
@@ -795,13 +806,18 @@ public abstract class CExtParseArgumentsNode {
                 if (arg instanceof String) {
                     singleChar = ((String) arg).charAt(0);
                 } else if (arg instanceof PString) {
-                    singleChar = ((PString) arg).getCharSequence().charAt(0);
+                    singleChar = charFromPString(arg);
                 } else {
                     throw raise(raiseNode, SystemError, "unsupported string type: %s", arg.getClass());
                 }
                 writeOutVarNode.writeInt32(varargs, state.outIndex, (int) singleChar);
             }
             return state.incrementOutIndex();
+        }
+
+        @TruffleBoundary
+        private static char charFromPString(Object arg) {
+            return ((PString) arg).getCharSequence().charAt(0);
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_F")
@@ -915,12 +931,17 @@ public abstract class CExtParseArgumentsNode {
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, "%s returned an unexpected return code; expected 'int' but was %s", funName, rc.getClass());
             }
-            int i = ((Number) rc).intValue();
+            int i = intValue((Number) rc);
             if (i == -1) {
                 throw raise(raiseNode, TypeError, "read-write bytes-like object");
             } else if (i == -2) {
                 throw raise(raiseNode, TypeError, "contiguous buffer");
             }
+        }
+
+        @TruffleBoundary
+        private static int intValue(Number rc) {
+            return rc.intValue();
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_P")

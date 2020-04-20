@@ -124,31 +124,4 @@
 #include "fileutils.h"
 #include "pystrtod.h"
 
-// TODO: we must extend the refcounting behavior to support handles to managed objects
-#undef Py_DECREF
-#define Py_DECREF(o) 0
-#undef Py_INCREF
-#define Py_INCREF(o) 0
-#undef Py_XINCREF
-#define Py_XINCREF(o) 0
-#undef Py_XDECREF
-#define Py_XDECREF(o) 0
-
-/* 
- * #define Py_INCREF(op) (                         \
- *     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
- *     ((PyObject *)(op))->ob_refcnt++)
- * 
- * #define Py_DECREF(op)                                                   \
- *     do {                                                                \
- *         void* handle = op;                                              \
- *         PyObject *_py_decref_tmp = (PyObject *)((truffle_is_handle_to_managed(handle) ? truffle_managed_from_handle(handle) : handle)); \
- *         if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA                       \
- *             --(_py_decref_tmp)->ob_refcnt != 0) {                       \
- *             _Py_CHECK_REFCNT(_py_decref_tmp)                            \
- *             else                                                        \
- *                 _Py_Dealloc(_py_decref_tmp);                            \
- *     } while (0)
- */
-
 #endif

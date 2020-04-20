@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -131,6 +131,8 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_ITEMSIZE = new HiddenKey(__ITEMSIZE__);
     public static final HiddenKey TYPE_BASICSIZE = new HiddenKey(__BASICSIZE__);
     public static final HiddenKey TYPE_ALLOC = new HiddenKey(__ALLOC__);
+    public static final HiddenKey TYPE_DEALLOC = new HiddenKey("__dealloc__");
+    public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -519,15 +521,15 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BaseNode extends PythonBuiltinNode {
         @Specialization
-        Object base(LazyPythonClass self,
-                        @Cached("create()") TypeNodes.GetBaseClassNode getBaseClassNode) {
-            return getBaseClassNode.execute(self);
+        static Object base(LazyPythonClass self,
+                        @Cached TypeNodes.GetBaseClassNode getBaseClassNode) {
+            Object baseClass = getBaseClassNode.execute(self);
+            return baseClass != null ? baseClass : PNone.NONE;
         }
     }
 
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    @ImportStatic(NativeMemberNames.class)
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doType(PythonBuiltinClassType self,
@@ -544,7 +546,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 try {
                     lib.setDict(self, dict);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException(e);
                 }
             } else if (dict instanceof PDict) {
@@ -558,7 +560,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         Object doNative(PythonNativeClass self,
                         @Cached CExtNodes.GetTypeMemberNode getTpDictNode) {
-            return getTpDictNode.execute(self, NativeMemberNames.TP_DICT);
+            return getTpDictNode.execute(self, NativeMember.TP_DICT);
         }
     }
 
@@ -688,7 +690,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @ImportStatic(NativeMemberNames.class)
+    @ImportStatic(NativeMember.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class AbstractSlotNode extends PythonBinaryBuiltinNode {
     }
@@ -731,7 +733,7 @@ public class TypeBuiltins extends PythonBuiltins {
         Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMember.TP_NAME);
             return getQualName(tpName);
         }
 
@@ -786,7 +788,7 @@ public class TypeBuiltins extends PythonBuiltins {
         Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMember.TP_NAME);
             return getModuleName(tpName);
         }
 
@@ -838,7 +840,7 @@ public class TypeBuiltins extends PythonBuiltins {
         String getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetTypeMemberNode getTpNameNode) {
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = (String) getTpNameNode.execute(cls, NativeMemberNames.TP_NAME);
+            String tpName = (String) getTpNameNode.execute(cls, NativeMember.TP_NAME);
             return getQualName(tpName);
         }
 
@@ -896,7 +898,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_DICTOFFSET);
+            return getTpDictoffsetNode.execute(cls, NativeMember.TP_DICTOFFSET);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -945,7 +947,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_ITEMSIZE);
+            return getTpDictoffsetNode.execute(cls, NativeMember.TP_ITEMSIZE);
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -993,7 +995,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMemberNames.TP_BASICSIZE);
+            return getTpDictoffsetNode.execute(cls, NativeMember.TP_BASICSIZE);
         }
 
         @Specialization(guards = "!isNoValue(value)")

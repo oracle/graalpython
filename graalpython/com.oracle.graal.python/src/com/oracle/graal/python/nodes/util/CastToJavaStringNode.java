@@ -109,6 +109,10 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
         return x.getCharSequence() instanceof String;
     }
 
+    public static CastToJavaStringNode create() {
+        return CastToJavaStringNodeGen.create();
+    }
+
     public static CastToJavaStringNode getUncached() {
         return CastToJavaStringNodeGen.getUncached();
     }

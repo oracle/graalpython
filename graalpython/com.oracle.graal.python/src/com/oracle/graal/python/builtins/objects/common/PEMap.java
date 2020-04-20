@@ -41,18 +41,17 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import java.util.Iterator;
-import java.util.Objects;
-import java.util.function.BiFunction;
-
-import org.graalvm.collections.MapCursor;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage.DictKey;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+
+import org.graalvm.collections.MapCursor;
 
 @SuppressWarnings("javadoc")
 /**
@@ -177,7 +176,7 @@ final class PEMap implements Iterable<DictKey> {
         if (hasSideEffect) {
             return getSE(key, keylib, otherlib, findProfile, gotState, state);
         }
-        Objects.requireNonNull(key);
+        assert key != null;
 
         int index = find(key, keylib, otherlib, findProfile, gotState, state);
         if (index != -1) {
@@ -354,6 +353,7 @@ final class PEMap implements Iterable<DictKey> {
             return putSE(key, value, keylib, otherlib, findProfile, gotState, state);
         }
         if (key == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException("null not supported as key!");
         }
         int index = find(key, keylib, otherlib, findProfile, gotState, state);
@@ -420,6 +420,7 @@ final class PEMap implements Iterable<DictKey> {
         int entriesLength = entries.length;
         int newSize = (entriesLength >> 1) + Math.max(MIN_CAPACITY_INCREASE, entriesLength >> 2);
         if (newSize > MAX_ELEMENT_COUNT) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException("map grown too large!");
         }
         Object[] newEntries = new Object[newSize << 1];
@@ -568,6 +569,7 @@ final class PEMap implements Iterable<DictKey> {
     @TruffleBoundary
     public Object removeKey(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile gotState, ThreadState state) {
         if (key == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException("null not supported as key!");
         }
         int index;
@@ -806,7 +808,7 @@ final class PEMap implements Iterable<DictKey> {
     }
 
     private Object getSE(DictKey key, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
-        Objects.requireNonNull(key);
+        assert key != null;
 
         Entry p = findSE(key, keylib, otherlib, findProfile, gotState, state);
         if (p != null) {
@@ -817,6 +819,7 @@ final class PEMap implements Iterable<DictKey> {
 
     private Object putSE(DictKey key, Object value, PythonObjectLibrary keylib, PythonObjectLibrary otherlib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
         if (key == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException("null not supported as key!");
         }
         Entry entry = findSE(key, keylib, otherlib, findProfile, gotState, state);

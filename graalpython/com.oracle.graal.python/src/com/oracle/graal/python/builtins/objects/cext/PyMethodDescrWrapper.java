@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,16 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PNone;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -122,12 +124,13 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
-            if (doc == PNone.NONE) {
-                return toSulongNode.execute(PNone.NO_VALUE);
+                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+            Object name = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
+            if (PGuards.isPNone(name)) {
+                return toSulongNode.execute(getNativeNullNode.execute());
             } else {
-                return asCharPointerNode.execute(doc);
+                return asCharPointerNode.execute(name);
             }
         }
 
@@ -135,10 +138,11 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         static Object getDoc(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode) {
-            Object doc = getAttrNode.execute(object, SpecialAttributeNames.__DOC__);
-            if (doc instanceof PNone) {
-                return toSulongNode.execute(PNone.NO_VALUE);
+                        @Shared("asCharPointerNode") @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
+            Object doc = getAttrNode.execute(object, __DOC__);
+            if (PGuards.isPNone(doc)) {
+                return toSulongNode.execute(getNativeNullNode.execute());
             } else {
                 return asCharPointerNode.execute(doc);
             }
@@ -182,20 +186,23 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"!isBuiltinMethod(object)", "eq(DOC, key)"})
-        void getDoc(PythonObject object, @SuppressWarnings("unused") String key, Object value,
+        @Specialization(guards = {"!isBuiltinMethod(object)", "!isBuiltinFunction(object)", "eq(DOC, key)"})
+        static void doPythonObject(PythonObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
                         @Shared("fromCharPointerNode") @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) throws UnsupportedMessageException, UnknownIdentifierException {
-            setAttrNode.execute(object, SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
+            setAttrNode.execute(object, __DOC__, fromCharPointerNode.execute(value));
         }
 
-        @Specialization(guards = {"eq(DOC, key)"})
-        void getDoc(PBuiltinMethod object, @SuppressWarnings("unused") String key, Object value,
+        @Specialization(guards = {"isBuiltinMethod(object) || isBuiltinFunction(object)", "eq(DOC, key)"})
+        static void doBuiltinFunctionOrMethod(PythonBuiltinObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                        @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,
                         @Shared("fromCharPointerNode") @Cached CExtNodes.FromCharPointerNode fromCharPointerNode) {
-            CompilerDirectives.transferToInterpreter();
-            object.getStorage().define(SpecialAttributeNames.__DOC__, fromCharPointerNode.execute(value));
+            // Since CPython does directly write to `ml_doc`, writing the __doc__ attribute
+            // circumvents any checks if the attribute may be written according to the common Python
+            // rules. So, directly write to the Python object's storage.
+            writeAttrToDynamicObjectNode.execute(object.getStorage(), __DOC__, fromCharPointerNode.execute(value));
         }
     }
 

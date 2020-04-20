@@ -42,10 +42,10 @@ package com.oracle.graal.python.builtins.modules;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.TrufflePInt_AsPrimitive;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.TrufflePInt_AsPrimitiveFactory;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ExternalFunctionNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
@@ -79,6 +79,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExternalFunctionNodes {
@@ -126,7 +127,7 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         Object doIt(VirtualFrame frame,
                         @Cached("createCountingProfile()") ConditionProfile customLocalsProfile,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached CExtNodes.AsPythonObjectStealingNode asPythonObjectNode,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
             CalleeContext.enter(frame, customLocalsProfile);
@@ -141,10 +142,10 @@ public abstract class ExternalFunctionNodes {
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(callable, arguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
@@ -440,12 +441,12 @@ public abstract class ExternalFunctionNodes {
     static class AllocFuncRootNode extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "nitems"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArgNode;
-        @Child private TrufflePInt_AsPrimitive asSsizeTNode;
+        @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
         AllocFuncRootNode(PythonLanguage language, RootCallTarget callTarget) {
             super(language, callTarget);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
-            this.asSsizeTNode = TrufflePInt_AsPrimitiveFactory.create();
+            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
 
         @Override
@@ -457,6 +458,9 @@ public abstract class ExternalFunctionNodes {
                 Object[] arguments = PArguments.create();
                 PArguments.setVariableArguments(arguments, self, asSsizeTNode.executeLong(frame, arg, 1, Long.BYTES));
                 return invokeNode.execute(frame, arguments);
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
             } finally {
                 exitCalleeContext(frame);
             }
@@ -550,13 +554,13 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other", "op"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
-        @Child private TrufflePInt_AsPrimitive asSsizeTNode;
+        @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
         RichCmpFuncRootNode(PythonLanguage language, RootCallTarget callTarget) {
             super(language, callTarget);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
-            this.asSsizeTNode = TrufflePInt_AsPrimitiveFactory.create();
+            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
 
         @Override
@@ -569,6 +573,9 @@ public abstract class ExternalFunctionNodes {
                 Object[] arguments = PArguments.create();
                 PArguments.setVariableArguments(arguments, self, arg1, asSsizeTNode.executeInt(frame, arg2, 1, Integer.BYTES));
                 return invokeNode.execute(frame, arguments);
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
             } finally {
                 exitCalleeContext(frame);
             }
@@ -587,13 +594,13 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "i", "value"}, new String[0]);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
-        @Child private TrufflePInt_AsPrimitive asSsizeTNode;
+        @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
         SSizeObjArgProcRootNode(PythonLanguage language, RootCallTarget callTarget) {
             super(language, callTarget);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
-            this.asSsizeTNode = TrufflePInt_AsPrimitiveFactory.create();
+            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
 
         @Override
@@ -606,6 +613,9 @@ public abstract class ExternalFunctionNodes {
                 Object[] arguments = PArguments.create();
                 PArguments.setVariableArguments(arguments, self, asSsizeTNode.executeLong(frame, arg1, 1, Long.BYTES), arg2);
                 return invokeNode.execute(frame, arguments);
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("should not be reached");
             } finally {
                 exitCalleeContext(frame);
             }

@@ -64,7 +64,6 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -173,16 +172,10 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
+    @TruffleBoundary
     private static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        SourceSection src;
-        if (funcRootNode instanceof PRootNode) {
-            src = ((PRootNode) funcRootNode).getSourceSection();
-        } else {
-            // foreign root nodes might consider getting the source section slow-path
-            CompilerDirectives.transferToInterpreter();
-            src = funcRootNode.getSourceSection();
-        }
+        SourceSection src = funcRootNode.getSourceSection();
         if (src != null) {
             if (src.getSource().getPath() == null) {
                 return src.getSource().getName();
@@ -205,10 +198,12 @@ public final class PCode extends PythonBuiltinObject {
         return 1;
     }
 
+    @TruffleBoundary
     private static String extractName(RootNode rootNode) {
         return rootNode.getName();
     }
 
+    @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
         return rootNode.getFrameDescriptor().getSize();
     }
@@ -477,20 +472,9 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    private SourceSection readSourceLocation() {
-        RootNode rootNode = getRootNode();
-        SourceSection result;
-        if (rootNode instanceof PRootNode) {
-            result = ((PRootNode) rootNode).getSourceSection();
-        } else {
-            result = getForeignSourceSection(rootNode);
-        }
-        return result;
-    }
-
     @TruffleBoundary
-    private static SourceSection getForeignSourceSection(RootNode rootNode) {
-        return rootNode.getSourceSection();
+    private SourceSection readSourceLocation() {
+        return getRootNode().getSourceSection();
     }
 
     @ExportMessage

@@ -73,9 +73,7 @@ PyObject* cit_next(PyObject* self) {
 }
 
 PyObject* ci_item(PyObject* self, Py_ssize_t i) {
-    PyObject* result = PyLong_FromSsize_t(((NativeCustomIterableObject*)self)->scale * i);
-    Py_INCREF(result);
-    return result;
+    return PyLong_FromSsize_t(((NativeCustomIterableObject*)self)->scale * i);
 }
 
 

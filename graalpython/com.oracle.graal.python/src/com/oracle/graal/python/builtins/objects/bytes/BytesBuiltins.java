@@ -94,6 +94,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -666,7 +667,7 @@ public class BytesBuiltins extends PythonBuiltins {
         // the actual operation; will be overridden by subclasses
         @SuppressWarnings("unused")
         protected boolean doIt(byte[] bytes, byte[] prefix, int start, int end) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not reach");
         }
 
@@ -684,7 +685,7 @@ public class BytesBuiltins extends PythonBuiltins {
             try {
                 return lib.getBufferBytes(object);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         }
@@ -905,7 +906,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
                 return factory().createBytes(newBytes);
             } catch (UnsupportedEncodingException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }
@@ -919,7 +920,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
                 return factory().createByteArray(newBytes);
             } catch (UnsupportedEncodingException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }
@@ -944,7 +945,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 String string = new String(bytes, "ASCII");
                 return string.toLowerCase().getBytes("ASCII");
             } catch (UnsupportedEncodingException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }
@@ -971,7 +972,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 String string = new String(bytes, "ASCII");
                 return string.toUpperCase().getBytes("ASCII");
             } catch (UnsupportedEncodingException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }

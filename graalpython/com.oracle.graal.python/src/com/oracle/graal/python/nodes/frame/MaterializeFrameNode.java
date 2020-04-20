@@ -491,6 +491,7 @@ public abstract class MaterializeFrameNode extends Node {
                     }
                 }
             } catch (FrameSlotTypeException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }

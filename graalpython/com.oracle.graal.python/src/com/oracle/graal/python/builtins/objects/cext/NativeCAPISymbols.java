@@ -48,23 +48,24 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public abstract class NativeCAPISymbols {
 
-    public static final String FUN_NATIVE_POINTER_TO_JAVA = "native_pointer_to_java";
+    public static final String FUN_NATIVE_POINTER_TO_JAVA = "native_pointer_to_java_exported";
     public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
     public static final String FUN_NATIVE_TO_JAVA = "native_to_java_exported";
     public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
     public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
     public static final String FUN_PY_FLOAT_AS_DOUBLE = "truffle_read_ob_fval";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
+    public static final String FUN_GET_OB_REFCNT = "get_ob_refcnt";
     public static final String FUN_GET_TP_DICT = "get_tp_dict";
     public static final String FUN_GET_TP_BASES = "get_tp_bases";
     public static final String FUN_GET_TP_NAME = "get_tp_name";
     public static final String FUN_GET_TP_MRO = "get_tp_mro";
     public static final String FUN_GET_TP_ALLOC = "get_tp_alloc";
+    public static final String FUN_GET_TP_DEALLOC = "get_tp_dealloc";
+    public static final String FUN_GET_TP_FREE = "get_tp_free";
     public static final String FUN_GET_TP_FLAGS = "get_tp_flags";
     public static final String FUN_GET_TP_SUBCLASSES = "get_tp_subclasses";
     public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
@@ -94,6 +95,13 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_NATIVE_UNICODE_AS_STRING = "native_unicode_as_string";
     public static final String FUN_PY_UNICODE_GET_LENGTH = "PyUnicode_GetLength";
     public static final String FUN_GET_UINT32_ARRAY_TYPE_ID = "get_uint32_array_typeid";
+    public static final String FUN_PY_TRUFFLE_FREE = "PyTruffle_Free";
+    public static final String FUN_INCREF = "Py_IncRef";
+    public static final String FUN_DECREF = "Py_DecRef";
+    public static final String FUN_ADDREF = "PyTruffle_ADDREF";
+    public static final String FUN_SUBREF = "PyTruffle_SUBREF";
+    public static final String FUN_TRUFFLE_MANAGED_FROM_HANDLE = "truffle_managed_from_handle";
+    public static final String FUN_TRUFFLE_CANNOT_BE_HANDLE = "truffle_cannot_be_handle";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
@@ -103,7 +111,7 @@ public abstract class NativeCAPISymbols {
             Field s = declaredFields[i];
             if (s.getType() == String.class) {
                 try {
-                    values[i] = (String) s.get(NativeMemberNames.class);
+                    values[i] = (String) s.get(NativeCAPISymbols.class);
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                 }
             }

@@ -93,6 +93,7 @@ public final class PList extends PMutableSequence {
             try {
                 store.insertItem(index, value);
             } catch (SequenceStoreException e1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }

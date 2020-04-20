@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -227,7 +227,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Object nativeResult = interop.execute(pyinitFunc);
                 getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
-                Object result = AsPythonObjectNode.doSlowPath(nativeResult, false);
+                Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
