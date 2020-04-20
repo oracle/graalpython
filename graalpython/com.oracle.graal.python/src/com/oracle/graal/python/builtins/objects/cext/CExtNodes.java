@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -2938,4 +2939,55 @@ public abstract class CExtNodes {
             return nativeWrapper.ensureHandleValidAssumption();
         }
     }
+
+    /**
+     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
+     * any PyVarObject usually returns the number of contained elements.
+     */
+    @GenerateUncached
+    @ImportStatic(PythonOptions.class)
+    abstract static class ObSizeNode extends Node {
+
+        public abstract long execute(Object object);
+
+        @Specialization
+        static long doInteger(@SuppressWarnings("unused") int object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return doLong(object, context);
+        }
+
+        @Specialization
+        static long doLong(@SuppressWarnings("unused") long object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            long t = PInt.abs(object);
+            int sign = object < 0 ? -1 : 1;
+            int size = 0;
+            while (t != 0) {
+                ++size;
+                t >>= context.getCApiContext().getPyLongBitsInDigit();
+            }
+            return size * sign;
+        }
+
+        @Specialization
+        static long doPInt(PInt object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return ((PInt.bitLength(object.abs()) - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
+        static long doOther(Object object,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            try {
+                return lib.length(object);
+            } catch (PException e) {
+                return -1;
+            }
+        }
+
+        static boolean isFallback(Object object) {
+            return !(object instanceof PInt);
+        }
+    }
+
 }

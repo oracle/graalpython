@@ -654,7 +654,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(OB_SIZE, key)")
         static long doObSize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached ObSizeNode obSizeNode) {
+                        @Cached CExtNodes.ObSizeNode obSizeNode) {
             return obSizeNode.execute(object);
         }
 
@@ -1744,59 +1744,4 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @Cached PGetDynamicTypeNode getDynamicTypeNode) {
         return getDynamicTypeNode.execute(this);
     }
-
-    /**
-     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
-     * any PyVarObject usually returns the number of contained elements.
-     */
-    @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    abstract static class ObSizeNode extends Node {
-
-        public abstract long execute(Object object);
-
-        @Specialization
-        static long doInteger(@SuppressWarnings("unused") int object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return doLong(object, context);
-        }
-
-        @Specialization
-        static long doLong(@SuppressWarnings("unused") long object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            long t = abs(object);
-            int sign = object < 0 ? -1 : 1;
-            int size = 0;
-            while (t != 0) {
-                ++size;
-                t >>= context.getCApiContext().getPyLongBitsInDigit();
-            }
-            return size * sign;
-        }
-
-        @Specialization
-        static long doPInt(PInt object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return ((PInt.bitLength(object.abs()) - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
-        static long doOther(Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                return lib.length(object);
-            } catch (PException e) {
-                return -1;
-            }
-        }
-
-        private static long abs(long a) {
-            return (a < 0) ? -a : a;
-        }
-
-        static boolean isFallback(Object object) {
-            return !(object instanceof PInt);
-        }
-    }
-
 }

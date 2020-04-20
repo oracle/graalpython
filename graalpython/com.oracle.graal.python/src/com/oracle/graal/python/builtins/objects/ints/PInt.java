@@ -53,6 +53,10 @@ public final class PInt extends PythonBuiltinObject {
         this.value = value;
     }
 
+    public static long abs(long a) {
+        return (a < 0) ? -a : a;
+    }
+
     public BigInteger getValue() {
         return value;
     }
