@@ -131,11 +131,11 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     skipFirst = false;
                     continue;
                 }
-                if (nextElement != null) {
-                    PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
-                    next = factory.createTraceback(pFrame, pFrame.getLine(), next);
-                }
                 if (LazyTraceback.elementWantedForTraceback(element)) {
+                    if (nextElement != null) {
+                        PFrame pFrame = materializeFrame(nextElement, materializeFrameNode);
+                        next = factory.createTraceback(pFrame, pFrame.getLine(), next);
+                    }
                     nextElement = element;
                 }
             }
