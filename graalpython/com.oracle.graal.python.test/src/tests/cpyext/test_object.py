@@ -595,6 +595,32 @@ class TestObjectFunctions(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_Py_SIZE = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (0, 0),
+            (1, 1),
+            (-1, -1),
+            (1, 1),
+            (1<<29, 1),
+            ((1<<30) - 1, 1),
+            (1<<30, 2),
+            (-1073741824, -2),
+            ((1<<60) - 1, 2),
+            (1<<60, 3),
+            (-1152921504606846976, -3)
+        ),
+        code='''static Py_ssize_t wrap_Py_SIZE(PyObject* object, PyObject* unused) {
+            return Py_SIZE(object);
+        }
+        ''',
+        arguments=["PyObject* object", "PyObject* unused"],
+        resultspec="n",
+        argspec="OO",
+        callfunction="wrap_Py_SIZE",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_dealloc = CPyExtFunction(
         lambda args: None,
         lambda: (

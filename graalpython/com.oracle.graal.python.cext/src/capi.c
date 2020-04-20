@@ -712,3 +712,8 @@ int truffle_ptr_compare(void* x, void* y, int op) {
 double truffle_read_ob_fval(PyFloatObject* fobj) {
 	return fobj->ob_fval;
 }
+
+/* called from Java to get number of bits per long digit */
+int32_t get_long_bits_in_digit() {
+	return PYLONG_BITS_IN_DIGIT;
+}

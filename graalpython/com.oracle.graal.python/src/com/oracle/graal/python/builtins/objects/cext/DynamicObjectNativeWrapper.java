@@ -1756,18 +1756,28 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         public abstract long execute(Object object);
 
         @Specialization
-        static long doInteger(@SuppressWarnings("unused") int object) {
-            return 1;
+        static long doInteger(@SuppressWarnings("unused") int object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return doLong(object, context);
         }
 
         @Specialization
-        static long doLong(@SuppressWarnings("unused") long object) {
-            return 2;
+        static long doLong(@SuppressWarnings("unused") long object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            long t = abs(object);
+            int sign = object < 0 ? -1 : 1;
+            int size = 0;
+            while (t != 0) {
+                ++size;
+                t >>= context.getCApiContext().getPyLongBitsInDigit();
+            }
+            return size * sign;
         }
 
         @Specialization
-        static long doPInt(PInt object) {
-            return object.bitCount() / 32;
+        static long doPInt(PInt object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return ((PInt.bitLength(object.abs()) - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
@@ -1778,6 +1788,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             } catch (PException e) {
                 return -1;
             }
+        }
+
+        private static long abs(long a) {
+            return (a < 0) ? -a : a;
         }
 
         static boolean isFallback(Object object) {

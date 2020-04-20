@@ -296,6 +296,15 @@ public final class PInt extends PythonBuiltinObject {
         return (compareTo(val) < 0 ? this : val);
     }
 
+    public int bitLength() {
+        return bitLength(value);
+    }
+
+    @TruffleBoundary
+    public static int bitLength(BigInteger value) {
+        return value.bitLength();
+    }
+
     public int bitCount() {
         return bitCount(value);
     }
