@@ -264,6 +264,8 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
             type.base = PythonObject;
         }
 
+        PythonObject.base = null;
+
         Boolean.base = PInt;
 
         SystemExit.base = PBaseException;

@@ -185,7 +185,6 @@ PyMODINIT_FUNC
 PyInit_c_arith_binop_module(void) {
     PyType_Ready(&FloatSubclass);
     PyObject* m = PyModule_Create(&module);
-    Py_INCREF(&FloatSubclass);
     PyModule_AddObject(m, "FloatSubclass", (PyObject *)&FloatSubclass);
     return m;
 }

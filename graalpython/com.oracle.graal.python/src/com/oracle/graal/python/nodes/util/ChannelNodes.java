@@ -66,7 +66,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -298,7 +297,7 @@ public abstract class ChannelNodes {
 
         public static final int MAX_WRITE = Integer.MAX_VALUE / 2;
 
-        public abstract int execute(VirtualFrame frame, Channel channel, SequenceStorage s, int len);
+        public abstract int execute(Channel channel, SequenceStorage s, int len);
 
         @Specialization
         int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len,

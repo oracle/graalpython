@@ -48,13 +48,42 @@ typedef struct {
     PyTypeObject *obj_type;
 } superobject;
 
+static void object_dealloc(PyObject *self) {
+    Py_TYPE(self)->tp_free(self);
+}
+
 PyTypeObject PyType_Type = PY_TRUFFLE_TYPE("type", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TYPE_SUBCLASS, sizeof(PyTypeObject));
-PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject));
+PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), 0, object_dealloc, PyObject_Del);
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
-UPCALL_ID(PyType_IsSubtype);
+typedef int (*type_issubtype_fun_t)(PyTypeObject*, PyTypeObject*);
+UPCALL_TYPED_ID(PyType_IsSubtype, type_issubtype_fun_t);
 int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return ((int (*)(void* a, void* b))_jls_PyType_IsSubtype)(native_type_to_java(a), native_type_to_java(b));
+    return _jls_PyType_IsSubtype(a, b);
+}
+
+PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
+    const size_t size = _PyObject_VAR_SIZE(cls, nitems+1);
+
+    // TODO(fa): GC malloc if 'cls' is a heap type
+    PyObject* newObj = (PyObject*)PyObject_Malloc(size);
+
+    if (cls->tp_flags & Py_TPFLAGS_HEAPTYPE)
+        Py_INCREF(cls);
+
+    if (cls->tp_itemsize == 0)
+        (void)PyObject_INIT(newObj, cls);
+    else
+        (void) PyObject_INIT_VAR((PyVarObject *)newObj, cls, nitems);
+
+    return newObj;
+}
+
+PyObject* PyType_GenericNew(PyTypeObject* cls, PyObject* args, PyObject* kwds) {
+    PyObject* newInstance = cls->tp_alloc(cls, 0);
+    // TODO(fa): CPython does not do it here; verify if that's correct
+    Py_TYPE(newInstance) = cls;
+    return newInstance;
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
@@ -75,6 +104,78 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
 
 static PyObject* native_int_to_bool(int res) {
     return res ? Py_True : Py_False;
+}
+
+/*
+ * finds the beginning of the docstring's introspection signature.
+ * if present, returns a pointer pointing to the first '('.
+ * otherwise returns NULL.
+ *
+ * doesn't guarantee that the signature is valid, only that it
+ * has a valid prefix.  (the signature must also pass skip_signature.)
+ */
+static const char *
+find_signature(const char *name, const char *doc)
+{
+    const char *dot;
+    size_t length;
+
+    if (!doc)
+        return NULL;
+
+    assert(name != NULL);
+
+    /* for dotted names like classes, only use the last component */
+    dot = strrchr(name, '.');
+    if (dot)
+        name = dot + 1;
+
+    length = strlen(name);
+    if (strncmp(doc, name, length))
+        return NULL;
+    doc += length;
+    if (*doc != '(')
+        return NULL;
+    return doc;
+}
+
+typedef void (*trace_type_fun_t)(PyTypeObject* type, void* type_name);
+UPCALL_TYPED_ID(PyTruffle_Trace_Type, trace_type_fun_t);
+static void pytruffle_trace_type(PyTypeObject* type) {
+    _jls_PyTruffle_Trace_Type(type, type->tp_name != NULL ? polyglot_from_string(type->tp_name, SRC_CS) : NULL);
+}
+
+#define SIGNATURE_END_MARKER         ")\n--\n\n"
+#define SIGNATURE_END_MARKER_LENGTH  6
+/*
+ * skips past the end of the docstring's instrospection signature.
+ * (assumes doc starts with a valid signature prefix.)
+ */
+static const char *
+skip_signature(const char *doc)
+{
+    while (*doc) {
+        if ((*doc == *SIGNATURE_END_MARKER) &&
+            !strncmp(doc, SIGNATURE_END_MARKER, SIGNATURE_END_MARKER_LENGTH))
+            return doc + SIGNATURE_END_MARKER_LENGTH;
+        if ((*doc == '\n') && (doc[1] == '\n'))
+            return NULL;
+        doc++;
+    }
+    return NULL;
+}
+
+static const char *
+_PyType_DocWithoutSignature(const char *name, const char *internal_doc)
+{
+    const char *doc = find_signature(name, internal_doc);
+
+    if (doc) {
+        doc = skip_signature(doc);
+        if (doc)
+            return doc;
+        }
+    return internal_doc;
 }
 
 UPCALL_ID(PyTruffle_Type_Modified);
@@ -144,6 +245,31 @@ static void inherit_special(PyTypeObject *type, PyTypeObject *base) {
 }
 
 static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
+    PyTypeObject *basebase;
+
+#undef SLOTDEFINED
+#undef COPYSLOT
+#undef COPYNUM
+#undef COPYSEQ
+#undef COPYMAP
+#undef COPYBUF
+
+#define SLOTDEFINED(SLOT) \
+    (base->SLOT != 0 && \
+     (basebase == NULL || base->SLOT != basebase->SLOT))
+
+#define COPYSLOT(SLOT) \
+    if (!type->SLOT && SLOTDEFINED(SLOT)) type->SLOT = base->SLOT
+
+#define COPYASYNC(SLOT) COPYSLOT(tp_as_async->SLOT)
+#define COPYNUM(SLOT) COPYSLOT(tp_as_number->SLOT)
+#define COPYSEQ(SLOT) COPYSLOT(tp_as_sequence->SLOT)
+#define COPYMAP(SLOT) COPYSLOT(tp_as_mapping->SLOT)
+#define COPYBUF(SLOT) COPYSLOT(tp_as_buffer->SLOT)
+
+    basebase = base->tp_base;
+
+    COPYSLOT(tp_dealloc);
     if (type->tp_getattr == NULL && type->tp_getattro == NULL) {
         type->tp_getattr = base->tp_getattr;
         type->tp_getattro = base->tp_getattro;
@@ -152,6 +278,29 @@ static void inherit_slots(PyTypeObject *type, PyTypeObject *base) {
         type->tp_setattr = base->tp_setattr;
         type->tp_setattro = base->tp_setattro;
     }
+
+    if ((type->tp_flags & Py_TPFLAGS_HAVE_FINALIZE) &&
+        (base->tp_flags & Py_TPFLAGS_HAVE_FINALIZE)) {
+        COPYSLOT(tp_finalize);
+    }
+    if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) ==
+        (base->tp_flags & Py_TPFLAGS_HAVE_GC)) {
+        /* They agree about gc. */
+        COPYSLOT(tp_free);
+    }
+    else if ((type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+             type->tp_free == NULL &&
+             base->tp_free == PyObject_Free) {
+        /* A bit of magic to plug in the correct default
+         * tp_free function when a derived class adds gc,
+         * didn't define tp_free, and the base uses the
+         * default non-gc tp_free.
+         */
+        type->tp_free = PyObject_GC_Del;
+    }
+    /* else they didn't agree about gc, and there isn't something
+     * obvious to be done -- the type is on its own.
+     */
 }
 
 // TODO support member flags other than READONLY
@@ -164,7 +313,7 @@ static void add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, 
 		    mtype,
 		    moffset,
 		    native_to_java(((mflags & READONLY) == 0) ? Py_True : Py_False),
-		    polyglot_from_string(mdoc ? mdoc : "", SRC_CS)
+		    mdoc ? polyglot_from_string(mdoc, SRC_CS) : native_to_java(Py_None)
 	);
 }
 
@@ -174,9 +323,9 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
                        cls,
                        native_to_java(type_dict),
                        polyglot_from_string(name, SRC_CS),
-                       native_to_java(result_conversion != NULL ? pytruffle_decorate_function(native_to_java(meth), result_conversion) : meth),
+                       native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(native_pointer_to_java(meth), result_conversion) : meth),
                        (signature != NULL ? signature : get_method_flags_wrapper(flags)),
-                       polyglot_from_string(doc, SRC_CS),
+                       doc ? polyglot_from_string(doc, SRC_CS) : native_to_java(Py_None),
                        (flags) > 0 && ((flags) & METH_CLASS) != 0,
                        (flags) > 0 && ((flags) & METH_STATIC) != 0);
 }
@@ -191,12 +340,13 @@ int PyType_Ready(PyTypeObject* cls) {
 #define RETURN_ERROR(__type__) \
 	do { \
       	(__type__)->tp_flags &= ~Py_TPFLAGS_READYING; \
+      	Py_DECREF((__type__)); \
         return -1; \
 	} while(0)
 
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
-#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, native_to_java_exported, m.ml_meth, m.ml_flags, NULL, m.ml_doc)
-#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, native_to_java_exported, meth, flags, NULL, name)
+#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, native_to_java_stealing_exported, m.ml_meth, m.ml_flags, NULL, m.ml_doc)
+#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, native_to_java_stealing_exported, meth, flags, NULL, name)
 #define ADD_SLOT_PRIMITIVE(name, meth, flags) ADD_METHOD_OR_SLOT(name, NULL, meth, flags, NULL, name)
 #define ADD_SLOT_CONV(name, result_conversion, meth, flags, signature) ADD_METHOD_OR_SLOT(name, result_conversion, meth, flags, signature, name)
 #define ADD_METHOD_OR_SLOT(__name__, __res_conv__, __meth__, __flags__, __signature__, __doc__) \
@@ -213,32 +363,48 @@ int PyType_Ready(PyTypeObject* cls) {
     }
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READYING;
 
-    // https://docs.python.org/3/c-api/typeobj.html#c.PyObject.ob_type
-    PyTypeObject* base = cls->tp_base;
-    PyTypeObject* metaclass = Py_TYPE(cls);
-    if (!base) {
-        base = &PyBaseObject_Type;
-    } else {
-        if (!metaclass) {
-            metaclass = Py_TYPE(base);
-        }
+    /* Types are often just static mem; so register them to be able to rule out invalid accesses.  */
+    if(PyTruffle_Trace_Memory()) {
+        pytruffle_trace_type(cls);
     }
-    if (!metaclass) {
-        metaclass = &PyType_Type;
+
+    /* IMPORTANT: This is a Truffle-specific statement. Since the refcnt for the type is currently 0 and
+       we will create several references to this object that will be collected during the execution of
+       this method, we need to keep it alive. */
+    Py_INCREF(cls);
+
+
+    PyTypeObject* base;
+
+    /* Initialize tp_base (defaults to BaseObject unless that's us) */
+    base = cls->tp_base;
+    if (base == NULL && cls != &PyBaseObject_Type) {
+        base = cls->tp_base = &PyBaseObject_Type;
+        Py_INCREF(base);
     }
-    cls->tp_base = base;
-    Py_TYPE(cls) = metaclass;
+
+    /* Now the only way base can still be NULL is if type is
+     * &PyBaseObject_Type.
+     */
 
     /* Initialize the base class */
-    if (base != NULL && !(base->tp_flags % Py_TPFLAGS_READY)) {
+    if (base != NULL && !(base->tp_flags & Py_TPFLAGS_READY)) {
         if (PyType_Ready(base) < 0) {
         	RETURN_ERROR(cls);
         }
     }
 
-    if (!(cls->tp_doc)) {
-        cls->tp_doc = "";
+    /* Initialize ob_type if NULL.      This means extensions that want to be
+       compilable separately on Windows can call PyType_Ready() instead of
+       initializing the ob_type field of their type objects. */
+    /* The test for base != NULL is really unnecessary, since base is only
+       NULL when type is &PyBaseObject_Type, and we know its ob_type is
+       not NULL (it's initialized to &PyType_Type).      But coverity doesn't
+       know that. */
+    if (Py_TYPE(cls) == NULL && base != NULL) {
+        Py_TYPE(cls) = Py_TYPE(base);
     }
+
 
     /* Initialize tp_bases */
     PyObject* bases = cls->tp_bases;
@@ -252,7 +418,7 @@ int PyType_Ready(PyTypeObject* cls) {
     	// we need to resolve pointers to Python classes
     	Py_ssize_t n_bases = PyObject_Length(bases);
     	for(Py_ssize_t i=0; i < n_bases; i++) {
-    		PyTuple_SetItem(bases, i, native_to_java(PyTuple_GetItem(bases, i)));
+    		PyTuple_SetItem(bases, i, PyTuple_GetItem(bases, i));
     	}
     }
     cls->tp_bases = bases;
@@ -272,9 +438,6 @@ int PyType_Ready(PyTypeObject* cls) {
         int idx = 0;
         PyMethodDef def = methods[idx];
         while (def.ml_name != NULL) {
-            if (!(def.ml_doc)) {
-                def.ml_doc = "";
-            }
             ADD_METHOD(def);
             def = methods[++idx];
         }
@@ -301,9 +464,9 @@ int PyType_Ready(PyTypeObject* cls) {
                             "AddGetSet",
                             cls,
                             polyglot_from_string(getset.name, SRC_CS),
-                            getter_fun != NULL ? pytruffle_decorate_function(native_to_java((getter)getter_fun), native_to_java_exported) : to_java(Py_None),
+                            getter_fun != NULL ? pytruffle_decorate_function(native_pointer_to_java((getter)getter_fun), native_to_java_stealing_exported) : to_java(Py_None),
                             setter_fun != NULL ? (setter)setter_fun : to_java(Py_None),
-                            getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
+                            getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : native_to_java(Py_None),
                             // do not convert the closure, it is handed to the
                             // getter and setter as-is
                             getset.closure);
@@ -340,7 +503,7 @@ int PyType_Ready(PyTypeObject* cls) {
 
     // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
     // and convert arguments that should be C primitives.
-    ADD_SLOT_CONV("__getattr__", native_to_java_exported, cls->tp_getattr, -2, JWRAPPER_GETATTR);
+    ADD_SLOT_CONV("__getattr__", native_to_java_stealing_exported, cls->tp_getattr, -2, JWRAPPER_GETATTR);
     ADD_SLOT_CONV("__setattr__", NULL, cls->tp_setattr, -3, JWRAPPER_SETATTR);
     ADD_SLOT("__repr__", cls->tp_repr, -1);
     ADD_SLOT_PRIMITIVE("__hash__", cls->tp_hash, -1);
@@ -350,20 +513,20 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_PRIMITIVE("__setattr__", cls->tp_setattro, -3);
     ADD_SLOT_CONV("__clear__", native_int_to_bool, cls->tp_clear, -1, NULL);
     if (cls->tp_richcompare) {
-        ADD_SLOT_CONV("__compare__", native_to_java_exported, cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
-        ADD_SLOT_CONV("__lt__", native_to_java_exported, cls->tp_richcompare, -2, JWRAPPER_LT);
-        ADD_SLOT_CONV("__le__", native_to_java_exported, cls->tp_richcompare, -2, JWRAPPER_LE);
-        ADD_SLOT_CONV("__eq__", native_to_java_exported, cls->tp_richcompare, -2, JWRAPPER_EQ);
-        ADD_SLOT_CONV("__ne__", native_to_java_exported, cls->tp_richcompare, -2, JWRAPPER_NE);
-        ADD_SLOT_CONV("__gt__", native_to_java_exported, cls->tp_richcompare, -2, JWRAPPER_GT);
-        ADD_SLOT_CONV("__ge__", native_to_java_exported, cls->tp_richcompare, -2, JWRAPPER_GE);
+        ADD_SLOT_CONV("__compare__", native_to_java_stealing_exported, cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
+        ADD_SLOT_CONV("__lt__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_LT);
+        ADD_SLOT_CONV("__le__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_LE);
+        ADD_SLOT_CONV("__eq__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_EQ);
+        ADD_SLOT_CONV("__ne__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_NE);
+        ADD_SLOT_CONV("__gt__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_GT);
+        ADD_SLOT_CONV("__ge__", native_to_java_stealing_exported, cls->tp_richcompare, -2, JWRAPPER_GE);
     }
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
     ADD_SLOT_PRIMITIVE("__set__", cls->tp_descr_set, -3);
     ADD_SLOT_PRIMITIVE("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT_CONV("__alloc__", native_to_java_exported, cls->tp_alloc, -2, JWRAPPER_ALLOC);
+    ADD_SLOT_CONV("__alloc__", native_to_java_stealing_exported, cls->tp_alloc, -2, JWRAPPER_ALLOC);
     ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT_PRIMITIVE("__free__", cls->tp_free, -1);
     ADD_SLOT_PRIMITIVE("__del__", cls->tp_del, -1);
@@ -372,32 +535,32 @@ int PyType_Ready(PyTypeObject* cls) {
     PyNumberMethods* numbers = cls->tp_as_number;
     if (numbers) {
         ADD_SLOT("__add__", numbers->nb_add, -2);
-        ADD_SLOT_CONV("__radd__", native_to_java_exported, numbers->nb_add, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__radd__", native_to_java_stealing_exported, numbers->nb_add, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__sub__", numbers->nb_subtract, -2);
-        ADD_SLOT_CONV("__rsub__", native_to_java_exported, numbers->nb_subtract, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rsub__", native_to_java_stealing_exported, numbers->nb_subtract, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
-        ADD_SLOT_CONV("__rmul__", native_to_java_exported, numbers->nb_multiply, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rmul__", native_to_java_stealing_exported, numbers->nb_multiply, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__mod__", numbers->nb_remainder, -2);
-        ADD_SLOT_CONV("__rmod__", native_to_java_exported, numbers->nb_remainder, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rmod__", native_to_java_stealing_exported, numbers->nb_remainder, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
-        ADD_SLOT_CONV("__rdivmod__", native_to_java_exported, numbers->nb_divmod, -2, JWRAPPER_REVERSE);
-        ADD_SLOT_CONV("__pow__", native_to_java_exported, numbers->nb_power, -3, JWRAPPER_POW);
-        ADD_SLOT_CONV("__rpow__", native_to_java_exported, numbers->nb_power, -3, JWRAPPER_REVERSE_POW);
+        ADD_SLOT_CONV("__rdivmod__", native_to_java_stealing_exported, numbers->nb_divmod, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__pow__", native_to_java_stealing_exported, numbers->nb_power, -3, JWRAPPER_POW);
+        ADD_SLOT_CONV("__rpow__", native_to_java_stealing_exported, numbers->nb_power, -3, JWRAPPER_REVERSE_POW);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
         ADD_SLOT_CONV("__bool__", native_int_to_bool, numbers->nb_bool, -1, NULL);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
-        ADD_SLOT_CONV("__rlshift__", native_to_java_exported, numbers->nb_lshift, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rlshift__", native_to_java_stealing_exported, numbers->nb_lshift, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
-        ADD_SLOT_CONV("__rrshift__", native_to_java_exported, numbers->nb_rshift, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rrshift__", native_to_java_stealing_exported, numbers->nb_rshift, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__and__", numbers->nb_and, -2);
-        ADD_SLOT_CONV("__rand__", native_to_java_exported, numbers->nb_and, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rand__", native_to_java_stealing_exported, numbers->nb_and, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__xor__", numbers->nb_xor, -2);
-        ADD_SLOT_CONV("__rxor__", native_to_java_exported, numbers->nb_xor, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rxor__", native_to_java_stealing_exported, numbers->nb_xor, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__or__", numbers->nb_or, -2);
-        ADD_SLOT_CONV("__ror__", native_to_java_exported, numbers->nb_or, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__ror__", native_to_java_stealing_exported, numbers->nb_or, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__int__", numbers->nb_int, -1);
         ADD_SLOT("__float__", numbers->nb_float, -1);
         ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
@@ -411,14 +574,14 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__ixor__", numbers->nb_inplace_xor, -2);
         ADD_SLOT("__ior__", numbers->nb_inplace_or, -2);
         ADD_SLOT("__floordiv__", numbers->nb_floor_divide, -2);
-        ADD_SLOT_CONV("__rfloordiv__", native_to_java_exported, numbers->nb_floor_divide, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rfloordiv__", native_to_java_stealing_exported, numbers->nb_floor_divide, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__truediv__", numbers->nb_true_divide, -2);
-        ADD_SLOT_CONV("__rtruediv__", native_to_java_exported, numbers->nb_true_divide, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rtruediv__", native_to_java_stealing_exported, numbers->nb_true_divide, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__ifloordiv__", numbers->nb_inplace_floor_divide, -2);
         ADD_SLOT("__itruediv__", numbers->nb_inplace_true_divide, -2);
         ADD_SLOT("__index__", numbers->nb_index, -1);
         ADD_SLOT("__matmul__", numbers->nb_matrix_multiply, -2);
-        ADD_SLOT_CONV("__rmatmul__", native_to_java_exported, numbers->nb_matrix_multiply, -2, JWRAPPER_REVERSE);
+        ADD_SLOT_CONV("__rmatmul__", native_to_java_stealing_exported, numbers->nb_matrix_multiply, -2, JWRAPPER_REVERSE);
         ADD_SLOT("__imatmul__", numbers->nb_inplace_matrix_multiply, -2);
     }
 
@@ -426,12 +589,12 @@ int PyType_Ready(PyTypeObject* cls) {
     if (sequences) {
         ADD_SLOT_PRIMITIVE("__len__", sequences->sq_length, -1);
         ADD_SLOT("__add__", sequences->sq_concat, -2);
-        ADD_SLOT_CONV("__mul__", native_to_java_exported, sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__getitem__", native_to_java_exported, sequences->sq_item, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__mul__", native_to_java_stealing_exported, sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__getitem__", native_to_java_stealing_exported, sequences->sq_item, -2, JWRAPPER_SSIZE_ARG);
         ADD_SLOT_CONV("__setitem__", NULL, sequences->sq_ass_item, -3, JWRAPPER_SSIZE_OBJ_ARG);
         ADD_SLOT_PRIMITIVE("__contains__", sequences->sq_contains, -2);
         ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
-        ADD_SLOT_CONV("__imul__", native_to_java_exported, sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__imul__", native_to_java_stealing_exported, sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
     PyMappingMethods* mappings = cls->tp_as_mapping;
@@ -465,6 +628,27 @@ int PyType_Ready(PyTypeObject* cls) {
     /* Initialize this classes' tp_subclasses dict. This is necessary because our managed classes won't do. */
     cls->tp_subclasses = PyDict_New();
 
+    /* if the type dictionary doesn't contain a __doc__, set it from
+       the tp_doc slot.
+     */
+    PyObject* doc_id = (PyObject *)polyglot_from_string("__doc__", SRC_CS);
+    if (PyDict_GetItem(cls->tp_dict, doc_id) == NULL) {
+        if (cls->tp_doc != NULL) {
+            const char *old_doc = _PyType_DocWithoutSignature(cls->tp_name, cls->tp_doc);
+            PyObject *doc = PyUnicode_FromString(old_doc);
+            if (doc == NULL) {
+                RETURN_ERROR(cls);
+            }
+            if (PyDict_SetItem(cls->tp_dict, doc_id, doc) < 0) {
+                Py_DECREF(doc);
+                RETURN_ERROR(cls);
+            }
+            Py_DECREF(doc);
+        } else if (PyDict_SetItem(cls->tp_dict, doc_id, Py_None) < 0) {
+            RETURN_ERROR(cls);
+        }
+    }
+
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
     n = PyTuple_GET_SIZE(bases);
@@ -482,6 +666,9 @@ int PyType_Ready(PyTypeObject* cls) {
 
     // it may be that the type was used uninitialized
     UPCALL_CEXT_VOID(_jls_PyTruffle_Type_Modified, cls, polyglot_from_string(cls->tp_name, SRC_CS), Py_NoValue);
+
+	// Truffle-specific decref (for reason, see first call to Py_INCREF in this function)
+	Py_DECREF(cls);
 
     return 0;
 

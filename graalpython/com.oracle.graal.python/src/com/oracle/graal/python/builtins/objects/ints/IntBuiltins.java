@@ -211,17 +211,17 @@ public class IntBuiltins extends PythonBuiltins {
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int x, int y) throws ArithmeticException {
+        static int doII(int x, int y) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
         @Specialization
-        long doIIOvf(int x, int y) {
+        static long doIIOvf(int x, int y) {
             return (long) x - (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long x, long y) throws ArithmeticException {
+        static long doLL(long x, long y) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
@@ -253,13 +253,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger left, BigInteger right) {
+        private static BigInteger op(BigInteger left, BigInteger right) {
             return left.subtract(right);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        @SuppressWarnings("unused")
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -270,17 +270,17 @@ public class IntBuiltins extends PythonBuiltins {
     public abstract static class RSubNode extends PythonBinaryBuiltinNode {
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int y, int x) throws ArithmeticException {
+        static int doII(int y, int x) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
         @Specialization
-        long doIIOvf(int y, int x) {
+        static long doIIOvf(int y, int x) {
             return (long) x - (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long y, long x) throws ArithmeticException {
+        static long doLL(long y, long x) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
@@ -303,7 +303,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doLongPInt(long right, PInt left) {
-            return factory().createInt(op(PInt.longToBigInteger(right), left.getValue()));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
@@ -312,13 +312,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger left, BigInteger right) {
+        private static BigInteger op(BigInteger left, BigInteger right) {
             return left.subtract(right);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
+        @SuppressWarnings("unused")
+        static PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

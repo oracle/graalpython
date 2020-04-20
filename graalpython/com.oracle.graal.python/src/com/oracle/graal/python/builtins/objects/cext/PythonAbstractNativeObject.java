@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
 
+import java.lang.ref.WeakReference;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -55,11 +56,14 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ImportCAPISymbolN
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileClassNodeGen;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -78,6 +82,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -224,11 +229,11 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption")
-        public static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
+        @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "singleContextAssumption")
+        static PythonAbstractClass getNativeClassCachedIdentity(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass) {
+                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(object)") PythonAbstractClass cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
             // happen. OTOH, CPython also has caches that can become invalid when someone just
@@ -236,28 +241,51 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return cachedClass;
         }
 
-        @Specialization(guards = "referenceLibrary.isSame(cachedObject.object, object.object)", limit = "1", assumptions = "singleContextAssumption")
-        public static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
+        @Specialization(guards = "isSame(referenceLibrary, cachedObject, object)", limit = "1", assumptions = "singleContextAssumption")
+        static PythonAbstractClass getNativeClassCached(PythonAbstractNativeObject object,
                         @Shared("assumption") @Cached(value = "getSingleContextAssumption()") Assumption singleContextAssumption,
-                        @Exclusive @Cached("object") PythonAbstractNativeObject cachedObject,
-                        @Exclusive @Cached("getNativeClassUncached(cachedObject)") PythonAbstractClass cachedClass,
+                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached("getNativeClassUncached(object)") PythonAbstractClass cachedClass,
                         @CachedLibrary("object.object") @SuppressWarnings("unused") ReferenceLibrary referenceLibrary) {
             // TODO same as for 'getNativeClassCachedIdentity'
             return cachedClass;
         }
 
-        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"})
-        public static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, limit = "1", rewriteOn = {UnknownIdentifierException.class,
+                        UnsupportedMessageException.class})
+        static PythonAbstractClass getNativeClassByMember(PythonAbstractNativeObject object,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
-                        @Exclusive @Cached AsPythonObjectNode toJavaNode) {
-            // do not convert wrap 'object.object' since that is really the native pointer
-            // object
-            return (PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr()));
+                        @Exclusive @Cached ToJavaNode toJavaNode,
+                        @Exclusive @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return classProfile.profile((PythonAbstractClass) toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
+        }
+
+        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"})
+        static PythonAbstractClass getNativeClass(PythonAbstractNativeObject object,
+                        @Exclusive @Cached PCallCapiFunction callGetObTypeNode,
+                        @Exclusive @Cached AsPythonObjectNode toJavaNode,
+                        @Exclusive @Cached ProfileClassNode classProfile) {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return classProfile.profile((PythonAbstractClass) toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
+        }
+
+        static WeakReference<PythonAbstractNativeObject> weak(PythonAbstractNativeObject object) {
+            return new WeakReference<>(object);
+        }
+
+        static boolean isSame(ReferenceLibrary referenceLibrary, WeakReference<PythonAbstractNativeObject> cachedObjectRef, PythonAbstractNativeObject object) {
+            PythonAbstractNativeObject cachedObject = cachedObjectRef.get();
+            if (cachedObject != null) {
+                return referenceLibrary.isSame(cachedObject.object, object.object);
+            }
+            return false;
         }
 
         public static PythonAbstractClass getNativeClassUncached(PythonAbstractNativeObject object) {
             // do not wrap 'object.object' since that is really the native pointer object
-            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNode.getUncached());
+            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNodeGen.getUncached());
         }
     }
 
@@ -318,6 +346,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             throw UnsupportedMessageException.create();
         }
         // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-        return (String) getTpNameNode.execute(this, NativeMemberNames.TP_NAME);
+        return (String) getTpNameNode.execute(this, NativeMember.TP_NAME);
     }
 }

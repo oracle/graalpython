@@ -3246,6 +3246,7 @@ static void memory_managed_releasebuf(PyMemoryViewObject *self, Py_buffer *view)
 static PyMemoryViewObject *
 attach_native_type(PyObject *module, PyObject *obj)
 {
+    Py_INCREF(obj);
     return polyglot_from_PyMemoryViewObject((PyMemoryViewObject *)obj);
 }
 

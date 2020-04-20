@@ -59,7 +59,7 @@ int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t h
 
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
 }
 
 UPCALL_ID(PyDict_GetItemWithError);
@@ -124,7 +124,7 @@ int PyDict_Contains(PyObject *d, PyObject *k) {
 }
 
 PyObject * PyDict_GetItemString(PyObject *d, const char *key) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
 
 int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
@@ -154,6 +154,7 @@ PyObject* _PyObject_GenericGetDict(PyObject* obj) {
     if (dict == NULL) {
         *dictptr = dict = PyDict_New();
     }
+    Py_XINCREF(dict);
     return dict;
 }
 

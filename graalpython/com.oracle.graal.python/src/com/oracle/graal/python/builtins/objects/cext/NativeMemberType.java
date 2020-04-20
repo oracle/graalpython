@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,19 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
+/**
+ * A very simple abstraction of the types of C struct members. This is just needed to know if we
+ * must or must not do reference counting when reading a native member.
+ */
+public enum NativeMemberType {
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
+    // must do reference counting
+    OBJECT,
 
-PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
-                                               "PyCFunction_NewEx",
-                                               polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                               pytruffle_decorate_function(native_pointer_to_java(ml->ml_meth), native_to_java_stealing_exported),
-                                               get_method_flags_wrapper(ml->ml_flags),
-                                               native_to_java(self),
-                                               native_to_java(module),
-                                               ml->ml_doc ? polyglot_from_string(ml->ml_doc, SRC_CS) : native_to_java(Py_None)));
+    // must not do reference counting
+    PRIMITIVE,
+    POINTER
 }

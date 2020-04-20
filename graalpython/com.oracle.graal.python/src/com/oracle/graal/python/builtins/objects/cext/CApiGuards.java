@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,26 +40,38 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 
-/**
- * Used to wrap {@link PythonClass} just for the time when a natively defined type is processed in
- * {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry these two
- * objects.
- */
-public class PythonClassInitNativeWrapper extends DynamicObjectNativeWrapper.PythonObjectNativeWrapper {
+public abstract class CApiGuards {
 
-    public PythonClassInitNativeWrapper(PythonClass object) {
-        super(object);
+    public static boolean isPrimitiveNativeWrapper(Object object) {
+        return object instanceof PrimitiveNativeWrapper;
     }
 
-    @Override
-    @TruffleBoundary
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        PythonNativeWrapperLibrary lib = PythonNativeWrapperLibrary.getUncached();
-        return String.format("PythonClassNativeInitWrapper(%s, isNative=%s)", lib.getDelegate(this), lib.isNative(this));
+    public static boolean isNativeWrapper(Object object) {
+        return object instanceof PythonNativeWrapper;
     }
+
+    public static boolean isNativeNull(Object object) {
+        return object instanceof PythonNativeNull;
+    }
+
+    public static boolean isSpecialSingleton(Object delegate) {
+        return PythonLanguage.getSingletonNativeWrapperIdx(delegate) != -1;
+    }
+
+    /**
+     * This guard defines the range of integer values for which PInt objects (and in our particular
+     * case, native wrappers) are cached.
+     */
+    public static boolean isSmallInteger(int i) {
+        return -5 <= i && i < 257;
+    }
+
+    /** see {@link #isSmallInteger(int)} */
+    public static boolean isSmallLong(long i) {
+        return -5 <= i && i < 257;
+    }
+
 }

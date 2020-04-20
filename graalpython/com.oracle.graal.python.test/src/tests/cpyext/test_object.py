@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -205,7 +205,6 @@ class TestObject(object):
                               cmembers="PyDateTime_DateTime __pyx_base;",
                               ready_code='''PyTypeObject* datetime_type = NULL;
                               PyDateTime_IMPORT;
-                              Py_INCREF(PyDateTimeAPI);
                               datetime_type = PyDateTimeAPI->DateTimeType;
                               Py_XINCREF(datetime_type);
                               TestSlotsType.tp_base = (PyTypeObject*) datetime_type;
@@ -229,7 +228,6 @@ class TestObject(object):
                               cmembers="PyDateTime_DateTime __pyx_base;",
                               ready_code='''
                               PyDateTime_IMPORT;
-                              Py_INCREF(PyDateTimeAPI);
                               datetime_type = PyDateTimeAPI->DateTimeType;
                               Py_INCREF(datetime_type);
                               TestSlotsInitializedType.tp_base = datetime_type;
@@ -594,6 +592,37 @@ class TestObjectFunctions(CPyExtTestCase):
         arguments=["PyObject* obj"],
         resultspec="O",
         argspec="O",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_dealloc = CPyExtFunction(
+        lambda args: None,
+        lambda: (
+            (None, ),
+        ),
+        code='''PyObject* dealloc_tuple(PyObject* element) {
+            PyObject** native_storage = (PyObject**) malloc(sizeof(PyObject*));
+            // returns a tuple with refcnt == 1
+            PyObject* object = PyTuple_New(1);
+            PyTuple_SetItem(object, 0, element);
+            
+            // seal tuple; refcnt == 2
+            Py_INCREF(object);
+            
+            // this will force the object to native
+            native_storage[0] = object;
+            
+            Py_DECREF(object);
+            // this will free the tuple
+            Py_DECREF(object);
+            
+            return Py_None;
+        }
+        ''',
+        arguments=["PyObject* element"],
+        resultspec="O",
+        argspec="O",
+        callfunction="dealloc_tuple",
         cmpfunc=unhandled_error_compare
     )
 

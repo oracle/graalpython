@@ -865,6 +865,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // float([x])
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class FloatNode extends PythonBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
         @Child private CoerceToDoubleNode coerceToDoubleNode;

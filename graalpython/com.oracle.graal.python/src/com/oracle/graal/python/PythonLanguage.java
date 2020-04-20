@@ -32,6 +32,9 @@ import java.util.concurrent.Semaphore;
 import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
+import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionValues;
+
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -85,9 +88,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-
-import org.graalvm.options.OptionDescriptors;
-import org.graalvm.options.OptionValues;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -149,7 +149,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    public static int getSingletonNativePtrIdx(Object obj) {
+    public static int getSingletonNativeWrapperIdx(Object obj) {
         for (int i = 0; i < CONTEXT_INSENSITIVE_SINGLETONS.length; i++) {
             if (CONTEXT_INSENSITIVE_SINGLETONS[i] == obj) {
                 return i;

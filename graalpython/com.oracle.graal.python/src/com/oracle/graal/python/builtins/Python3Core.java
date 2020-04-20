@@ -540,7 +540,7 @@ public final class Python3Core implements PythonCore {
     private PythonBuiltinClass initializeBuiltinClass(PythonBuiltinClassType type) {
         int index = type.ordinal();
         if (builtinTypes[index] == null) {
-            if (type.getBase() == type) {
+            if (type.getBase() == null) {
                 // object case
                 builtinTypes[index] = new PythonBuiltinClass(type, null);
             } else {

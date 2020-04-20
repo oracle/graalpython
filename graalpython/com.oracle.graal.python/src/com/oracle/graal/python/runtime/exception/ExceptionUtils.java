@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,9 @@ public final class ExceptionUtils {
     private ExceptionUtils() {
     }
 
+    /**
+     * this method is similar to 'PyErr_WriteUnraisable'
+     */
     @TruffleBoundary
     public static void printPythonLikeStackTrace(Throwable e) {
         List<TruffleStackTraceElement> stackTrace = TruffleStackTrace.getStackTrace(e);

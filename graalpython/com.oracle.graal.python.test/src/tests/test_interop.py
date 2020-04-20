@@ -51,7 +51,7 @@ if sys.implementation.name == "graalpython":
         assert imported_fun0 is some_function
         assert imported_fun0() == "hello, polyglot world!"
 
-        polyglot.export_value(some_function, "same_function")
+        polyglot.export_value("same_function", some_function)
         imported_fun1 = polyglot.import_value("same_function")
         assert imported_fun1 is some_function
         assert imported_fun1() == "hello, polyglot world!"
