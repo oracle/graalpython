@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -150,20 +149,13 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @TruffleBoundary
-    @Specialization(guards = {
-                    "dynamicObject.getShape().isValid()"
-    }, replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
+    @Specialization(replaces = {"doDirect", "defineDirect", "updateShapeAndWrite"})
     protected static boolean doIndirect(DynamicObject dynamicObject, Object key, Object value) {
+        if (!dynamicObject.getShape().isValid()) {
+            dynamicObject.updateShape();
+        }
         Object attrKey = attrKey(key);
-        CompilerAsserts.neverPartOfCompilation();
         dynamicObject.define(attrKey, value);
         return true;
-    }
-
-    @Specialization(guards = "!dynamicObject.getShape().isValid()")
-    protected static boolean defineDirect2(DynamicObject dynamicObject, Object key, Object value) {
-        CompilerDirectives.transferToInterpreter();
-        dynamicObject.updateShape();
-        return doIndirect(dynamicObject, key, value);
     }
 }
