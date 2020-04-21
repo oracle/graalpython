@@ -52,6 +52,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -119,6 +121,12 @@ public final class CApiContext extends CExtContext {
     /** Just used for integrity checks if assertions are enabled. */
     @CompilationFinal private ReferenceLibrary referenceLibrary;
 
+    /**
+     * Required to emulate PyLongObject's ABI; number of bits per digit (equal to
+     * {@code PYLONG_BITS_IN_DIGIT}.
+     */
+    @CompilationFinal private int pyLongBitsInDigit = -1;
+
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
@@ -159,6 +167,14 @@ public final class CApiContext extends CExtContext {
 
             return null;
         });
+    }
+
+    public int getPyLongBitsInDigit() {
+        if (pyLongBitsInDigit < 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pyLongBitsInDigit = (int) CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_GET_LONG_BITS_PER_DIGIT);
+        }
+        return pyLongBitsInDigit;
     }
 
     @TruffleBoundary

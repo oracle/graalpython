@@ -654,7 +654,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(OB_SIZE, key)")
         static long doObSize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached ObSizeNode obSizeNode) {
+                        @Cached CExtNodes.ObSizeNode obSizeNode) {
             return obSizeNode.execute(object);
         }
 
@@ -1744,45 +1744,4 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @Cached PGetDynamicTypeNode getDynamicTypeNode) {
         return getDynamicTypeNode.execute(this);
     }
-
-    /**
-     * Depending on the object's type, the size may need to be computed in very different ways. E.g.
-     * any PyVarObject usually returns the number of contained elements.
-     */
-    @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    abstract static class ObSizeNode extends Node {
-
-        public abstract long execute(Object object);
-
-        @Specialization
-        static long doInteger(@SuppressWarnings("unused") int object) {
-            return 1;
-        }
-
-        @Specialization
-        static long doLong(@SuppressWarnings("unused") long object) {
-            return 2;
-        }
-
-        @Specialization
-        static long doPInt(PInt object) {
-            return object.bitCount() / 32;
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
-        static long doOther(Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                return lib.length(object);
-            } catch (PException e) {
-                return -1;
-            }
-        }
-
-        static boolean isFallback(Object object) {
-            return !(object instanceof PInt);
-        }
-    }
-
 }
