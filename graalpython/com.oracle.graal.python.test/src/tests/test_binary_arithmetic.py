@@ -74,15 +74,20 @@ def expectError(callable):
 def test_bin_comparison():
     class A:
         pass
+
     class B:
         def __gt__(self, other):
             return True
+
         def __ge__(self, other):
             return True
+
         def __lt__(self, other):
             return True
+
         def __le__(self, other):
             return True
+
     a = A()
     b = B()
     assert a > b, "Comparison 'a > b' failed"
@@ -99,6 +104,7 @@ def test_bin_comparison_wo_eq_ne():
     class A():
         def __eq__(self, o):
             return NotImplemented
+
     assert A() != A()
     a = A()
     assert a == a
@@ -137,13 +143,14 @@ def test_divmod():
     class Floatable:
         def __init__(self, val):
             self.val = val
+
         def __float__(self):
             return self.val
 
     def doDivmod(a, b):
         return divmod(a, b)
 
-    argList = [(Floatable(3), Floatable(4)), (complex(1,2), complex(3,4))]
+    argList = [(Floatable(3), Floatable(4)), (complex(1, 2), complex(3, 4))]
     for args in argList:
         assert_exception(lambda: doDivmod(*args), TypeError)
 
@@ -196,8 +203,9 @@ def test_comparison_numeric_types():
             assert (a > b) == (i > j)
             assert (a >= b) == (i >= j)
 
+
 def test_sub():
-    x = 1<<66
+    x = 1 << 66
     y = 1
     assert x - y == 73786976294838206463
     assert y - x == -73786976294838206463
@@ -206,3 +214,6 @@ def test_sub():
     assert int.__rsub__(y, x) == 73786976294838206463
 
 
+def test_rshift():
+    assert 1 >> 64 == 0
+    assert 0xffffffffffff >> 128 == 0
