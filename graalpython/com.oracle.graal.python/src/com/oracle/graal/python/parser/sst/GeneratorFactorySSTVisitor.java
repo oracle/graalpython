@@ -402,7 +402,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode expression = (ExpressionNode) node.expression.accept(this);
         PNode result = oldNumOfActiveFlags != numOfActiveFlags
                         // if the body contains yield -> create Generator control node.
-                        ? new GeneratorWithNode(asName, body, expression, numOfActiveFlags++, numOfGeneratorForNode++, numOfActiveFlags++, numOfGeneratorTryNode++)
+                        ? new GeneratorWithNode(asName, body, expression, numOfActiveFlags++, numOfGeneratorForNode++, numOfActiveFlags++)
                         : nodeFactory.createWithNode(expression, asName, body);
         if (node.startOffset > -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));

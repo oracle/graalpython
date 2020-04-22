@@ -98,6 +98,7 @@ public abstract class ExceptionStateNodes {
     public static final class GetCaughtExceptionNode extends ExceptionStateBaseNode {
 
         private final ConditionProfile nullFrameProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile hasExceptionProfile = ConditionProfile.createBinaryProfile();
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
@@ -108,6 +109,11 @@ public abstract class ExceptionStateNodes {
             ExceptionInfo e = PArguments.getException(frame);
             if (e == null) {
                 e = fromStackWalk();
+                if (e == null) {
+                    e = ExceptionInfo.NO_EXCEPTION;
+                }
+                // Set into frame to avoid doing the stack walk again
+                PArguments.setException(frame, e);
             }
             return ensure(e);
         }
@@ -136,7 +142,7 @@ public abstract class ExceptionStateNodes {
             // having the exception state in the special slot. And we set the appropriate flag
             // on the root node such that the next time, we will find the exception state in the
             // context immediately.
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
 
             // TODO(fa) performance warning ?
             return fullStackWalk();
@@ -167,11 +173,13 @@ public abstract class ExceptionStateNodes {
 
         }
 
-        private static ExceptionInfo ensure(ExceptionInfo e) {
-            if (e.exception != null) {
+        private ExceptionInfo ensure(ExceptionInfo e) {
+            if (hasExceptionProfile.profile(e == ExceptionInfo.NO_EXCEPTION)) {
+                return null;
+            } else {
                 e.exception.markAsEscaped();
+                return e;
             }
-            return e != ExceptionInfo.NO_EXCEPTION ? e : null;
         }
 
         public static GetCaughtExceptionNode create() {

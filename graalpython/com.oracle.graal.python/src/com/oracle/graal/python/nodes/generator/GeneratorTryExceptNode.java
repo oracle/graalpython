@@ -46,21 +46,16 @@ import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorControlNode {
 
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
-    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
-    @Child private RestoreExceptionStateNode restoreExceptionState = RestoreExceptionStateNode.create();
 
     private final int exceptFlag;
     private final int elseFlag;
@@ -77,12 +72,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        ExceptionState savedExceptionState = saveExceptionStateNode.execute(frame);
-
         if (gen.isActive(frame, exceptFlag)) {
             // we already found the right except handler, jump back into it directly
-            catchExceptionInGeneratorCached(frame, savedExceptionState);
-            restoreExceptionState.execute(frame, savedExceptionState);
+            catchExceptionInGeneratorCached(frame);
             reset(frame);
             return;
         }
@@ -97,8 +89,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             getBody().executeVoid(frame);
         } catch (PException exception) {
             gen.setActive(frame, exceptFlag, true);
-            catchExceptionInGeneratorFirstTime(frame, exception, savedExceptionState);
-            restoreExceptionState.execute(frame, savedExceptionState);
+            catchExceptionInGeneratorFirstTime(frame, exception);
             reset(frame);
             return;
         }
@@ -106,11 +97,10 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         gen.setActive(frame, elseFlag, true);
         getOrelse().executeVoid(frame);
         reset(frame);
-        return;
     }
 
     @ExplodeLoop
-    private void catchExceptionInGeneratorFirstTime(VirtualFrame frame, PException exception, ExceptionState savedExceptionState) {
+    private void catchExceptionInGeneratorFirstTime(VirtualFrame frame, PException exception) {
         boolean wasHandled = false;
         ExceptNode[] exceptNodes = getExceptNodes();
         // we haven't found the matching node, yet, start searching
@@ -122,11 +112,11 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 gen.setIndex(frame, exceptIndex, i + 1);
                 if (exceptNode.matchesException(frame, exception)) {
                     PBaseException exceptionObject = exception.reifyAndGetPythonException(frame);
+                    tryChainPreexistingException(frame, exceptionObject);
                     ExceptionInfo exceptionInfo = new ExceptionInfo(exceptionObject, exceptionObject.getTraceback());
                     ExceptionState exceptionState = new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR);
                     gen.setActiveException(frame, activeExceptionIndex, exceptionState);
-                    SetCaughtExceptionNode.execute(frame, exceptionInfo);
-                    runExceptionHandler(frame, exception, exceptNode, savedExceptionState);
+                    runExceptionHandler(frame, exception, exceptNode, exceptionInfo);
                     wasHandled = true;
                 }
             }
@@ -138,7 +128,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     }
 
     @ExplodeLoop
-    private void catchExceptionInGeneratorCached(VirtualFrame frame, ExceptionState savedExceptionState) {
+    private void catchExceptionInGeneratorCached(VirtualFrame frame) {
         ExceptNode[] exceptNodes = getExceptNodes();
         CompilerAsserts.compilationConstant(exceptNodes);
         ExceptionState exceptionState = gen.getActiveException(frame, activeExceptionIndex);
@@ -149,24 +139,25 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we want a constant loop iteration count for ExplodeLoop to work,
             // so we always run through all except handlers
             if (i == matchingExceptNodeIndex - 1) {
-                SetCaughtExceptionNode.execute(frame, exceptionState.exc);
-                runExceptionHandler(frame, exceptionState.exc.exception.getException(), exceptNodes[i], savedExceptionState);
+                runExceptionHandler(frame, exceptionState.exc.exception.getException(), exceptNodes[i], exceptionState.exc);
                 wasHandled = true;
             }
         }
         assert wasHandled : "cached exception handler does not handle exception";
     }
 
-    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionState exceptionState) {
+    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionInfo exceptionInfo) {
+        ExceptionState savedExceptionState = saveExceptionState(frame);
+        SetCaughtExceptionNode.execute(frame, exceptionInfo);
         try {
             exceptNode.executeExcept(frame, exception, false);
         } catch (ExceptionHandledException e) {
             return;
-        } catch (ControlFlowException e) {
-            // restore previous exception state, this won't happen if the except block raises an
-            // exception
-            restoreExceptionState.execute(frame, exceptionState);
-            throw e;
+        } catch (PException handlerException) {
+            tryChainExceptionFromHandler(exception, handlerException);
+            throw handlerException;
+        } finally {
+            restoreExceptionState(frame, savedExceptionState);
         }
     }
 

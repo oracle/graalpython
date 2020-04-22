@@ -290,6 +290,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         private Object doThrow(PGenerator self, PBaseException instance) {
+            instance.setContext(null); // Will be filled when caught
             if (self.isStarted()) {
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there

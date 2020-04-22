@@ -45,19 +45,16 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.RestoreExceptionStateNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SaveExceptionStateNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
-    @Child private SaveExceptionStateNode saveExceptionStateNode = SaveExceptionStateNode.create();
-    @Child private RestoreExceptionStateNode restoreExceptionStateNode;
+    private final BranchProfile exceptionProfile = BranchProfile.create();
 
     private final int finallyFlag;
     private final int activeExceptionIndex;
@@ -70,7 +67,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        ExceptionState savedExceptionState = saveExceptionStateNode.execute(frame);
+        ExceptionState savedExceptionState = null;
         ExceptionInfo exceptionInfo = null;
         if (gen.isActive(frame, finallyFlag)) {
             exceptionInfo = gen.getActiveException(frame, activeExceptionIndex).exc;
@@ -79,23 +76,35 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 getBody().executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
+                exceptionProfile.enter();
                 PBaseException caughtException = e.reifyAndGetPythonException(frame);
                 LazyTraceback caughtTraceback = caughtException.getTraceback();
+                tryChainPreexistingException(frame, caughtException);
                 exceptionInfo = new ExceptionInfo(caughtException, caughtTraceback);
                 gen.setActiveException(frame, activeExceptionIndex, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
             }
             gen.setActive(frame, finallyFlag, true);
         }
         if (exceptionInfo != null) {
+            savedExceptionState = saveExceptionState(frame);
             SetCaughtExceptionNode.execute(frame, exceptionInfo);
         }
-        executeFinalBody(frame);
-        ExceptionState activeException = gen.getActiveException(frame, activeExceptionIndex);
-        reset(frame);
-        if (activeException != null) {
-            throw activeException.exc.exception.getExceptionForReraise(activeException.exc.traceback);
+        try {
+            executeFinalBody(frame);
+        } catch (PException handlerException) {
+            if (exceptionInfo != null) {
+                chainExceptions(handlerException.getExceptionObject(), exceptionInfo.exception);
+            }
+            throw handlerException;
+        } finally {
+            if (exceptionInfo != null) {
+                restoreExceptionState(frame, savedExceptionState);
+            }
         }
-        ensureRestoreExceptionState().execute(frame, savedExceptionState);
+        reset(frame);
+        if (exceptionInfo != null) {
+            throw exceptionInfo.exception.getExceptionForReraise(exceptionInfo.traceback);
+        }
     }
 
     private void executeFinalBody(VirtualFrame frame) {
@@ -108,13 +117,5 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     public void reset(VirtualFrame frame) {
         gen.setActive(frame, finallyFlag, false);
         gen.setActiveException(frame, activeExceptionIndex, null);
-    }
-
-    private RestoreExceptionStateNode ensureRestoreExceptionState() {
-        if (restoreExceptionStateNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            restoreExceptionStateNode = insert(RestoreExceptionStateNode.create());
-        }
-        return restoreExceptionStateNode;
     }
 }

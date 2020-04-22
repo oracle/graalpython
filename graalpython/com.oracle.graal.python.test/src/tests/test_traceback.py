@@ -543,6 +543,29 @@ def test_generator_throw_unstarted():
     )
 
 
+def test_chained():
+    def foo():
+        try:
+            raise RuntimeError
+        except:
+            raise OverflowError
+
+    def reraise_chained():
+        try:
+            foo()
+        except Exception as e:
+            context = e.__context__
+        raise context
+
+    assert_has_traceback(
+        reraise_chained,
+        [
+            ('reraise_chained', 'raise context'),
+            ('foo', 'raise RuntimeError'),
+        ]
+    )
+
+
 def test_top_level_exception_handler():
     import subprocess
     from textwrap import dedent
