@@ -30,13 +30,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
-import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -136,21 +135,11 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object next(PBaseSetIterator self) {
-            Iterator<Object> iterator = self.getIterator();
-            if (hasNext(iterator)) {
-                return getNext(iterator);
+            HashingStorageIterator<Object> iterator = self.getIterator();
+            if (iterator.hasNext()) {
+                return iterator.next();
             }
             throw raise(StopIteration);
-        }
-
-        @TruffleBoundary
-        private static Object getNext(Iterator<Object> iterator) {
-            return iterator.next();
-        }
-
-        @TruffleBoundary
-        private static boolean hasNext(Iterator<Object> iterator) {
-            return iterator.hasNext();
         }
 
         @Specialization(guards = "self.isPSequence()")

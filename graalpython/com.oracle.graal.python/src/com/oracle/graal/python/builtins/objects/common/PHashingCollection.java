@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
@@ -56,15 +57,15 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
 
     public abstract int size();
 
-    public Iterable<Object> items() {
+    public HashingStorageIterable<Object> items() {
         return HashingStorageLibrary.getUncached().values(getDictStorage());
     }
 
-    public Iterable<Object> keys() {
+    public HashingStorageIterable<Object> keys() {
         return HashingStorageLibrary.getUncached().keys(getDictStorage());
     }
 
-    public Iterable<DictEntry> entries() {
+    public HashingStorageIterable<DictEntry> entries() {
         return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
 }

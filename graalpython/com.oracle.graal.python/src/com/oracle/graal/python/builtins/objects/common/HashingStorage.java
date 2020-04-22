@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.InjectIntoNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -580,7 +581,7 @@ public abstract class HashingStorage {
     }
 
     private static final class EntriesIterator implements Iterator<DictEntry> {
-        private final HashingStorageIterable.BoundaryIterator<Object> keysIterator;
+        private final HashingStorageIterator<Object> keysIterator;
         private final HashingStorage self;
         private final HashingStorageLibrary lib;
 

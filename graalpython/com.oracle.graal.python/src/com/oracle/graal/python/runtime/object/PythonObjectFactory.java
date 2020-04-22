@@ -30,7 +30,6 @@ import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
-import java.util.Iterator;
 import java.util.concurrent.Semaphore;
 
 import org.graalvm.collections.EconomicMap;
@@ -48,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -706,11 +706,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PArrayIterator(PythonBuiltinClassType.PArrayIterator, array));
     }
 
-    public PBaseSetIterator createBaseSetIterator(PBaseSet set, Iterator<Object> iterator) {
+    public PBaseSetIterator createBaseSetIterator(PBaseSet set, HashingStorageIterator<Object> iterator) {
         return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, set, iterator));
     }
 
-    public PDictView.PDictItemsIterator createDictItemsIterator(Iterator<DictEntry> iterator) {
+    public PDictView.PDictItemsIterator createDictItemsIterator(HashingStorageIterator<DictEntry> iterator) {
         return trace(new PDictView.PDictItemsIterator(PythonBuiltinClassType.PDictItemsIterator, iterator));
     }
 
@@ -718,7 +718,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDictView.PDictKeysIterator(PythonBuiltinClassType.PDictKeysIterator, dict));
     }
 
-    public PDictView.PDictValuesIterator createDictValuesIterator(Iterator<Object> iterator) {
+    public PDictView.PDictValuesIterator createDictValuesIterator(HashingStorageIterator<Object> iterator) {
         return trace(new PDictView.PDictValuesIterator(PythonBuiltinClassType.PDictValuesIterator, iterator));
     }
 

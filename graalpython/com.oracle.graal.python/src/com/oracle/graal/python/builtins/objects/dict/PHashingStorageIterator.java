@@ -25,23 +25,22 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import java.util.Iterator;
-
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public abstract class PJavaIteratorIterator<T> extends PythonBuiltinObject {
+public abstract class PHashingStorageIterator<T> extends PythonBuiltinObject {
 
-    private final Iterator<T> iterator;
+    private final HashingStorageIterator<T> iterator;
     private int index;
 
-    public PJavaIteratorIterator(LazyPythonClass clazz, Iterator<T> iterator) {
+    public PHashingStorageIterator(LazyPythonClass clazz, HashingStorageIterator<T> iterator) {
         super(clazz);
         this.iterator = iterator;
     }
 
-    public Iterator<T> getIterator() {
+    public HashingStorageIterator<T> getIterator() {
         return iterator;
     }
 
