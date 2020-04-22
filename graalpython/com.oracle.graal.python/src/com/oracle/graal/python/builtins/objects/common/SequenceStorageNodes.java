@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.InsertItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.IsAssignCompatibleNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.IsDataTypeCompatibleNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ItemIndexNodeGen;
@@ -3678,6 +3679,41 @@ public abstract class SequenceStorageNodes {
             return s instanceof ObjectSequenceStorage;
         }
 
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class InsertItemNode extends Node {
+        public final SequenceStorage execute(SequenceStorage storage, int index, Object value) {
+            return execute(storage, index, value, true);
+        }
+
+        protected abstract SequenceStorage execute(SequenceStorage storage, int index, Object value, boolean recursive);
+
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"storage.getClass() == cachedClass"})
+        protected SequenceStorage doStorage(SequenceStorage storage, int index, Object value, boolean recursive,
+                        @Cached InsertItemNode recursiveNode,
+                        @Cached("storage.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            try {
+                cachedClass.cast(storage).insertItem(index, value);
+                return storage;
+            } catch (SequenceStoreException e) {
+                if (!recursive) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException();
+                }
+                SequenceStorage newStorage = cachedClass.cast(storage).generalizeFor(value, null);
+                return recursiveNode.execute(newStorage, index, value, false);
+            }
+        }
+
+        public static InsertItemNode create() {
+            return InsertItemNodeGen.create();
+        }
+
+        public static InsertItemNode getUncached() {
+            return InsertItemNodeGen.getUncached();
+        }
     }
 
     public abstract static class CreateStorageFromIteratorHelper<T extends Node> {

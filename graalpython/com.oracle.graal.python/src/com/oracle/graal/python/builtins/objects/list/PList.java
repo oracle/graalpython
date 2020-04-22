@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -82,21 +81,6 @@ public final class PList extends PMutableSequence {
 
     public final void reverse() {
         store.reverse();
-    }
-
-    public final void insert(int index, Object value) {
-        try {
-            store.insertItem(index, value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value, null);
-
-            try {
-                store.insertItem(index, value);
-            } catch (SequenceStoreException e1) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException();
-            }
-        }
     }
 
     @Ignore
