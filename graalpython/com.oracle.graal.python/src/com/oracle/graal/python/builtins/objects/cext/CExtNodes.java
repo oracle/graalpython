@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -425,6 +426,8 @@ public abstract class CExtNodes {
                 // this will happen just once per context and special singleton
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 nativeWrapper = new PythonObjectNativeWrapper(object);
+                // this should keep the native wrapper alive forever
+                nativeWrapper.increaseRefCount();
                 context.setSingletonNativeWrapper(object, nativeWrapper);
             }
             return nativeWrapper;
@@ -653,6 +656,8 @@ public abstract class CExtNodes {
                 // this will happen just once per context and special singleton
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 nativeWrapper = new PythonObjectNativeWrapper(object);
+                // this should keep the native wrapper alive forever
+                nativeWrapper.increaseRefCount();
                 context.setSingletonNativeWrapper(object, nativeWrapper);
             } else {
                 nativeWrapper.increaseRefCount();
@@ -664,6 +669,161 @@ public abstract class CExtNodes {
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonClass")
+        static Object doPythonClassUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonManagedClass object,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
+        }
+
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, limit = "3")
+        static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
+            assert object != PNone.NO_VALUE;
+            return PythonObjectNativeWrapper.wrapNewRef(CompilerDirectives.castExact(object, cachedClass), noWrapperProfile);
+        }
+
+        @Specialization(guards = {"!isClass(object)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
+        static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+            assert object != PNone.NO_VALUE;
+            return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
+        }
+
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
+        static Object doForeignObject(CExtContext cextContext, TruffleObject object) {
+            // this will always be a new wrapper; it's implicitly always a new reference in any case
+            return ToSulongNode.doForeignObject(cextContext, object);
+        }
+
+        @Specialization(guards = "isFallback(object)")
+        static Object run(CExtContext cextContext, Object object) {
+            return ToSulongNode.run(cextContext, object);
+        }
+
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
+            return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
+        }
+
+        static boolean isFallback(Object object) {
+            return ToSulongNode.isFallback(object);
+        }
+
+        protected static boolean isNaN(double d) {
+            return Double.isNaN(d);
+        }
+    }
+
+    /**
+     * Same as {@link ToNewRefNode} but does not create new references for
+     * {@link PythonAbstractNativeObject}.<br/>
+     * This node should only be used to convert arguments for a native call. It will increase the
+     * ref count of all {@link PythonNativeWrapper} (and subclasses) (but not if they are newly
+     * created since the ref count is already one in this case). But it does not increase the ref
+     * count on {@link PythonAbstractNativeObject}.
+     * 
+     * The reason for this behavior is that after the native function returns, one can decrease the
+     * ref count by one and therefore release any allocated handles that would cause a memory leak.
+     * This is not necessary for {@link PythonAbstractNativeObject} since they are managed by a weak
+     * reference and thus we save certainly expensive access to the native {@code ob_refcnt} member.
+     */
+    @GenerateUncached
+    @ImportStatic({PGuards.class, CApiGuards.class})
+    public abstract static class ToBorrowedRefNode extends CExtToNativeNode {
+
+        public final Object executeInt(int i) {
+            return executeInt(CExtContext.LAZY_CONTEXT, i);
+        }
+
+        public final Object executeLong(long l) {
+            return executeLong(CExtContext.LAZY_CONTEXT, l);
+        }
+
+        public abstract Object executeInt(CExtContext cExtContext, int i);
+
+        public abstract Object executeLong(CExtContext cExtContext, long l);
+
+        @Specialization
+        static Object doString(CExtContext cextContext, String str,
+                        @Cached PythonObjectFactory factory,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+            return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
+        }
+
+        @Specialization
+        static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            return ToNewRefNode.doBoolean(cextContext, b, contextRef, profile);
+        }
+
+        @Specialization(guards = "isSmallInteger(i)")
+        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return ToNewRefNode.doIntegerSmall(cextContext, i, contextRef);
+        }
+
+        @Specialization(guards = "isSmallLong(l)")
+        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return ToNewRefNode.doLongSmall(cextContext, l, contextRef);
+        }
+
+        @Specialization(replaces = "doIntegerSmall")
+        static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return ToNewRefNode.doInteger(cextContext, i, contextRef);
+        }
+
+        @Specialization(replaces = "doLongSmall")
+        static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return ToNewRefNode.doLong(cextContext, l, contextRef);
+        }
+
+        @Specialization(guards = "!isNaN(d)")
+        static Object doDouble(CExtContext cextContext, double d) {
+            return ToSulongNode.doDouble(cextContext, d);
+        }
+
+        @Specialization(guards = "isNaN(d)")
+        static Object doDouble(CExtContext cextContext, double d,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
+            return ToNewRefNode.doDouble(cextContext, d, contextRef, noWrapperProfile);
+        }
+
+        @Specialization
+        static Object doNativeObject(CExtContext cextContext, PythonAbstractNativeObject nativeObject) {
+            return ToSulongNode.doNativeObject(cextContext, nativeObject);
+        }
+
+        @Specialization
+        static Object doNativeNull(CExtContext cextContext, PythonNativeNull object) {
+            return ToSulongNode.doNativeNull(cextContext, object);
+        }
+
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return doSingleton(cextContext, cachedObject, contextRef);
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        static Object doSingleton(CExtContext cextContext, PythonAbstractObject object,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return ToNewRefNode.doSingleton(cextContext, object, contextRef);
+        }
+
+        @Specialization(guards = "object == cachedObject", limit = "3")
+        static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
+                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
+                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+            wrapper.increaseRefCount();
             return wrapper;
         }
 
@@ -1356,28 +1516,28 @@ public abstract class CExtNodes {
     public abstract static class AllToSulongNode extends ConvertArgsToSulongNode {
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == argsOffset"})
-        void cached0(Object[] args, int argsOffset, Object[] dest, int destOffset) {
+        static void cached0(Object[] args, int argsOffset, Object[] dest, int destOffset) {
         }
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 1)"})
-        void cached1(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1) {
+        static void cached1(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
         }
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 2)"})
-        void cached2(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1,
-                        @Cached("create()") ToSulongNode toSulongNode2) {
+        static void cached2(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode2) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
             dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
         }
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void cached3(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1,
-                        @Cached("create()") ToSulongNode toSulongNode2,
-                        @Cached("create()") ToSulongNode toSulongNode3) {
+        static void cached3(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode2,
+                        @Cached ToBorrowedRefNode toSulongNode3) {
             dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
             dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
             dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
@@ -1385,17 +1545,17 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"args.length == cachedLength", "isLeArgsOffsetPlus(cachedLength, argsOffset, 8)"}, limit = "1", replaces = {"cached0", "cached1", "cached2", "cached3"})
         @ExplodeLoop
-        void cachedLoop(Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void cachedLoop(Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached("args.length") int cachedLength,
-                        @Cached("create()") ToSulongNode toSulongNode) {
+                        @Cached ToBorrowedRefNode toSulongNode) {
             for (int i = 0; i < cachedLength - argsOffset; i++) {
                 dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
             }
         }
 
         @Specialization(replaces = {"cached0", "cached1", "cached2", "cached3", "cachedLoop"})
-        void uncached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode) {
+        static void uncached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode) {
             int len = args.length;
             for (int i = 0; i < len - argsOffset; i++) {
                 dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
@@ -1463,15 +1623,15 @@ public abstract class CExtNodes {
     public abstract static class FastCallArgsToSulongNode extends ConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1) {
-            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
             dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, "invalid arguments for fastcall method (expected 3 but got %s)", args.length - argsOffset);
         }
@@ -1488,17 +1648,17 @@ public abstract class CExtNodes {
     public abstract static class FastCallWithKeywordsArgsToSulongNode extends ConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 4)"})
-        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1,
-                        @Cached("create()") ToSulongNode toSulongNode4) {
-            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode4) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
             dest[destOffset + 1] = new PySequenceArrayWrapper(args[argsOffset + 1], Long.BYTES);
             dest[destOffset + 2] = args[argsOffset + 2];
             dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
         }
 
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 4)"})
-        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, "invalid arguments for fastcall_with_keywords method (expected 4 but got %s)", args.length - argsOffset);
         }
@@ -1515,14 +1675,14 @@ public abstract class CExtNodes {
     public abstract static class BinaryFirstToSulongNode extends ConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 2)"})
-        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1) {
-            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
         }
 
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 2)"})
-        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, "invalid arguments for allocfunc (expected 2 but got %s)", args.length - argsOffset);
         }
@@ -1539,16 +1699,16 @@ public abstract class CExtNodes {
     public abstract static class TernaryFirstThirdToSulongNode extends ConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1,
-                        @Cached("create()") ToSulongNode toSulongNode3) {
-            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode3) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
         }
 
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
         }
@@ -1564,16 +1724,16 @@ public abstract class CExtNodes {
     public abstract static class TernaryFirstSecondToSulongNode extends ConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached("create()") ToSulongNode toSulongNode1,
-                        @Cached("create()") ToSulongNode toSulongNode2) {
-            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+        static void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached ToBorrowedRefNode toSulongNode1,
+                        @Cached ToBorrowedRefNode toSulongNode2) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset]);
             dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
         @Specialization(guards = {"!isArgsOffsetPlus(args.length, argsOffset, 3)"})
-        void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
+        static void doError(Object[] args, int argsOffset, @SuppressWarnings("unused") Object[] dest, @SuppressWarnings("unused") int destOffset,
                         @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
         }
@@ -2769,11 +2929,25 @@ public abstract class CExtNodes {
     public abstract static class SubRefCntNode extends PNodeWithContext {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SubRefCntNode.class);
 
+        public final Object dec(Object object) {
+            return execute(object, 1);
+        }
+
         public abstract Object execute(Object object, long value);
 
         @Specialization
-        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value) {
-            nativeWrapper.setRefCount(nativeWrapper.getRefCount() - value);
+        static Object doNativeWrapper(PythonNativeWrapper nativeWrapper, long value,
+                        @Cached FreeNode freeNode,
+                        @Cached BranchProfile negativeProfile) {
+            long refCount = nativeWrapper.getRefCount() - value;
+            nativeWrapper.setRefCount(refCount);
+            if (refCount == 0) {
+                // 'freeNode' acts as a branch profile
+                freeNode.execute(nativeWrapper);
+            } else if (refCount < 0) {
+                negativeProfile.enter();
+                LOGGER.severe(() -> "native wrapper has negative ref count: " + nativeWrapper);
+            }
             return nativeWrapper;
         }
 
@@ -2802,9 +2976,11 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(nativeWrapper)")
         static void doPythonAbstractObject(PythonAbstractObject delegate, PythonNativeWrapper nativeWrapper) {
+            // For non-temporary wrappers (all wrappers that need to preserve identity):
             // If this assertion fails, it indicates that the native code still uses a free'd native
             // wrapper.
-            assert delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
+            // TODO(fa): explicitly mark native wrappers to be identity preserving
+            assert !(nativeWrapper instanceof PythonObjectNativeWrapper) || delegate.getNativeWrapper() == nativeWrapper : "inconsistent native wrappers";
             delegate.clearNativeWrapper();
         }
 

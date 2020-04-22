@@ -170,7 +170,7 @@ public abstract class PythonAbstractObject implements TruffleObject, Comparable<
     public final void clearNativeWrapper() {
         // The null check is important because it might be that we actually never got a to-native
         // message but still modified the reference count.
-        if (nativeWrapper.getHandleValidAssumption() != null) {
+        if (nativeWrapper != null && nativeWrapper.getHandleValidAssumption() != null) {
             nativeWrapper.getHandleValidAssumption().invalidate("releasing handle for native wrapper");
         }
         nativeWrapper = null;

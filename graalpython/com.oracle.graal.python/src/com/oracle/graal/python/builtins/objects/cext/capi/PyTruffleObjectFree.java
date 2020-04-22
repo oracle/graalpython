@@ -84,7 +84,7 @@ public class PyTruffleObjectFree implements TruffleObject {
 
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
-    abstract static class FreeNode extends Node {
+    public abstract static class FreeNode extends Node {
 
         public abstract int execute(Object pointerObject);
 
@@ -94,6 +94,7 @@ public class PyTruffleObjectFree implements TruffleObject {
                         @Cached ClearNativeWrapperNode clearNativeWrapperNode,
                         @Cached PCallCapiFunction callReleaseHandleNode) {
             if (nativeWrapper.getRefCount() > 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("deallocating native object with refcnt > 0");
             }
 
@@ -101,7 +102,28 @@ public class PyTruffleObjectFree implements TruffleObject {
             Object delegate = lib.getDelegate(nativeWrapper);
             clearNativeWrapperNode.execute(delegate, nativeWrapper);
 
-            // If it already went to native, also release the handle or free the native memory.
+            ReleaseHandleNode.doNativeWrapper(nativeWrapper, lib, callReleaseHandleNode);
+            return 1;
+        }
+
+        @Specialization(guards = "!isNativeWrapper(object)")
+        static int doOther(@SuppressWarnings("unused") Object object) {
+            // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
+            return 0;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ReleaseHandleNode extends Node {
+
+        public abstract void execute(PythonNativeWrapper nativeWrapper);
+
+        @Specialization(limit = "3")
+        static void doNativeWrapper(PythonNativeWrapper nativeWrapper,
+                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib,
+                        @Cached PCallCapiFunction callReleaseHandleNode) {
+
+            // If wrapper already received toNative, release the handle or free the native memory.
             if (lib.isNative(nativeWrapper)) {
                 // We do not call 'truffle_release_handle' directly because we still want to support
                 // native wrappers that have a real native pointer. 'PyTruffle_Free' does the
@@ -112,13 +134,6 @@ public class PyTruffleObjectFree implements TruffleObject {
                 }
                 callReleaseHandleNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_FREE, nativePointer);
             }
-            return 1;
-        }
-
-        @Specialization(guards = "!isNativeWrapper(object)")
-        static int doOther(@SuppressWarnings("unused") Object object) {
-            // It's a pointer to a managed object but none of our wrappers, so we just ignore it.
-            return 0;
         }
     }
 }
