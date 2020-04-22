@@ -174,7 +174,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary hlib) { // limit 2: string only or mixed dict
+                    @CachedLibrary(limit = "2") HashingStorageLibrary hlib) { // limit 2: string
+                                                                              // only or mixed dict
         Object value = hlib.getItem(getDictStorageNode.execute(lib.getDict(object)), key);
         if (value == null) {
             return PNone.NO_VALUE;
