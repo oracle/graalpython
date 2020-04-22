@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
+import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -728,6 +729,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PEnumerate createEnumerate(LazyPythonClass cls, Object iterator, long start) {
         return trace(new PEnumerate(cls, iterator, start));
+    }
+
+    public PMap createMap(LazyPythonClass cls) {
+        return trace(new PMap(cls));
     }
 
     public PZip createZip(LazyPythonClass cls, Object[] iterables) {
