@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@
 package com.oracle.graal.python.nodes.interop;
 
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -54,10 +55,17 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 public abstract class PForeignToPTypeNode extends Node {
 
-    protected PForeignToPTypeNode() {
+    public abstract Object executeConvert(Object value);
+
+    protected static boolean isOtherClass(Class<?> clazz) {
+        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class);
     }
 
-    public abstract Object executeConvert(Object value);
+    @Specialization(guards = {"value.getClass() == cachedClass", "isOtherClass(cachedClass)"}, limit = "1")
+    protected static Object fromObjectCached(Object value,
+                    @Cached("value.getClass()") @SuppressWarnings("unused") Class<?> cachedClass) {
+        return value;
+    }
 
     @Specialization
     protected static int fromByte(byte value) {

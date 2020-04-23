@@ -92,21 +92,7 @@ public final class PDict extends PHashingCollection {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        StringBuilder buf = new StringBuilder("{");
-        HashingStorageLibrary lib = HashingStorageLibrary.getUncached();
-        int length = lib.length(dictStorage);
-        int i = 0;
-
-        for (HashingStorage.DictEntry entry : lib.entries(dictStorage)) {
-            buf.append(entry.getKey() + ": " + entry.getValue());
-            if (i < length - 1) {
-                buf.append(", ");
-            }
-            i++;
-        }
-
-        buf.append("}");
-        return buf.toString();
+        return "PDict<" + dictStorage.getClass().getSimpleName() + ">";
     }
 
     @Override
