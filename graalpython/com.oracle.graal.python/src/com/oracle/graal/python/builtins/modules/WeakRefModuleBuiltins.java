@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -86,17 +86,19 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         return WeakRefModuleBuiltinsFactory.getFactories();
     }
 
-    private static class WeakrefCallbackAction implements AsyncHandler.AsyncAction {
+    private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
         private final WeakRefStorage reference;
 
         public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
             this.reference = reference;
         }
 
+        @Override
         public Object callable() {
             return reference.getCallback();
         }
 
+        @Override
         public Object[] arguments() {
             return new Object[]{reference.getRef()};
         }
@@ -147,8 +149,8 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PReferenceType refType(LazyPythonClass cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @Cached("create()") GetLazyClassNode getClassNode,
-                        @Cached("create()") IsBuiltinClassProfile profile) {
+                        @Cached GetLazyClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile profile) {
             Object actualCallback = callback instanceof PNone ? null : callback;
             LazyPythonClass clazz = getClassNode.execute(pythonObject);
 
@@ -163,7 +165,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getTpWeaklistoffsetNode = insert(GetTypeMemberNode.create());
                 }
-                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMemberNames.TP_WEAKLISTOFFSET);
+                Object tpWeaklistoffset = getTpWeaklistoffsetNode.execute(clazz, NativeMember.TP_WEAKLISTOFFSET);
                 if (tpWeaklistoffset != PNone.NO_VALUE) {
                     return factory().createReferenceType(cls, pythonObject, actualCallback, getWeakReferenceQueue());
                 }
@@ -176,15 +178,15 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
 
+        @SuppressWarnings("unchecked")
         private ReferenceQueue<Object> getWeakReferenceQueue() {
             Object queueObject = readQueue.execute(getCore().lookupType(PythonBuiltinClassType.PReferenceType), weakRefQueueKey);
             if (queueObject instanceof ReferenceQueue) {
-                @SuppressWarnings("unchecked")
                 ReferenceQueue<Object> queue = (ReferenceQueue<Object>) queueObject;
                 return queue;
             } else {
                 if (getContext().getCore().isInitialized()) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("the weak reference queue was modified!");
                 } else {
                     // returning a null reference queue is fine, it just means

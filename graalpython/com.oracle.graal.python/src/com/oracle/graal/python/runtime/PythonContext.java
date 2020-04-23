@@ -47,8 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Consumer;
+import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -56,10 +56,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemInteropNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -87,15 +88,18 @@ import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
 import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.options.OptionValues;
+import org.graalvm.options.OptionKey;
 
 public final class PythonContext {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
 
     private static final class PythonThreadState {
 
@@ -207,13 +211,11 @@ public final class PythonContext {
     /* A lock for interop calls when this context is used by multiple threads. */
     private ReentrantLock interopLock;
 
-    @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
-
     /** The thread-local state object. */
     private ThreadLocal<PThreadState> customThreadState;
 
-    /* native pointers for context-insensitive singletons like PNone.NONE */
-    private final Object[] singletonNativePtrs = new Object[PythonLanguage.getNumberOfSpecialSingletons()];
+    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
+    @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
 
     // The context-local resources
     private final PosixResources resources;
@@ -223,22 +225,19 @@ public final class PythonContext {
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
+    @CompilationFinal(dimensions = 1) private Object[] optionValues;
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.resources = new PosixResources();
-        this.handler = new AsyncHandler(language);
-        if (env == null) {
-            this.in = System.in;
-            this.out = System.out;
-            this.err = System.err;
-        } else {
-            this.resources.setEnv(env);
-            this.in = env.in();
-            this.out = env.out();
-            this.err = env.err();
-        }
+        this.handler = new AsyncHandler(this);
+        this.optionValues = PythonOptions.createOptionValuesStorage(env);
+        this.resources.setEnv(env);
+        this.in = env.in();
+        this.out = env.out();
+        this.err = env.err();
     }
 
     public ThreadGroup getThreadGroup() {
@@ -259,8 +258,27 @@ public final class PythonContext {
         return globalId.incrementAndGet();
     }
 
-    public OptionValues getOptions() {
-        return getEnv().getOptions();
+    public <T> T getOption(OptionKey<T> key) {
+        if (CompilerDirectives.inInterpreter()) {
+            return getEnv().getOptions().get(key);
+        } else {
+            return getOptionUnrolling(key);
+        }
+    }
+
+    @ExplodeLoop
+    @SuppressWarnings("unchecked")
+    private <T> T getOptionUnrolling(OptionKey<T> key) {
+        OptionKey<?>[] optionKeys = PythonOptions.getOptionKeys();
+        CompilerAsserts.partialEvaluationConstant(optionKeys);
+        for (int i = 0; i < optionKeys.length; i++) {
+            CompilerAsserts.partialEvaluationConstant(optionKeys[i]);
+            if (optionKeys[i] == key) {
+                return (T) optionValues[i];
+            }
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new IllegalStateException("Using Python options with a non-Python option key");
     }
 
     public PythonLanguage getLanguage() {
@@ -294,6 +312,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        optionValues = PythonOptions.createOptionValuesStorage(newEnv);
     }
 
     /**
@@ -385,7 +404,7 @@ public final class PythonContext {
      * run-time package paths.
      */
     private void patchPackagePaths(String from, String to) {
-        for (Object v : sysModules.getDictStorage().values()) {
+        for (Object v : HashingStorageLibrary.getUncached().values(sysModules.getDictStorage())) {
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
@@ -435,6 +454,7 @@ public final class PythonContext {
         try {
             PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
         } catch (UnsupportedMessageException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("This cannot happen - the main module doesn't accept a __dict__", e);
         }
 
@@ -613,15 +633,7 @@ public final class PythonContext {
     }
 
     private static void writeWarning(String warning) {
-        PythonLanguage.getLogger().warning(warning);
-    }
-
-    public HashingStorage.Equivalence getSlowPathEquivalence() {
-        if (slowPathEquivalence == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            slowPathEquivalence = new HashingStorage.SlowPathEquivalence();
-        }
-        return slowPathEquivalence;
+        LOGGER.warning(warning);
     }
 
     @TruffleBoundary
@@ -652,14 +664,14 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void shutdownThreads() {
-        PythonLanguage.getLogger().fine("shutting down threads");
+        LOGGER.fine("shutting down threads");
         PDict importedModules = getImportedModules();
         HashingStorage dictStorage = GetDictStorageNode.getUncached().execute(importedModules);
-        Object value = GetItemInteropNode.getUncached().executeWithGlobalState(dictStorage, "threading");
+        Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, "threading");
         if (value != null) {
             Object attrShutdown = ReadAttributeFromObjectNode.getUncached().execute(value, SpecialMethodNames.SHUTDOWN);
             if (attrShutdown == PNone.NO_VALUE) {
-                PythonLanguage.getLogger().fine("threading module has no member " + SpecialMethodNames.SHUTDOWN);
+                LOGGER.fine("threading module has no member " + SpecialMethodNames.SHUTDOWN);
                 return;
             }
             try {
@@ -668,7 +680,7 @@ public final class PythonContext {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
                     ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.getOption(this, PythonOptions.WithJavaStacktrace)) {
+                    if (getOption(PythonOptions.WithJavaStacktrace)) {
                         e.printStackTrace(new PrintWriter(getStandardErr()));
                     }
                 }
@@ -676,9 +688,9 @@ public final class PythonContext {
             }
         } else {
             // threading was not imported; this is
-            PythonLanguage.getLogger().finest("threading module was not imported");
+            LOGGER.finest("threading module was not imported");
         }
-        PythonLanguage.getLogger().fine("successfully shut down all threads");
+        LOGGER.fine("successfully shut down all threads");
 
         if (!singleThreaded.isValid()) {
             // collect list of threads to join in synchronized block
@@ -697,12 +709,12 @@ public final class PythonContext {
                 for (WeakReference<Thread> threadRef : threadList) {
                     Thread thread = threadRef.get();
                     if (thread != null) {
-                        PythonLanguage.getLogger().finest("joining thread " + thread);
+                        LOGGER.finest("joining thread " + thread);
                         thread.join();
                     }
                 }
             } catch (InterruptedException e) {
-                PythonLanguage.getLogger().finest("got interrupt while joining threads");
+                LOGGER.finest("got interrupt while joining threads");
             }
         }
     }
@@ -750,6 +762,10 @@ public final class PythonContext {
         handler.triggerAsyncActions(frame, location);
     }
 
+    public AsyncHandler getAsyncHandler() {
+        return handler;
+    }
+
     public void registerAsyncAction(Supplier<AsyncAction> actionSupplier) {
         handler.registerAction(actionSupplier);
     }
@@ -764,14 +780,14 @@ public final class PythonContext {
         return assumption;
     }
 
-    public void setSingletonNativePtr(PythonAbstractObject obj, Object nativePtr) {
-        assert PythonLanguage.getSingletonNativePtrIdx(obj) != -1 : "invalid special singleton object";
-        assert singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] == null;
-        singletonNativePtrs[PythonLanguage.getSingletonNativePtrIdx(obj)] = nativePtr;
+    public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonNativeWrapper nativePtr) {
+        assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
+        assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
+        singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
     }
 
-    public Object getSingletonNativePtr(PythonAbstractObject obj) {
-        int singletonNativePtrIdx = PythonLanguage.getSingletonNativePtrIdx(obj);
+    public PythonNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
+        int singletonNativePtrIdx = PythonLanguage.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
             return singletonNativePtrs[singletonNativePtrIdx];
         }
@@ -836,7 +852,7 @@ public final class PythonContext {
             TruffleFile absolutePath = path.getAbsoluteFile();
             return absolutePath.startsWith(coreHomePath);
         }
-        PythonLanguage.getLogger().log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
+        LOGGER.log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
         return false;
     }
 

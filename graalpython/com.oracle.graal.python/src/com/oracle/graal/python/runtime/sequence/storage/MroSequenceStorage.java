@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import java.util.Map;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -67,24 +68,28 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
      * These assumptions will be invalidated whenever the value of the given slot changes. All
      * assumptions will be invalidated if the mro changes.
      */
-    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions = new HashMap<>();
+    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions;
 
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] values;
 
+    @TruffleBoundary
     public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
         this.className = className;
         this.values = elements;
         this.capacity = elements.length;
         this.length = elements.length;
         this.lookupStableAssumption = new CyclicAssumption(className);
+        this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
+    @TruffleBoundary
     public MroSequenceStorage(String className, int capacity) {
         this.className = className;
         this.values = new PythonAbstractClass[capacity];
         this.capacity = capacity;
         this.length = 0;
         this.lookupStableAssumption = new CyclicAssumption(className);
+        this.attributesInMROFinalAssumptions = new HashMap<>();
     }
 
     @Override
@@ -297,6 +302,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public void lookupChanged() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
             for (Assumption assumption : list) {
                 assumption.invalidate();
@@ -306,6 +312,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     }
 
     public void lookupChanged(String msg) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
             for (Assumption assumption : list) {
                 assumption.invalidate();

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -112,14 +112,13 @@ def known_packages():
     @pip_package()
     def pytest(**kwargs):
         wcwidth(**kwargs)
-        importlib_metadata(**kwargs)
         pluggy(**kwargs)
         atomicwrites(**kwargs)
         more_itertools(**kwargs)
         attrs(**kwargs)
         packaging(**kwargs)
         py(**kwargs)
-        install_from_pypi("pytest==5.0.1", **kwargs)
+        install_from_pypi("pytest==5.1.0", **kwargs)
 
     @pip_package()
     def pytest_parallel(**kwargs):
@@ -156,18 +155,12 @@ def known_packages():
     @pip_package()
     def pluggy(**kwargs):
         zipp(**kwargs)
-        importlib_metadata(**kwargs)
-        install_from_pypi("pluggy==0.12.0", **kwargs)
+        install_from_pypi("pluggy==0.13.1", **kwargs)
 
     @pip_package()
     def zipp(**kwargs):
         setuptools_scm(**kwargs)
         install_from_pypi("zipp==0.5.0", **kwargs)
-
-    @pip_package()
-    def importlib_metadata(**kwargs):
-        zipp(**kwargs)
-        install_from_pypi("importlib-metadata==0.19", **kwargs)
 
     @pip_package()
     def wcwidth(**kwargs):

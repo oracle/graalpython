@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -40,6 +41,7 @@ public abstract class PImmutableSequence extends PSequence {
 
     @Override
     public void setSequenceStorage(SequenceStorage store) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -49,6 +51,7 @@ public abstract class PImmutableSequence extends PSequence {
      */
     @SuppressWarnings({"static-method", "unused"})
     public final void setItem(int idx, Object value) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 

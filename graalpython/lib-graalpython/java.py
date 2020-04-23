@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ import _frozen_importlib
 
 
 class JavaPackageLoader:
-    if sys.graal_python_jython_emulation_enabled:
+    if __graalpython__.jython_emulation_enabled:
         @staticmethod
         def is_java_package(name):
             try:
@@ -58,7 +58,7 @@ class JavaPackageLoader:
         def _make_getattr(modname):
             modname = modname + "."
             def __getattr__(key, default=None):
-                if sys.graal_python_host_import_enabled:
+                if __graalpython__.host_import_enabled:
                     loadname = modname + key
                     if JavaPackageLoader.is_java_package(loadname):
                         return JavaPackageLoader._create_module(loadname)
@@ -111,7 +111,7 @@ class JavaTypeLoader:
     def create_module(spec):
         pass
 
-    if sys.graal_python_jython_emulation_enabled:
+    if __graalpython__.jython_emulation_enabled:
         @staticmethod
         def exec_module(module):
             sys.modules[module.__name__] = type(module.__name__)
@@ -135,7 +135,7 @@ class JavaImportFinder:
         except KeyError:
             return False
 
-    if sys.graal_python_jython_emulation_enabled:
+    if __graalpython__.jython_emulation_enabled:
         def find_spec(self, fullname, path, target=None):
             # Because of how Jython allows you to import classes that have not
             # been loaded, yet, we need attempt to load types very eagerly.
@@ -143,7 +143,7 @@ class JavaImportFinder:
                 # the fullname is already a type, let's load it
                 return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
             else:
-                current_import_name = __jython_current_import__()
+                current_import_name = __graalpython__.current_import()
                 if current_import_name and self.is_type(current_import_name):
                     # We are currently handling an import that will lead to a
                     # Java type. The fullname is not a type itself, so it must
@@ -164,7 +164,7 @@ class JavaImportFinder:
                     return _frozen_importlib.ModuleSpec(fullname, JavaTypeLoader, is_package=False)
 
 
-if sys.graal_python_jython_emulation_enabled:
+if __graalpython__.jython_emulation_enabled:
     class JarImportLoader:
         def __init__(self, code):
             self.code = code
@@ -198,10 +198,5 @@ if sys.graal_python_jython_emulation_enabled:
 
 
 sys.meta_path.append(JavaImportFinder())
-if sys.graal_python_jython_emulation_enabled:
+if __graalpython__.jython_emulation_enabled:
     __getattr__ = JavaPackageLoader._make_getattr("java")
-else:
-    # remove __jython_current_import__ function from builtins module
-    import builtins
-    del builtins.__jython_current_import__
-    del builtins

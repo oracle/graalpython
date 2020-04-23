@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
@@ -13,12 +13,6 @@ extern "C" {
 #endif
 
 #ifndef Py_LIMITED_API
-/* (tfel): commented out, because we don't want to provide the _PyInitError
- * struct right now
- *
- * PyAPI_FUNC(_PyInitError) _PyImportZip_Init(void);
- */
-
 PyMODINIT_FUNC PyInit__imp(void);
 #endif /* !Py_LIMITED_API */
 PyAPI_FUNC(long) PyImport_GetMagicNumber(void);

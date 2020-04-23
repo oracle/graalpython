@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'lambda05'> SourceSection: [0,25]`def fn():↵  lam
                     BlockNode SourceSection: None
                     FunctionBodyNode SourceSection: [12,25]`lambda **z: 0`
                       ExpressionStatementNode SourceSection: [12,25]`lambda **z: 0`
-                        FunctionDefinitionNode Name: anonymous SourceSection: [12,25]`lambda **z: 0`
+                        FunctionDefinitionNode Name: <lambda> SourceSection: [12,25]`lambda **z: 0`
                           Arguments: None
                           KwArguments: None
                           Documentation: None
@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'lambda05'> SourceSection: [0,25]`def fn():↵  lam
                             FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12,25]`lambda **z: 0`
-                            Name: anonymous
+                            Name: <lambda>
                             Signature: varArgs=False, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
                               Keyword Names: None
                             CelVars: None

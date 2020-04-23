@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,9 +48,10 @@ PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAU
 PyObject * _PyLong_Zero;
 PyObject * _PyLong_One;
 
-UPCALL_ID(PyLong_AsPrimitive);
+typedef uint64_t (*as_primitive_t)(PyObject*, int32_t, size_t);
+UPCALL_TYPED_ID(PyLong_AsPrimitive, as_primitive_t);
 long PyLong_AsLong(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
+    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -58,13 +59,13 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(long));
+    long result = _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
 
 long long PyLong_AsLongLong(PyObject *obj) {
-    return as_long_long(obj);
+    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(long));
 }
 
 long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
@@ -82,7 +83,7 @@ unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long)-1;
     }
-    return (unsigned long) UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(unsigned long));
+    return (unsigned long) _jls_PyLong_AsPrimitive(obj, 0, sizeof(unsigned long));
 }
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
@@ -94,20 +95,21 @@ PyObject * PyLong_FromDouble(double n) {
 }
 
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t));
+    return _jls_PyLong_AsPrimitive(obj, 1, sizeof(Py_ssize_t));
 }
 
 size_t PyLong_AsSize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 0, sizeof(size_t));
+    return _jls_PyLong_AsPrimitive(obj, 0, sizeof(size_t));
 }
 
-UPCALL_ID(PyLong_FromLongLong);
+typedef PyObject* (*from_long_fun_t)(int64_t, int32_t);
+UPCALL_TYPED_ID(PyLong_FromLongLong, from_long_fun_t);
 PyObject * PyLong_FromLong(long n)  {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
+    return _jls_PyLong_FromLongLong(n, 1);
 }
 
 PyObject * PyLong_FromLongLong(long long n)  {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
+    return _jls_PyLong_FromLongLong(n, 1);
 }
 
 PyObject * PyLong_FromUnsignedLong(unsigned long n) {
@@ -115,12 +117,14 @@ PyObject * PyLong_FromUnsignedLong(unsigned long n) {
 }
 
 PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 0);
+    return _jls_PyLong_FromLongLong(n, 0);
 }
 
+typedef PyObject* (*fromVoidPtr_fun_t)(void*);
+UPCALL_TYPED_ID(PyLong_FromVoidPtr, fromVoidPtr_fun_t);
 PyObject * PyLong_FromVoidPtr(void *p) {
-	// directly do the upcall to avoid a cast to primitive
-    return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, p, 0);
+	// directly do the upcall to avoid a cast to primitive and reference counting
+    return _jls_PyLong_FromVoidPtr(p);
 }
 
 UPCALL_ID(PyLong_AsVoidPtr);
@@ -363,5 +367,19 @@ int _PyLong_AsByteArray(PyLongObject* v, unsigned char* bytes, size_t n, int lit
     PyErr_SetString(PyExc_OverflowError, "int too big to convert");
     return -1;
 
+}
+
+// Taken from CPython 3.8.1
+int _PyLong_AsInt(PyObject *obj) {
+    int overflow;
+    long result = PyLong_AsLongAndOverflow(obj, &overflow);
+    if (overflow || result > INT_MAX || result < INT_MIN) {
+        /* XXX: could be cute and give a different
+           message for overflow == -1 */
+        PyErr_SetString(PyExc_OverflowError,
+                        "Python int too large to convert to C int");
+        return -1;
+    }
+    return (int)result;
 }
 

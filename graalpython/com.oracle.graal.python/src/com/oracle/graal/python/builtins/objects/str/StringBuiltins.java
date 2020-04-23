@@ -66,7 +66,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -245,8 +246,9 @@ public final class StringBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
+        @SuppressWarnings("unused")
         boolean operator(String self, String other) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not be reached");
         }
     }
@@ -389,13 +391,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private Object doIt(CharSequence left, CharSequence right, ConditionProfile shortStringAppend) {
-            if (LazyString.UseLazyStrings) {
+            if (getContext().getOption(PythonOptions.LazyStrings)) {
                 int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
                 int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
                 int resultLength = leftLength + rightLength;
-                if (resultLength >= LazyString.MinLazyStringLength) {
+                Integer minLazyStringLength = getContext().getOption(PythonOptions.MinLazyStringLength);
+                if (resultLength >= minLazyStringLength) {
                     if (shortStringAppend.profile(leftLength == 1 || rightLength == 1)) {
-                        return factory().createString(LazyString.createCheckedShort(left, right, resultLength));
+                        return factory().createString(LazyString.createCheckedShort(left, right, resultLength, minLazyStringLength));
                     } else {
                         return factory().createString(LazyString.createChecked(left, right, resultLength));
                     }
@@ -509,8 +512,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         // the actual operation; will be overridden by subclasses
+        @SuppressWarnings("unused")
         protected boolean doIt(String text, String substr, int start, int stop) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not reach");
         }
 
@@ -529,7 +533,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         protected String getErrorMessage() {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not reach");
         }
 
@@ -707,13 +711,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         protected int find(String self, String findStr) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not be reached");
         }
 
         @SuppressWarnings("unused")
         protected int findWithBounds(String self, String str, int start, int end) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerAsserts.neverPartOfCompilation();
             throw new IllegalStateException("should not be reached");
         }
     }
@@ -792,10 +796,10 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "!isNoValue(to)")
-        PDict doString(VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
+        PDict doString(@SuppressWarnings("unused") VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
-                        @Cached SetItemNode setItemNode) {
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
 
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
@@ -803,12 +807,12 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, "the first two maketrans arguments must have equal length");
             }
 
-            PDict translation = factory().createDict();
-            HashingStorage storage = translation.getDictStorage();
+            HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
+            PDict translation = factory().createDict(storage);
             for (int i = 0; i < fromStr.length(); i++) {
                 int key = fromStr.charAt(i);
                 int value = toStr.charAt(i);
-                storage = setItemNode.execute(frame, storage, key, value);
+                storage = lib.setItem(storage, key, value);
             }
             translation.setDictStorage(storage);
 
@@ -822,13 +826,13 @@ public final class StringBuiltins extends PythonBuiltins {
         static PDict doDict(PDict from, Object to, Object z) {
             // TODO implement dict case; see CPython 'unicodeobject.c' function
             // 'unicode_maketrans_impl'
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("not yet implemented");
         }
 
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
-        PDict doDict(Object from, Object to, Object z) {
+        PDict doFail(Object from, Object to, Object z) {
             throw raise(PythonBuiltinClassType.TypeError, "if you give only one argument to maketrans it must be a dict");
         }
     }
@@ -1317,8 +1321,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = {"doStringString", "doStringNone"})
         static String doGeneric(Object self, Object chars,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castCharsNode) {
+                        @Cached CastToJavaStringCheckedNode castSelfNode) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "strip", self);
             if (PGuards.isPNone(chars)) {
                 return doStringNone(selfStr, PNone.NO_VALUE);
@@ -2178,6 +2181,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class CasefoldNode extends PythonUnaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         static String doString(String self) {
             // TODO(fa) implement properly using 'unicodedata_db' (see 'unicodeobject.c' function
             // 'unicode_casefold_impl')

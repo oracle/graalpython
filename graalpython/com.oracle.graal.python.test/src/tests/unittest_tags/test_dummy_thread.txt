@@ -8,7 +8,6 @@
 *LockTests.test_uncond_acquire_blocking
 *LockTests.test_uncond_acquire_return_val
 *LockTests.test_uncond_acquire_success
-*RLockTests.test_multiple_acquire
 *MiscTests.test_LockType
 *MiscTests.test_exit
 *MiscTests.test_ident
@@ -17,7 +16,7 @@
 *MiscTests.test_set_sentinel
 *MiscTests.test_stack_size_None
 *MiscTests.test_stack_size_not_None
-*ThreadTests.test_arg_passing
-*ThreadTests.test_args_not_tuple
+*RLockTests.test_multiple_acquire
+*ThreadTests.test_SystemExit
 *ThreadTests.test_kwargs_not_dict
 *ThreadTests.test_multi_thread_creation

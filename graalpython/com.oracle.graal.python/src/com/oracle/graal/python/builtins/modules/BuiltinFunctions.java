@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
@@ -58,12 +59,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTIN__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__DUMP_TRUFFLE_AST__;
-import static com.oracle.graal.python.nodes.BuiltinNames.__JYTHON_CURRENT_IMPORT__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
@@ -74,11 +73,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.util.List;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -90,11 +88,12 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -103,12 +102,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -124,8 +119,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -138,7 +131,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -153,7 +145,6 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -161,7 +152,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CoerceToStringNode;
@@ -197,8 +187,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -214,10 +202,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     @Override
+    public void initialize(PythonCore core) {
+        builtinConstants.put(__GRAALPYTHON__, core.lookupBuiltinModule(__GRAALPYTHON__));
+        super.initialize(core);
+    }
+
+    @Override
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.BUILTINS);
-        builtinsModule.setAttribute(__DEBUG__, !PythonOptions.getOption(core.getContext(), PythonOptions.PythonOptimizeFlag));
+        builtinsModule.setAttribute(__DEBUG__, !core.getContext().getOption(PythonOptions.PythonOptimizeFlag));
     }
 
     // abs(x)
@@ -404,7 +398,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * Added temporarily to skip translation/execution errors in unit testing
              */
 
-            if (object.equals(GraalPythonTranslationErrorNode.MESSAGE)) {
+            if (GraalPythonTranslationErrorNode.MESSAGE.equals(object)) {
                 return true;
             }
 
@@ -609,11 +603,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     try {
                         lib.setDict(builtins, builtinsDict);
                     } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreter();
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException(e);
                     }
                 }
-                setBuiltins.execute(frame, globals, BuiltinNames.__BUILTINS__, builtinsDict);
+                setBuiltins.execute(frame, globals, __BUILTINS__, builtinsDict);
             } else {
                 // This happens during context initialization
                 return;
@@ -711,7 +705,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize"})
+    @Builtin(name = COMPILE, minNumOfPositionalArgs = 3, parameterNames = {"source", "filename", "mode", "flags", "dont_inherit", "optimize", "_feature_version"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
@@ -807,7 +801,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public abstract Object executeWithArgs(VirtualFrame frame, Object primary, String name, Object defaultValue);
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, String name, PNone defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
@@ -816,7 +810,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
+        @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, String name, Object defaultValue,
                         @Cached("createBinaryProfile()") ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
@@ -1105,18 +1099,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return false;
         }
 
-        protected boolean emulateJython() {
-            if (emulateJython == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                emulateJython = PythonOptions.getFlag(getContext(), PythonOptions.EmulateJython);
-            }
-            return emulateJython;
-        }
-
         @Fallback
         boolean isInstance(VirtualFrame frame, Object instance, Object cls) {
-            TruffleLanguage.Env env = getContext().getEnv();
-            if (emulateJython() && env.isHostObject(cls)) {
+            PythonContext context = getContext();
+            TruffleLanguage.Env env = context.getEnv();
+            if (context.getOption(PythonOptions.EmulateJython) && env.isHostObject(cls)) {
                 Object hostCls = env.asHostObject(cls);
                 Object hostInstance = env.isHostObject(instance) ? env.asHostObject(instance) : instance;
                 return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
@@ -1458,7 +1445,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (element instanceof Byte) {
                 return (byte) element;
             }
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("got a bytes-like with non-byte elements");
         }
     }
@@ -1592,6 +1579,59 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    // ascii(object)
+    @Builtin(name = ASCII, minNumOfPositionalArgs = 1)
+    @ImportStatic(PGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AsciiNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isString(obj)")
+        public Object asciiString(Object obj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            String str = castToJavaStringNode.execute(obj);
+            return doAsciiString(str);
+        }
+
+        @TruffleBoundary
+        private static Object doAsciiString(String str) {
+            byte[] bytes = BytesUtils.unicodeEscape(str);
+            boolean hasSingleQuote = false;
+            boolean hasDoubleQuote = false;
+            for (int i = 0; i < bytes.length; i++) {
+                char c = (char) bytes[i];
+                hasSingleQuote |= c == '\'';
+                hasDoubleQuote |= c == '"';
+            }
+            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
+            char quote = useDoubleQuotes ? '"' : '\'';
+            StringBuilder sb = new StringBuilder(bytes.length + 2);
+            sb.append(quote);
+            for (int i = 0; i < bytes.length; i++) {
+                char c = (char) bytes[i];
+                if (c == '\'' && !useDoubleQuotes) {
+                    sb.append("\\'");
+                } else {
+                    sb.append(c);
+                }
+            }
+            sb.append(quote);
+            return sb.toString();
+        }
+
+        @Specialization(guards = "!isString(obj)")
+        public Object asciiGeneric(VirtualFrame frame, Object obj,
+                        @Cached ReprNode reprNode) {
+            String repr = (String) reprNode.execute(frame, obj);
+            byte[] bytes = BytesUtils.unicodeEscape(repr);
+            return newString(bytes);
+        }
+
+        @TruffleBoundary
+        private static String newString(byte[] bytes) {
+            return new String(bytes);
+        }
+    }
+
     // round(number[, ndigits])
     @Builtin(name = ROUND, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
@@ -1618,24 +1658,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = BREAKPOINT, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
-        @Child private HashingStorageNodes.GetItemNode getSysModuleNode;
         @Child private ReadAttributeFromObjectNode getBreakpointhookNode;
         @Child private CallNode callNode;
 
         @Specialization
-        public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs) {
+        public Object doIt(VirtualFrame frame, Object[] args, PKeyword[] kwargs,
+                        @CachedLibrary("getContext().getSysModules().getDictStorage()") HashingStorageLibrary hlib) {
             if (getDebuggerSessionCount() > 0) {
                 // we already have a Truffle debugger attached, it'll stop here
                 return PNone.NONE;
             } else if (getContext().isInitialized()) {
                 if (callNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getSysModuleNode = insert(HashingStorageNodes.GetItemNode.create());
                     getBreakpointhookNode = insert(ReadAttributeFromObjectNode.create());
                     callNode = insert(CallNode.create());
                 }
                 PDict sysModules = getContext().getSysModules();
-                Object sysModule = getSysModuleNode.execute(frame, sysModules.getDictStorage(), "sys");
+                Object sysModule = hlib.getItem(sysModules.getDictStorage(), "sys");
                 Object breakpointhook = getBreakpointhookNode.execute(sysModule, BREAKPOINTHOOK);
                 if (breakpointhook == PNone.NO_VALUE) {
                     throw raise(PythonBuiltinClassType.RuntimeError, "lost sys.breakpointhook");
@@ -1649,21 +1688,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private int getDebuggerSessionCount() {
             return Debugger.find(getContext().getEnv()).getSessionCount();
-        }
-    }
-
-    @Builtin(name = "__tdebug__", takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class DebugNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object doIt(Object[] args) {
-            PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
-            for (int i = 0; i < args.length; i++) {
-                stdout.println(args[i]);
-            }
-            stdout.flush();
-            return PNone.NONE;
         }
     }
 
@@ -1777,137 +1801,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BUILTIN__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
-        @Child private GetItemNode getNameNode = GetItemNode.create();
-
-        @Specialization
-        public Object doIt(VirtualFrame frame, PFunction func) {
-            PFunction builtinFunc = convertToBuiltin(func);
-            PythonObject globals = func.getGlobals();
-            PythonModule builtinModule;
-            if (globals instanceof PythonModule) {
-                builtinModule = (PythonModule) globals;
-            } else {
-                String moduleName = (String) getNameNode.execute(frame, globals, __NAME__);
-                builtinModule = getCore().lookupBuiltinModule(moduleName);
-                assert builtinModule != null;
-            }
-            return factory().createBuiltinMethod(builtinModule, builtinFunc);
-        }
-
-        @TruffleBoundary
-        public synchronized PFunction convertToBuiltin(PFunction func) {
-            /*
-             * (tfel): To be compatible with CPython, builtin module functions must be bound to
-             * their respective builtin module. We ignore that builtin functions should really be
-             * builtin methods here - it does not hurt if they are normal methods. What does hurt,
-             * however, is if they are not bound, because then using these functions in class field
-             * won't work when they are called from an instance of that class due to the implicit
-             * currying with "self".
-             */
-            Signature signature = func.getSignature();
-            PFunction builtinFunc;
-            if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
-                /*
-                 * If the first parameter is called self, we assume the function does explicitly
-                 * declare the module argument
-                 */
-                builtinFunc = func;
-                func.getFunctionRootNode().accept(new NodeVisitor() {
-                    public boolean visit(Node node) {
-                        if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
-                        }
-                        return true;
-                    }
-                });
-            } else {
-                /*
-                 * Otherwise, we create a new function with a signature that requires one extra
-                 * argument in front. We actually modify the function's AST here, so the original
-                 * PFunction cannot be used anymore (its signature won't agree with it's indexed
-                 * parameter reads).
-                 */
-                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-                functionRootNode = functionRootNode.copyWithNewSignature(signature.createWithSelf());
-                functionRootNode.setRewritten();
-                functionRootNode.accept(new NodeVisitor() {
-
-                    public boolean visit(Node node) {
-                        if (node instanceof ReadVarArgsNode) {
-                            ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
-                            node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
-                        } else if (node instanceof ReadIndexedArgumentNode) {
-                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                        } else if (node instanceof PythonCallNode) {
-                            node.replace(((PythonCallNode) node).asSpecialCall());
-                        }
-                        return true;
-                    }
-                });
-
-                String name = func.getName();
-                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
-                                new PCode(PythonBuiltinClassType.PCode, Truffle.getRuntime().createCallTarget(functionRootNode)),
-                                func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
-            }
-
-            return builtinFunc;
-        }
-    }
-
-    @Builtin(name = __DUMP_TRUFFLE_AST__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public String doIt(PFunction func) {
-            return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
-        }
-
-        @Specialization(guards = "isFunction(method.getFunction())")
-        @TruffleBoundary
-        public String doIt(PMethod method) {
-            // cast ensured by guard
-            PFunction fun = (PFunction) method.getFunction();
-            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public String doIt(PGenerator gen) {
-            return NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public String doIt(PCode code) {
-            return NodeUtil.printTreeToString(code.getRootNode());
-        }
-
-        @Fallback
-        @TruffleBoundary
-        public Object doit(Object object) {
-            return "truffle ast dump not supported for " + object.toString();
-        }
-
-        protected static boolean isFunction(Object callee) {
-            return callee instanceof PFunction;
-        }
-    }
-
-    @Builtin(name = __JYTHON_CURRENT_IMPORT__, minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    public abstract static class CurrentImport extends PythonBuiltinNode {
-        @Specialization
-        String doIt() {
-            return getContext().getCurrentImport();
-        }
-    }
-
     @Builtin(name = "input", parameterNames = {"prompt"})
     @GenerateNodeFactory
     abstract static class InputNode extends PythonUnaryBuiltinNode {
@@ -1968,7 +1861,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     try {
                         lib.setDict(globals, dict);
                     } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreter();
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException(e);
                     }
                 }

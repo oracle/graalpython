@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
@@ -36,6 +36,7 @@ typedef struct {
     PyObject *func_module;      /* The __module__ attribute, can be anything */
     PyObject *func_annotations; /* Annotations, a dict or NULL */
     PyObject *func_qualname;    /* The qualified name */
+    vectorcallfunc vectorcall;
 
     /* Invariant:
      *     func_closure contains the bindings for func_code->co_freevars, so
@@ -69,10 +70,10 @@ PyAPI_FUNC(PyObject *) _PyFunction_FastCallDict(
     Py_ssize_t nargs,
     PyObject *kwargs);
 
-PyAPI_FUNC(PyObject *) _PyFunction_FastCallKeywords(
+PyAPI_FUNC(PyObject *) _PyFunction_Vectorcall(
     PyObject *func,
     PyObject *const *stack,
-    Py_ssize_t nargs,
+    size_t nargsf,
     PyObject *kwnames);
 #endif
 

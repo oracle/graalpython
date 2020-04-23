@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,8 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PRangeIterator extends PIntegerIterator {
 
@@ -51,6 +53,17 @@ public final class PRangeIterator extends PIntegerIterator {
 
     public int getStep() {
         return step;
+    }
+
+    public int getLength(ConditionProfile stepProfile, ConditionProfile positveRangeProfile) {
+        if (stepProfile.profile(step > 0)) {
+            if (positveRangeProfile.profile(index >= 0 && index < stop)) {
+                return (stop - index) / step;
+            }
+            return PRange.getLenOfRange(index, stop, step);
+        } else {
+            return PRange.getLenOfRange(stop, index, -step);
+        }
     }
 
     @Override

@@ -1,1 +1,2 @@
+*TestScriptHelper.test_assert_python_failure
 *TestScriptHelper.test_assert_python_ok_raises

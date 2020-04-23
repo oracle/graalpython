@@ -211,17 +211,17 @@ public class IntBuiltins extends PythonBuiltins {
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int x, int y) throws ArithmeticException {
+        static int doII(int x, int y) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
         @Specialization
-        long doIIOvf(int x, int y) {
+        static long doIIOvf(int x, int y) {
             return (long) x - (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long x, long y) throws ArithmeticException {
+        static long doLL(long x, long y) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
@@ -253,13 +253,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger left, BigInteger right) {
+        private static BigInteger op(BigInteger left, BigInteger right) {
             return left.subtract(right);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        @SuppressWarnings("unused")
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -270,17 +270,17 @@ public class IntBuiltins extends PythonBuiltins {
     public abstract static class RSubNode extends PythonBinaryBuiltinNode {
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int y, int x) throws ArithmeticException {
+        static int doII(int y, int x) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
         @Specialization
-        long doIIOvf(int y, int x) {
+        static long doIIOvf(int y, int x) {
             return (long) x - (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long y, long x) throws ArithmeticException {
+        static long doLL(long y, long x) throws ArithmeticException {
             return Math.subtractExact(x, y);
         }
 
@@ -303,7 +303,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         PInt doLongPInt(long right, PInt left) {
-            return factory().createInt(op(PInt.longToBigInteger(right), left.getValue()));
+            return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
         @Specialization
@@ -312,13 +312,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger left, BigInteger right) {
+        private static BigInteger op(BigInteger left, BigInteger right) {
             return left.subtract(right);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
+        @SuppressWarnings("unused")
+        static PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -819,7 +819,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         PInt doPInt(PInt left, PInt right, @SuppressWarnings("unused") PNone none) {
             try {
-                return factory().createInt(op(left.getValue(), right.getValue().longValueExact()));
+                return factory().createInt(op(left.getValue(), right.longValueExact()));
             } catch (ArithmeticException e) {
                 // fall through to normal computation
             }
@@ -1206,16 +1206,31 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RShiftNode extends PythonBinaryBuiltinNode {
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int left, int right) {
+        @Specialization(guards = "right < 64")
+        int doIISmall(int left, int right) {
             raiseNegativeShiftCount(right < 0);
             return left >> right;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long left, long right) {
+        @Specialization(replaces = "doIISmall")
+        int doII(int left, int right) {
+            raiseNegativeShiftCount(right < 0);
+            // Note: according to JLS, if 'left' is an int, then only the 5 LSBs of 'right' are
+            // considered. However, Python would consider more bits, so do the max possible shift.
+            return left >> (right >= 64 ? 63 : right);
+        }
+
+        @Specialization(guards = "right < 128")
+        long doLLSmall(long left, long right) {
             raiseNegativeShiftCount(right < 0);
             return left >> right;
+        }
+
+        @Specialization(replaces = "doLLSmall")
+        long doLL(long left, long right) {
+            raiseNegativeShiftCount(right < 0);
+            // for explanation, see 'doII'
+            return left >> (right >= 128 ? 127 : right);
         }
 
         @Specialization

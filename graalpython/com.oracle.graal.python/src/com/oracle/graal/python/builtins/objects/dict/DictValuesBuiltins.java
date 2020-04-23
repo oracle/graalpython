@@ -35,10 +35,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -48,6 +51,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesView)
 public final class DictValuesBuiltins extends PythonBuiltins {
@@ -69,24 +74,32 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doPDictValuesView(PDictValuesView self) {
-            if (self.getWrappedDict() != null) {
-                return factory().createDictValuesIterator(self.getWrappedDict());
-            }
-            return PNone.NONE;
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doPDictValuesView(PDictValuesView self,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
+                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return factory().createDictValuesIterator(lib.values(getStore.execute(self.getWrappedDict())).iterator());
         }
     }
 
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
-                        @Cached HashingStorageNodes.ContainsKeyNode containsKeyNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
 
-            for (Object selfKey : self.getWrappedDict().keys()) {
-                if (!containsKeyNode.execute(frame, other.getWrappedDict().getDictStorage(), selfKey)) {
+            final PHashingCollection dict = self.getWrappedDict();
+            final HashingStorage storage = other.getWrappedDict().getDictStorage();
+            for (Object selfKey : dict.keys()) {
+                final boolean hasKey;
+                if (hasFrame.profile(frame != null)) {
+                    hasKey = lib.hasKeyWithState(storage, selfKey, PArguments.getThreadState(frame));
+                } else {
+                    hasKey = lib.hasKey(storage, selfKey);
+                }
+                if (!hasKey) {
                     return false;
                 }
             }

@@ -7,7 +7,6 @@ import os
 import unittest
 import zlib
 import binascii
-import re
 import sys
 
 pintNumber = 98765432109876543210
@@ -84,13 +83,16 @@ class ChecksumTests(unittest.TestCase):
         self.assertEqual(zlib.crc32(foo), crc)
         self.assertEqual(binascii.crc32(b'spam'), zlib.crc32(b'spam'))
 
+    @unittest.skipIf(sys.version_info.minor < 8)
+    def test_index(self):
+        self.assertEqual(zlib.crc32(b'ahoj', MyIndexObject(10)), 3299199656)
+        self.assertEqual(zlib.adler32(b'ahoj', MyIndexObject(10)), 69992876)
+
     def test_wrong_inputs(self):
         self.assertRaises(TypeError, zlib.crc32, 10)
         self.assertRaises(TypeError, zlib.crc32, 'ahoj')
-        self.assertRaises(TypeError, zlib.crc32, b'ahoj', MyIndexObject(10))
         self.assertRaises(TypeError, zlib.adler32, 10)
         self.assertRaises(TypeError, zlib.adler32, 'ahoj')
-        self.assertRaises(TypeError, zlib.adler32, b'ahoj', MyIndexObject(10))
 
 class BaseCompressTestCase(object):
     def check_big_compress_buffer(self, size, compress_func):

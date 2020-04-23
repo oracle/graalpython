@@ -33,7 +33,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -53,12 +52,13 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -200,7 +201,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final char TYPE_LONG = 'l';
     private static final char TYPE_PINT = 'L';
     private static final char TYPE_STRING = 's';
-    // private final static char TYPE_INTERNED = 't';
+    private static final char TYPE_INTERNED = 't';
     // private final static char TYPE_STRINGREF = 'R';
     private static final char TYPE_BYTESLIKE = 'b';
     private static final char TYPE_TUPLE = '(';
@@ -213,6 +214,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final char TYPE_FROZENSET = '>';
     private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
     private static final int CURRENT_VERSION = 1;
+
+    static final class InternedString {
+        public final String string;
+
+        private InternedString(String string) {
+            this.string = string;
+        }
+    }
 
     private abstract static class PNodeWithState extends PNodeWithContext {
         @Child private PythonObjectFactory objectFactory;
@@ -239,6 +248,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         public abstract void execute(VirtualFrame frame, Object x, int version, DataOutputStream buffer);
 
+        @Child private CastToJavaStringNode castStrNode;
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
         private IsBuiltinClassProfile isBuiltinProfile;
@@ -376,6 +386,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        void handleInternedString(InternedString v, int version, DataOutputStream buffer) {
+            writeByte(TYPE_INTERNED, version, buffer);
+            writeString(v.string, version, buffer);
+        }
+
+        @Specialization
         void handleBytesLike(VirtualFrame frame, PIBytesLike v, int version, DataOutputStream buffer,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             writeByte(TYPE_BYTESLIKE, version, buffer);
@@ -415,13 +431,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer,
-                        @Cached HashingStorageNodes.LenNode len) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("d.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_DICT, version, buffer);
-            HashingStorage storage = d.getDictStorage();
-            writeInt(len.execute(storage), version, buffer);
-            for (DictEntry entry : storage.entries()) {
+            int len;
+            if (hasFrame.profile(frame != null)) {
+                len = lib.lengthWithState(d.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                len = lib.length(d.getDictStorage());
+            }
+            writeInt(len, version, buffer);
+            for (DictEntry entry : d.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
                 getRecursiveNode().execute(frame, entry.value, version, buffer);
             }
@@ -441,26 +463,59 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
         }
 
-        @Specialization
+        private PTuple internStrings(Object[] values) {
+            Object[] interned;
+            if (values == null) {
+                interned = new Object[0];
+            } else {
+                interned = new Object[values.length];
+                for (int i = 0; i < interned.length; i++) {
+                    if (castStrNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        castStrNode = insert(CastToJavaStringNode.create());
+                    }
+                    Object value = values[i];
+                    String strValue = castStrNode.execute(value);
+                    if (strValue != null) {
+                        interned[i] = new InternedString(strValue);
+                    } else {
+                        interned[i] = value;
+                    }
+                }
+            }
+            return factory().createTuple(interned);
+        }
+
+        @Specialization(limit = "1")
         void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
-                        @Cached HashingStorageNodes.LenNode lenNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_SET, version, buffer);
-            HashingStorage dictStorage = s.getDictStorage();
-            int len = lenNode.execute(dictStorage);
+            int len;
+            if (hasFrame.profile(frame != null)) {
+                len = lib.lengthWithState(s.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                len = lib.length(s.getDictStorage());
+            }
             writeInt(len, version, buffer);
-            for (DictEntry entry : dictStorage.entries()) {
+            for (DictEntry entry : s.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
             }
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer,
-                        @Cached HashingStorageNodes.LenNode lenNode) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_FROZENSET, version, buffer);
-            HashingStorage dictStorage = s.getDictStorage();
-            int len = lenNode.execute(dictStorage);
+            int len;
+            if (hasFrame.profile(frame != null)) {
+                len = lib.lengthWithState(s.getDictStorage(), PArguments.getThreadState(frame));
+            } else {
+                len = lib.length(s.getDictStorage());
+            }
             writeInt(len, version, buffer);
-            for (DictEntry entry : dictStorage.entries()) {
+            for (DictEntry entry : s.entries()) {
                 getRecursiveNode().execute(frame, entry.key, version, buffer);
             }
         }
@@ -507,7 +562,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     public abstract static class UnmarshallerNode extends PNodeWithState implements IndirectCallNode {
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
         @Child private CodeNodes.CreateCodeNode createCodeNode;
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -565,6 +619,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return text;
         }
 
+        private String readInternedString() {
+            return readString().intern();
+        }
+
         private byte[] readBytes() {
             int len = readInt();
             byte[] bytes = Arrays.copyOfRange(data, index, index + len);
@@ -588,30 +646,32 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, codetext, flags, serializationData, filename, name, firstlineno, lnotab);
         }
 
-        private PDict readDict(int depth) {
+        private PDict readDict(int depth, HashingStorageLibrary lib) {
             int len = readInt();
-            HashMap<Object, Object> map = new HashMap<>(len);
+            HashingStorage store = PDict.createNewStorage(false, len);
+            PDict dict = factory().createDict(store);
             for (int i = 0; i < len; i++) {
-                Object key = readObject(depth + 1);
+                Object key = readObject(depth + 1, lib);
                 if (key == null) {
                     break;
                 }
-                Object value = readObject(depth + 1);
+                Object value = readObject(depth + 1, lib);
                 if (value != null) {
-                    map.put(key, value);
+                    store = lib.setItem(store, key, value);
                 }
             }
-            return factory().createDict(map);
+            dict.setDictStorage(store);
+            return dict;
         }
 
-        private PList readList(int depth) {
+        private PList readList(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
             Object[] items = new Object[n];
             for (int i = 0; i < n; i++) {
-                Object item = readObject(depth + 1);
+                Object item = readObject(depth + 1, lib);
                 if (item == null) {
                     throw raise(ValueError, "bad marshal data");
                 }
@@ -620,41 +680,33 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createList(items);
         }
 
-        private PSet readSet(int depth) {
+        private PSet readSet(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
-            HashingStorage newStorage = EconomicMapStorage.create(n, true);
-            if (n > 0 && setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
+            HashingStorage newStorage = EconomicMapStorage.create(n);
             for (int i = 0; i < n; i++) {
-                Object key = readObject(depth + 1);
+                Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                setItemNode.execute(null, newStorage, key, PNone.NO_VALUE);
+                lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createSet(newStorage);
         }
 
-        private PFrozenSet readFrozenSet(int depth) {
+        private PFrozenSet readFrozenSet(int depth, HashingStorageLibrary lib) {
             int n = readInt();
             if (n < 0) {
                 throw raise(ValueError, "bad marshal data");
             }
-            HashingStorage newStorage = EconomicMapStorage.create(n, true);
-            if (n > 0 && setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
-            }
+            HashingStorage newStorage = EconomicMapStorage.create(n);
             for (int i = 0; i < n; i++) {
-                Object key = readObject(depth + 1);
+                Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                setItemNode.execute(null, newStorage, key, PNone.NO_VALUE);
+                lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createFrozenSet(newStorage);
@@ -667,7 +719,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object readObject(int depth) {
+        private Object readObject(int depth, HashingStorageLibrary lib) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
                 throw raise(ValueError, "Maximum marshal stack depth");
             }
@@ -699,6 +751,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return readDouble();
                 case TYPE_STRING:
                     return readString();
+                case TYPE_INTERNED:
+                    return readInternedString();
                 case TYPE_BYTESLIKE:
                     return readBytesLike();
                 case TYPE_TUPLE: {
@@ -708,20 +762,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                     Object[] items = new Object[n];
                     for (int i = 0; i < n; i++) {
-                        items[i] = readObject(depth + 1);
+                        items[i] = readObject(depth + 1, lib);
                     }
                     return factory().createTuple(items);
                 }
                 case TYPE_DICT:
-                    return readDict(depth);
+                    return readDict(depth, lib);
                 case TYPE_LIST:
-                    return readList(depth);
+                    return readList(depth, lib);
                 case TYPE_SET:
-                    return readSet(depth);
+                    return readSet(depth, lib);
                 case TYPE_FROZENSET:
-                    return readFrozenSet(depth);
+                    return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode(depth);
+                    return readCode(depth, lib);
                 default:
                     throw raise(ValueError, "bad marshal data");
             }
@@ -737,12 +791,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             reset();
             this.data = dataBytes;
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return readObject(0);
+                return readObject(0, lib);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

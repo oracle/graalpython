@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,7 @@ public final class VaListWrapper implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     final long getArraySize() {
         return Long.MAX_VALUE;
     }
@@ -80,7 +81,7 @@ public final class VaListWrapper implements TruffleObject {
         if (index != pos) {
             throw InvalidArrayIndexException.create(index);
         }
-        Object res = callGetVaargNode.execute(nativeContext, "get_next_vaarg", new Object[]{vaListPtr, outVarPtrPtr});
+        callGetVaargNode.execute(nativeContext, "get_next_vaarg", new Object[]{vaListPtr, outVarPtrPtr});
         pos++;
         return outVarPtrPtr;
     }

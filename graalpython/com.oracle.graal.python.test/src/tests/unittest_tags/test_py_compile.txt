@@ -1,3 +1,13 @@
-test_absolute_path
-test_bad_coding
-test_cache_path
+*PyCompileTestsBase.test_absolute_path
+*PyCompileTestsBase.test_bad_coding
+*PyCompileTestsBase.test_cache_path
+*PyCompileTestsBase.test_cwd
+*PyCompileTestsBase.test_do_not_overwrite_nonregular_files
+*PyCompileTestsBase.test_do_not_overwrite_symlinks
+*PyCompileTestsBase.test_double_dot_no_clobber
+*PyCompileTestsBase.test_exceptions_propagate
+*PyCompileTestsBase.test_invalidation_mode
+*PyCompileTestsBase.test_optimization_path
+*PyCompileTestsBase.test_quiet
+*PyCompileTestsBase.test_relative_path
+*PyCompileTestsBase.test_source_date_epoch

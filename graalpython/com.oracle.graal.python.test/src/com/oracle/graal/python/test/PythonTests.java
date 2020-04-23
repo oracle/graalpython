@@ -45,6 +45,8 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Map;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -97,10 +99,14 @@ public class PythonTests {
     }
 
     public static void enterContext(String... newArgs) {
+        enterContext(Collections.emptyMap(), newArgs);
+    }
+
+    public static void enterContext(Map<String, String> options, String[] args) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         Context prevContext = context;
-        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).arguments("python", newArgs).option("python.Executable", executable).build();
+        context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).option("python.Executable", executable).build();
         context.initialize("python");
         if (prevContext != null) {
             closeContext(prevContext);
@@ -242,9 +248,9 @@ public class PythonTests {
     }
 
     public static File getBenchFile(Path filename) {
-        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "benchmarks", "src");
+        Path path = Paths.get(GraalPythonEnvVars.graalpythonHome(), "com.oracle.graal.python.benchmarks", "python");
         if (!Files.isDirectory(path)) {
-            throw new RuntimeException("Unable to locate benchmarks/src/");
+            throw new RuntimeException("Unable to locate com.oracle.graal.python.benchmarks/python/");
         }
 
         Path fullPath = Paths.get(path.toString(), filename.toString());
@@ -333,6 +339,15 @@ public class PythonTests {
         }
     }
 
+    public static Value runScript(Map<String, String> options, String[] args, String source, OutputStream out, OutputStream err) {
+        try {
+            enterContext(options, args);
+            return context.eval(org.graalvm.polyglot.Source.create("python", source));
+        } finally {
+            flush(out, err);
+        }
+    }
+
     public static Value runScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
             enterContext(args);
@@ -352,8 +367,12 @@ public class PythonTests {
     }
 
     public static Value runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
+        return runScript(Collections.emptyMap(), args, source, out, err, cb);
+    }
+
+    public static Value runScript(Map<String, String> options, String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
         try {
-            enterContext(args);
+            enterContext(options, args);
             return context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             cb.run();

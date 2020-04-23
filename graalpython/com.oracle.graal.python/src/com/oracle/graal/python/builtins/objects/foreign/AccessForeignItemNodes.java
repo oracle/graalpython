@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,14 +58,14 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -78,6 +78,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 abstract class AccessForeignItemNodes {
 
@@ -214,26 +215,34 @@ abstract class AccessForeignItemNodes {
 
         public abstract Object execute(VirtualFrame frame, Object object, Object idx, Object value);
 
-        @Specialization
-        public Object doForeignObjectSlice(VirtualFrame frame, Object object, PSlice idxSlice, PSequence pvalues,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached("create()") PTypeToForeignNode valueToForeignNode) {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object doForeignObjectSlice(VirtualFrame frame, Object object, PSlice idxSlice, Object pvalues,
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @Cached GetIteratorNode getIterator,
+                        @Cached GetNextNode getNext,
+                        @Cached PTypeToForeignNode valueToForeignNode,
+                        @Cached BranchProfile unsupportedMessage,
+                        @Cached BranchProfile unsupportedType,
+                        @Cached BranchProfile wrongIndex) {
+            Object value;
+            SliceInfo mslice;
             try {
-                SliceInfo mslice = materializeSlice(idxSlice, object, lib);
-                for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
-                    Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(frame, pvalues, j));
-                    writeForeignValue(object, i, convertedValue, lib);
-                }
-                return PNone.NONE;
-            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
+                mslice = materializeSlice(idxSlice, object, lib);
+            } catch (UnsupportedMessageException e) {
+                throw raiseNoSetItem(object);
             }
+            Object iter = getIterator.executeWith(frame, pvalues);
+            for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
+                value = getNext.execute(frame, iter);
+                Object convertedValue = valueToForeignNode.executeConvert(value);
+                writeForeignValue(object, i, convertedValue, lib, unsupportedMessage, unsupportedType, wrongIndex);
+            }
+            return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignKey(Object object, String key, Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary("object") InteropLibrary lib) {
             if (lib.hasMembers(object)) {
                 if (lib.isMemberWritable(object, key)) {
                     try {
@@ -272,33 +281,42 @@ abstract class AccessForeignItemNodes {
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx, Object value,
                         @CachedLibrary("object") InteropLibrary lib,
                         @CachedLibrary("idx") PythonObjectLibrary pythonLib,
-                        @Cached("create()") PTypeToForeignNode valueToForeignNode) {
-            try {
-                int convertedIdx = pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame));
-                Object convertedValue = valueToForeignNode.executeConvert(value);
-                writeForeignValue(object, convertedIdx, convertedValue, lib);
-                return PNone.NONE;
-            } catch (UnsupportedTypeException e) {
-                throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
-            }
+                        @Cached PTypeToForeignNode valueToForeignNode,
+                        @Cached BranchProfile unsupportedMessage,
+                        @Cached BranchProfile unsupportedType,
+                        @Cached BranchProfile wrongIndex) {
+            int convertedIdx = pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame));
+            Object convertedValue = valueToForeignNode.executeConvert(value);
+            writeForeignValue(object, convertedIdx, convertedValue, lib, unsupportedMessage, unsupportedType, wrongIndex);
+            return PNone.NONE;
         }
 
-        private void writeForeignValue(Object object, int idx, Object value, InteropLibrary libForObject) throws UnsupportedTypeException {
+        private void writeForeignValue(Object object, int idx, Object value, InteropLibrary libForObject, BranchProfile unsupportedMessage, BranchProfile unsupportedType, BranchProfile wrongIndex) {
             if (libForObject.hasArrayElements(object)) {
                 if (libForObject.isArrayElementWritable(object, idx)) {
                     try {
                         libForObject.writeArrayElement(object, idx, value);
                         return;
                     } catch (InvalidArrayIndexException ex) {
-                        // fall through
-                    } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreter();
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("Array element should be writable, as per test");
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("Array element should be writable, as per test");
+                    } catch (UnsupportedTypeException e) {
+                        unsupportedType.enter();
+                        throw raise(TypeError, "type '%p' is not supported by the foreign object", value);
                     }
                 }
+                wrongIndex.enter();
                 throw raise(IndexError, "invalid index %s", idx);
             }
-            throw raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
+            unsupportedMessage.enter();
+            throw raiseNoSetItem(object);
+        }
+
+        private PException raiseNoSetItem(Object object) {
+            return raise(AttributeError, "%s instance has no attribute '__setitem__'", object);
         }
 
         public static SetForeignItemNode create() {

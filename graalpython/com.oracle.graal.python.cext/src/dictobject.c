@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,12 @@ int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t h
 
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
+}
+
+UPCALL_ID(PyDict_GetItemWithError);
+PyObject* PyDict_GetItemWithError(PyObject* d, PyObject* k) {
+    return UPCALL_CEXT_O(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
 }
 
 PyObject* _PyDict_GetItemId(PyObject* d, _Py_Identifier* id) {
@@ -119,7 +124,7 @@ int PyDict_Contains(PyObject *d, PyObject *k) {
 }
 
 PyObject * PyDict_GetItemString(PyObject *d, const char *key) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
 
 int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
@@ -149,6 +154,7 @@ PyObject* _PyObject_GenericGetDict(PyObject* obj) {
     if (dict == NULL) {
         *dictptr = dict = PyDict_New();
     }
+    Py_XINCREF(dict);
     return dict;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -44,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -160,19 +162,19 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__text_signature__", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __TEXT_SIGNATURE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
+    public abstract static class TextSignatureNode extends PythonBinaryBuiltinNode {
         @Child AbstractFunctionBuiltins.TextSignatureNode subNode = AbstractFunctionBuiltins.TextSignatureNode.create();
 
         @Specialization
-        Object getTextSignature(VirtualFrame frame, PBuiltinMethod self) {
-            return subNode.execute(frame, self.getFunction());
+        Object getTextSignature(VirtualFrame frame, PBuiltinMethod self, Object value) {
+            return subNode.execute(frame, self.getFunction(), value);
         }
 
         @Specialization
-        Object getTextSignature(VirtualFrame frame, PMethod self) {
-            return subNode.execute(frame, self.getFunction());
+        Object getTextSignature(VirtualFrame frame, PMethod self, Object value) {
+            return subNode.execute(frame, self.getFunction(), value);
         }
     }
 }

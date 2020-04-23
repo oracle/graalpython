@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -184,7 +184,6 @@ public class CodeBuiltins extends PythonBuiltins {
         protected Object get(PCode self) {
             Object[] constants = self.getConstants();
             if (constants == null) {
-                // TODO: this is for the moment undefined (see co_code)
                 constants = new Object[0];
             }
             return factory().createTuple(constants);
@@ -198,7 +197,6 @@ public class CodeBuiltins extends PythonBuiltins {
         protected Object get(PCode self) {
             Object[] names = self.getNames();
             if (names == null) {
-                // TODO: this is for the moment undefined (see co_code)
                 names = new Object[0];
             }
             return factory().createTuple(names);

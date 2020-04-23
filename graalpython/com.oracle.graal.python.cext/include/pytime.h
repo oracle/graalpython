@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
@@ -22,8 +22,8 @@ extern "C" {
    store a duration, and so indirectly a date (related to another date, like
    UNIX epoch). */
 typedef int64_t _PyTime_t;
-#define _PyTime_MIN PY_LLONG_MIN
-#define _PyTime_MAX PY_LLONG_MAX
+#define _PyTime_MIN INT64_MIN
+#define _PyTime_MAX INT64_MAX
 
 typedef enum {
     /* Round towards minus infinity (-inf).

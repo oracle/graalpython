@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,51]`def fn():↵  lam
                     BlockNode SourceSection: None
                     FunctionBodyNode SourceSection: [12,51]`lambda foo=bar, blaz...`
                       ExpressionStatementNode SourceSection: [12,51]`lambda foo=bar, blaz...`
-                        FunctionDefinitionNode Name: anonymous SourceSection: [12,51]`lambda foo=bar, blaz...`
+                        FunctionDefinitionNode Name: <lambda> SourceSection: [12,51]`lambda foo=bar, blaz...`
                           Arguments:
                             ReadGlobalOrBuiltinNodeGen SourceSection: [23,26]`bar`
                               Identifier: bar
@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,51]`def fn():↵  lam
                             FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12,51]`lambda foo=bar, blaz...`
-                            Name: anonymous
+                            Name: <lambda>
                             Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False
                               Param Names: foo, blaz
                               Keyword Names: None

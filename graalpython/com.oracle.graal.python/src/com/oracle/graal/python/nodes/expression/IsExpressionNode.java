@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -218,7 +218,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         boolean doObjectPNone(Object left, PNone right,
                         @Cached.Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            if (PythonOptions.getFlag(ctxt, PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
+            if (ctxt.getOption(PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
             }

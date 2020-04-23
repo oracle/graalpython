@@ -142,6 +142,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 return data;
             }
         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("object does not unpack to array as it claims to");
         }
         return null;
@@ -203,6 +204,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(frame, right, lib.asBoolean(left));
                 }
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to boolean as it claims to");
             }
         }
@@ -217,6 +219,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(frame, right, lib.asLong(left));
                 }
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("3object does not unpack to long as it claims to");
             }
         }
@@ -231,6 +234,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(frame, right, lib.asDouble(left));
                 }
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to double as it claims to");
             }
         }
@@ -245,6 +249,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(frame, right, lib.asString(left));
                 }
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to String as it claims to");
             }
         }
@@ -313,6 +318,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     rightInt = lib.asInt(right);
                 } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("object does not unpack to index-sized int as it claims to");
                 }
                 Object[] unpackForeignArray = unpackForeignArray(left, lib, convert);
@@ -341,6 +347,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return doForeignArray(left, lib.asBoolean(right) ? 1 : 0, raise, factory, convert, lib);
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to boolean (to be used as index) as it claims to");
             }
         }
@@ -420,6 +427,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return comparisonNode.executeWith(frame, lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
             }
         }
@@ -430,6 +438,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return comparisonNode.executeWith(frame, lib.asLong(left), right);
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to long for comparison as it claims to");
             }
         }
@@ -440,6 +449,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return comparisonNode.executeWith(frame, lib.asDouble(left), right);
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to double for comparison as it claims to");
             }
         }
@@ -634,7 +644,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, String member,
-                        @CachedLibrary(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)") InteropLibrary read) {
+                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
             try {
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
@@ -709,6 +719,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.getMembers(object);
                 } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("foreign object claims to have members, but does not return them");
                 }
             } else {
@@ -728,6 +739,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return PInt.intValue(lib.asBoolean(object));
                 } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("foreign value claims to be a boolean but isn't");
                 }
             }
@@ -735,6 +747,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.asInt(object);
                 } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
                 }
             }
@@ -761,6 +774,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asBoolean(object));
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
@@ -771,6 +785,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asString(object));
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
@@ -781,6 +796,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asLong(object));
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }
@@ -791,6 +807,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             try {
                 return getCallStrNode().executeObject(frame, lib.asDouble(object));
             } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("foreign object claims to be boxed, but does not support the appropriate unbox message");
             }
         }

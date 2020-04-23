@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -156,11 +156,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPSequence()")
         public Object next(VirtualFrame frame, PSequenceIterator self,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached("createClassProfile()") ValueProfile sequenceProfile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             PSequence sequence = sequenceProfile.profile(self.getPSequence());
-            SequenceStorage s = sequence.getSequenceStorage();
+            SequenceStorage s = getStorageNode.execute(sequence);
             if (!self.isExhausted() && self.index < lenNode.execute(s)) {
                 return getItemNode.execute(frame, s, self.index++);
             }

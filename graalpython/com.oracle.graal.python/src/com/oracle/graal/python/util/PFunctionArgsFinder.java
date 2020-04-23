@@ -85,7 +85,7 @@ public class PFunctionArgsFinder {
             this.args = args;
         }
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "static-method"})
         @ExportMessage
         boolean hasMembers() {
             return true;

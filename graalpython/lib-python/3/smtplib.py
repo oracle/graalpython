@@ -54,7 +54,7 @@ import datetime
 import sys
 from email.base64mime import body_encode as encode_base64
 
-__all__ = ["SMTPException", "SMTPServerDisconnected", "SMTPResponseException",
+__all__ = ["SMTPException", "SMTPNotSupportedError", "SMTPServerDisconnected", "SMTPResponseException",
            "SMTPSenderRefused", "SMTPRecipientsRefused", "SMTPDataError",
            "SMTPConnectError", "SMTPHeloError", "SMTPAuthenticationError",
            "quoteaddr", "quotedata", "SMTP"]
@@ -216,6 +216,8 @@ class SMTP:
         method called 'sendmail' that will do an entire mail transaction.
         """
     debuglevel = 0
+
+    sock = None
     file = None
     helo_resp = None
     ehlo_msg = "ehlo"
@@ -333,6 +335,7 @@ class SMTP:
             port = self.default_port
         if self.debuglevel > 0:
             self._print_debug('connect:', (host, port))
+        sys.audit("smtplib.connect", self, host, port)
         self.sock = self._get_socket(host, port, self.timeout)
         self.file = None
         (code, msg) = self.getreply()
@@ -344,12 +347,13 @@ class SMTP:
         """Send `s' to the server."""
         if self.debuglevel > 0:
             self._print_debug('send:', repr(s))
-        if hasattr(self, 'sock') and self.sock:
+        if self.sock:
             if isinstance(s, str):
                 # send is used by the 'data' command, where command_encoding
                 # should not be used, but 'data' needs to convert the string to
                 # binary itself anyway, so that's not a problem.
                 s = s.encode(self.command_encoding)
+            sys.audit("smtplib.send", self, s)
             try:
                 self.sock.sendall(s)
             except OSError:

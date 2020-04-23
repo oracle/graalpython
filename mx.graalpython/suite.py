@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "20.1.0",
+    "version": "20.2.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -43,8 +43,16 @@ suite = {
                 ]
             },
             {
+                "name": "tools",
+                "version": "b47aaf48144cbc9445cea8fdc37735e3924339fa",
+                "subdir": True,
+                "urls": [
+                    {"url": "https://github.com/oracle/graal", "kind": "git"},
+                ],
+            },
+            {
                 "name": "sulong",
-                "version": "7bdfd6c9b5dbe1a85cf6fcedbae6ccd08a6caeb6",
+                "version": "b47aaf48144cbc9445cea8fdc37735e3924339fa",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "7bdfd6c9b5dbe1a85cf6fcedbae6ccd08a6caeb6",
+                "version": "b47aaf48144cbc9445cea8fdc37735e3924339fa",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -130,9 +138,9 @@ suite = {
 
         "perf.benchmarks": {
             "type": "python",
-            "path": 'graalpython/benchmarks',
+            "path": 'graalpython/com.oracle.graal.python.benchmarks',
             "source": [
-                "src"
+                "python"
             ],
         },
 
@@ -190,6 +198,8 @@ suite = {
             "sourceDirs": ["src"],
             "dependencies": [
                 "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_COVERAGE",
+                "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
                 "sulong:SULONG_API",
@@ -220,6 +230,24 @@ suite = {
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
             "testProject": True,
+        },
+
+        # GRAALPYTHON BENCH
+        "com.oracle.graal.python.benchmarks": {
+            "subDir": "graalpython",
+            "sourceDirs": ["java"],
+            "dependencies": [
+                "com.oracle.graal.python",
+                "sdk:GRAAL_SDK",
+                "mx:JMH_1_21"
+            ],
+            "jacoco": "exclude",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "8+",
+            "annotationProcessors" : ["mx:JMH_1_21"],
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated" : True,
+            "testProject" : True,
         },
 
         "com.oracle.graal.python.tck": {
@@ -314,6 +342,8 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_COVERAGE",
+                "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
@@ -342,6 +372,20 @@ suite = {
             ],
             "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
+        },
+
+        "GRAALPYTHON_BENCH" : {
+            "description": "java python interop benchmarks",
+            "dependencies" : ["com.oracle.graal.python.benchmarks"],
+            "exclude": ["mx:JMH_1_21"],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "GRAALPYTHON-LAUNCHER",
+                "sdk:GRAAL_SDK",
+            ],
+            "sourcesPath": "graalpython.bench.src.zip",
+            "testDistribution" : True,
+            "maven": False,
         },
 
         "GRAALPYTHON_TCK": {

@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
@@ -101,7 +102,6 @@ import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
 import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
-import com.oracle.graal.python.nodes.literal.SetLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssertNode;
@@ -459,7 +459,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 result = nodeFactory.createListLiteral(getCollectionItems(node.values));
                 break;
             case PSet:
-                result = new SetLiteralNode(getCollectionItems(node.values));
+                result = nodeFactory.createSetLiteral(getCollectionItems(node.values));
                 break;
             case PDict:
                 if (node.values.length == 0) {
@@ -903,8 +903,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(LambdaSSTNode node) {
-
-        String funcname = "anonymous";
+        String funcname = LAMBDA_NAME;
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         /**

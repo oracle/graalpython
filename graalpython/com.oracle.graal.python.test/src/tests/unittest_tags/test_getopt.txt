@@ -3,5 +3,6 @@
 *GetoptTests.test_getopt
 *GetoptTests.test_gnu_getopt
 *GetoptTests.test_issue4629
+*GetoptTests.test_libref_examples
 *GetoptTests.test_long_has_args
 *GetoptTests.test_short_has_arg

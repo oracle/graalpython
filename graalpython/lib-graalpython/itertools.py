@@ -21,6 +21,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import sys
+
+
 class repeat():
     def __init__(self, obj, times=None):
         self.obj = obj
@@ -98,7 +101,10 @@ class starmap():
 class islice(object):
     def __init__(self, iterable, *args):
         self._iterable = enumerate(iter(iterable))
-        self._indexes = iter(range(*args))
+        slice = list(args)
+        if len(slice) >= 2 and slice[1] is None:
+             slice[1] = sys.maxsize
+        self._indexes = iter(range(*slice))
 
     def __iter__(self):
         return self

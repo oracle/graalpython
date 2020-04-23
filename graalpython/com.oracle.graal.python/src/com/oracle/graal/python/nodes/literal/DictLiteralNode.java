@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,26 +26,27 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class DictLiteralNode extends LiteralNode {
+@GenerateNodeFactory
+public abstract class DictLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] keys;
     @Children private final ExpressionNode[] values;
-    @Child private HashingStorageNodes.SetItemNode setItemNode;
 
-    public static DictLiteralNode create(ExpressionNode[] keys, ExpressionNode[] values) {
-        return new DictLiteralNode(keys, values);
-    }
-
-    public DictLiteralNode(ExpressionNode[] keys, ExpressionNode[] values) {
+    protected DictLiteralNode(ExpressionNode[] keys, ExpressionNode[] values) {
         this.keys = keys;
         this.values = values;
         assert keys.length == values.length;
@@ -75,24 +76,28 @@ public final class DictLiteralNode extends LiteralNode {
     }
 
     @ExplodeLoop
-    private HashingStorage evalAndSetValues(VirtualFrame frame, HashingStorage dictStorage, Keys evalKeys) {
+    private HashingStorage evalAndSetValues(VirtualFrame frame, HashingStorage dictStorage, Keys evalKeys, ConditionProfile hasFrame, HashingStorageLibrary lib) {
         HashingStorage storage = dictStorage;
-        if (setItemNode == null && values.length > 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            setItemNode = insert(SetItemNode.create());
-        }
+        ThreadState state = PArguments.getThreadState(frame);
         for (int i = 0; i < values.length; i++) {
             final Object val = values[i].execute(frame);
-            storage = setItemNode.execute(frame, storage, evalKeys.keys[i], val);
+            if (hasFrame.profile(frame != null)) {
+                storage = lib.setItemWithState(storage, evalKeys.keys[i], val, state);
+            } else {
+                storage = lib.setItem(storage, evalKeys.keys[i], val);
+            }
+
         }
         return storage;
     }
 
-    @Override
-    public PDict execute(VirtualFrame frame) {
+    @Specialization
+    public PDict create(VirtualFrame frame,
+                    @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         Keys evalKeys = evalKeys(frame);
         HashingStorage dictStorage = PDict.createNewStorage(evalKeys.allStrings, evalKeys.keys.length);
-        dictStorage = evalAndSetValues(frame, dictStorage, evalKeys);
+        dictStorage = evalAndSetValues(frame, dictStorage, evalKeys, hasFrame, lib);
         return factory.createDict(dictStorage);
     }
 }

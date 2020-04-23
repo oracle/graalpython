@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -160,9 +160,20 @@ class TestPyObject(CPyExtTestCase):
         lambda args: args[0](args[2], args[3]),
         lambda: (
             (sum, "Oi", [], 10),
+            (sum, "Oi", [], 10),
         ),
         arguments=["PyObject* callable", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OsOi",
+    )
+    test_PyObject_CallFunction0 = CPyExtFunction(
+        lambda args: args[0](),
+        lambda: (
+            (list, ""),
+            (bool, ""),
+        ),
+        arguments=["PyObject* callable", "const char* fmt"],
+        argspec="Os",
+        callfunction="PyObject_CallFunction",
     )
 
     class MyObject():

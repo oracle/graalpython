@@ -4279,10 +4279,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heapreplace_max
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [22793,22797]`pass`
               EmptyNode SourceSection: [22793,22797]`pass`
@@ -4299,10 +4298,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heapify_max
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [22863,22867]`pass`
               EmptyNode SourceSection: [22863,22867]`pass`
@@ -4319,10 +4317,9 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heappop_max
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [22933,22937]`pass`
               EmptyNode SourceSection: [22933,22937]`pass`

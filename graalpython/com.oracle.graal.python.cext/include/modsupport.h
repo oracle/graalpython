@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
@@ -71,6 +71,13 @@ PyAPI_FUNC(int) _PyArg_NoPositional(const char *funcname, PyObject *args);
 #define _PyArg_NoPositional(funcname, args) \
     ((args) == NULL || _PyArg_NoPositional((funcname), (args)))
 
+PyAPI_FUNC(void) _PyArg_BadArgument(const char *, const char *, const char *, PyObject *);
+PyAPI_FUNC(int) _PyArg_CheckPositional(const char *, Py_ssize_t,
+                                       Py_ssize_t, Py_ssize_t);
+#define _PyArg_CheckPositional(funcname, nargs, min, max) \
+    (((min) <= (nargs) && (nargs) <= (max)) \
+     || _PyArg_CheckPositional((funcname), (nargs), (min), (max)))
+
 #endif
 
 PyAPI_FUNC(PyObject *) Py_VaBuildValue(const char *, va_list);
@@ -116,6 +123,18 @@ PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords(
     ...);
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywordsFast(PyObject *, PyObject *,
                                                    struct _PyArg_Parser *, va_list);
+PyAPI_FUNC(PyObject * const *) _PyArg_UnpackKeywords(
+        PyObject *const *args, Py_ssize_t nargs,
+        PyObject *kwargs, PyObject *kwnames,
+        struct _PyArg_Parser *parser,
+        int minpos, int maxpos, int minkw,
+        PyObject **buf);
+#define _PyArg_UnpackKeywords(args, nargs, kwargs, kwnames, parser, minpos, maxpos, minkw, buf) \
+    (((minkw) == 0 && (kwargs) == NULL && (kwnames) == NULL && \
+      (minpos) <= (nargs) && (nargs) <= (maxpos) && args != NULL) ? (args) : \
+     _PyArg_UnpackKeywords((args), (nargs), (kwargs), (kwnames), (parser), \
+                           (minpos), (maxpos), (minkw), (buf)))
+
 void _PyArg_Fini(void);
 #endif   /* Py_LIMITED_API */
 

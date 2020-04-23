@@ -1460,7 +1460,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             Identifier: type
       WriteNameNodeGen SourceSection: [11990,12001]`_cache = {}`
         Identifier: _cache
-        DictLiteralNode SourceSection: [11999,12001]`{}`
+        DictLiteralNodeGen SourceSection: [11999,12001]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [12015,12030]`_MAXCACHE = 512`
         Identifier: _MAXCACHE
@@ -2250,10 +2250,9 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,SUBPATTERN,Illegal]
                                             EmptyNode SourceSection: None
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __getattribute__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __getattr__
+                                          GetAnyAttributeNodeGen SourceSection: None
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
                                         IfNode SourceSection: [14036,14109]`if isinstance(flags,...`
                                           YesNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [14039,14067]`isinstance(flags, Re...`

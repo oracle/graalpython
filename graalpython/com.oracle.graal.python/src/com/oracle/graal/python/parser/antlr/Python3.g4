@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2020, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -50,6 +50,9 @@ tokens { INDENT, DEDENT }
   private Token lastToken = null;
   // wether we have expanded EOF to include necessary DEDENTS and a NEWLINE
   private boolean expandedEOF = false;
+
+  private boolean longQuote1 = false; // """
+  private boolean longQuote2 = false; // '''
 
   @Override
   public void emit(Token t) {
@@ -140,6 +143,22 @@ tokens { INDENT, DEDENT }
         }
     }
     return result;
+  }
+
+  public boolean isOpened() {
+	  return this.opened > 0 || this.longQuote1 || this.longQuote2;
+  }
+
+  private void usedQuote1() {
+	if (!this.longQuote2){
+		this.longQuote1 = !this.longQuote1;
+	}
+  }
+
+  private void usedQuote2() {
+	if (!this.longQuote1){
+		this.longQuote2 = !this.longQuote2;
+	}
   }
 
   private Token createDedent() {
@@ -726,7 +745,7 @@ return_stmt
 :
 	'return'
 	{ SSTNode value = null; }
-	( testlist { value = $testlist.result; } )?
+	( testlist_star_expr { value = $testlist_star_expr.result; } )?
 	{ push(new ReturnSSTNode(value, getStartIndex($ctx), getLastIndex($ctx)));}
 ;
 
@@ -937,11 +956,11 @@ try_stmt
             SSTNode finallyStatement = null; 
         }
 	(
-		( except_clause 
-                    { push($except_clause.result); } )+
+		( except_clause { push($except_clause.result); } )+
 		( 'else' ':' suite { elseStatement = $suite.result; } )?
-	)?
-	( 'finally' ':' suite { finallyStatement = $suite.result; } )?
+		( 'finally' ':' suite { finallyStatement = $suite.result; } )? |
+		  'finally' ':' suite { finallyStatement = $suite.result; }
+	)
 	{ push(new TrySSTNode($body.result, getArray(start, ExceptSSTNode[].class), elseStatement, finallyStatement, getStartIndex($ctx), getLastIndex($ctx))); }
 ;
 
@@ -1659,7 +1678,7 @@ returns [SSTNode result]
         (
             'from' test {value = $test.result; isFrom = true;}
             |
-            testlist { value = $testlist.result; }
+            testlist_star_expr { value = $testlist_star_expr.result; }
         )?
         { $result = factory.createYieldExpressionSSTNode(value, isFrom, getStartIndex($ctx), getLastIndex($ctx)); }
 ;
@@ -1847,6 +1866,8 @@ LEFT_SHIFT_ASSIGN : '<<=';
 RIGHT_SHIFT_ASSIGN : '>>=';
 POWER_ASSIGN : '**=';
 IDIV_ASSIGN : '//=';
+LONG_QUOTES1 : '"""' {usedQuote1();};
+LONG_QUOTES2 : '\'\'\'' {usedQuote2();};
 
 SKIP_
  : ( SPACES | COMMENT | LINE_JOINING ) -> skip

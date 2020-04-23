@@ -8,9 +8,10 @@
 *TestCase.test_dict
 *TestCase.test_double_braces
 *TestCase.test_empty_format_specifier
+*TestCase.test_equal_equal
 *TestCase.test_if_conditional
-*TestCase.test_invalid_expressions
 *TestCase.test_literal
+*TestCase.test_literal_eval
 *TestCase.test_locals
 *TestCase.test_loop
 *TestCase.test_missing_format_spec

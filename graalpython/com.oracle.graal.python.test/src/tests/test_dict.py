@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -127,7 +127,8 @@ def test_init1():
         dict([("a", 1), ("b", 2)], [("c", 3), ("d", 4)])
         assert False, "expected TypeError"
     except TypeError as e:
-        assert "dict expected at most 1 arguments, got 2" == str(e), "invalid error message"
+        import re
+        assert re.match(r"dict expected at most 1 arguments?, got 2", str(e)), "invalid error message: %s" % e
 
 
 def test_init2():
@@ -597,3 +598,34 @@ def test_calling_hash_and_eq():
     assert b in d
     assert count_hash == 4, count_hash
     assert count_eq == 1, count_eq
+
+
+def test_hash_and_eq_for_dynamic_object_storage():
+    class MyObject:
+        def __init__(self, string):
+            self.string = string
+
+        def __eq__(self, other):
+            return self.string == other
+
+        def __hash__(self):
+            return hash(self.string)
+
+    d = {"1": 42}
+
+    d2 = MyObject("1").__dict__
+    d2["1"] = 42
+
+    assert MyObject("1") in d
+    assert d[MyObject("1")] == 42
+    d[MyObject("1")] = 112
+    assert d[MyObject("1")] == 112
+    del d[MyObject("1")]
+    assert "1" not in d
+
+    assert MyObject("1") in d2
+    assert d2[MyObject("1")] == 42
+    d2[MyObject("1")] = 112
+    assert d2[MyObject("1")] == 112
+    del d2[MyObject("1")]
+    assert "1" not in d2

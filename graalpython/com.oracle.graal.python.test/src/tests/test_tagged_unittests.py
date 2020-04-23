@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -106,8 +106,7 @@ if __name__ == "__main__":
     import re
 
     executable = sys.executable.split(" ") # HACK: our sys.executable on Java is a cmdline
-    re_success = re.compile("(test\S+) \(([^\s]+)\) \.\.\. ok$", re.MULTILINE)
-    re_failure = re.compile("(test\S+) \(([^\s]+)\) \.\.\. (?:ERROR|FAIL)$", re.MULTILINE)
+    re_test_result = re.compile(r"""(test\S+) \(([^\s]+)\)(?:\n.*?)? \.\.\. \b(ok|skipped(?: ["'][^\n]+)?|ERROR|FAIL)$""", re.MULTILINE | re.DOTALL)
     kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": True, "check": False}
 
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
@@ -123,7 +122,7 @@ if __name__ == "__main__":
         else:
             glob_pattern = os.path.join(os.path.dirname(test.__file__), arg)
 
-    p = subprocess.run(["/usr/bin/which", "timeout"], **kwargs)
+    p = subprocess.run(["/usr/bin/which", "timeout" if sys.platform != 'darwin' else 'gtimeout'], **kwargs)
     if p.returncode != 0:
         print("Cannot find the 'timeout' GNU tool. Do you have coreutils installed?")
         sys.exit(1)
@@ -140,9 +139,9 @@ if __name__ == "__main__":
             # entirely
             testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", "60"] + executable + ["-S", "-m"]
+            cmd = [timeout, "-s", "9", "120"] + executable + ["-S", "-m"]
             tagfile = os.path.join(TAGS_DIR, testfile_stem + ".txt")
-            if retag:
+            if retag and repeat == 0:
                 test_selectors = []
             else:
                 test_selectors = working_selectors(tagfile)
@@ -165,64 +164,59 @@ if __name__ == "__main__":
             print("*stderr*")
             print(p.stderr)
 
-            if p.returncode == 0 and not os.path.exists(tagfile):
-                # if we're re-tagging a test without tags, all passed
-                with open(tagfile, "w") as f:
+            passing_tests = []
+            failed_tests = []
+
+            def get_pass_name(funcname, classname):
+                try:
+                    imported_test_module = __import__(testmod)
+                except Exception:
                     pass
-                break
-            elif p.returncode == 0:
-                # we ran the tagged tests and they were fine
-                break
-            elif repeat < maxrepeats:
-                # we failed the first run, create a tag file with the passing
-                # tests (if any)
-                passing_tests = []
-                failed_tests = []
+                else:
+                    # try hard to get a most specific pattern
+                    classname = "".join(classname.rpartition(testmod)[1:])
+                    clazz = imported_test_module
+                    path_to_class = classname.split(".")[1:]
+                    for part in path_to_class:
+                        clazz = getattr(clazz, part, None)
+                    if clazz:
+                        func = getattr(clazz, funcname, None)
+                        if func:
+                            return func.__qualname__
+                return funcname
 
-                def get_pass_name(funcname, classname):
-                    try:
-                        imported_test_module = __import__(testmod)
-                    except:
-                        imported_test_module = None
-                    else:
-                        # try hard to get a most specific pattern
-                        classname = "".join(classname.rpartition(testmod)[1:])
-                        clazz = imported_test_module
-                        path_to_class = classname.split(".")[1:]
-                        for part in path_to_class:
-                            clazz = getattr(clazz, part, None)
-                        if clazz:
-                            func = getattr(clazz, funcname, None)
-                            if func:
-                                return func.__qualname__
-                    return funcname
+            stderr = p.stderr.replace("Please note: This Python implementation is in the very early stages, and can run little more than basic benchmarks at this point.\n", '')
 
-                # n.b.: we add a '*' in the front, so that unittests doesn't add
-                # its own asterisks, because now this is already a pattern
-
-                for funcname,classname in re_failure.findall(p.stdout):
-                    failed_tests.append("*" + get_pass_name(funcname, classname))
-                for funcname,classname in re_failure.findall(p.stderr):
+            # n.b.: we add a '*' in the front, so that unittests doesn't add
+            # its own asterisks, because now this is already a pattern
+            for funcname, classname, result in re_test_result.findall(stderr):
+                # We consider skipped tests as passing in order to avoid a situation where a Linux run
+                # untags a Darwin-only test and vice versa
+                if result == 'ok' or result.startswith('skipped'):
+                    passing_tests.append("*" + get_pass_name(funcname, classname))
+                else:
                     failed_tests.append("*" + get_pass_name(funcname, classname))
 
-                for funcname,classname in re_success.findall(p.stdout):
-                    passing_tests.append("*" + get_pass_name(funcname, classname))
-                for funcname,classname in re_success.findall(p.stderr):
-                    passing_tests.append("*" + get_pass_name(funcname, classname))
-
-                # n.b.: unittests uses the __qualname__ of the function as
-                # pattern, which we're trying to do as well. however, sometimes
-                # the same function is shared in multiple test classes, and
-                # fails in some. so we always subtract the failed patterns from
-                # the passed patterns
-                passing_only_patterns = set(passing_tests) - set(failed_tests)
-                with open(tagfile, "w") as f:
-                    for passing_test in passing_only_patterns:
-                        f.write(passing_test)
-                        f.write("\n")
-                if not passing_only_patterns:
-                    os.unlink(tagfile)
-            else:
-                # we tried the last time and failed, so our tags don't work for
-                # some reason
+            # n.b.: unittests uses the __qualname__ of the function as
+            # pattern, which we're trying to do as well. however, sometimes
+            # the same function is shared in multiple test classes, and
+            # fails in some. so we always subtract the failed patterns from
+            # the passed patterns
+            passing_only_patterns = set(passing_tests) - set(failed_tests)
+            with open(tagfile, "w") as f:
+                for passing_test in sorted(passing_only_patterns):
+                    f.write(passing_test)
+                    f.write("\n")
+            if not passing_only_patterns:
                 os.unlink(tagfile)
+
+            if p.returncode == 0:
+                break
+
+        else:
+            # we tried the last time and failed, so our tags don't work for
+            # some reason
+            try:
+                os.unlink(tagfile)
+            except Exception:
+                pass

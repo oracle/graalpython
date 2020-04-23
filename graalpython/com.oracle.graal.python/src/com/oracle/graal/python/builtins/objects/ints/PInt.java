@@ -53,14 +53,20 @@ public final class PInt extends PythonBuiltinObject {
         this.value = value;
     }
 
+    public static long abs(long a) {
+        return (a < 0) ? -a : a;
+    }
+
     public BigInteger getValue() {
         return value;
     }
 
+    @TruffleBoundary(allowInlining = true)
     public boolean isOne() {
         return value.equals(BigInteger.ONE);
     }
 
+    @TruffleBoundary(allowInlining = true)
     public boolean isZero() {
         return value.equals(BigInteger.ZERO);
     }
@@ -213,7 +219,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final int compareTo(BigInteger left, BigInteger right) {
+    private static int compareTo(BigInteger left, BigInteger right) {
         return left.compareTo(right);
     }
 
@@ -222,7 +228,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final int compareTo(BigInteger left, long right) {
+    private static int compareTo(BigInteger left, long right) {
         return left.compareTo(longToBigInteger(right));
     }
 
@@ -232,12 +238,12 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final String toString(BigInteger value) {
+    private static String toString(BigInteger value) {
         return value.toString();
     }
 
     @TruffleBoundary
-    public static final BigInteger longToBigInteger(long value) {
+    public static BigInteger longToBigInteger(long value) {
         return BigInteger.valueOf(value);
     }
 
@@ -246,7 +252,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final double doubleValue(BigInteger value) {
+    private static double doubleValue(BigInteger value) {
         return value.doubleValue();
     }
 
@@ -255,7 +261,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final int intValue(BigInteger value) {
+    private static int intValue(BigInteger value) {
         return value.intValue();
     }
 
@@ -264,7 +270,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
-    private static final int intValueExact(BigInteger value) {
+    private static int intValueExact(BigInteger value) {
         return value.intValueExact();
     }
 
@@ -273,7 +279,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static final long longValue(BigInteger integer) {
+    public static long longValue(BigInteger integer) {
         return integer.longValue();
     }
 
@@ -282,7 +288,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
-    private static final long longValueExact(BigInteger value) {
+    private static long longValueExact(BigInteger value) {
         return value.longValueExact();
     }
 
@@ -294,12 +300,21 @@ public final class PInt extends PythonBuiltinObject {
         return (compareTo(val) < 0 ? this : val);
     }
 
+    public int bitLength() {
+        return bitLength(value);
+    }
+
+    @TruffleBoundary
+    public static int bitLength(BigInteger value) {
+        return value.bitLength();
+    }
+
     public int bitCount() {
         return bitCount(value);
     }
 
     @TruffleBoundary
-    private static final int bitCount(BigInteger value) {
+    private static int bitCount(BigInteger value) {
         return value.bitCount();
     }
 
@@ -309,6 +324,10 @@ public final class PInt extends PythonBuiltinObject {
 
     public boolean isZeroOrNegative() {
         return value.signum() <= 0;
+    }
+
+    public boolean isNegative() {
+        return value.signum() < 0;
     }
 
     public static int intValue(boolean bool) {
@@ -369,7 +388,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)
-    private static final byte byteValueExact(BigInteger value) {
+    private static byte byteValueExact(BigInteger value) {
         return value.byteValueExact();
     }
 
@@ -384,6 +403,19 @@ public final class PInt extends PythonBuiltinObject {
 
     public static boolean isIntRange(long val) {
         return val == (int) val;
+    }
+
+    public BigInteger abs() {
+        if (value.signum() < 0) {
+            return abs(value);
+        } else {
+            return value;
+        }
+    }
+
+    @TruffleBoundary
+    private static BigInteger abs(BigInteger value) {
+        return value.abs();
     }
 
     public boolean isNative() {

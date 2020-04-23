@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -55,25 +56,20 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.ControlFlowException;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class HandleCache implements TruffleObject {
-    public static final int CACHE_SIZE = 10;
+    public static final int CACHE_SIZE = 3;
 
     final long[] keys;
-    final Object[] values;
     private final TruffleObject ptrToResolveHandle;
 
     int pos = 0;
 
     public HandleCache(TruffleObject ptrToResolveHandle) {
         keys = new long[CACHE_SIZE];
-        values = new Object[CACHE_SIZE];
         this.ptrToResolveHandle = ptrToResolveHandle;
     }
 
@@ -93,18 +89,12 @@ public final class HandleCache implements TruffleObject {
 
     @ExportMessage
     public Object execute(Object[] arguments,
-                    @Cached GetOrInsertNode getOrInsertNode,
-                    @Cached BranchProfile invalidArgCountProfile) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+                    @Cached GetOrInsertNode getOrInsertNode) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
         if (arguments.length != 1) {
-            invalidArgCountProfile.enter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw ArityException.create(1, arguments.length);
         }
         return getOrInsertNode.execute(this, (long) arguments[0]);
-    }
-
-    static class InvalidCacheEntryException extends ControlFlowException {
-        private static final long serialVersionUID = 1L;
-        public static final InvalidCacheEntryException INSTANCE = new InvalidCacheEntryException();
     }
 
     @GenerateUncached
@@ -112,77 +102,53 @@ public final class HandleCache implements TruffleObject {
     abstract static class GetOrInsertNode extends Node {
         public abstract Object execute(HandleCache cache, long handle) throws UnsupportedTypeException, ArityException, UnsupportedMessageException;
 
-        @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
-                        "handle == cachedHandle"}, rewriteOn = InvalidCacheEntryException.class, assumptions = "singleContextAssumption()")
-        Object doCachedSingleContext(HandleCache cache, @SuppressWarnings("unused") long handle,
-                        @Cached("handle") long cachedHandle,
-                        @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
-                        @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject cachedResolveHandleFunction,
-                        @Cached("lookupPositionUncached(cache, handle, cachedLen, cachedResolveHandleFunction)") int cachedPosition) throws InvalidCacheEntryException {
-            if (cache.keys[cachedPosition] == cachedHandle) {
-                return cache.values[cachedPosition];
-            }
-            throw InvalidCacheEntryException.INSTANCE;
+        @Specialization(limit = "CACHE_SIZE", //
+                        guards = {"handle == cachedHandle", "cachedValue != null"}, //
+                        assumptions = "singleContextAssumption()", //
+                        rewriteOn = InvalidAssumptionException.class)
+        static PythonNativeWrapper doCachedSingleContext(@SuppressWarnings("unused") HandleCache cache, @SuppressWarnings("unused") long handle,
+                        @Cached("handle") @SuppressWarnings("unused") long cachedHandle,
+                        @Cached("resolveHandleUncached(cache, handle)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+            associationValidAssumption.check();
+            return cachedValue;
         }
 
-        @Specialization(guards = {"cache.len() == cachedLen"}, replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
-        Object doFullLookupSingleContext(HandleCache cache, long handle,
-                        @Cached(value = "cache.len()", allowUncached = true) int cachedLen,
+        @Specialization(replaces = "doCachedSingleContext", assumptions = "singleContextAssumption()")
+        static Object doGenericSingleContext(@SuppressWarnings("unused") HandleCache cache, long handle,
                         @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) TruffleObject resolveHandleFunction,
                         @CachedLibrary("resolveHandleFunction") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-            int pos = lookupPosition(cache, handle, cachedLen, resolveHandleFunction, interopLibrary);
-            return cache.values[pos];
+            return resolveHandle(handle, resolveHandleFunction, interopLibrary);
         }
 
-        @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
-                        "handle == cachedHandle", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, rewriteOn = InvalidCacheEntryException.class)
-        Object doCached(HandleCache cache, @SuppressWarnings("unused") long handle,
-                        @Cached("handle") long cachedHandle,
-                        @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
-                        @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject cachedResolveHandleFunction,
-                        @Cached("lookupPositionUncached(cache, handle, cachedLen, cachedResolveHandleFunction)") int cachedPosition) throws InvalidCacheEntryException {
-            if (cache.keys[cachedPosition] == cachedHandle) {
-                return cache.values[cachedPosition];
-            }
-            throw InvalidCacheEntryException.INSTANCE;
+        @Specialization(limit = "3", replaces = {"doCachedSingleContext", "doGenericSingleContext"})
+        static Object doGeneric(@SuppressWarnings("unused") HandleCache cache, long handle,
+                        @CachedLibrary("cache.getPtrToResolveHandle()") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return resolveHandle(handle, cache.getPtrToResolveHandle(), interopLibrary);
         }
 
-        @Specialization(guards = {"cache.len() == cachedLen", "cache.getPtrToResolveHandle() == cachedResolveHandleFunction"}, replaces = "doCached")
-        Object doFullLookup(HandleCache cache, long handle,
-                        @Cached(value = "cache.len()", allowUncached = true) int cachedLen,
-                        @Cached(value = "cache.getPtrToResolveHandle()", allowUncached = true) TruffleObject cachedResolveHandleFunction,
-                        @CachedLibrary("cachedResolveHandleFunction") InteropLibrary interopLibrary) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-            int pos = lookupPosition(cache, handle, cachedLen, cachedResolveHandleFunction, interopLibrary);
-            return cache.values[pos];
-        }
-
-        protected static int lookupPositionUncached(HandleCache cache, long handle, int len, TruffleObject ptrToResolveHandle)
+        static PythonNativeWrapper resolveHandleUncached(HandleCache cache, long handle)
                         throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
             CompilerAsserts.neverPartOfCompilation();
-            return lookupPosition(cache, handle, len, ptrToResolveHandle, InteropLibrary.getFactory().getUncached(ptrToResolveHandle));
-        }
-
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        protected static int lookupPosition(HandleCache cache, long handle, int cachedLen, TruffleObject ptrToResolveHandle, InteropLibrary interopLibrary)
-                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-            for (int i = 0; i < cachedLen; i++) {
-                if (cache.keys[i] == handle) {
-                    return i;
-                }
+            TruffleObject ptrToResolveHandle = cache.getPtrToResolveHandle();
+            Object resolved = resolveHandle(handle, ptrToResolveHandle, InteropLibrary.getFactory().getUncached(ptrToResolveHandle));
+            if (resolved instanceof PythonNativeWrapper) {
+                return (PythonNativeWrapper) resolved;
             }
-
-            Object resolved = interopLibrary.execute(ptrToResolveHandle, handle);
-
-            int insertPos = cache.pos;
-            cache.keys[insertPos] = handle;
-            cache.values[insertPos] = resolved;
-            cache.pos = (insertPos + 1) % cache.len();
-
-            return insertPos;
+            return null;
         }
 
-        protected static Assumption singleContextAssumption() {
+        static Object resolveHandle(long handle, TruffleObject ptrToResolveHandle, InteropLibrary interopLibrary)
+                        throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            return interopLibrary.execute(ptrToResolveHandle, handle);
+        }
+
+        static Assumption singleContextAssumption() {
             return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
+            return nativeWrapper.ensureHandleValidAssumption();
         }
     }
 }

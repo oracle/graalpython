@@ -2,5 +2,6 @@
 *BrowserRegistrationTest.test_register_default
 *BrowserRegistrationTest.test_register_preferred
 *ImportTest.test_environment
+*ImportTest.test_environment_preferred
 *ImportTest.test_get
 *ImportTest.test_register

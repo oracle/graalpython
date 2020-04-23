@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,18 +26,15 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.UnmodifiableStorageException;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PDict extends PHashingCollection {
 
@@ -58,20 +55,12 @@ public final class PDict extends PHashingCollection {
         this.dictStorage = (keywords != null) ? KeywordsStorage.create(keywords) : new EmptyStorage();
     }
 
-    @TruffleBoundary
     public Object getItem(Object key) {
-        return dictStorage.getItem(key, HashingStorage.getSlowPathEquivalence(key));
+        return HashingStorageLibrary.getUncached().getItem(dictStorage, key);
     }
 
-    @TruffleBoundary
     public void setItem(Object key, Object value) {
-        try {
-            dictStorage.setItem(key, value, HashingStorage.getSlowPathEquivalence(key));
-        } catch (UnmodifiableStorageException e) {
-            HashingStorage newDictStorage = createNewStorage(key instanceof String, size() + 1);
-            newDictStorage.setItem(key, value, HashingStorage.getSlowPathEquivalence(key));
-            dictStorage = newDictStorage;
-        }
+        dictStorage = HashingStorageLibrary.getUncached().setItem(dictStorage, key, value);
     }
 
     public static HashingStorage createNewStorage(boolean isStringKey, int expectedSize) {
@@ -79,18 +68,15 @@ public final class PDict extends PHashingCollection {
         if (expectedSize == 0) {
             newDictStorage = new EmptyStorage();
         } else if (isStringKey && expectedSize < DynamicObjectStorage.SIZE_THRESHOLD) {
-            newDictStorage = new FastDictStorage();
+            newDictStorage = new DynamicObjectStorage();
         } else {
-            newDictStorage = EconomicMapStorage.create(expectedSize, false);
+            newDictStorage = EconomicMapStorage.create(expectedSize);
         }
         return newDictStorage;
     }
 
-    @TruffleBoundary
     public void update(PDict other) {
-        for (DictEntry entry : other.entries()) {
-            this.setItem(entry.key, entry.value);
-        }
+        dictStorage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), dictStorage);
     }
 
     @Override
@@ -107,16 +93,15 @@ public final class PDict extends PHashingCollection {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         StringBuilder buf = new StringBuilder("{");
-        int length = dictStorage.length();
+        HashingStorageLibrary lib = HashingStorageLibrary.getUncached();
+        int length = lib.length(dictStorage);
         int i = 0;
 
-        for (HashingStorage.DictEntry entry : dictStorage.entries()) {
+        for (HashingStorage.DictEntry entry : lib.entries(dictStorage)) {
             buf.append(entry.getKey() + ": " + entry.getValue());
-
             if (i < length - 1) {
                 buf.append(", ");
             }
-
             i++;
         }
 
@@ -126,7 +111,6 @@ public final class PDict extends PHashingCollection {
 
     @Override
     public int size() {
-        return dictStorage.length();
+        return HashingStorageLibrary.getUncached().length(dictStorage);
     }
-
 }

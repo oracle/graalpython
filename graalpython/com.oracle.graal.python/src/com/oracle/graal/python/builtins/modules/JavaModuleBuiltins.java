@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 @CoreFunctions(defineModule = "java")
@@ -121,7 +120,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddToClassPathNode extends PythonBuiltinNode {
         @Specialization
-        PNone add(VirtualFrame frame, Object[] args,
+        PNone add(Object[] args,
                         @Cached CastToJavaStringNode castToString) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {

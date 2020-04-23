@@ -1,0 +1,2 @@
+*CmdLineTest.test_argv0_normalization
+*CmdLineTest.test_directories

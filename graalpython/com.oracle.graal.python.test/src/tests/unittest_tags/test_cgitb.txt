@@ -1,2 +1,2 @@
-test_blanks
-test_fonts
+*TestCgitb.test_blanks
+*TestCgitb.test_fonts

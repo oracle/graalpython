@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: LambdaType
         PythonCallNodeGen SourceSection: [403,421]`type(lambda: None)`
           CallNodeGen SourceSection: None
-          FunctionDefinitionNode Name: anonymous SourceSection: [408,420]`lambda: None`
+          FunctionDefinitionNode Name: <lambda> SourceSection: [408,420]`lambda: None`
             Arguments: None
             KwArguments: None
             Documentation: None
@@ -64,7 +64,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               FreeVarsSlots: None
               CellVarsSlots: None
             FunctionRootNode SourceSection: [408,420]`lambda: None`
-              Name: anonymous
+              Name: <lambda>
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
@@ -1043,7 +1043,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         Identifier: kwds
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [2,kwds,Illegal]
-                        DictLiteralNode SourceSection: [3162,3164]`{}`
+                        DictLiteralNodeGen SourceSection: [3162,3164]`{}`
                           PythonObjectFactoryNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [3183,3200]`kwds = dict(kwds)`
                         Identifier: kwds
@@ -1171,7 +1171,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         Identifier: ns
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [4,ns,Illegal]
-                        DictLiteralNode SourceSection: [3725,3727]`{}`
+                        DictLiteralNodeGen SourceSection: [3725,3727]`{}`
                           PythonObjectFactoryNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [3732,3753]`return meta, ns, kwd...`
                       WriteLocalVariableNodeGen SourceSection: None

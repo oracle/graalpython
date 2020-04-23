@@ -22,10 +22,9 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         WriteNameNodeGen SourceSection: None
           Identifier: MAXGROUPS
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [515,1619]`class error(Exceptio...`
         Identifier: error
         PythonCallNodeGen SourceSection: [515,1619]`class error(Exceptio...`
@@ -832,7 +831,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: _makecodes
       WriteNameNodeGen SourceSection: [3658,3739]`OP_IGNORE = {↵    LI...`
         Identifier: OP_IGNORE
-        DictLiteralNode SourceSection: [3670,3739]`{↵    LITERAL: LITER...`
+        DictLiteralNodeGen SourceSection: [3670,3739]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3676,3683]`LITERAL`
             Identifier: LITERAL
@@ -844,7 +843,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_IGNORE
       WriteNameNodeGen SourceSection: [3741,3837]`OP_LOCALE_IGNORE = {...`
         Identifier: OP_LOCALE_IGNORE
-        DictLiteralNode SourceSection: [3760,3837]`{↵    LITERAL: LITER...`
+        DictLiteralNodeGen SourceSection: [3760,3837]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3766,3773]`LITERAL`
             Identifier: LITERAL
@@ -856,7 +855,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_LOC_IGNORE
       WriteNameNodeGen SourceSection: [3839,3936]`OP_UNICODE_IGNORE = ...`
         Identifier: OP_UNICODE_IGNORE
-        DictLiteralNode SourceSection: [3859,3936]`{↵    LITERAL: LITER...`
+        DictLiteralNodeGen SourceSection: [3859,3936]`{↵    LITERAL: LITER...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3865,3872]`LITERAL`
             Identifier: LITERAL
@@ -868,7 +867,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: NOT_LITERAL_UNI_IGNORE
       WriteNameNodeGen SourceSection: [3938,4017]`AT_MULTILINE = {↵   ...`
         Identifier: AT_MULTILINE
-        DictLiteralNode SourceSection: [3953,4017]`{↵    AT_BEGINNING: ...`
+        DictLiteralNodeGen SourceSection: [3953,4017]`{↵    AT_BEGINNING: ...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3959,3971]`AT_BEGINNING`
             Identifier: AT_BEGINNING
@@ -880,7 +879,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_END_LINE
       WriteNameNodeGen SourceSection: [4019,4109]`AT_LOCALE = {↵    AT...`
         Identifier: AT_LOCALE
-        DictLiteralNode SourceSection: [4031,4109]`{↵    AT_BOUNDARY: A...`
+        DictLiteralNodeGen SourceSection: [4031,4109]`{↵    AT_BOUNDARY: A...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4037,4048]`AT_BOUNDARY`
             Identifier: AT_BOUNDARY
@@ -892,7 +891,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_LOC_NON_BOUNDARY
       WriteNameNodeGen SourceSection: [4111,4202]`AT_UNICODE = {↵    A...`
         Identifier: AT_UNICODE
-        DictLiteralNode SourceSection: [4124,4202]`{↵    AT_BOUNDARY: A...`
+        DictLiteralNodeGen SourceSection: [4124,4202]`{↵    AT_BOUNDARY: A...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4130,4141]`AT_BOUNDARY`
             Identifier: AT_BOUNDARY
@@ -904,7 +903,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: AT_UNI_NON_BOUNDARY
       WriteNameNodeGen SourceSection: [4204,4558]`CH_LOCALE = {↵    CA...`
         Identifier: CH_LOCALE
-        DictLiteralNode SourceSection: [4216,4558]`{↵    CATEGORY_DIGIT...`
+        DictLiteralNodeGen SourceSection: [4216,4558]`{↵    CATEGORY_DIGIT...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4222,4236]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT
@@ -940,7 +939,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
             Identifier: CATEGORY_NOT_LINEBREAK
       WriteNameNodeGen SourceSection: [4560,4939]`CH_UNICODE = {↵    C...`
         Identifier: CH_UNICODE
-        DictLiteralNode SourceSection: [4573,4939]`{↵    CATEGORY_DIGIT...`
+        DictLiteralNodeGen SourceSection: [4573,4939]`{↵    CATEGORY_DIGIT...`
           PythonObjectFactoryNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4579,4593]`CATEGORY_DIGIT`
             Identifier: CATEGORY_DIGIT

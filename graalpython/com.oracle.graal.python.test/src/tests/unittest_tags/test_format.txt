@@ -1,1 +1,1 @@
-test_format_class
+*FormatTest.test_format_class

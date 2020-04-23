@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -323,3 +323,10 @@ def test_hashable_frozenset():
     d = {key1: 42}
     assert hash(key1) == hash(key2)
     assert d[key2] == 42
+
+
+def test_equality():
+    s1 = {1, 2, 3}
+    s2 = {1, 3}
+    assert not s1 == s2
+    assert not s2 == s1

@@ -67,11 +67,17 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
 
     public abstract boolean executeBool(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
 
+    public abstract boolean executeBool(VirtualFrame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
+
     public abstract int executeInt(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
 
     public abstract int executeInt(VirtualFrame frame, Object callable, int arg, int arg2) throws UnexpectedResultException;
 
+    public abstract int executeInt(VirtualFrame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
+
     public abstract long executeLong(VirtualFrame frame, Object callable, long arg, long arg2) throws UnexpectedResultException;
+
+    public abstract long executeLong(VirtualFrame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
 
     public abstract double executeDouble(VirtualFrame frame, Object callable, double arg, double arg2) throws UnexpectedResultException;
 
@@ -290,6 +296,11 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
         }
 
         @Override
+        public boolean executeBool(VirtualFrame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException {
+            return expectBooleanResult(executeObject(frame, callable, arg, arg2));
+        }
+
+        @Override
         public int executeInt(VirtualFrame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException {
             return expectIntegerResult(executeObject(frame, callable, arg, arg2));
         }
@@ -300,7 +311,17 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
         }
 
         @Override
+        public int executeInt(VirtualFrame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException {
+            return expectIntegerResult(executeObject(frame, callable, arg, arg2));
+        }
+
+        @Override
         public long executeLong(VirtualFrame frame, Object callable, long arg, long arg2) throws UnexpectedResultException {
+            return expectLongResult(executeObject(frame, callable, arg, arg2));
+        }
+
+        @Override
+        public long executeLong(VirtualFrame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException {
             return expectLongResult(executeObject(frame, callable, arg, arg2));
         }
 

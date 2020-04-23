@@ -1,3 +1,4 @@
-test_legacy_block_size_warnings
-test_dot_new_with_str_key
-test_with_str_key
+*ConstructorTestCase.test_dot_new_with_str_key
+*ConstructorTestCase.test_with_str_key
+*TestVectorsTestCase.test_legacy_block_size_warnings
+*TestVectorsTestCase.test_with_digestmod_no_default

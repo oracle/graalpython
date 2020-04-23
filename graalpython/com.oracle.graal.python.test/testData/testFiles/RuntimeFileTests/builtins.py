@@ -48,7 +48,7 @@ def __import__(filename, module_name):
     import sys, posix
     module = sys.modules[module_name]
     if filename.startswith("%s"):
-        filename = filename % sys.graal_python_core_home
+        filename = filename % __graalpython__.core_home
     fd = posix.open(filename, posix.O_RDONLY)
     content = posix.read(fd, sys.maxsize)
     posix.close(fd)

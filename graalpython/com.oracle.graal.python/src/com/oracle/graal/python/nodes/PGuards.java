@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -67,12 +68,15 @@ import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -304,6 +308,19 @@ public abstract class PGuards {
         return obj instanceof String || obj instanceof PString;
     }
 
+    public static boolean isBuiltinString(Object obj, IsBuiltinClassProfile profile) {
+        return obj instanceof String ||
+                        (obj instanceof PString && profile.profileClass(((PString) obj).getLazyPythonClass(), PythonBuiltinClassType.PString));
+    }
+
+    public static boolean isBuiltinString(PString s, IsBuiltinClassProfile isBuiltinClassProfile, GetLazyClassNode getClassNode) {
+        return isBuiltinClassProfile.profileClass(getClassNode.execute(s), PythonBuiltinClassType.PString);
+    }
+
+    public static boolean isNativeString(PString x) {
+        return x.getCharSequence() instanceof NativeCharSequence;
+    }
+
     public static boolean isBuiltinFunction(Object obj) {
         return obj instanceof PBuiltinFunction;
     }
@@ -344,6 +361,10 @@ public abstract class PGuards {
         return obj instanceof PNone;
     }
 
+    public static boolean isPComplex(Object obj) {
+        return obj instanceof PComplex;
+    }
+
     public static boolean isPTuple(Object obj) {
         return obj instanceof PTuple;
     }
@@ -357,11 +378,11 @@ public abstract class PGuards {
     }
 
     public static boolean isDouble(Object obj) {
-        return obj instanceof Long || obj instanceof Integer;
+        return obj instanceof Double;
     }
 
     public static boolean isBoolean(Object obj) {
-        return obj instanceof Long || obj instanceof Integer;
+        return obj instanceof Boolean;
     }
 
     public static boolean isBytes(Object obj) {

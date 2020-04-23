@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,14 +57,14 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
     public abstract int size();
 
     public Iterable<Object> items() {
-        return getDictStorage().values();
+        return HashingStorageLibrary.getUncached().values(getDictStorage());
     }
 
     public Iterable<Object> keys() {
-        return getDictStorage().keys();
+        return HashingStorageLibrary.getUncached().keys(getDictStorage());
     }
 
     public Iterable<DictEntry> entries() {
-        return getDictStorage().entries();
+        return HashingStorageLibrary.getUncached().entries(getDictStorage());
     }
 }

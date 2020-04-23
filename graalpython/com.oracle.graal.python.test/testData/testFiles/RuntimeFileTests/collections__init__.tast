@@ -36,10 +36,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         WriteNameNodeGen SourceSection: None
           Identifier: _eq
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       ImportFromNode SourceSection: [1059,1102]`from keyword import ...`
         Importee: keyword
         Level: 0
@@ -47,10 +46,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         WriteNameNodeGen SourceSection: None
           Identifier: _iskeyword
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [1110,1121]`sys as _sys`
         Identifier: _sys
         ImportExpression SourceSection: None
@@ -68,10 +66,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         WriteNameNodeGen SourceSection: None
           Identifier: _proxy
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       ImportFromNode SourceSection: [1182,1259]`from itertools impor...`
         Importee: itertools
         Level: 0
@@ -85,10 +82,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         WriteNameNodeGen SourceSection: None
           Identifier: _starmap
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       ImportFromNode SourceSection: [1260,1313]`from reprlib import ...`
         Importee: reprlib
         Level: 0
@@ -96,10 +92,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         WriteNameNodeGen SourceSection: None
           Identifier: _recursive_repr
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       TryFinallyNode SourceSection: [1315,1444]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [1324,1354]`from _collections im...`
@@ -109,10 +104,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             WriteNameNodeGen SourceSection: None
               Identifier: deque
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [1379,1383]`pass`
               EmptyNode SourceSection: [1379,1383]`pass`
@@ -141,10 +135,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             WriteNameNodeGen SourceSection: None
               Identifier: defaultdict
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [1514,1518]`pass`
               EmptyNode SourceSection: [1514,1518]`pass`
@@ -986,7 +979,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadLocalVariableNode SourceSection: [4521,4525]`self`
                                                 Frame: [2,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                              DictLiteralNode SourceSection: [4534,4536]`{}`
+                                              DictLiteralNodeGen SourceSection: [4534,4536]`{}`
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4357,4371]`AttributeError`
                                             Identifier: AttributeError
@@ -3346,10 +3339,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             WriteNameNodeGen SourceSection: None
               Identifier: OrderedDict
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [10936,10940]`pass`
               EmptyNode SourceSection: [10936,10940]`pass`
@@ -3359,7 +3351,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11121,11141]`_nt_itemgetters = {}...`
         Identifier: _nt_itemgetters
-        DictLiteralNode SourceSection: [11139,11141]`{}`
+        DictLiteralNodeGen SourceSection: [11139,11141]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11143,17741]`def namedtuple(typen...`
         Identifier: namedtuple
@@ -3795,7 +3787,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       Identifier: field_defaults
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [9,field_defaults,Illegal]
-                      DictLiteralNode SourceSection: [13552,13554]`{}`
+                      DictLiteralNodeGen SourceSection: [13552,13554]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     IfNode SourceSection: [13559,13934]`if defaults is not N...`
                       NotNodeGen SourceSection: [13562,13582]`defaults is not None...`
@@ -4068,7 +4060,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       Identifier: namespace
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [16,namespace,Illegal]
-                      DictLiteralNode SourceSection: [14371,14442]`{'_tuple_new': tuple...`
+                      DictLiteralNodeGen SourceSection: [14371,14442]`{'_tuple_new': tuple...`
                         PythonObjectFactoryNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [14372,14384]`'_tuple_new'`
                         StringLiteralNode SourceSection: [14397,14407]`'__name__'`
@@ -4575,7 +4567,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       Identifier: class_namespace
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [24,class_namespace,Illegal]
-                      DictLiteralNode SourceSection: [16187,16523]`{↵        '__doc__':...`
+                      DictLiteralNodeGen SourceSection: [16187,16523]`{↵        '__doc__':...`
                         PythonObjectFactoryNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [16197,16206]`'__doc__'`
                         StringLiteralNode SourceSection: [16243,16254]`'__slots__'`
@@ -4950,10 +4942,9 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             WriteNameNodeGen SourceSection: None
               Identifier: _count_elements
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [18074,18078]`pass`
               EmptyNode SourceSection: [18074,18078]`pass`
@@ -8247,7 +8238,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ListLiteralNode SourceSection: [32916,32920]`[{}]`
-                                          DictLiteralNode SourceSection: [32917,32919]`{}`
+                                          DictLiteralNodeGen SourceSection: [32917,32919]`{}`
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -8597,7 +8588,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Identifier: d
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [1,d,Illegal]
-                                      DictLiteralNode SourceSection: [33579,33581]`{}`
+                                      DictLiteralNodeGen SourceSection: [33579,33581]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     ElseNode SourceSection: [33590,33722]`for mapping in rever...`
                                       ForNode SourceSection: None
@@ -9149,7 +9140,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         Identifier: m
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,m,Illegal]
-                                        DictLiteralNode SourceSection: [34655,34657]`{}`
+                                        DictLiteralNodeGen SourceSection: [34655,34657]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [34666,34702]`return self.__class_...`
@@ -9883,7 +9874,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       ReadLocalVariableNode SourceSection: [36716,36720]`self`
                                         Frame: [2,self,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      DictLiteralNode SourceSection: [36728,36730]`{}`
+                                      DictLiteralNodeGen SourceSection: [36728,36730]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     IfNode SourceSection: [36739,36798]`if dict is not None:...`
                                       NotNodeGen SourceSection: [36742,36758]`dict is not None`
@@ -10515,7 +10506,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadLocalVariableNode SourceSection: [37711,37715]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                            DictLiteralNode SourceSection: [37723,37725]`{}`
+                                            DictLiteralNodeGen SourceSection: [37723,37725]`{}`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [37738,37757]`c = copy.copy(self)`
                                             Identifier: c

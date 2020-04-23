@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,8 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
+import com.oracle.truffle.api.CompilerDirectives;
+
 public final class CharSequenceStorage extends TypedSequenceStorage {
 
     private char[] values;
@@ -82,6 +84,7 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
@@ -96,26 +99,31 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void copyItem(int idxTo, int idxFrom) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public CharSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void reverse() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new UnsupportedOperationException();
     }
 

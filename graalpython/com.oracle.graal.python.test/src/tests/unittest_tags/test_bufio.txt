@@ -1,0 +1,2 @@
+*BufferSizeTest.test_nullpat
+*BufferSizeTest.test_primepat

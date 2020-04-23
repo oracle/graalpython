@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,10 +45,8 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Currency;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -63,6 +61,8 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+
+import org.graalvm.collections.EconomicMap;
 
 @CoreFunctions(defineModule = "_locale")
 public class LocaleModuleBuiltins extends PythonBuiltins {
@@ -161,7 +161,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PDict localeconv() {
-            Map<String, Object> dict = new HashMap<>();
+            EconomicMap<String, Object> dict = EconomicMap.create(20);
 
             // get default locale for the format category
             Locale locale = Locale.getDefault(Locale.Category.FORMAT);

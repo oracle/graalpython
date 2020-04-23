@@ -25,13 +25,16 @@
 from __future__ import print_function
 
 import contextlib
+import datetime
 import glob
+import itertools
 import json
 import os
 import platform
 import re
 import shutil
 import sys
+
 PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
 if PY3:
@@ -48,10 +51,11 @@ import mx_sdk
 import mx_subst
 import mx_urlrewrites
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
-    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI
+    CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
+    PythonInteropBenchmarkSuite
 
 
 if not sys.modules.get("__main__"):
@@ -146,16 +150,14 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         dists += extra_dists
 
     if not os.environ.get("CI"):
+        graalpython_args.insert(0, "--llvm.enableLVI=true")
         # Try eagerly to include tools for convenience when running Python
         if not mx.suite("tools", fatalIfMissing=False):
             SUITE.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
         if mx.suite("tools", fatalIfMissing=False):
-            if os.path.exists(mx.suite("tools").dependency("CHROMEINSPECTOR").path):
-                # CHROMEINSPECTOR was built, put it on the classpath
-                dists.append('CHROMEINSPECTOR')
-                graalpython_args.insert(0, "--llvm.enableLVI=true")
-            else:
-                mx.logv("CHROMEINSPECTOR was not built, not including it automatically")
+            for tool in ["CHROMEINSPECTOR", "TRUFFLE_COVERAGE"]:
+                if os.path.exists(mx.suite("tools").dependency(tool).path):
+                    dists.append(tool)
 
     graalpython_args.insert(0, '--experimental-options=true')
 
@@ -220,8 +222,84 @@ def python3_unittests(args):
 
 def retag_unittests(args):
     """run the cPython stdlib unittests"""
+    parser = ArgumentParser('mx python-retag-unittests')
+    parser.add_argument('--upload-results-to')
+    parsed_args, remaining_args = parser.parse_known_args(args)
     with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true"):
-        python(["graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py"] + args)
+        with _dev_pythonhome_context():
+            args = [
+                '--experimental-options=true',
+                '--python.CatchAllExceptions=true',
+                '--python.WithThread=true',
+                '--python.CAPI=' + _get_capi_home(),
+                'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
+                '--retag',
+            ]
+            mx.run([python_gvm()] + args + remaining_args)
+    if parsed_args.upload_results_to:
+        with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
+            filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
+            mx.run(['tar', 'cJf', filename, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags'])
+            mx.run(['scp', filename, parsed_args.upload_results_to.rstrip('/') + '/'])
+
+
+def _read_tags(path='.'):
+    tags = set()
+    tagfiles = glob.glob(os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/*.txt'))
+    for tagfile in tagfiles:
+        with open(tagfile) as f:
+            tags |= {(os.path.basename(tagfile), line.strip()) for line in f if line.strip()}
+    return tags
+
+
+def _write_tags(tags, path='.'):
+    tagdir = os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/')
+    tagfiles = glob.glob(os.path.join(path, 'graalpython/com.oracle.graal.python.test/src/tests/unittest_tags/*.txt'))
+    for file in tagfiles:
+        os.unlink(file)
+    for file, tags in itertools.groupby(sorted(tags), key=lambda x: x[0]):
+        with open(os.path.join(tagdir, file), 'w') as f:
+            for tag in tags:
+                f.write(tag[1] + '\n')
+
+
+def _fetch_tags_for_platform(parsed_args, platform):
+    oldpwd = os.getcwd()
+    with tempfile.TemporaryDirectory(prefix='graalpython-update-tags-') as d:
+        os.chdir(d)
+        try:
+            tarfile = 'unittest-tags-{}.tar.bz2'.format(platform)
+            mx.run(['curl', '-O', '{}/{}'.format(parsed_args.tags_directory_url.rstrip('/'), tarfile)])
+            os.mkdir(platform)
+            mx.run(['tar', 'xf', tarfile, '-C', platform])
+            return _read_tags(platform)
+        finally:
+            os.chdir(oldpwd)
+
+
+def update_unittest_tags(args):
+    parser = ArgumentParser('mx python-update-unittest-tags')
+    parser.add_argument('tags_directory_url')
+    parsed_args = parser.parse_args(args)
+
+    current_tags = _read_tags()
+    linux_tags = _fetch_tags_for_platform(parsed_args, 'linux')
+    darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
+
+    result_tags = linux_tags & darwin_tags
+    _write_tags(result_tags)
+
+    diff = linux_tags - darwin_tags
+    if diff:
+        mx.warn("The following tests work only on Linux:\n" + '\n'.join(x[1] for x in diff))
+
+    diff = darwin_tags - linux_tags
+    if diff:
+        mx.warn("The following tests work only on Darwin:\n" + '\n'.join(x[1] for x in diff))
+
+    diff = current_tags - result_tags
+    if diff:
+        mx.warn("Potential regressions:\n" + '\n'.join(x[1] for x in diff))
 
 
 AOT_INCOMPATIBLE_TESTS = ["test_interop.py"]
@@ -302,27 +380,29 @@ def set_env(**environ):
 
 def python_gvm(args=None):
     "Build and run a GraalVM graalpython launcher"
-    with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_AGENT="true", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args or [])
+    return _python_graalvm_launcher(args or [])
 
 
 def python_svm(args=None):
     "Build and run the native graalpython image"
     with set_env(FORCE_BASH_LAUNCHERS="lli,native-image,gu,graalvm-native-clang,graalvm-native-clang++", DISABLE_LIBPOLYGLOT="true", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args or [])
+        return _python_graalvm_launcher((args or []) + ["svm"])
 
 
 def python_so(args):
     "Build the native shared object that includes graalpython"
     with set_env(FORCE_BASH_LAUNCHERS="true", DISABLE_LIBPOLYGLOT="false", DISABLE_POLYGLOT="true"):
-        return _python_graalvm_launcher(args)
+        return _python_graalvm_launcher((args or []) + ["svm"])
 
 
 def _python_graalvm_launcher(args):
-    dy = "/vm,/tools,/substratevm"
+    dy = "/vm,/tools"
     if "sandboxed" in args:
         args.remove("sandboxed")
         dy += ",/sulong-managed,/graalpython-enterprise"
+    if "svm" in args:
+        args.remove("svm")
+        dy += ",/substratevm"
     dy = ["--dynamicimports", dy]
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
@@ -376,8 +456,24 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
                     testfiles.append(testfile)
 
     args += [_graalpytest_driver(), "-v"]
-    args += testfiles
-    return mx.run([python_binary] + args, nonZeroIsFatal=True)
+
+    agent_args = " ".join(mx_gate.get_jacoco_agent_args() or [])
+    if agent_args:
+        # if we leave the excludes, the string is too long and it will be ignored by
+        # the JVM, which ignores JAVA_TOOL_OPTIONS long than 1024 chars silently on JDK8
+        agent_args = re.sub("excludes=[^,]+,", "", agent_args)
+        # we know these can be excluded
+        agent_args += ",excludes=*NodeGen*:*LibraryGen*:*BuiltinsFactory*"
+        assert len(agent_args) < 1024
+        # jacoco only dumps the data on exit, and when we run all our unittests
+        # at once it generates so much data we run out of heap space
+        with set_env(JAVA_TOOL_OPTIONS=agent_args):
+            for testfile in testfiles:
+                mx.run([python_binary] + args + [testfile], nonZeroIsFatal=True)
+    else:
+        args += testfiles
+        mx.logv(" ".join([python_binary] + args))
+        return mx.run([python_binary] + args, nonZeroIsFatal=True)
 
 
 def graalpython_gate_runner(args, tasks):
@@ -389,7 +485,7 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if platform.system() != 'Darwin':
+            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
                 # TODO: drop condition when python3 is available on darwin
                 mx.log("Running tests with CPython")
                 test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
@@ -412,7 +508,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
             with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
-                # the tagged unittests must ron in the dev_pythonhome and using
+                # the tagged unittests must run in the dev_pythonhome and using
                 # the dev CAPI, because that's where the tags are
                 with _dev_pythonhome_context():
                     run_python_unittests(
@@ -491,7 +587,7 @@ def run_embedded_native_python_test(args=None):
     engine.
     """
     with mx.TempDirCwd(os.getcwd()) as dirname:
-        python_launcher = python_gvm()
+        python_launcher = python_svm()
         graalvm_javac = os.path.join(os.path.dirname(python_launcher), "javac")
         graalvm_native_image = os.path.join(os.path.dirname(python_launcher), "native-image")
 
@@ -739,13 +835,13 @@ def delete_self_if_testdownstream(args):
 
 
 def update_import(name, suite_py, rev="origin/master"):
-    mx_name = "mx." + name
     parent = os.path.join(SUITE.dir, "..")
-    for dirpath,dirnames,filenames in os.walk(parent):
+    dep_dir = None
+    for dirpath, dirnames, _ in os.walk(parent):
         if os.path.sep in os.path.relpath(dirpath, parent):
             dirnames.clear() # we're looking for siblings or sibling-subdirs
-        elif name in dirnames:
-            dep_dir = os.path.join(os.path.join(dirpath))
+        elif name in dirnames and os.path.isdir(os.path.join(dirpath, name, "mx.%s" % name)):
+            dep_dir = dirpath
             break
     if not dep_dir:
         mx.warn("could not find suite %s to update" % name)
@@ -790,7 +886,7 @@ def update_import_cmd(args):
             if os.path.exists(jsonnetfile):
                 local_names.append(sibling)
                 repos.append(dd)
-                for dirpath,dirnames,filenames in os.walk(dd):
+                for dirpath, dirnames, filenames in os.walk(dd):
                     mx_dirs = list(filter(lambda x: x.startswith("mx."), dirnames))
                     if mx_dirs:
                         dirnames[:] = mx_dirs # don't go deeper once we found some mx dirs
@@ -831,10 +927,10 @@ def update_import_cmd(args):
     # find all imports we might update
     imports_to_update = set()
     for suite_py in suite_py_files:
-        dict = {}
+        d = {}
         with open(suite_py) as f:
-            exec(f.read(), dict, dict)
-        for suite in dict["suite"].get("imports", {}).get("suites", []):
+            exec(f.read(), d, d) # pylint: disable=exec-used;
+        for suite in d["suite"].get("imports", {}).get("suites", []):
             import_name = suite["name"]
             if suite.get("version") and import_name not in local_names:
                 imports_to_update.add(import_name)
@@ -846,25 +942,30 @@ def update_import_cmd(args):
 
     # copy files we inline from our imports
     shutil.copy(
-        join(mx.dependency("SULONG_LEGACY").output, "include", "truffle.h"),
-        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h"))
-    shutil.copy(
-        join(mx.dependency("SULONG_HOME").output, "include", "polyglot.h"),
-        join(SUITE.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h"))
-    shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
 
     repos_updated = []
 
-    # commit ci if dirty
-    overlaytip = str(vc.tip(overlaydir)).strip()
+    # now allow dependent repos to hook into update
+    output = mx.OutputCapture()
+    for repo in repos:
+        basename = os.path.basename(repo)
+        cmdname = "%s-update-import" % basename
+        is_mx_command = mx.run_mx(["-p", repo, "help", cmdname], out=output, err=output, nonZeroIsFatal=False, quiet=True) == 0
+        if is_mx_command:
+            mx.run_mx(["-p", repo, cmdname, "--overlaydir=%s" % overlaydir], suite=repo, nonZeroIsFatal=True)
+        else:
+            print(mx.colorize('%s command for %s.. skipped!' % (cmdname, basename), color='magenta', bright=True, stream=sys.stdout))
+
+    # commit ci-overlays if dirty
     if vc.isDirty(overlaydir):
         vc.commit(overlaydir, "Update Python imports")
-        overlaytip = str(vc.tip(overlaydir)).strip()
         repos_updated.append(overlaydir)
 
-    # update ci import in all our repos, commit the full update, and push verbosely
+    overlaytip = str(vc.tip(overlaydir)).strip()
+
+    # update ci import in all our repos, commit the full update
     prev_verbosity = mx._opts.very_verbose
     for repo in repos:
         jsonnetfile = os.path.join(repo, "ci.jsonnet")
@@ -872,15 +973,18 @@ def update_import_cmd(args):
             f.write('{ "overlay": "%s" }\n' % overlaytip)
         if vc.isDirty(repo):
             vc.commit(repo, "Update imports")
-            try:
-                mx._opts.very_verbose = True
-                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
-            finally:
-                mx._opts.very_verbose = prev_verbosity
             repos_updated.append(repo)
 
+    # push all repos
+    for repo in repos_updated:
+        try:
+            mx._opts.very_verbose = True
+            vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+        finally:
+            mx._opts.very_verbose = prev_verbosity
+
     if repos_updated:
-        mx.log("These repos were updated: " + ", ".join(repos_updated))
+        mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
 
 
 def python_style_checks(args):
@@ -926,7 +1030,7 @@ def _python_checkpatchfiles():
         pypi_base_url = mx_urlrewrites.rewriteurl("https://pypi.org/packages/").replace("packages/", "")
         with open(listfilename, "r") as listfile:
             content = listfile.read()
-        patchfile_pattern = re.compile("lib-graalpython/patches/(.*)\.patch")
+        patchfile_pattern = re.compile(r"lib-graalpython/patches/(.*)\.patch")
         allowed_licenses = ["MIT", "BSD", "MIT license"]
         for line in content.split("\n"):
             match = patchfile_pattern.search(line)
@@ -941,7 +1045,7 @@ def _python_checkpatchfiles():
                     if data_license not in allowed_licenses:
                         mx.abort(("The license for the original project %r is %r. We cannot include " +
                                   "a patch for it. Allowed licenses are: %r.") % (package_name, data_license, allowed_licenses))
-                except Exception as e:
+                except Exception as e: # pylint: disable=broad-except;
                     mx.abort("Error getting %r.\n%r" % (package_url, e))
                 finally:
                     if response:
@@ -954,11 +1058,11 @@ def import_python_sources(args):
 
     # mappings for files that are renamed
     mapping = {
-        "_memoryview.c": "memoryobject.c",
-        "_cpython_sre.c": "_sre.c",
-        "_cpython_unicodedata.c": "unicodedata.c",
-        "_bz2.c": "_bz2module.c",
-        "_mmap.c": "mmapmodule.c",
+        "memoryobject.c": "_memoryview.c",
+        "_sre.c": "_cpython_sre.c",
+        "unicodedata.c": "_cpython_unicodedata.c",
+        "_bz2module.c": "_bz2.c",
+        "mmapmodule.c": "_mmap.c",
     }
     extra_pypy_files = [
         "graalpython/lib-python/3/_md5.py",
@@ -970,18 +1074,18 @@ def import_python_sources(args):
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
     parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
-    parser.add_argument('--msg', action='store', help='Message for import update commit', required=True)
+    parser.add_argument('--python-version', action='store', help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
 
     python_sources = args.cpython
     pypy_sources = args.pypy
-    import_version = args.msg
+    import_version = args.python_version
 
     print("""
     So you think you want to update the inlined sources? Here is how it will go:
 
     1. We'll first check the copyrights check overrides file to identify the
-       files taken from CPython and we'll remember that list. There's a mapping
+       files taken from CPython or PyPy and we'll remember that list. There's a mapping
        for files that were renamed, currently this includes:
        \t{0!r}\n
 
@@ -996,7 +1100,7 @@ def import_python_sources(args):
        now.
 
     4. We'll merge the python-import branch back into HEAD. Because these share
-       a common ancestroy, git will try to preserve our patches to files, that
+       a common ancestor, git will try to preserve our patches to files, that
        is, copyright headers and any other source patches.
 
     5. !IMPORTANT! If files were inlined from CPython during normal development
@@ -1018,78 +1122,64 @@ def import_python_sources(args):
        python-import.
 
     7. Run the tests and fix any remaining issues.
+    8. You should push the python-import branch using:
+
+           git push origin python-import:python-import
+
+    NOTE: Your changes, untracked files and ignored files will be stashed for the
+    duration this operation. If you abort this script, you can recover them by
+    moving back to your branch and using git stash pop. It is recommended that you
+    close your IDE during the operation.
     """.format(mapping))
     raw_input("Got it?")
 
-    cpy_files = []
-    pypy_files = []
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
         pypy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "pypy.copyright"]
 
     # move to orphaned branch with sources
-    if SUITE.vc.isDirty(SUITE.dir):
-        mx.abort("Working dir must be clean")
-    tip = SUITE.vc.tip(SUITE.dir).strip()
+    SUITE.vc.git_command(SUITE.dir, ["stash", "--all"])
     SUITE.vc.git_command(SUITE.dir, ["checkout", "python-import"])
-    SUITE.vc.git_command(SUITE.dir, ["clean", "-fdx"])
+    assert not SUITE.vc.isDirty(SUITE.dir)
     shutil.rmtree("graalpython")
 
     # re-copy lib-python
     shutil.copytree(os.path.join(python_sources, "Lib"), _get_stdlib_home())
 
-    for inlined_file in pypy_files + extra_pypy_files:
-        original_file = None
-        name = os.path.basename(inlined_file)
-        name = mapping.get(name, name)
-        if inlined_file.endswith(".py"):
-            # these files don't need to be updated, they inline some unittest code only
-            if name.startswith("test_") or name.endswith("_tests.py"):
-                original_file = inlined_file
-            else:
-                for root, _, files in os.walk(pypy_sources):
-                    if os.path.basename(name) in files:
-                        original_file = os.path.join(root, name)
-                        try:
-                            os.makedirs(os.path.dirname(inlined_file))
-                        except:
-                            pass
-                        shutil.copy(original_file, inlined_file)
-                        break
-        if original_file is None:
-            mx.warn("Could not update %s - original file not found" % inlined_file)
+    def copy_inlined_files(inlined_files, source_directory):
+        inlined_files = [
+            # test files don't need to be updated, they inline some unittest code only
+            f for f in inlined_files if re.search(r'\.(py|c|h)$', f) and not re.search(r'/test_|_tests\.py$', f)
+        ]
+        for dirpath, _, filenames in os.walk(source_directory):
+            for filename in filenames:
+                original_file = os.path.join(dirpath, filename)
+                comparable_file = os.path.join(dirpath, mapping.get(filename, filename))
+                # Find the longest suffix match
+                inlined_file = max(inlined_files, key=lambda f: len(os.path.commonprefix([''.join(reversed(f)), ''.join(reversed(comparable_file))])))
+                if os.path.basename(inlined_file) != os.path.basename(comparable_file):
+                    continue
+                try:
+                    os.makedirs(os.path.dirname(inlined_file))
+                except OSError:
+                    pass
+                shutil.copy(original_file, inlined_file)
+                inlined_files.remove(inlined_file)
+                if not inlined_files:
+                    return
+        for remaining_file in inlined_files:
+            mx.warn("Could not update %s - original file not found" % remaining_file)
 
-    for inlined_file in cpy_files:
-        # C files are mostly just copied
-        original_file = None
-        name = os.path.basename(inlined_file)
-        name = mapping.get(name, name)
-        if inlined_file.endswith(".h") or inlined_file.endswith(".c"):
-            for root, _, files in os.walk(python_sources):
-                if os.path.basename(name) in files:
-                    original_file = os.path.join(root, name)
-                    try:
-                        os.makedirs(os.path.dirname(inlined_file))
-                    except:
-                        pass
-                    shutil.copy(original_file, inlined_file)
-                    break
-        elif inlined_file.endswith(".py"):
-            # these files don't need to be updated, they inline some unittest code only
-            if name.startswith("test_") or name.endswith("_tests.py"):
-                original_file = inlined_file
-        if original_file is None:
-            mx.warn("Could not update %s - original file not found" % inlined_file)
+    copy_inlined_files(pypy_files + extra_pypy_files, pypy_sources)
+    copy_inlined_files(cpy_files, python_sources)
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
-    answer = raw_input("Should we push python-import (y/N)? ")
-    if answer and answer in "Yy":
-        SUITE.vc.git_command(SUITE.dir, ["push", "origin", "python-import:python-import"])
-    SUITE.vc.update(SUITE.dir, rev=tip)
+    SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
     SUITE.vc.git_command(SUITE.dir, ["merge", "python-import"])
+    SUITE.vc.git_command(SUITE.dir, ["stash", "pop"])
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1140,6 +1230,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     standalone_dependencies={
         'Sulong': ('lib/sulong', ['bin/<exe:lli>']),
         'LLVM.org toolchain': ('lib/llvm-toolchain', []),
+        'Graal.Python license files': ('', []),
     },
     truffle_jars=[
         'graalpython:GRAALPYTHON',
@@ -1153,6 +1244,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             destination='bin/<exe:graalpython>',
             jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
+            # build_args=['-H:+RemoveSaturatedTypeFlows'],
+            # build_args=['-H:+TruffleCheckBlackListedMethods'],
             build_args=[],
             language='python',
         )
@@ -1193,6 +1286,8 @@ def _register_vms(namespace):
 def _register_bench_suites(namespace):
     for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites(BENCHMARKS):
         mx_benchmark.add_bm_suite(py_bench_suite)
+    for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
+        mx_benchmark.add_bm_suite(java_bench_suite)
 
 
 def mx_post_parse_cmd_line(namespace):
@@ -1202,9 +1297,136 @@ def mx_post_parse_cmd_line(namespace):
 
 
 def python_coverage(args):
-    "Generate coverage report running args"
-    mx.run_mx(['--jacoco=on', '--jacoco-whitelist-package=com.oracle.graal.python'] + args)
-    mx.command_function("jacocoreport")(["--omit-excluded", "--format=html"])
+    "Generate coverage report for our unittests"
+    parser = ArgumentParser(prog='mx python-coverage')
+    parser.add_argument('--jacoco', action='store_true', help='do generate Jacoco coverage')
+    parser.add_argument('--truffle', action='store_true', help='do generate Truffle coverage')
+    parser.add_argument('--truffle-upload-url', help='Format is like rsync: user@host:/directory', default=None)
+    args = parser.parse_args(args)
+
+    if args.jacoco:
+        jacoco_args = [
+            '--jacoco-whitelist-package', 'com.oracle.graal.python',
+        ]
+        jacoco_gates = (
+            GraalPythonTags.junit,
+            GraalPythonTags.unittest,
+            GraalPythonTags.unittest_multi,
+            GraalPythonTags.unittest_jython,
+            GraalPythonTags.tagged,
+        )
+        mx.run_mx(jacoco_args + [
+            '--strict-compliance',
+            '--primary', 'gate',
+            '-B=--force-deprecation-as-warning-for-dependencies',
+            '--strict-mode',
+            '--tags', ",".join(['%s'] * len(jacoco_gates)) % jacoco_gates,
+            '--jacocout', 'html',
+        ])
+        if mx.get_env("SONAR_HOST_URL", None):
+            mx.run_mx(jacoco_args + [
+                'sonarqube-upload',
+                '-Dsonar.host.url=%s' % mx.get_env("SONAR_HOST_URL"),
+                '-Dsonar.projectKey=com.oracle.graalvm.python',
+                '-Dsonar.projectName=GraalVM - Python',
+                '--exclude-generated',
+            ])
+        mx.run_mx(jacoco_args + [
+            'coverage-upload',
+        ])
+    if args.truffle:
+        executable = python_gvm()
+        variants = [
+            {"args": []},
+            {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
+            # {"args": ["--llvm.managed"]},
+            {
+                "args": ["-v", "--python.WithThread=true"],
+                "paths": ["test_tagged_unittests.py"],
+                "tagged": True
+            },
+        ]
+        outputlcov = "coverage.lcov"
+        if os.path.exists(outputlcov):
+            os.unlink(outputlcov)
+        cmdargs = ["/usr/bin/env", "lcov", "-o", outputlcov]
+        prefix = os.path.join(SUITE.dir, "graalpython")
+        for kwds in variants:
+            variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
+            for pattern in ["py"]:
+                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$$.lcov" % (variant_str, pattern))
+                if os.path.exists(outfile):
+                    os.unlink(outfile)
+                extra_args = [
+                    "--coverage",
+                    "--coverage.TrackInternal",
+                    "--coverage.FilterFile=%s/*.%s" % (prefix, pattern),
+                    "--coverage.Output=lcov",
+                    "--coverage.OutputFile=%s" % outfile,
+                ]
+                with set_env(GRAAL_PYTHON_ARGS=" ".join(extra_args)):
+                    with _dev_pythonhome_context(): # run all our tests in the dev-home, so that lcov has consistent paths
+                        kwds["args"].append("--python.CAPI=" + _get_capi_home())
+                        if kwds.pop("tagged", False):
+                            with set_env(ENABLE_CPYTHON_TAGGED_UNITTESTS="true", ENABLE_THREADED_GRAALPYTEST="true"):
+                                run_python_unittests(executable, **kwds)
+                        else:
+                            run_python_unittests(executable, **kwds)
+
+        # generate a synthetic lcov file that includes all sources with 0
+        # coverage. this is to ensure all sources actuall show up - otherwise,
+        # only loaded sources will be part of the coverage
+        with tempfile.NamedTemporaryFile(mode="w", suffix='.py') as f:
+            f.write("""
+import os
+
+for dirpath, dirnames, filenames in os.walk('{0}'):
+    if "test" in dirnames:
+        dirnames.remove("test")
+    if "tests" in dirnames:
+        dirnames.remove("tests")
+    for filename in filenames:
+        if filename.endswith(".py"):
+            fullname = os.path.join(dirpath, filename)
+            with open(fullname, 'r') as f:
+                try:
+                    compile(f.read(), fullname, 'exec')
+                except BaseException as e:
+                    print('Could not compile', fullname, e)
+            """.format(os.path.join(prefix, "lib-python")))
+            f.flush()
+            with _dev_pythonhome_context():
+                mx.run([
+                    executable,
+                    "-S",
+                    "--experimental-options",
+                    "--coverage",
+                    "--coverage.TrackInternal",
+                    "--coverage.FilterFile=%s/*.py" % prefix,
+                    "--coverage.Output=lcov",
+                    "--coverage.OutputFile=zero.lcov",
+                    f.name
+                ])
+
+        # merge all generated lcov files
+        for f in os.listdir(SUITE.dir):
+            if f.endswith(".lcov"):
+                cmdargs += ["-a", f]
+
+        mx.run(cmdargs)
+        primary = mx.primary_suite()
+        info = primary.vc.parent_info(primary.dir)
+        rev = primary.vc.parent(primary.dir)
+        coverage_dir = '{}-truffle-coverage_{}_{}'.format(
+            primary.name,
+            datetime.datetime.fromtimestamp(info['author-ts']).strftime('%Y-%m-%d_%H_%M'),
+            rev[:7],
+        )
+        mx.run(["/usr/bin/env", "genhtml", "--prefix", prefix, "--ignore-errors", "source", "-o", coverage_dir, outputlcov])
+        if args.truffle_upload_url:
+            if not args.truffle_upload_url.endswith("/"):
+                args.truffle_upload_url = args.truffle_upload_url + "/"
+            mx.run(["scp", "-r", coverage_dir, args.truffle_upload_url])
 
 
 def python_build_watch(args):
@@ -1323,9 +1545,11 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         args = []
         if mx._opts.verbose:
             args.append("-v")
-        elif mx._opts.quiet:
-            args.append("-q")
-        args += ["-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
+        else:
+            # always add "-q" if not verbose to suppress hello message
+            args.append("-q") 
+
+        args += ["--python.WithThread", "-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
@@ -1421,34 +1645,39 @@ def checkout_find_version_for_graalvm(args):
     path = args[0]
     projectname = os.path.basename(args[0])
     suite = os.path.join(path, "mx.%s" % projectname, "suite.py")
+    basedir = os.path.dirname(suite)
+    while not os.path.isdir(os.path.join(basedir, ".git")):
+        basedir = os.path.dirname(basedir)
+    suite = os.path.relpath(suite, start=basedir)
+    mx.log("Using %s to find revision" % suite)
     other_version = ""
     for i in SUITE.suite_imports:
         if i.name == "sulong":
             needed_version = i.version
             break
-    current_commit = SUITE.vc.tip(path)
+    current_commit = SUITE.vc.tip(path).strip()
+    current_revision = "HEAD"
     mx.log("Searching %s commit that imports graal repository at %s" % (projectname, needed_version))
     while needed_version != other_version:
         if other_version:
-            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", "HEAD"]).split()
+            parent = SUITE.vc.git_command(path, ["show", "--pretty=format:%P", "-s", current_revision]).split()
             if not parent:
-                mx.log("Got to oldest revision before finding appropriate commit, reverting to %s" % current_commit)
-                mx.vc.update(path, rev=current_commit)
+                mx.log("Got to oldest revision before finding appropriate commit, using %s" % current_commit)
                 return
-            parent = parent[0]
-            SUITE.vc.update(path, rev=parent)
-        with open(suite) as f:
-            contents = f.read()
-            if not PY3:
-                contents = contents.decode()
-            d = {}
-            exec(contents, d, d)
-            suites = d["suite"]["imports"]["suites"]
-            for suitedict in suites:
-                if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
-                    other_version = suitedict.get("version", "")
-                    if other_version:
-                        break
+            current_revision = parent[0]
+        contents = SUITE.vc.git_command(path, ["show", "%s:%s" % (current_revision, suite)])
+        d = {}
+        try:
+            exec(contents, d, d) # pylint: disable=exec-used;
+        except:
+            mx.log("suite.py no longer parseable, falling back to %s" % current_commit)
+            return
+        suites = d["suite"]["imports"]["suites"]
+        for suitedict in suites:
+            if suitedict["name"] in ("compiler", "truffle", "regex", "sulong"):
+                other_version = suitedict.get("version", "")
+                if other_version:
+                    break
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1468,10 +1697,11 @@ mx.update_commands(SUITE, {
     'python-gvm': [python_gvm, ''],
     'python-unittests': [python3_unittests, ''],
     'python-retag-unittests': [retag_unittests, ''],
+    'python-update-unittest-tags': [update_unittest_tags, ''],
     'python-import-for-graal': [checkout_find_version_for_graalvm, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-src-import': [import_python_sources, ''],
-    'python-coverage': [python_coverage, '[gate-tag]'],
+    'python-coverage': [python_coverage, ''],
     'punittest': [punittest, ''],
 })

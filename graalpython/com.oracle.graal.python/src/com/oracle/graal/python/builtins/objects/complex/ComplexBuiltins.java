@@ -58,10 +58,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import java.util.List;
@@ -439,11 +439,13 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2)
     abstract static class RSubNode extends SubNode {
+        @Override
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
             return factory().createComplex(right - left.getReal(), -left.getImag());
         }
 
+        @Override
         @Specialization
         PComplex doComplex(PComplex left, long right) {
             return factory().createComplex(right - left.getReal(), -left.getImag());
@@ -471,7 +473,7 @@ public class ComplexBuiltins extends PythonBuiltins {
         boolean doComplexInt(PComplex left, PInt right) {
             if (left.getImag() == 0) {
                 try {
-                    return left.getReal() == right.getValue().longValueExact();
+                    return left.getReal() == right.longValueExact();
                 } catch (ArithmeticException e) {
                     // do nothing -> return false;
                 }
@@ -497,6 +499,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         PNotImplemented doComplex(PComplex left, PComplex right) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -512,6 +515,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         PNotImplemented doComplex(PComplex left, PComplex right) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -527,6 +531,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         PNotImplemented doComplex(PComplex left, PComplex right) {
             return PNotImplemented.NOT_IMPLEMENTED;
@@ -542,6 +547,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
+        @SuppressWarnings("unused")
         @Specialization
         PNotImplemented doComplex(PComplex left, PComplex right) {
             return PNotImplemented.NOT_IMPLEMENTED;

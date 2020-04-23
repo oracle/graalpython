@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -132,6 +132,12 @@ class DummyIntable():
         return 0xCAFE
 
 
+class DummyIndexable():
+
+    def __index__(self):
+        return 0xCAFE
+
+
 class DummyIntSubclass(int):
 
     def __int__(self):
@@ -165,6 +171,8 @@ def _default_bin_arith_args():
         (0, 0),
         (0, -1),
         (3, 2),
+        (3, 64),
+        (1<<32, 128),
         (10, 5),
         (29.3, 4.7),
         (0.3, -1.5),
@@ -178,6 +186,7 @@ def _default_bin_arith_args():
         ((1, 2, 3), 2),
         (0x7fffffff, 0x7fffffff),
         (0xffffffffffffffffffffffffffffffff, -1),
+        (0xffffffffffffffffffffffffffffffff, 1024),
         (DummyIntable(), 0xBABE),
         (0xBABE, DummyIntable()),
         (DummyIntSubclass(), 0xCAFE),
@@ -201,6 +210,7 @@ def _default_unarop_args():
         (0xffffffffffffffffffffffffffffffff,),
         (DummyIntable(),),
         (DummyIntSubclass(),),
+        (DummyIndexable(), ),
         (NoNumber(),),
         (DummyFloatable(),),
         (DummyFloatSubclass(),),

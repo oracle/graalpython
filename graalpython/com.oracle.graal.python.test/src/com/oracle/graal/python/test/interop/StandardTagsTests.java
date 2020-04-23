@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.test.interop;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.HashMap;
+
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.function.InnerRootNode;
 import com.oracle.graal.python.test.PythonTests;
@@ -53,16 +58,15 @@ import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
-import java.util.HashMap;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Instrument;
 import org.graalvm.polyglot.Source;
 import org.junit.Assert;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import org.junit.Test;
 
+@SuppressWarnings("all")
 public class StandardTagsTests extends PythonTests {
 
     static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();

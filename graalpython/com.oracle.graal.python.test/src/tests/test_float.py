@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -99,7 +99,12 @@ class BasicTests(unittest.TestCase):
         class Obj:
             def __float__(self):
                 return 1.123
+        class Indexable:
+            def __index__(self):
+                return 4
         assert [float(x) for x in [Obj(), b"0.123"]] == [1.123, 0.123]
+        if sys.version_info >= (3, 8, 0):
+            assert float(Indexable()) == 4.0
 
         assert float(99) == 99
         assert float(999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999) == 1e+132

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -173,7 +173,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
         for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
-                GetSubclassesNode.doSlowPath(base).add(this);
+                GetSubclassesNode.getUncached().execute(base).add(this);
             }
         }
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
@@ -237,5 +237,4 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public boolean needsNativeAllocation() {
         return needsNativeAllocation;
     }
-
 }

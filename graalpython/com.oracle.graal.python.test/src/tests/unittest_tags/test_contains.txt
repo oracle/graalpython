@@ -1,2 +1,2 @@
-test_block_fallback
-test_builtin_sequence_types
+*TestContains.test_block_fallback
+*TestContains.test_builtin_sequence_types

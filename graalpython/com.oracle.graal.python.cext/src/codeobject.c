@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,20 @@ PyCodeObject* PyCode_New(int argcount, int kwonlyargcount,
                          PyObject *filename, PyObject *name, int firstlineno,
                          PyObject *lnotab) {
     return (PyCodeObject*)(UPCALL_CEXT_O(_jls_PyCode_New, argcount, kwonlyargcount,
+                                         nlocals, stacksize, flags,
+                                         native_to_java(code), native_to_java(consts), native_to_java(names),
+                                         native_to_java(varnames), native_to_java(filename), native_to_java(name), firstlineno,
+                                         native_to_java(lnotab), native_to_java(freevars), native_to_java(cellvars)));
+}
+
+UPCALL_ID(PyCode_NewWithPosOnlyArgs);
+PyCodeObject* PyCode_NewWithPosOnlyArgs(int argcount, int posonlyargcount, int kwonlyargcount,
+                         int nlocals, int stacksize, int flags,
+                         PyObject *code, PyObject *consts, PyObject *names,
+                         PyObject *varnames, PyObject *freevars, PyObject *cellvars,
+                         PyObject *filename, PyObject *name, int firstlineno,
+                         PyObject *lnotab) {
+    return (PyCodeObject*)(UPCALL_CEXT_O(_jls_PyCode_NewWithPosOnlyArgs, argcount, kwonlyargcount,
                                          nlocals, stacksize, flags,
                                          native_to_java(code), native_to_java(consts), native_to_java(names),
                                          native_to_java(varnames), native_to_java(filename), native_to_java(name), firstlineno,

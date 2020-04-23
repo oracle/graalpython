@@ -121,10 +121,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.nodes.util.CastToPathNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -141,6 +141,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -219,7 +220,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     };
 
     private static boolean terminalIsInteractive(PythonContext context) {
-        return PythonOptions.getFlag(context, PythonOptions.TerminalIsInteractive);
+        return context.getOption(PythonOptions.TerminalIsInteractive);
     }
 
     @Override
@@ -282,7 +283,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 // On Mac, the CPython launcher uses this env variable to specify the real Python
                 // executable. It will be honored by packages like "site". So, if it is set, we
                 // overwrite it with our executable to ensure that subprocesses will use us.
-                value = PythonOptions.getOption(core.getContext(), PythonOptions.Executable);
+                value = core.getContext().getOption(PythonOptions.Executable);
             } else {
                 value = entry.getValue();
             }
@@ -418,7 +419,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int getPid() {
             // TODO: this needs to be implemented properly at some point (consider managed execution
             // as well)
-            return getContext().hashCode();
+            return System.identityHashCode(getContext());
         }
     }
 
@@ -920,21 +921,26 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
             FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes((int) fileMode);
             try {
-                SeekableByteChannel fc;
-                TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-                if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
-                    truffleFile = getContext().getEnv().createTempFile(truffleFile, null, null);
-                    options.remove(StandardOpenOption.CREATE_NEW);
-                    options.remove(StandardOpenOption.DELETE_ON_CLOSE);
-                    options.add(StandardOpenOption.CREATE);
-                    getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
-                }
-
-                fc = truffleFile.newByteChannel(options, attributes);
-                return getResources().open(truffleFile, fc);
+                return doOpenFile(pathname, options, attributes);
             } catch (Exception e) {
                 throw raiseOSError(frame, e, pathname);
             }
+        }
+
+        @TruffleBoundary
+        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>>[] attributes) throws IOException {
+            SeekableByteChannel fc;
+            TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
+                truffleFile = getContext().getEnv().createTempFile(truffleFile, null, null);
+                options.remove(StandardOpenOption.CREATE_NEW);
+                options.remove(StandardOpenOption.DELETE_ON_CLOSE);
+                options.add(StandardOpenOption.CREATE);
+                getContext().registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
+            }
+
+            fc = truffleFile.newByteChannel(options, attributes);
+            return getResources().open(truffleFile, fc);
         }
 
         @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1255,6 +1261,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object exit(int status) {
             throw new PythonExitException(this, status);
@@ -1408,15 +1415,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         private void setMtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
             try {
-                truffleFile.setLastModifiedTime(FileTime.from(mtime, TimeUnit.SECONDS));
+                truffleFile.setLastModifiedTime(fileTimeFrom(mtime));
             } catch (Exception e) {
                 throw raiseOSError(frame, e, truffleFile.getName());
             }
         }
 
+        @TruffleBoundary
+        private static FileTime fileTimeFrom(long mtime) {
+            return FileTime.from(mtime, TimeUnit.SECONDS);
+        }
+
         private void setAtime(VirtualFrame frame, TruffleFile truffleFile, long mtime) {
             try {
-                truffleFile.setLastAccessTime(FileTime.from(mtime, TimeUnit.SECONDS));
+                truffleFile.setLastAccessTime(fileTimeFrom(mtime));
             } catch (Exception e) {
                 throw raiseOSError(frame, e, truffleFile.getName());
             }
@@ -1484,6 +1496,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(SystemNode.class);
+
         static final String[] shell;
         static {
             String osProperty = System.getProperty("os.name");
@@ -1538,7 +1552,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (!context.isExecutableAccessAllowed()) {
                 return -1;
             }
-            PythonLanguage.getLogger().fine(() -> "os.system: " + cmd);
+            LOGGER.fine(() -> "os.system: " + cmd);
             String[] command = new String[]{shell[0], shell[1], cmd};
             Env env = context.getEnv();
             try {
@@ -1763,16 +1777,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTerminalSizeNode extends PythonUnaryBuiltinNode {
 
-        @Child private CastToIntegerFromIntNode castIntNode;
+        @Child private CoerceToIntegerNode castIntNode;
         @Child private GetTerminalSizeNode recursiveNode;
 
         @CompilationFinal private ConditionProfile errorProfile;
         @CompilationFinal private ConditionProfile overflowProfile;
 
-        private CastToIntegerFromIntNode getCastIntNode() {
+        private CoerceToIntegerNode getCastIntNode() {
             if (castIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }
@@ -1800,7 +1814,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (getErrorProfile().profile(getContext().getResources().getFileChannel(0) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
 
         @Specialization
@@ -1808,7 +1822,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (getErrorProfile().profile(getContext().getResources().getFileChannel(fd) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
 
         @Specialization
@@ -1819,7 +1833,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (getErrorProfile().profile(getContext().getResources().getFileChannel((int) fd) == null)) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
         }
 
         @Specialization
@@ -1833,7 +1847,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (ArithmeticException e) {
                 throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C long");
             }
-            return factory().createTuple(new Object[]{PythonOptions.getTerminalWidth(), PythonOptions.getTerminalHeight()});
+            return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});
+        }
+
+        private int getTerminalWidth() {
+            return getContext().getOption(PythonOptions.TerminalWidth);
+        }
+
+        private int getTerminalHeight() {
+            return getContext().getOption(PythonOptions.TerminalHeight);
         }
 
         @Fallback
@@ -1874,6 +1896,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final HashMap<Integer, String> STR_ERROR_MAP = new HashMap<>();
 
         @Specialization
+        @TruffleBoundary
         String getStrError(int errno) {
             if (STR_ERROR_MAP.isEmpty()) {
                 for (OSErrorEnum error : OSErrorEnum.values()) {

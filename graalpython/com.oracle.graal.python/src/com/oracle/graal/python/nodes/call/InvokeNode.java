@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -46,7 +46,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
-        return PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceInlineGeneratorCalls);
+        return PythonLanguage.getContext().getOption(PythonOptions.ForceInlineGeneratorCalls);
+    }
+
+    protected static boolean forceSplitBuiltins() {
+        return PythonLanguage.getContext().getOption(PythonOptions.EnableForcedSplits);
     }
 
     @TruffleBoundary
@@ -125,14 +129,14 @@ abstract class DirectInvokeNode extends InvokeNode {
 
         if (state == 0x1) {
             if (!isNullFrame) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("Invoke node was initialized for a null frame. Cannot use it with non-null frame now.");
             }
             return true;
         }
         assert state == 0x2;
         if (isNullFrame) {
-            CompilerDirectives.transferToInterpreter();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("Invoke node was initialized for a non-null frame. Cannot use it with null frame now.");
         }
         return false;

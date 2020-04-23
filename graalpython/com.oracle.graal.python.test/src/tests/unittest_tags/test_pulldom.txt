@@ -1,1 +1,3 @@
 *PullDOMTestCase.test_external_ges_default
+*SAX2DOMTestCase.testSAX2DOM
+*ThoroughTestCase.test_sax2dom_fail

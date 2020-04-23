@@ -51,7 +51,7 @@ if sys.implementation.name == "graalpython":
         assert imported_fun0 is some_function
         assert imported_fun0() == "hello, polyglot world!"
 
-        polyglot.export_value(some_function, "same_function")
+        polyglot.export_value("same_function", some_function)
         imported_fun1 = polyglot.import_value("same_function")
         assert imported_fun1 is some_function
         assert imported_fun1() == "hello, polyglot world!"
@@ -339,7 +339,7 @@ if sys.implementation.name == "graalpython":
             from java.util import ArrayList
             assert repr(ArrayList()) == "[]"
 
-            if sys.graal_python_jython_emulation_enabled:
+            if __graalpython__.jython_emulation_enabled:
                 assert java.util.ArrayList == ArrayList
 
                 import sun
@@ -349,7 +349,7 @@ if sys.implementation.name == "graalpython":
                 assert sun.misc.Signal is not None
 
     def test_java_import_from_jar():
-        if sys.graal_python_jython_emulation_enabled:
+        if __graalpython__.jython_emulation_enabled:
             import tempfile
             import zipfile
 
@@ -403,7 +403,7 @@ if sys.implementation.name == "graalpython":
 
 
     def test_java_exceptions():
-        if sys.graal_python_jython_emulation_enabled:
+        if __graalpython__.jython_emulation_enabled:
             from java.lang import Integer, NumberFormatException
             try:
                 Integer.parseInt("99", 8)
@@ -444,7 +444,7 @@ if sys.implementation.name == "graalpython":
                 assert "@" not in str(e) # the @ from Java's default toString
 
     def test_java_import_star():
-        if sys.graal_python_jython_emulation_enabled:
+        if __graalpython__.jython_emulation_enabled:
             d = {}
             exec("from java.util.logging.Logger import *", globals=d, locals=d)
             assert "getGlobal" in d
@@ -456,13 +456,13 @@ if sys.implementation.name == "graalpython":
         y = Integer.getInteger("something_what_does_not_exists2")
         z = None
 
-        if sys.graal_python_jython_emulation_enabled:
+        if __graalpython__.jython_emulation_enabled:
 
             assert x == None
             assert (x != None) == False
             assert x is None
             assert (x is not None) == False
-                        
+
             assert x == y
             assert (x != y) == False
             assert x is y
@@ -491,16 +491,35 @@ if sys.implementation.name == "graalpython":
             assert x is not z
 
     def test_isinstance01():
-        if sys.graal_python_jython_emulation_enabled:
+        if __graalpython__.jython_emulation_enabled:
             import java.lang.Integer as Integer
             i = Integer(1)
             assert isinstance(i, Integer)
 
     def test_isinstance02():
-        if sys.graal_python_jython_emulation_enabled:
+        if __graalpython__.jython_emulation_enabled:
             import java.util.Map as Map
             import java.util.HashMap as HashMap
             h = HashMap()
             assert isinstance(h, HashMap)
             assert isinstance(h, Map)
-        
+
+    def test_foreign_slice_setting():
+        import java
+        il = java.type("int[]")(20)
+        try:
+            il[0:2] = 1
+        except TypeError:
+            assert True
+        else:
+            assert False, "should throw a type error"
+        il[0] = 12
+        assert il[0] == 12
+        il[0:10] = [10] * 10
+        assert list(il) == [10] * 10 + [0] * 10, "not equal"
+        try:
+            il[0] = 1.2
+        except TypeError:
+            assert True
+        else:
+            assert False, "should throw a type error again"

@@ -1,2 +1,2 @@
-test_raises_on_empty_input
-test_trims_trailing_newline
+*GetpassRawinputTest.test_raises_on_empty_input
+*GetpassRawinputTest.test_trims_trailing_newline

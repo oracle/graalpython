@@ -83,14 +83,14 @@ final class DefaultPythonObjectExports {
             try {
                 return interopLib.asLong(receiver);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         } else if (interopLib.isBoolean(receiver)) {
             try {
                 return interopLib.asBoolean(receiver) ? 1 : 0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         } else {
@@ -107,7 +107,7 @@ final class DefaultPythonObjectExports {
             try {
                 return interopLib.asInt(index);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         } else {
@@ -135,7 +135,7 @@ final class DefaultPythonObjectExports {
             try {
                 sz = interopLib.getArraySize(receiver);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
             if (sz == (int) sz) {
@@ -156,7 +156,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.asBoolean(receiver);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         }
@@ -167,7 +167,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.asLong(receiver) != 0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         }
@@ -178,7 +178,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.asDouble(receiver) != 0.0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         }
@@ -189,7 +189,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.getArraySize(receiver) > 0;
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
         }

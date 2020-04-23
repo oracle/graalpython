@@ -1,5 +1,6 @@
+*ComparisonTest.test_complex
+*ComparisonTest.test_mixed_comparisons
 *HashTest.test_bools
 *HashTest.test_decimals
 *HashTest.test_fractions
 *HashTest.test_hash_normalization
-*ComparisonTest.test_mixed_comparisons

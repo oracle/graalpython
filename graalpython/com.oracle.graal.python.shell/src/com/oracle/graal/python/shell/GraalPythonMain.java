@@ -88,7 +88,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
         ArrayList<String> unrecognized = new ArrayList<>();
-        ArrayList<String> inputArgs = new ArrayList<>();
+        List<String> defaultEnvironmentArgs = getDefaultEnvironmentArgs();
+        ArrayList<String> inputArgs = new ArrayList<>(defaultEnvironmentArgs);
         inputArgs.addAll(givenArgs);
         givenArguments = new ArrayList<>(inputArgs);
         List<String> arguments = new ArrayList<>(inputArgs);
@@ -308,9 +309,18 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             ArrayList<String> exec_list = new ArrayList<>();
             sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");
             exec_list.add(sb.toString());
+            String javaOptions = System.getenv("_JAVA_OPTIONS");
+            String javaToolOptions = System.getenv("JAVA_TOOL_OPTIONS");
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
                 if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
                     arg = arg.replace("suspend=y", "suspend=n");
+                }
+                if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
+                    // both _JAVA_OPTIONS and JAVA_TOOL_OPTIONS are adeed during
+                    // JVM startup automatically. We do not want to repeat these
+                    // for subprocesses, because they should also pick up those
+                    // variables.
+                    continue;
                 }
                 exec_list.add(arg);
             }
@@ -576,6 +586,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "   as specifying the -R option: a random value is used to seed the hashes of\n" +
                         "   str, bytes and datetime objects.  It can also be set to an integer\n" +
                         "   in the range [0,4294967295] to get hash values with a predictable seed.\n" +
+                        "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed on the\n" +
+                        "   commandline. There is one special case: any `$$' in the value is replaced\n" +
+                        "   with the current process id. To pass a literal `$$', you must escape the\n" +
+                        "   second `$' like so: `$\\$'\n" +
                         (wantsExperimental ? "\nArguments specific to the Graal Python launcher:\n" +
                                         "--show-version : print the Python version number and continue.\n" +
                                         "-CC            : run the C compiler used for generating GraalPython C extensions.\n" +
@@ -667,10 +681,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             } else if (e.isExit()) {
                                 // usually from quit
                                 throw new ExitException(e.getExitStatus());
-                            } else if (e.isHostException() || e.isInternalError()) {
+                            } else if (e.isHostException()) {
                                 // we continue the repl even though the system may be broken
                                 lastStatus = 1;
                                 System.out.println(e.getMessage());
+                            } else if (e.isInternalError()) {
+                                System.err.println("An internal error occurred:");
+                                printPythonLikeStackTrace(e);
+
+                                // we continue the repl even though the system may be broken
+                                lastStatus = 1;
                             } else if (e.isGuestException()) {
                                 // drop through to continue REPL and remember last eval was an error
                                 lastStatus = 1;
@@ -799,6 +819,72 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
         ExitException(int code) {
             this.code = code;
+        }
+    }
+
+    private static enum State {
+        NORMAL,
+        SINGLE_QUOTE,
+        DOUBLE_QUOTE,
+        ESCAPE_SINGLE_QUOTE,
+        ESCAPE_DOUBLE_QUOTE,
+    }
+
+    private static List<String> getDefaultEnvironmentArgs() {
+        String pid;
+        if (isAOT()) {
+            pid = String.valueOf(ProcessProperties.getProcessID());
+        } else {
+            pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+        }
+        String envArgsOpt = System.getenv("GRAAL_PYTHON_ARGS");
+        ArrayList<String> envArgs = new ArrayList<>();
+        State s = State.NORMAL;
+        StringBuilder sb = new StringBuilder();
+        if (envArgsOpt != null) {
+            for (char x : envArgsOpt.toCharArray()) {
+                if (s == State.NORMAL && Character.isWhitespace(x)) {
+                    addArgument(pid, envArgs, sb);
+                } else {
+                    if (x == '"') {
+                        if (s == State.NORMAL) {
+                            s = State.DOUBLE_QUOTE;
+                        } else if (s == State.DOUBLE_QUOTE) {
+                            s = State.NORMAL;
+                        } else if (s == State.ESCAPE_DOUBLE_QUOTE) {
+                            s = State.DOUBLE_QUOTE;
+                            sb.append(x);
+                        }
+                    } else if (x == '\'') {
+                        if (s == State.NORMAL) {
+                            s = State.SINGLE_QUOTE;
+                        } else if (s == State.SINGLE_QUOTE) {
+                            s = State.NORMAL;
+                        } else if (s == State.ESCAPE_SINGLE_QUOTE) {
+                            s = State.SINGLE_QUOTE;
+                            sb.append(x);
+                        }
+                    } else if (x == '\\') {
+                        if (s == State.SINGLE_QUOTE) {
+                            s = State.ESCAPE_SINGLE_QUOTE;
+                        } else if (s == State.DOUBLE_QUOTE) {
+                            s = State.ESCAPE_DOUBLE_QUOTE;
+                        }
+                    } else {
+                        sb.append(x);
+                    }
+                }
+            }
+            addArgument(pid, envArgs, sb);
+        }
+        return envArgs;
+    }
+
+    private static void addArgument(String pid, ArrayList<String> envArgs, StringBuilder sb) {
+        if (sb.length() > 0) {
+            String arg = sb.toString().replace("$$", pid).replace("\\$", "$");
+            envArgs.add(arg);
+            sb.setLength(0);
         }
     }
 

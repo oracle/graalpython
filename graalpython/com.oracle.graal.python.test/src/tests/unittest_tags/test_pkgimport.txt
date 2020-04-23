@@ -1,1 +1,1 @@
-test_package_import__semantics
+*TestImport.test_package_import__semantics

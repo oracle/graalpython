@@ -59,15 +59,18 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -81,14 +84,17 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -96,6 +102,7 @@ import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -106,6 +113,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PList)
@@ -209,6 +217,52 @@ public class ListBuiltins extends PythonBuiltins {
             }
             list.setSequenceStorage(new IntSequenceStorage(ary));
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class)
+        PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
+                        @Cached GetIteratorNode getIteratorNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile stepProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile positiveRangeProfile) throws UnexpectedResultException {
+            clearStorage(list);
+            Object iterObj = getIteratorNode.executeWith(frame, iterable);
+            SequenceStorage storage = EmptySequenceStorage.INSTANCE;
+
+            PRangeIterator range = (PRangeIterator) iterable.getIterator();
+            final int estimatedMaxLen = range.getLength(stepProfile, positiveRangeProfile);
+            int realLen = 0;
+            if (estimatedMaxLen > 0) {
+                Object value = null;
+                try {
+                    value = getNextNode.execute(frame, iterObj);
+                    realLen++;
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                }
+                if (value != null) {
+                    storage = SequenceStorageFactory.createStorage(value, estimatedMaxLen);
+                    storage = appendNode.execute(storage, value, ListGeneralizationNode.SUPPLIER);
+                    while (true) {
+                        try {
+                            storage = appendNode.execute(storage, getNextNode.execute(frame, iterObj), ListGeneralizationNode.SUPPLIER);
+                            realLen++;
+                        } catch (PException e) {
+                            e.expectStopIteration(errorProfile);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            list.setSequenceStorage(storage);
+            if (realLen == estimatedMaxLen) {
+                return PNone.NONE;
+            } else {
+                throw new UnexpectedResultException(PNone.NONE);
+            }
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
@@ -963,8 +1017,9 @@ public class ListBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, PSequence self, Object other,
-                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
-            return containsNode.execute(frame, self.getSequenceStorage(), other);
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached SequenceStorageNodes.ContainsNode containsNode) {
+            return containsNode.execute(frame, getStorage.execute(self), other);
         }
     }
 

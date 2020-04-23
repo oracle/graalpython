@@ -1,3 +1,4 @@
-test_abc_registry
-test_constructors_not_callable
-test_copy
+*DictSetTest.test_abc_registry
+*DictSetTest.test_compare_error
+*DictSetTest.test_constructors_not_callable
+*DictSetTest.test_copy

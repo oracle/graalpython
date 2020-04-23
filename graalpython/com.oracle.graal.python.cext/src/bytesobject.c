@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,18 +48,20 @@
 
 PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE);
 
+typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
+
 UPCALL_ID(PyBytes_FromStringAndSize);
 UPCALL_ID(PyTruffle_Bytes_EmptyWithCapacity);
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
 	if (str != NULL) {
-		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, sz), sz);
+		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, sz), sz);
 	}
 	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, sz);
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	if (str != NULL) {
-		return UPCALL_CEXT_O(_jls_PyBytes_FromStringAndSize, polyglot_from_i8_array(str, strlen(str)), strlen(str));
+		return ((fromStringAndSize_fun_t)_jls_PyBytes_FromStringAndSize)(polyglot_from_i8_array(str, strlen(str)), strlen(str));
 	}
 	return UPCALL_CEXT_O(_jls_PyTruffle_Bytes_EmptyWithCapacity, 0);
 }
@@ -103,7 +105,7 @@ PyObject * PyBytes_FromFormat(const char *format, ...) {
 
 
 UPCALL_ID(PyBytes_FromFormat);
-UPCALL_ID(PyTuple_SetItem);
+UPCALL_TYPED_ID(PyTuple_SetItem, setitem_fun_t);
 PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     /* Unfortunately, we need to know the expected types of the arguments before we can do an upcall. */
     char *s;
@@ -213,7 +215,7 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     }
 
 
-#define SETARG(__args, __i, __arg) UPCALL_CEXT_I(_jls_PyTuple_SetItem, native_to_java(__args), (__i), (__arg))
+#define SETARG(__args, __i, __arg) _jls_PyTuple_SetItem(native_to_java(__args), (__i), (__arg))
 
     // do actual conversion using one-character type specifiers
     int conversions = strlen(buffer);
@@ -224,25 +226,25 @@ PyObject* PyBytes_FromFormatV(const char *format, va_list vargs) {
     	case 'i':
     	case 'x':
     	case 'd':
-            SETARG(args, i, va_arg(vargs, int));
+            SETARG(args, i, PyLong_FromLong(va_arg(vargs, int)));
     		break;
     	case 'D':
-            SETARG(args, i, va_arg(vargs, long));
+            SETARG(args, i, PyLong_FromLong(va_arg(vargs, long)));
     		break;
     	case 'u':
-            SETARG(args, i, va_arg(vargs, unsigned int));
+            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned int)));
     		break;
     	case 'U':
-            SETARG(args, i, va_arg(vargs, unsigned long));
+            SETARG(args, i, PyLong_FromUnsignedLong(va_arg(vargs, unsigned long)));
     		break;
     	case 't':
-            SETARG(args, i, va_arg(vargs, size_t));
+            SETARG(args, i, PyLong_FromSize_t(va_arg(vargs, size_t)));
             break;
     	case 's':
             SETARG(args, i, polyglot_from_string(va_arg(vargs, const char*), SRC_CS));
     		break;
     	case 'p':
-            SETARG(args, i, native_to_java(va_arg(vargs, void*)));
+            SETARG(args, i, PyLong_FromVoidPtr(va_arg(vargs, void*)));
     		break;
     	}
     }

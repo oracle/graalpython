@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -69,8 +68,6 @@ public abstract class AbstractImportNode extends StatementNode {
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
-    @Child private PassCaughtExceptionNode passExceptionNode;
-    @CompilationFinal private Boolean emulateJython;
 
     public AbstractImportNode() {
         super();
@@ -154,11 +151,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected boolean emulateJython() {
-        if (emulateJython == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            emulateJython = PythonOptions.getFlag(getContext(), PythonOptions.EmulateJython);
-        }
-        return emulateJython;
+        return getContext().getOption(PythonOptions.EmulateJython);
     }
 
     @Override

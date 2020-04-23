@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT_SUBCLASS__;
@@ -141,7 +140,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
+        PNone setClass(PythonObject self, PythonAbstractClass value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary slotsLib,
                         @Cached("create()") BranchProfile errorValueBranch,
@@ -297,10 +296,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             PythonAbstractClass type = getClass.execute(self);
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
-            if (moduleName != PNone.NO_VALUE && !moduleName.equals(BuiltinNames.BUILTINS)) {
-                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, self.hashCode());
+            if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
+                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, System.identityHashCode(self));
             }
-            return strFormat("<%s object at 0x%x>", qualName, self.hashCode());
+            return strFormat("<%s object at 0x%x>", qualName, System.identityHashCode(self));
         }
 
         @TruffleBoundary
@@ -429,15 +428,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTR__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object getattr(Object object, Object key) {
-            throw raise(AttributeError, "'%p' object has no attribute '%s'", object, key);
-        }
-    }
-
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
@@ -530,7 +520,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 try {
                     lib.setDict(self, dict);
                 } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreter();
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException(e);
                 }
             }
@@ -543,7 +533,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException(e);
             }
             return PNone.NONE;

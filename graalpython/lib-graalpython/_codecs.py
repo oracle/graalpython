@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ __codec_search_cache__ = {}
 __codec_error_registry__ = {}
 
 
-@__builtin__
+@__graalpython__.builtin
 def register(search_function):
     if not hasattr(search_function, "__call__"):
         raise TypeError("argument must be callable")
@@ -54,7 +54,7 @@ def __normalizestring(string):
     return string.replace(' ', '-').lower()
 
 
-@__builtin__
+@__graalpython__.builtin
 def lookup(encoding):
     normalized_encoding = __normalizestring(encoding)
     # First, try to lookup the name in the registry dictionary
@@ -95,7 +95,7 @@ def __decoder(encoding):
     return __codec_getitem(encoding, 1)
 
 
-@__builtin__
+@__graalpython__.builtin
 def encode(obj, encoding='utf-8', errors='strict'):
     encoder = __encoder(encoding)
     if encoder:
@@ -105,7 +105,7 @@ def encode(obj, encoding='utf-8', errors='strict'):
         return result[0]
 
 
-@__builtin__
+@__graalpython__.builtin
 def decode(obj, encoding='utf-8', errors='strict'):
     decoder = __decoder(encoding)
     if decoder:
@@ -115,14 +115,14 @@ def decode(obj, encoding='utf-8', errors='strict'):
         return result[0]
 
 
-@__builtin__
+@__graalpython__.builtin
 def register_error(errors, handler):
     if not hasattr(handler, '__call__'):
         raise TypeError('handler must be callable')
     __codec_error_registry__[errors] = handler
 
 
-@__builtin__
+@__graalpython__.builtin
 def lookup_error(errors='strict'):
     handler = __codec_error_registry__.get(errors)
     if handler is None:
@@ -130,188 +130,187 @@ def lookup_error(errors='strict'):
     return handler
 
 
-# TODO implement the encode / decode methods
-@__builtin__
+@__graalpython__.builtin
 def escape_encode(data, errors=None):
-    raise NotImplementedError("escape_encode")
+    return unicode_escape_encode(data, errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def escape_decode(data, errors=None):
-    raise NotImplementedError("escape_decode")
+    return unicode_escape_decode(data, errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_8_encode(string, errors=None):
     return __truffle_encode(string, "utf-8", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_8_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-8", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_7_encode(string, errors=None):
     return __truffle_encode(string, "utf-7", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_7_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-7", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_encode(string, errors=None, byteorder=0):
     return __truffle_encode(string, "utf-16", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-16", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_le_encode(string, errors=None):
     return __truffle_encode(string, "utf-16-le", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_le_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-16-le", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_be_encode(string, errors=None):
     return __truffle_encode(string, "utf-16-be", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_be_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-16-be", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_16_ex_decode(data, errors=None, byteorder=0, final=False):
     raise NotImplementedError("utf_16_ex_decode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_encode(string, errors=None, byteorder=0):
     return __truffle_encode(string, "utf-32", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-32", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_le_encode(string, errors=None):
     return __truffle_encode(string, "utf-32-le", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_le_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-32-le", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_be_encode(string, errors=None):
     return __truffle_encode(string, "utf-32-be", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_be_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-32-be", errors, final)
 
 
-@__builtin__
+@__graalpython__.builtin
 def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
     raise NotImplementedError("utf_32_ex_decode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def unicode_internal_encode(obj, errors=None):
     raise NotImplementedError("unicode_internal_encode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def unicode_internal_decode(obj, errors=None):
     raise NotImplementedError("unicode_internal_decode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def raw_unicode_escape_encode(string, errors=None):
     return __truffle_raw_encode(string, errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def raw_unicode_escape_decode(string, errors=None):
     return __truffle_raw_decode(string, errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def latin_1_encode(string, errors=None):
     return __truffle_encode(string, "latin-1", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def latin_1_decode(string, errors=None):
     return __truffle_decode(string, "latin-1", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def ascii_encode(string, errors=None):
     return __truffle_encode(string, "ascii", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def ascii_decode(string, errors=None):
     return __truffle_decode(string, "ascii", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def charmap_encode(string, errors=None, mapping=None):
     return __truffle_encode(string, "cp437", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def charmap_decode(string, errors=None, mapping=None):
     return __truffle_decode(string, "cp437", errors)
 
 
-@__builtin__
+@__graalpython__.builtin
 def readbuffer_encode(data, errors=None):
     raise NotImplementedError("readbuffer_encode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def mbcs_encode(string, errors=None):
     raise NotImplementedError("mbcs_encode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def mbcs_decode(string, errors=None, final=False):
     raise NotImplementedError("mbcs_decode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def oem_encode(string, errors):
     raise NotImplementedError("oem_encode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def oem_decode(string, errors=None, final=False):
     raise NotImplementedError("oem_decode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def code_page_encode(code_page, string, errors=None):
     raise NotImplementedError("code_page_encode")
 
 
-@__builtin__
+@__graalpython__.builtin
 def code_page_decode(code_page, string, errors=None, final=False):
     raise NotImplementedError("code_page_decode")
 
@@ -319,7 +318,7 @@ def code_page_decode(code_page, string, errors=None, final=False):
 # at this point during context startup, sys.path isn't initialized, so we need
 # to set it up
 import sys
-sys.path.append(sys.graal_python_stdlib_home)
+sys.path.append(__graalpython__.stdlib_home)
 try:
     import encodings
     # we import the below two encodings, because they are often used so it's

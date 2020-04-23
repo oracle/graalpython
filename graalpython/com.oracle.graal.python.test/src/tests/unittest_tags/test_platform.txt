@@ -1,2 +1,1 @@
-test_dist_deprecation
-test_linux_distribution_deprecation
+*PlatformTest.test_uname_win32_ARCHITEW6432

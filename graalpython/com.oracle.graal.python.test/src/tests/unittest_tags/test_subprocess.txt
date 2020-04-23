@@ -1,0 +1,7 @@
+*ProcessTestCase.test_bufsize_is_none
+*ProcessTestCase.test_call_kwargs
+*ProcessTestCase.test_call_seq
+*ProcessTestCase.test_call_timeout
+*ProcessTestCase.test_check_call_nonzero
+*ProcessTestCase.test_check_call_zero
+*ProcessTestCase.test_check_output

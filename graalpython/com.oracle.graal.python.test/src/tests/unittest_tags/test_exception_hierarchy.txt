@@ -1,6 +1,8 @@
-*HierarchyTest.test_builtin_errors
-*HierarchyTest.test_errno_mapping
+*AttributesTest.test_errno_translation
 *AttributesTest.test_posix_error
 *AttributesTest.test_windows_error
 *ExplicitSubclassingTest.test_errno_mapping
 *ExplicitSubclassingTest.test_init_kwdargs
+*HierarchyTest.test_builtin_errors
+*HierarchyTest.test_errno_mapping
+*HierarchyTest.test_try_except

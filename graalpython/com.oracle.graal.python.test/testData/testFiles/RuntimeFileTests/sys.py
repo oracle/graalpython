@@ -135,7 +135,7 @@ ps1 = ">>> "
 ps2 = "... "
 
 
-@__builtin__
+@__graalpython__.builtin
 def exit(arg=0):
     raise SystemExit(arg)
 
@@ -175,7 +175,7 @@ excepthook = __excepthook__
 del make_excepthook
 
 
-@__builtin__
+@__graalpython__.builtin
 def breakpointhook(*args, **kws):
     import importlib, os, warnings
     hookname = os.getenv('PYTHONBREAKPOINT')
@@ -201,12 +201,12 @@ def breakpointhook(*args, **kws):
 __breakpointhook__ = breakpointhook
 
 
-@__builtin__
+@__graalpython__.builtin
 def getrecursionlimit():
     return 1000
 
 
-@__builtin__
+@__graalpython__.builtin
 def displayhook(value):
     if value is None:
         return

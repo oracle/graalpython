@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -54,14 +56,18 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PBaseException extends PythonObject {
-
+    private static final Object[] EMPTY_ARGS = new Object[0];
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
     private PTuple args; // can be null for lazily generated message
 
     // in case of lazily generated messages, these will be used to construct the message:
+    private final boolean hasMessageFormat;
     private final String messageFormat;
     private final Object[] messageArgs;
 
@@ -74,6 +80,7 @@ public final class PBaseException extends PythonObject {
     public PBaseException(LazyPythonClass cls, PTuple args) {
         super(cls);
         this.args = args;
+        this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
@@ -81,6 +88,7 @@ public final class PBaseException extends PythonObject {
     public PBaseException(LazyPythonClass cls, String format, Object[] args) {
         super(cls);
         this.args = null;
+        this.hasMessageFormat = true;
         this.messageFormat = format;
         this.messageArgs = args;
     }
@@ -137,6 +145,10 @@ public final class PBaseException extends PythonObject {
 
     public String getMessageFormat() {
         return messageFormat;
+    }
+
+    public boolean hasMessageFormat() {
+        return hasMessageFormat;
     }
 
     public Object[] getMessageArgs() {
@@ -224,5 +236,31 @@ public final class PBaseException extends PythonObject {
 
         // TODO: frames: provide legacy stack walk method via Python option
         // TruffleStackTrace.fillIn(exception);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isException() {
+        return true;
+    }
+
+    @ExportMessage
+    RuntimeException throwException(@Cached("createBinaryProfile()") ConditionProfile hasExc,
+                    @Cached GetLazyClassNode getClass,
+                    @Cached PRaiseNode raiseNode) {
+        PException exc = getException();
+        if (hasExc.profile(exc != null)) {
+            throw exc;
+        } else {
+            Object[] newArgs = messageArgs;
+            if (newArgs == null) {
+                newArgs = EMPTY_ARGS;
+            }
+            Object format = messageFormat;
+            if (format == null) {
+                format = PNone.NO_VALUE;
+            }
+            throw raiseNode.execute(getClass.execute(this), this, format, newArgs);
+        }
     }
 }

@@ -29,7 +29,6 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
-import mx_subst
 import mx_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import HARNESS_PATH
@@ -77,7 +76,7 @@ def _check_vm_args(name, args):
 
 
 def is_sandboxed_configuration(conf):
-    return conf == CONFIGURATION_SANDBOXED or conf == CONFIGURATION_SANDBOXED_MULTI
+    return conf in (CONFIGURATION_SANDBOXED, CONFIGURATION_SANDBOXED_MULTI)
 
 
 # from six
@@ -332,23 +331,46 @@ class GraalPythonVm(GuestVm):
 # ----------------------------------------------------------------------------------------------------------------------
 python_vm_registry = mx_benchmark.VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host_registries=[java_vm_registry])
 
-
-class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
-    def __init__(self, name, bench_path, benchmarks, python_path=None):
-        super(PythonBenchmarkSuite, self).__init__()
+class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
+    def __init__(self, name, benchmarks):
+        super(PythonBaseBenchmarkSuite, self).__init__()
         self._name = name
-        self._python_path = python_path
-        self._harness_path = HARNESS_PATH
-        self._harness_path = join(SUITE.dir, self._harness_path)
-        if not self._harness_path:
-            mx.abort("python harness path not specified!")
+        self._benchmarks = benchmarks
 
-        self._bench_path, self._benchmarks = bench_path, benchmarks
-        self._bench_path = join(SUITE.dir, self._bench_path)
+    def benchmarkList(self, bm_suite_args):
+        return list(self._benchmarks.keys())
+
+    def benchmarks(self):
+        raise FutureWarning('the benchmarks method has been deprecated for VmBenchmarkSuite instances, '
+                            'use the benchmarkList method instead')
+
+    def successPatterns(self):
+        return [
+            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
+            re.compile(r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
+        ]
+
+    def failurePatterns(self):
+        return [
+            # lookahead pattern for when truffle compilation details are enabled in the log
+            re.compile(r"^(?!(\[truffle\])).*Exception")
+        ]
+
+    def group(self):
+        return GROUP_GRAAL
+
+    def name(self):
+        return self._name
+
+    def benchSuiteName(self, bmSuiteArgs):
+        return self.name()
+
+    def subgroup(self):
+        return SUBGROUP_GRAAL_PYTHON
 
     def rules(self, output, benchmarks, bm_suite_args):
-        bench_name = os.path.basename(os.path.splitext(benchmarks[0])[0])
-        arg = " ".join(self._benchmarks[bench_name])
+        bench_name = self.get_bench_name(benchmarks)
+        arg = self.get_arg(bench_name)
 
         return [
             # warmup curves
@@ -400,7 +422,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         ]
 
     def runAndReturnStdOut(self, benchmarks, bmSuiteArgs):
-        ret_code, out, dims = super(PythonBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
+        ret_code, out, dims = super(PythonBaseBenchmarkSuite, self).runAndReturnStdOut(benchmarks, bmSuiteArgs)
 
         # host-vm rewrite rules
         def _replace_host_vm(key):
@@ -415,9 +437,17 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         return ret_code, out, dims
 
     def run(self, benchmarks, bm_suite_args):
-        results = super(PythonBenchmarkSuite, self).run(benchmarks, bm_suite_args)
+        results = super(PythonBaseBenchmarkSuite, self).run(benchmarks, bm_suite_args)
         self.addAverageAcrossLatestResults(results)
         return results
+
+    def defaultIterations(self, bm):
+        default_bench_args = self._benchmarks[bm]
+        if "-i" in default_bench_args:
+            bench_idx = default_bench_args.index("-i")
+            if bench_idx + 1 < len(default_bench_args):
+                return int(default_bench_args[bench_idx + 1])
+        return DEFAULT_ITERATIONS
 
     def postprocess_run_args(self, run_args):
         vm_options = []
@@ -447,6 +477,24 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
         return self.createVmCommandLineArgs(benchmarks, bmSuiteArgs)
+
+
+class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
+    def __init__(self, name, bench_path, benchmarks, python_path=None):
+        super(PythonBenchmarkSuite, self).__init__(name, benchmarks)
+        self._python_path = python_path
+        self._harness_path = HARNESS_PATH
+        self._harness_path = join(SUITE.dir, self._harness_path)
+        if not self._harness_path:
+            mx.abort("python harness path not specified!")
+
+        self._bench_path = join(SUITE.dir, bench_path)
+
+    def get_bench_name(self, benchmarks):
+        return os.path.basename(os.path.splitext(benchmarks[0])[0])
+
+    def get_arg(self, bench_name):
+        return " ".join(self._benchmarks[bench_name])
 
     def createVmCommandLineArgs(self, benchmarks, bmSuiteArgs):
         vm_args = self.vmArgs(bmSuiteArgs)
@@ -481,42 +529,6 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         cmd_args.extend(run_args)
         return vm_options + vm_args + cmd_args
 
-    def defaultIterations(self, bm):
-        default_bench_args = self._benchmarks[bm]
-        if "-i" in default_bench_args:
-            bench_idx = default_bench_args.index("-i")
-            if bench_idx + 1 < len(default_bench_args):
-                return int(default_bench_args[bench_idx + 1])
-        return DEFAULT_ITERATIONS
-
-    def benchmarkList(self, bm_suite_args):
-        return list(self._benchmarks.keys())
-
-    def benchmarks(self):
-        raise FutureWarning('the benchmarks method has been deprecated for VmBenchmarkSuite instances, '
-                            'use the benchmarkList method instead')
-
-    def successPatterns(self):
-        return [
-            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
-            re.compile(r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
-        ]
-
-    def failurePatterns(self):
-        return [
-            # lookahead pattern for when truffle compilation details are enabled in the log
-            re.compile(r"^(?!(\[truffle\])).*Exception")
-        ]
-
-    def group(self):
-        return GROUP_GRAAL
-
-    def name(self):
-        return self._name
-
-    def subgroup(self):
-        return SUBGROUP_GRAAL_PYTHON
-
     def get_vm_registry(self):
         return python_vm_registry
 
@@ -525,3 +537,41 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: [path, {bench: args, ... }], ...}"
         return [cls(suite_name, suite_info[0], suite_info[1])
                 for suite_name, suite_info in benchmarks.items()]
+
+
+class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
+
+    def get_vm_registry(self):
+        return java_vm_registry
+
+    def get_bench_name(self, benchmarks):
+        return benchmarks[0]
+
+    def get_arg(self, bench_name):
+        return " ".join(self._benchmarks[bench_name][1:])
+
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        vmArgs = self.vmArgs(bmSuiteArgs)
+        dists = ["GRAALPYTHON", "TRUFFLE_NFI", "GRAALPYTHON-LAUNCHER"]
+        if mx.suite("tools", fatalIfMissing=False):
+            dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
+        if mx.suite("sulong", fatalIfMissing=False):
+            dists.append('SULONG')
+            if mx.suite("sulong-managed", fatalIfMissing=False):
+                dists.append('SULONG_MANAGED')
+
+        vmArgs += [
+            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+        ]
+        vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
+        jmh_entry = ["com.oracle.graal.python.benchmarks.interop.BenchRunner"]
+        runArgs = self.runArgs(bmSuiteArgs)
+
+        bench_name = benchmarks[0]
+        bench_args = self._benchmarks[bench_name]
+        return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
+
+    @classmethod
+    def get_benchmark_suites(cls, benchmarks):
+        assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
+        return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]

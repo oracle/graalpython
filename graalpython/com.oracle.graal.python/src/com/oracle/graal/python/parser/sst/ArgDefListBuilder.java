@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -127,7 +127,7 @@ public final class ArgDefListBuilder {
         OK, // was added without an error
         NONDEFAULT_FOLLOWS_DEFAULT, // non-default argument follows default argument
         DUPLICATED_ARGUMENT// duplicate argument 'x' in function definition
-    };
+    }
 
     public AddParamResult addParam(String name, SSTNode type, SSTNode defValue) {
         if (paramNames.contains(name)) {
@@ -216,7 +216,7 @@ public final class ArgDefListBuilder {
     }
 
     /**
-     * 
+     *
      * @return The index to the positional only argument marker ('/'). Which means that all
      *         positional only argument have index smaller then this.
      */

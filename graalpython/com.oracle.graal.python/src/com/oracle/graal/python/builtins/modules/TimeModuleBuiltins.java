@@ -53,7 +53,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -194,8 +194,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         /**
          * The maximum date, which are systems able to handle is 2262 04 11. This corresponds to the
          * 64 bit long.
-         *
-         * @return
          */
         @Specialization
         public long time() {
@@ -348,14 +346,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StrfTimeNode extends PythonBuiltinNode {
         private static final int IMPOSSIBLE = -2;
-        @Child private CastToIntegerFromIntNode castIntNode;
+        @Child private CoerceToIntegerNode castIntNode;
 
         @CompilationFinal private ConditionProfile outOfRangeProfile;
 
-        private CastToIntegerFromIntNode getCastIntNode() {
+        private CoerceToIntegerNode getCastIntNode() {
             if (castIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }

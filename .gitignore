@@ -37,11 +37,6 @@ language
 *.dylib
 *.rej
 .checkstyle
-/graalpython/com.oracle.graal.python.cext/compile_flags.txt
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.interp
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/*.tokens
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3*.java
-/graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4.stamp
 /mx.imports
 .pydevproject
 ## local dev and debug files
@@ -59,7 +54,21 @@ Python3.g4.stamp
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/Py*.c
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/Test*.c
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/*.sha256
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/PointerEquality_Primitive.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/buffer.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/format_specifier_w_star.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/memoryview_member_flags.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_H.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_I.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_K.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_O_conv.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_O_typecheck.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_S.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_U.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_Y.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/parseargs_valist.c
 /*.diff
+/testenv
 ## generated from: pyhocon -i ci.hocon -f json -o ci.json
 /ci.json
 /*.err

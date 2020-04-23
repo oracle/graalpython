@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCal
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ParseTupleAndKeywordsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -84,6 +84,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -148,9 +149,14 @@ public abstract class CExtParseArgumentsNode {
                         @Cached(value = "format", allowUncached = true) @SuppressWarnings("unused") String cachedFormat,
                         @Cached(value = "getChars(format)", allowUncached = true, dimensions = 1) char[] chars,
                         @Cached("createConvertArgNodes(cachedFormat)") ConvertArgNode[] convertArgNodes,
+                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
-                doParsingExploded(funName, argv, kwds, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
+                PDict kwdsDict = null;
+                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                    kwdsDict = (PDict) kwds;
+                }
+                doParsingExploded(funName, argv, kwdsDict, chars, kwdnames, varargs, nativeConext, convertArgNodes, raiseNode);
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
                 return 0;
@@ -160,12 +166,17 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "isDictOrNull(kwds)", replaces = "doSpecial")
         int doGeneric(String funName, PTuple argv, Object kwds, String format, Object kwdnames, Object varargs, CExtContext nativeContext,
                         @Cached ConvertArgNode convertArgNode,
+                        @Cached HashingCollectionNodes.LenNode kwdsLenNode,
                         @Cached PRaiseNativeNode raiseNode) {
             try {
                 char[] chars = getChars(format);
+                PDict kwdsDict = null;
+                if (kwds != null && kwdsLenNode.execute((PDict) kwds) != 0) {
+                    kwdsDict = (PDict) kwds;
+                }
                 ParserState state = new ParserState(funName, new PositionalArgStack(argv, null), nativeContext);
                 for (int i = 0; i < format.length(); i++) {
-                    state = convertArg(state, kwds, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
+                    state = convertArg(state, kwdsDict, chars, i, kwdnames, varargs, convertArgNode, raiseNode);
                 }
                 return 1;
             } catch (InteropException | ParseArgumentsException e) {
@@ -354,14 +365,14 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_Y")
-        static ParserState doBufferR(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doBufferR(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
-                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode argToSulongNode,
+                        @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
@@ -373,12 +384,12 @@ public abstract class CExtParseArgumentsNode {
             } else {
                 // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
                 // 'get_buffer_r' and output the buffer's data pointer
-                Object destDataPtr = getVaArgNode.execute(varargs, state.outIndex);
+                getVaArgNode.execute(varargs, state.outIndex);
                 if (isLookahead(format, format_idx, '#')) {
                     /* format_idx++; */
                     // 'y#'
                     // TODO(fa) additionally store size
-                    Object pybufferPtr = getVaArgNode.execute(varargs, state.outIndex);
+                    getVaArgNode.execute(varargs, state.outIndex);
                     state = state.incrementOutIndex();
                 }
             }
@@ -386,7 +397,7 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "isCStringSpecifier(c)")
-        static ParserState doCString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doCString(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
@@ -394,16 +405,16 @@ public abstract class CExtParseArgumentsNode {
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached StringLenNode stringLenNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
-                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
+                        @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode toNativeNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             boolean z = c == FORMAT_LOWER_Z;
             if (isLookahead(format, format_idx, '*')) {
                 /* format_idx++; */
                 // 's*' or 'z*'
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    Object pybuffer = getVaArgNode.execute(varargs, state.outIndex);
+                    getVaArgNode.execute(varargs, state.outIndex);
                     // TODO(fa) create Py_buffer
                 }
             } else if (isLookahead(format, format_idx, '#')) {
@@ -794,13 +805,18 @@ public abstract class CExtParseArgumentsNode {
                 if (arg instanceof String) {
                     singleChar = ((String) arg).charAt(0);
                 } else if (arg instanceof PString) {
-                    singleChar = ((PString) arg).getCharSequence().charAt(0);
+                    singleChar = charFromPString(arg);
                 } else {
                     throw raise(raiseNode, SystemError, "unsupported string type: %s", arg.getClass());
                 }
                 writeOutVarNode.writeInt32(varargs, state.outIndex, (int) singleChar);
             }
             return state.incrementOutIndex();
+        }
+
+        @TruffleBoundary
+        private static char charFromPString(Object arg) {
+            return ((PString) arg).getCharSequence().charAt(0);
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_F")
@@ -846,17 +862,18 @@ public abstract class CExtParseArgumentsNode {
         }
 
         @Specialization(guards = "c == FORMAT_UPPER_O")
-        static ParserState doObject(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doObject(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached ExecuteConverterNode executeConverterNode,
                         @Cached GetLazyClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached(value = "createTJ(state)", uncached = "getUncachedTJ(state)") CExtToJavaNode typeToJavaNode,
-                        @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
+                        @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode typeToJavaNode,
+                        @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode toNativeNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (isLookahead(format, format_idx, '!')) {
                 /* format_idx++; */
@@ -913,12 +930,17 @@ public abstract class CExtParseArgumentsNode {
             if (!(rc instanceof Number)) {
                 throw raise(raiseNode, SystemError, "%s returned an unexpected return code; expected 'int' but was %s", funName, rc.getClass());
             }
-            int i = ((Number) rc).intValue();
+            int i = intValue((Number) rc);
             if (i == -1) {
                 throw raise(raiseNode, TypeError, "read-write bytes-like object");
             } else if (i == -2) {
                 throw raise(raiseNode, TypeError, "contiguous buffer");
             }
+        }
+
+        @TruffleBoundary
+        private static int intValue(Number rc) {
+            return rc.intValue();
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_P")
@@ -1017,8 +1039,8 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        @Cached HashingStorageNodes.GetItemInteropNode getDictItemNode,
                         @CachedLibrary("kwdnames") InteropLibrary kwdnamesLib,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached PCallCExtFunction callCStringToString) throws InteropException {
 
             Object out = null;
@@ -1037,7 +1059,7 @@ public abstract class CExtParseArgumentsNode {
                 if (kwdname instanceof String) {
                     // the cast to PDict is safe because either it is null or a PDict (ensured by
                     // the guards)
-                    out = getDictItemNode.executeWithGlobalState(getDictStorageNode.execute((PDict) kwds), kwdname);
+                    out = lib.getItem(getDictStorageNode.execute((PDict) kwds), kwdname);
                 }
             }
             state.v.argnum++;

@@ -1,2 +1,4 @@
+*DisplayHookTest.test_custom_displayhook
+*ExceptHookTest.test_original_excepthook
 *SysModuleTest.test_43581
-*SysModuleTest.test_custom_displayhook
+*SysModuleTest.test__enablelegacywindowsfsencoding

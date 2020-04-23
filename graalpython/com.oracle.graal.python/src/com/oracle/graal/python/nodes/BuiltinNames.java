@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class BuiltinNames {
+    // special strings
+    public static final String LAMBDA_NAME = "<lambda>";
+
     // special arg names
     public static final String SELF = "self";
 
@@ -132,8 +135,5 @@ public abstract class BuiltinNames {
     public static final String MEMORYVIEW = "memoryview";
     public static final String SET = "set";
     public static final String BUILTINS = "builtins";
-    // truffle specific builtins
-    public static final String __BUILTIN__ = "__builtin__";
-    public static final String __DUMP_TRUFFLE_AST__ = "__dump_truffle_ast__";
-    public static final String __JYTHON_CURRENT_IMPORT__ = "__jython_current_import__";
+    public static final String __GRAALPYTHON__ = "__graalpython__";
 }

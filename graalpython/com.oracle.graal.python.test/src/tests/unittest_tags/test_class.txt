@@ -1,4 +1,4 @@
-testBadTypeReturned
-testGetSetAndDel
-testInit
-testMisc
+*ClassTests.testBadTypeReturned
+*ClassTests.testGetSetAndDel
+*ClassTests.testInit
+*ClassTests.testMisc

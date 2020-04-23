@@ -1,0 +1,2 @@
+*EpollSelectorTestCase.test_register_file
+*KqueueSelectorTestCase.test_register_bad_fd

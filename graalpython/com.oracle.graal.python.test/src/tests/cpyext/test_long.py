@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -103,6 +103,15 @@ class DummyIntSubclass(float):
         return 0xBABE
 
 
+class DummyIndexable:
+
+    def __int__(self):
+        return 0xDEAD
+
+    def __index__(self):
+        return 0xBEEF
+
+
 class TestPyLong(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -119,6 +128,7 @@ class TestPyLong(CPyExtTestCase):
             (DummyIntable(), 0xCAFE),
             (DummyIntSubclass(), 0xBABE),
             (DummyNonInt(), -1),
+            (DummyIndexable(), 0xBEEF if sys.version_info >= (3, 8, 0) else 0xDEAD),
         ),
         code='''int wrap_PyLong_AsLong(PyObject* obj, long expected) {
             long res = PyLong_AsLong(obj);
@@ -348,4 +358,34 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec="si",
         arguments=["char* string", "int base"],
+    )
+
+    test_PyLong_AsByteArray = CPyExtFunction(
+        lambda args: args[4],
+        lambda: (
+            (0, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x00\x00'),
+            (4294967299, 8, False, True, b'\x00\x00\x00\x01\x00\x00\x00\x03'),
+            (1234, 8, False, True, b'\x00\x00\x00\x00\x00\x00\x04\xd2'),
+            (0xdeadbeefdead, 8, False, True, b'\x00\x00\xde\xad\xbe\xef\xde\xad'),
+            (0xdeadbeefdead, 8, True, True, b'\xad\xde\xef\xbe\xad\xde\x00\x00'),
+            (0xdeadbeefdeadbeefbeefdeadcafebabe, 17, False, True, b'\x00\xde\xad\xbe\xef\xde\xad\xbe\xef\xbe\xef\xde\xad\xca\xfe\xba\xbe'),
+        ),
+        code='''PyObject* wrap_PyLong_AsByteArray(PyObject* object, Py_ssize_t n, int little_endian, int is_signed, PyObject* unused) {
+            unsigned char* buf = (unsigned char *) malloc(n * sizeof(unsigned char));
+            PyObject* result;
+            
+            Py_INCREF(object);
+            if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed)) {
+                Py_DECREF(object);
+                return NULL;
+            }
+            Py_DECREF(object);
+            result = PyBytes_FromStringAndSize((const char *) buf, n);
+            free(buf);
+            return result;
+        }''',
+        callfunction="wrap_PyLong_AsByteArray",
+        resultspec="O",
+        argspec="OniiO",
+        arguments=["PyObject* object", "Py_ssize_t n", "int little_endian", "int is_signed", "PyObject* unused"],
     )

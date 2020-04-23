@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -194,7 +194,7 @@ static PyTypeObject NoddyType = {
     sizeof(Noddy),             /* tp_basicsize */
     0,                         /* tp_itemsize */
     (destructor)Noddy_dealloc, /* tp_dealloc */
-    0,                         /* tp_print */
+    0,                         /* tp_vectorcall_offset */
     0,                         /* tp_getattr */
     0,                         /* tp_setattr */
     0,                         /* tp_reserved */

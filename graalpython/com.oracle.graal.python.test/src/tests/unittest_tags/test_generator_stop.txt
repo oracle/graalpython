@@ -1,0 +1,1 @@
+*TestPEP479.test_stopiteration_wrapping

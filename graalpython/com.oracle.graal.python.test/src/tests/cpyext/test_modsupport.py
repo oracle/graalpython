@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,14 @@ def _reference_typecheck(args, expected_type):
     if not isinstance(args[0][0], expected_type):
         raise TypeError
     return args[0][0]
+
+
+class Indexable:
+    def __int__(self):
+        return 456
+
+    def __index__(self):
+        return 123
 
 
 class TestModsupport(CPyExtTestCase):
@@ -206,6 +214,7 @@ class TestModsupport(CPyExtTestCase):
             ((0xFFFFFFFFFFFFFFFF, ), 0xFFFFFFFF),
             # will be a big one
             ((0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, ), 0xFFFFFFFF),
+            ((Indexable(), ), 123 if sys.version_info > (3, 8, 0) else 456),
         ),
         code='''
         static unsigned int wrap_PyArg_ParseTuple(PyObject* argTuple, PyObject* expected) {

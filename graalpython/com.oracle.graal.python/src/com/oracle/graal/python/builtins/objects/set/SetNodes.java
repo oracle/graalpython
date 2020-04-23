@@ -84,7 +84,7 @@ public abstract class SetNodes {
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             PSet set = factory.createSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
-                getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NO_VALUE);
+                getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
             }
             return set;
         }
@@ -107,7 +107,7 @@ public abstract class SetNodes {
             Object iterator = getIterator.executeWith(frame, iterable);
             while (true) {
                 try {
-                    getSetItemNode().execute(frame, set, next.execute(frame, iterator), PNone.NO_VALUE);
+                    getSetItemNode().execute(frame, set, next.execute(frame, iterator), PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return set;

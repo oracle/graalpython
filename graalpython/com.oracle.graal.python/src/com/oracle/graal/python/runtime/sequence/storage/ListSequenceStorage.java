@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -232,11 +232,15 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
     @Override
     public boolean equals(SequenceStorage other) {
         // TODO: equal algorithm might need more tests
-        if (other.length() != length() || !(other instanceof ListSequenceStorage)) {
+        if (!(other instanceof ListSequenceStorage)) {
+            return false;
+        }
+        ListSequenceStorage otherList = (ListSequenceStorage) other;
+        if (otherList.length() != length()) {
             return false;
         }
 
-        PList[] otherArray = ((ListSequenceStorage) other).getInternalListArray();
+        PList[] otherArray = otherList.getInternalListArray();
         for (int i = 0; i < length(); i++) {
             if (values[i] != otherArray[i]) {
                 return false;

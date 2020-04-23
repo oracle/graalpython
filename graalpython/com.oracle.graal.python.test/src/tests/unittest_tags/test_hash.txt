@@ -1,4 +1,9 @@
-test_default_hash
-test_fixed_hash
-test_hashable
-test_hashes
+*BytesHashRandomizationTests.test_empty_string
+*HashBuiltinsTestCase.test_hashes
+*HashDistributionTestCase.test_hash_distribution
+*HashInheritanceTestCase.test_default_hash
+*HashInheritanceTestCase.test_fixed_hash
+*HashInheritanceTestCase.test_hashable
+*MemoryviewHashRandomizationTests.test_empty_string
+*StrHashRandomizationTests.test_empty_string
+*StrHashRandomizationTests.test_ucs2_string

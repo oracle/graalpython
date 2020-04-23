@@ -8,9 +8,9 @@ import tempfile
 __all__ = ["version", "bootstrap"]
 
 
-_SETUPTOOLS_VERSION = "40.8.0"
+_SETUPTOOLS_VERSION = "41.2.0"
 
-_PIP_VERSION = "19.0.3"
+_PIP_VERSION = "19.2.3"
 
 _PROJECTS = [
     ("setuptools", _SETUPTOOLS_VERSION),
@@ -73,6 +73,8 @@ def _bootstrap(*, root=None, upgrade=False, user=False,
     if altinstall and default_pip:
         raise ValueError("Cannot use altinstall and default_pip together")
 
+    sys.audit("ensurepip.bootstrap", root)
+
     _disable_pip_configuration_settings()
 
     # By default, installing pip and setuptools installs all of the
@@ -113,6 +115,8 @@ def _bootstrap(*, root=None, upgrade=False, user=False,
             args += ["--user"]
         if verbosity:
             args += ["-" + "v" * verbosity]
+        # TODO: truffle revert patch GR-21630
+        args+= ["--no-compile"]
 
         return _run_pip(args + [p[0] for p in _PROJECTS], additional_paths)
 

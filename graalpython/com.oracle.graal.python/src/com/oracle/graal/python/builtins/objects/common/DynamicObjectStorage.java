@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,409 +40,404 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class DynamicObjectStorage extends HashingStorage {
-
+/**
+ * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
+ * cause the appropriate <it>attribute final</it> assumptions to be invalidated.
+ */
+@ExportLibrary(HashingStorageLibrary.class)
+public final class DynamicObjectStorage extends HashingStorage {
     public static final int SIZE_THRESHOLD = 100;
 
     private static final Layout LAYOUT = Layout.createLayout();
     private static final Shape EMPTY_SHAPE = LAYOUT.createShape(new ObjectType());
 
-    private final DynamicObject store;
+    protected final DynamicObject store;
+    private final MroSequenceStorage mro;
 
-    private DynamicObjectStorage() {
-        store = LAYOUT.newInstance(EMPTY_SHAPE);
+    public DynamicObjectStorage() {
+        this(LAYOUT.newInstance(EMPTY_SHAPE), null);
     }
 
-    private DynamicObjectStorage(DynamicObject store) {
+    public DynamicObjectStorage(DynamicObject store) {
+        this(store, null);
+    }
+
+    public DynamicObjectStorage(DynamicObject store, MroSequenceStorage mro) {
         this.store = store;
+        this.mro = mro;
     }
 
-    @Override
-    public int length() {
-        return store.getShape().getPropertyCount();
+    protected static Object[] keyList(DynamicObjectStorage self) {
+        return self.store.getShape().getKeyList().toArray();
     }
 
-    @Override
-    public boolean hasKey(Object key, Equivalence eq) {
-        assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-        return store.containsKey(key);
-    }
+    @ExportMessage
+    static class Length {
 
-    @Override
-    @TruffleBoundary
-    public Object getItem(Object key, Equivalence eq) {
-        assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-        return store.get(key);
-    }
-
-    @Override
-    @TruffleBoundary
-    public void setItem(Object key, Object value, Equivalence eq) {
-        assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-        if (store.containsKey(key)) {
-            store.set(key, value);
-        } else {
-            store.define(key, value);
-            store.updateShape();
-        }
-    }
-
-    @Override
-    @TruffleBoundary
-    public boolean remove(Object key, Equivalence eq) {
-        assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-        boolean result = store.delete(key);
-        store.updateShape();
-        return result;
-    }
-
-    protected Iterable<Object> getKeysIterable() {
-        return store.getShape().getKeys();
-    }
-
-    @Override
-    public Iterable<Object> keys() {
-        return wrapJavaIterable(getKeysIterable());
-    }
-
-    @Override
-    @TruffleBoundary
-    public Iterable<Object> values() {
-        ArrayList<Object> entries = new ArrayList<>(store.getShape().getPropertyCount());
-        for (Object key : getKeysIterable()) {
-            entries.add(store.get(key));
-        }
-        return wrapJavaIterable(entries);
-    }
-
-    @Override
-    @TruffleBoundary
-    public Iterable<DictEntry> entries() {
-        ArrayList<DictEntry> entries = new ArrayList<>(store.getShape().getPropertyCount());
-        for (Object key : getKeysIterable()) {
-            entries.add(new DictEntry(key, store.get(key)));
-        }
-        return wrapJavaIterable(entries);
-    }
-
-    @Override
-    @TruffleBoundary
-    public void clear() {
-        store.setShapeAndResize(store.getShape(), EMPTY_SHAPE);
-        store.updateShape();
-    }
-
-    public DynamicObject getStore() {
-        return store;
-    }
-
-    private static class FilterIterator<T> implements Iterator<T> {
-        private final Iterator<T> iterator;
-        private final Predicate<T> predicate;
-        private T value;
-        private boolean valueIsSet = false;
-
-        private FilterIterator(Iterator<T> iterator, Predicate<T> predicate) {
-            this.iterator = iterator;
-            this.predicate = predicate;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return valueIsSet || consumeUntilNext();
-        }
-
-        @Override
-        public T next() {
-            if (valueIsSet || consumeUntilNext()) {
-                valueIsSet = false;
-                return value;
+        @Specialization(guards = "cachedShape == self.store.getShape()", limit = "3")
+        @ExplodeLoop
+        static int cachedLen(DynamicObjectStorage self,
+                        @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
+                        @Cached(value = "keyList(self)", dimensions = 1) Object[] keys,
+                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+            int len = 0;
+            for (int i = 0; i < keys.length; i++) {
+                Object key = keys[i];
+                len = incrementLen(self, readNode, len, key);
             }
-            // no more vals matching were found
-            throw new NoSuchElementException();
+            return len;
         }
 
         @TruffleBoundary
-        private boolean consumeUntilNext() {
-            while (iterator.hasNext()) {
-                T next = iterator.next();
-                if (predicate.test(next)) {
-                    value = next;
-                    valueIsSet = true;
-                    return true;
+        @Specialization(replaces = "cachedLen")
+        static int length(DynamicObjectStorage self,
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+            return cachedLen(self, self.store.getShape(), keyList(self), readNode);
+        }
+
+        private static boolean hasStringKey(DynamicObjectStorage self, String key, ReadAttributeFromDynamicObjectNode readNode) {
+            return readNode.execute(self.store, key) != PNone.NO_VALUE;
+        }
+
+        private static int incrementLen(DynamicObjectStorage self, ReadAttributeFromDynamicObjectNode readNode, int len, Object key) {
+            if (key instanceof String) {
+                if (hasStringKey(self, (String) key, readNode)) {
+                    return len + 1;
                 }
             }
-            return false;
+            return len;
         }
     }
 
-    private static class NoValuePredicate<T> implements Predicate<T> {
-
-        private final DynamicObject store;
-
-        private NoValuePredicate(DynamicObject store) {
-            this.store = store;
+    @SuppressWarnings("unused")
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class GetItemWithState {
+        @Specialization
+        static Object string(DynamicObjectStorage self, String key, ThreadState state,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+            Object result = readKey.execute(self.store, key);
+            return noValueProfile.profile(result == PNone.NO_VALUE) ? null : result;
         }
 
-        @Override
-        public boolean test(T t) {
-            return store.get(t) != PNone.NO_VALUE;
-        }
-    }
-
-    private static class NoValueFilterIterator extends FilterIterator<Object> {
-
-        private NoValueFilterIterator(DynamicObject store) {
-            super(store.getShape().getKeys().iterator(), new NoValuePredicate<>(store));
-        }
-    }
-
-    public static final class FastDictStorage extends DynamicObjectStorage {
-        public FastDictStorage() {
+        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        static Object pstring(DynamicObjectStorage self, PString key, ThreadState state,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+            return string(self, castStr.execute(key), state, readKey, noValueProfile);
         }
 
-        public FastDictStorage(DynamicObject copy) {
-            super(copy);
-        }
-
-        @Override
-        @TruffleBoundary
-        public HashingStorage copy(Equivalence eq) {
-            return new FastDictStorage(getStore().copy(getStore().getShape()));
-        }
-    }
-
-    public static final class PythonObjectDictStorage extends DynamicObjectStorage {
-        private int size = -1;
-        private Shape shape;
-
-        public PythonObjectDictStorage(DynamicObject store) {
-            super(store);
-            shape = store.getShape();
-        }
-
-        @Override
-        protected Iterable<Object> getKeysIterable() {
-            return new Iterable<Object>() {
-                @Override
-                public Iterator<Object> iterator() {
-                    return new NoValueFilterIterator(getStore());
+        @Specialization(guards = {"cachedShape == self.store.getShape()", "!isBuiltinString(key, profile)"}, limit = "1")
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+        static Object notString(DynamicObjectStorage self, Object key, ThreadState state,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
+                        @Exclusive @Cached(value = "cachedShape.getKeyList().toArray()", dimensions = 1) Object[] keyList,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+            long hash = self.getHashWithState(key, lib, state, gotState);
+            for (int i = 0; i < keyList.length; i++) {
+                Object currentKey = keyList[i];
+                if (currentKey instanceof String) {
+                    if (gotState.profile(state != null)) {
+                        long keyHash = lib.hashWithState(currentKey, state);
+                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
+                            return string(self, (String) currentKey, state, readKey, noValueProfile);
+                        }
+                    } else {
+                        long keyHash = lib.hash(currentKey);
+                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
+                            return string(self, (String) currentKey, null, readKey, noValueProfile);
+                        }
+                    }
                 }
-            };
-        }
-
-        @Override
-        public int length() {
-            CompilerDirectives.transferToInterpreter();
-            if (shape != getStore().getShape()) {
-                size = 0;
-                for (@SuppressWarnings("unused")
-                Object ignored : getKeysIterable()) {
-                    size += 1;
-                }
-                shape = getStore().getShape();
             }
-            return size;
+            return null;
         }
 
-        @Override
-        public boolean hasKey(Object key, Equivalence eq) {
-            CompilerAsserts.neverPartOfCompilation();
-            return super.hasKey(key, eq) && getStore().get(key, PNone.NO_VALUE) != PNone.NO_VALUE;
+        @Specialization(guards = "!isBuiltinString(key, profile)", replaces = "notString", limit = "1")
+        static Object notStringLoop(DynamicObjectStorage self, Object key, ThreadState state,
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+            long hash = self.getHashWithState(key, lib, state, gotState);
+            Iterator<Object> keys = self.store.getShape().getKeys().iterator();
+            while (hasNext(keys)) {
+                Object currentKey = getNext(keys);
+                if (currentKey instanceof String) {
+                    long keyHash;
+                    if (gotState.profile(state != null)) {
+                        keyHash = lib.hashWithState(currentKey, state);
+                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
+                            return string(self, (String) currentKey, state, readKey, noValueProfile);
+                        }
+                    } else {
+                        keyHash = lib.hash(currentKey);
+                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
+                            return string(self, (String) currentKey, null, readKey, noValueProfile);
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
-        @Override
         @TruffleBoundary
-        public HashingStorage copy(Equivalence eq) {
-            assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-            return new FastDictStorage(getStore().copy(getStore().getShape()));
+        private static Object getNext(Iterator<Object> keys) {
+            return keys.next();
+        }
+
+        @TruffleBoundary
+        private static boolean hasNext(Iterator<Object> keys) {
+            return keys.hasNext();
         }
     }
 
-    /**
-     * Special storage that is used in the type dict (i.e. {@code tp_dict}) of native types. Writing
-     * to this storage will cause the appropriate <it>attribute final</it> assumptions to be
-     * invalidated. Therefore, this storage links to the {@link MroSequenceStorage} of the type.
-     */
-    public static final class PythonNativeObjectDictStorage extends DynamicObjectStorage {
-        private final MroSequenceStorage mro;
-
-        public PythonNativeObjectDictStorage(DynamicObject store, MroSequenceStorage mro) {
-            super(store);
-            this.mro = mro;
-        }
-
-        public MroSequenceStorage getMro() {
-            return mro;
-        }
-
-        public void invalidateAttributeInMROFinalAssumptions(String name) {
+    private static void invalidateAttributeInMROFinalAssumptions(MroSequenceStorage mro, String name, BranchProfile profile) {
+        if (mro != null) {
+            profile.enter();
             mro.invalidateAttributeInMROFinalAssumptions(name);
         }
+    }
 
-        @Override
-        @TruffleBoundary
-        public HashingStorage copy(Equivalence eq) {
-            assert eq == HashingStorage.DEFAULT_EQIVALENCE;
-            return new FastDictStorage(getStore().copy(getStore().getShape()));
+    @SuppressWarnings("unused")
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class SetItemWithState {
+
+        @Specialization
+        static HashingStorage string(DynamicObjectStorage self, String key, Object value, ThreadState state,
+                        @Shared("hasMroprofile") @Cached BranchProfile profile,
+                        @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode) {
+            writeNode.execute(self.store, key, value);
+            invalidateAttributeInMROFinalAssumptions(self.mro, key, profile);
+            return self;
+        }
+
+        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
+        static HashingStorage pstring(DynamicObjectStorage self, PString key, Object value, ThreadState state,
+                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
+                        @Shared("hasMroprofile") @Cached BranchProfile hasMro,
+                        @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
+            return string(self, castStr.execute(key), value, state, hasMro, writeNode);
+        }
+
+        // n.b: do not replace the other two specializations here, because that would make the
+        // uncached version pretty useless
+        @Specialization
+        static HashingStorage generalize(DynamicObjectStorage self, Object key, Object value, ThreadState state,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            if (gotState.profile(state != null)) {
+                HashingStorage newStore = EconomicMapStorage.create(lib.lengthWithState(self, state));
+                newStore = lib.addAllToOther(self, newStore);
+                return lib.setItemWithState(newStore, key, value, state);
+            } else {
+                HashingStorage newStore = EconomicMapStorage.create(lib.length(self));
+                newStore = lib.addAllToOther(self, newStore);
+                return lib.setItem(newStore, key, value);
+            }
         }
     }
 
-    public static final class PythonObjectHybridDictStorage extends DynamicObjectStorage {
-        private final EconomicMapStorage nonAttributesStorage;
-
-        public PythonObjectHybridDictStorage(PythonObjectDictStorage storage) {
-            this(storage.getStore());
+    @ExportMessage
+    public HashingStorage delItemWithState(Object key, ThreadState state,
+                    @CachedLibrary("this") HashingStorageLibrary lib,
+                    @Shared("hasMroprofile") @Cached BranchProfile hasMro,
+                    @Exclusive @Cached WriteAttributeToDynamicObjectNode writeNode,
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        // __hash__ call is done through hasKey, if necessary
+        boolean hasKey;
+        if (gotState.profile(state != null)) {
+            hasKey = lib.hasKeyWithState(this, key, state);
+        } else {
+            hasKey = lib.hasKey(this, key);
         }
-
-        public PythonObjectHybridDictStorage(DynamicObject store) {
-            this(store, EconomicMapStorage.create(false));
+        if (hasKey) {
+            // if we're here, key is either a String or a built-in PString
+            String strKey = key instanceof String ? (String) key : ((PString) key).getValue();
+            writeNode.execute(store, strKey, PNone.NO_VALUE);
+            invalidateAttributeInMROFinalAssumptions(mro, strKey, hasMro);
         }
+        return this;
+    }
 
-        PythonObjectHybridDictStorage(DynamicObject store, EconomicMapStorage nonAttributesStorage) {
-            super(store);
-            this.nonAttributesStorage = nonAttributesStorage;
-        }
-
-        @Override
-        public int length() {
-            return super.length() + nonAttributesStorage.length();
-        }
-
-        @Override
-        public boolean hasKey(Object key, Equivalence eq) {
-            if (super.hasKey(key, DEFAULT_EQIVALENCE)) {
-                return true;
+    @ExportMessage
+    static class ForEachUntyped {
+        @Specialization(guards = "cachedShape == self.store.getShape()", limit = "1")
+        @ExplodeLoop
+        static Object cachedLen(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
+                        @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
+                        @Cached(value = "keyList(self)", dimensions = 1) Object[] keys,
+                        @Shared("readNodeInject") @Cached ReadAttributeFromDynamicObjectNode readNode) {
+            Object result = firstValue;
+            for (int i = 0; i < keys.length; i++) {
+                Object key = keys[i];
+                result = runNode(self, key, result, readNode, node);
             }
-            return hasKeyNonAttr(key, eq);
+            return result;
         }
 
-        @TruffleBoundary
-        private boolean hasKeyNonAttr(Object key, Equivalence eq) {
-            return nonAttributesStorage.hasKey(key, eq);
+        @Specialization(replaces = "cachedLen")
+        static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
+                        @Shared("readNodeInject") @Cached ReadAttributeFromDynamicObjectNode readNode) {
+            return cachedLen(self, node, firstValue, self.store.getShape(), keyList(self), readNode);
         }
 
-        @Override
-        public Object getItem(Object key, Equivalence eq) {
-            Object value = super.getItem(key, DEFAULT_EQIVALENCE);
-            if (value != null) {
-                return value;
-            }
-            return this.nonAttributesStorage.getItem(key, eq);
-        }
-
-        @Override
-        public void setItem(Object key, Object value, Equivalence eq) {
+        private static Object runNode(DynamicObjectStorage self, Object key, Object acc, ReadAttributeFromDynamicObjectNode readNode, ForEachNode<Object> node) {
             if (key instanceof String) {
-                super.setItem(key, value, DEFAULT_EQIVALENCE);
+                Object value = readNode.execute(self.store, key);
+                if (value != PNone.NO_VALUE) {
+                    return node.execute(key, acc);
+                }
+            }
+            return acc;
+        }
+    }
+
+    @Override
+    @ExportMessage
+    @TruffleBoundary
+    public HashingStorage clear() {
+        store.setShapeAndResize(store.getShape(), EMPTY_SHAPE);
+        store.updateShape();
+        return this;
+    }
+
+    @Override
+    @ExportMessage
+    @TruffleBoundary
+    public HashingStorage copy() {
+        return new DynamicObjectStorage(store.copy(store.getShape()));
+    }
+
+    @ExportMessage
+    public HashingStorageIterable<Object> keys(
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+        return new HashingStorageIterable<>(new KeysIterator(store, readNode));
+    }
+
+    private static final class KeysIterator implements Iterator<Object> {
+        private final Iterator<Object> keyIter;
+        private final DynamicObject store;
+        private final ReadAttributeFromDynamicObjectNode readNode;
+        private Object next = null;
+
+        public KeysIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
+            this.keyIter = store.getShape().getKeys().iterator();
+            this.store = store;
+            this.readNode = readNode;
+        }
+
+        @TruffleBoundary
+        public boolean hasNext() {
+            while (next == null && keyIter.hasNext()) {
+                Object key = keyIter.next();
+                Object value = readNode.execute(store, key);
+                if (value != PNone.NO_VALUE) {
+                    next = key;
+                }
+            }
+            return next != null;
+        }
+
+        public Object next() {
+            hasNext(); // find the next value
+            if (next != null) {
+                Object returnValue = next;
+                next = null;
+                return returnValue;
             } else {
-                setItemNonAttr(key, value, eq);
+                throw new NoSuchElementException();
             }
         }
+    }
 
-        @TruffleBoundary
-        private void setItemNonAttr(Object key, Object value, Equivalence eq) {
-            this.nonAttributesStorage.setItem(key, value, eq);
+    @ExportMessage
+    public HashingStorageIterable<DictEntry> entries(
+                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+        return new HashingStorageIterable<>(new EntriesIterator(store, readNode));
+    }
+
+    private static final class EntriesIterator implements Iterator<DictEntry> {
+        private final Iterator<Object> keyIter;
+        private final DynamicObject store;
+        private final ReadAttributeFromDynamicObjectNode readNode;
+        private DictEntry next = null;
+
+        public EntriesIterator(DynamicObject store, ReadAttributeFromDynamicObjectNode readNode) {
+            this.keyIter = getIterator(store.getShape());
+            this.store = store;
+            this.readNode = readNode;
         }
 
-        @Override
-        public boolean remove(Object key, Equivalence eq) {
-            if (super.remove(key, DEFAULT_EQIVALENCE)) {
-                return true;
+        @TruffleBoundary
+        private static Iterator<Object> getIterator(Shape shape) {
+            return shape.getKeys().iterator();
+        }
+
+        @TruffleBoundary
+        public boolean hasNext() {
+            while (next == null && keyIter.hasNext()) {
+                Object key = keyIter.next();
+                Object value = readNode.execute(store, key);
+                if (value != PNone.NO_VALUE) {
+                    next = new DictEntry(key, value);
+                }
             }
-            return removeNonAttr(key, eq);
+            return next != null;
         }
 
-        @TruffleBoundary
-        private boolean removeNonAttr(Object key, Equivalence eq) {
-            return this.nonAttributesStorage.remove(key, eq);
-        }
-
-        @Override
-        @TruffleBoundary
-        public Iterable<Object> keys() {
-            if (this.nonAttributesStorage.length() == 0) {
-                return super.keys();
+        public DictEntry next() {
+            hasNext(); // find the next value
+            if (next != null) {
+                DictEntry returnValue = next;
+                next = null;
+                return returnValue;
             } else {
-                ArrayList<Object> entries = new ArrayList<>(this.length());
-                for (Object entry : super.keys()) {
-                    entries.add(entry);
-                }
-                for (Object entry : this.nonAttributesStorage.keys()) {
-                    entries.add(entry);
-                }
-                return wrapJavaIterable(entries);
+                throw new NoSuchElementException();
             }
-        }
-
-        @Override
-        @TruffleBoundary
-        public Iterable<Object> values() {
-            if (this.nonAttributesStorage.length() == 0) {
-                return super.values();
-            } else {
-                ArrayList<Object> entries = new ArrayList<>(this.length());
-                for (Object entry : super.values()) {
-                    entries.add(entry);
-                }
-                for (Object entry : this.nonAttributesStorage.values()) {
-                    entries.add(entry);
-                }
-                return wrapJavaIterable(entries);
-            }
-        }
-
-        @Override
-        @TruffleBoundary
-        public Iterable<DictEntry> entries() {
-            if (this.nonAttributesStorage.length() == 0) {
-                return super.entries();
-            } else {
-                ArrayList<DictEntry> entries = new ArrayList<>(this.length());
-                for (DictEntry entry : super.entries()) {
-                    entries.add(entry);
-                }
-                for (DictEntry entry : this.nonAttributesStorage.entries()) {
-                    entries.add(entry);
-                }
-                return wrapJavaIterable(entries);
-            }
-        }
-
-        @Override
-        public void clear() {
-            super.clear();
-            clearNonAttrs();
-        }
-
-        @TruffleBoundary
-        private void clearNonAttrs() {
-            this.nonAttributesStorage.clear();
-        }
-
-        @Override
-        public HashingStorage copy(Equivalence eq) {
-            return new PythonObjectHybridDictStorage(getStore().copy(getStore().getShape()), (EconomicMapStorage) copyNonAttrs(eq));
-        }
-
-        @TruffleBoundary
-        private HashingStorage copyNonAttrs(Equivalence eq) {
-            return nonAttributesStorage.copy(eq);
         }
     }
 }

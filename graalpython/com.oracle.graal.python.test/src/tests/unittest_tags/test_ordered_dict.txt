@@ -26,7 +26,6 @@
 *OrderedDictTests.test_pop
 *OrderedDictTests.test_popitem_last
 *OrderedDictTests.test_reduce_not_too_fat
-*OrderedDictTests.test_reinsert
 *OrderedDictTests.test_repr
 *OrderedDictTests.test_repr_recursive
 *OrderedDictTests.test_repr_recursive_values
@@ -36,10 +35,4 @@
 *OrderedDictTests.test_sorted_iterators
 *OrderedDictTests.test_views
 *OrderedDictTests.test_yaml_linkage
-*BasicTestMappingProtocol.test_bool
-*BasicTestMappingProtocol.test_constructor
-*BasicTestMappingProtocol.test_getitem
-*BasicTestMappingProtocol.test_items
-*BasicTestMappingProtocol.test_len
 *PurePythonGeneralMappingTests.test_popitem
-*BasicTestMappingProtocol.test_setdefault

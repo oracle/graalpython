@@ -31,7 +31,11 @@ import com.oracle.graal.python.runtime.sequence.PMutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.source.SourceSection;
 
 public final class PList extends PMutableSequence {
     private final ListLiteralNode origin;
@@ -89,11 +93,13 @@ public final class PList extends PMutableSequence {
             try {
                 store.insertItem(index, value);
             } catch (SequenceStoreException e1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
             }
         }
     }
 
+    @Ignore
     @Override
     public final boolean equals(Object other) {
         if (!(other instanceof PList)) {
@@ -129,5 +135,23 @@ public final class PList extends PMutableSequence {
             return (PList) value;
         }
         throw new UnexpectedResultException(value);
+    }
+
+    @ExportMessage
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
+        ListLiteralNode node = getOrigin();
+        SourceSection result = null;
+        if (node != null) {
+            result = node.getSourceSection();
+        }
+        if (result == null) {
+            throw UnsupportedMessageException.create();
+        }
+        return result;
+    }
+
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return getOrigin() != null && getOrigin().getSourceSection() != null;
     }
 }

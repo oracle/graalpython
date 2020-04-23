@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ import re
 
 COPYRIGHT_HEADER = """\
 /*
- * Copyright (c) 2017-2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017-2020, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
  *
  * The MIT License (MIT)
@@ -76,6 +76,7 @@ COPYRIGHT_HEADER = """\
 """
 
 PTRN_SUPPRESS_WARNINGS = re.compile(r"@SuppressWarnings.*")
+PTRN_GEN_FROM = r"// Generated from .*(?P<path>graalpython/com\.oracle\.graal\.python.*Python3\.g4) by ANTLR (?P<antlr>.*)"
 
 
 def replace_suppress_warnings(line):
@@ -85,13 +86,20 @@ def replace_suppress_warnings(line):
 def replace_rulectx(line):
         return line.replace("(RuleContext)_localctx", "_localctx")
 
+
 def replace_localctx(line):
         return re.sub(r'\(\((([a-zA-Z]*?_?)*[a-zA-Z]*)\)_localctx\)', '_localctx', line)
+
+
+def replace_generate_from(line):
+        return re.sub(PTRN_GEN_FROM, "// Generated from \g<path> by ANTLR \g<antlr>", line)
+
 
 TRANSFORMS = [
         replace_suppress_warnings,
         replace_rulectx,
         replace_localctx,
+        replace_generate_from,
 ]
 
 

@@ -39,10 +39,13 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class ListLiteralNode extends SequenceLiteralNode {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ListLiteralNode.class);
+
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Child private SequenceStorageNodes.ConcatNode concatStoragesNode;
     @Child private SequenceStorageNodes.AppendNode appendNode;
@@ -141,17 +144,17 @@ public final class ListLiteralNode extends SequenceLiteralNode {
 
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
-            if (PythonOptions.getFlag(lookupContextReference(PythonLanguage.class).get(), PythonOptions.OverallocateLiteralLists)) {
+            if (lookupContextReference(PythonLanguage.class).get().getOption(PythonOptions.OverallocateLiteralLists)) {
                 if (newStore.capacity() > initialCapacity.estimate()) {
                     initialCapacity.updateFrom(newStore.capacity());
-                    PythonLanguage.getLogger().fine(() -> {
+                    LOGGER.fine(() -> {
                         return String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.capacity(),
                                         initialCapacity.estimate());
                     });
                 }
                 if (newStore.getElementType().generalizesFrom(type)) {
                     type = newStore.getElementType();
-                    PythonLanguage.getLogger().fine(() -> {
+                    LOGGER.fine(() -> {
                         return String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name());
                     });
                 }

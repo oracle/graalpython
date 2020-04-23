@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MP_ASS_SUBSCRIPT;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MP_LENGTH;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.MP_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MP_ASS_SUBSCRIPT;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MP_LENGTH;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.MP_SUBSCRIPT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -74,9 +74,9 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
     @CompilationFinal(dimensions = 1) private static final String[] MAPPING_METHODS = new String[]{
-                    MP_LENGTH,
-                    MP_SUBSCRIPT,
-                    MP_ASS_SUBSCRIPT,
+                    MP_LENGTH.getMemberName(),
+                    MP_SUBSCRIPT.getMemberName(),
+                    MP_ASS_SUBSCRIPT.getMemberName(),
     };
 
     @CompilationFinal(dimensions = 1) private static final String[] MAPPING_METHODS_MAPPING = new String[]{

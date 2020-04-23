@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -172,6 +173,7 @@ public abstract class PRaiseOSErrorNode extends Node {
         } else if (e instanceof RuntimeException) {
             throw (RuntimeException) e;
         } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new RuntimeException(getMessage(e), e);
         }
         if (message == null) {

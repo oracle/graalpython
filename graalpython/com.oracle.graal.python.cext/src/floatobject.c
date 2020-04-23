@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2019, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2020, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -31,7 +31,7 @@ PyObject* PyFloat_FromDouble(double fval) {
 PyObject* float_subtype_new(PyTypeObject *type, double x) {
     PyObject* newobj = type->tp_alloc(type, 0);
     if (newobj == NULL) {
-        Py_DECREF(tmp);
+        Py_DECREF(newobj);
         return NULL;
     }
     ((PyFloatObject *)newobj)->ob_fval = x;

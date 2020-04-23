@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class ExecutePositionalStarargsNode extends Node {
@@ -86,11 +89,13 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         return toArray.execute(starargs.getSequenceStorage());
     }
 
-    @Specialization
-    static Object[] doDict(PDict starargs) {
-        int length = starargs.size();
+    @Specialization(limit = "1")
+    static Object[] doDict(PDict starargs,
+                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
+        HashingStorage dictStorage = starargs.getDictStorage();
+        int length = lib.length(dictStorage);
         Object[] args = new Object[length];
-        Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
+        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
         for (int i = 0; i < args.length; i++) {
             assert iterator.hasNext();
             args[i] = iterator.next();
@@ -98,11 +103,13 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         return args;
     }
 
-    @Specialization
-    static Object[] doSet(PSet starargs) {
-        int length = starargs.size();
+    @Specialization(limit = "1")
+    static Object[] doSet(PSet starargs,
+                    @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib) {
+        HashingStorage dictStorage = starargs.getDictStorage();
+        int length = lib.length(dictStorage);
         Object[] args = new Object[length];
-        Iterator<Object> iterator = starargs.getDictStorage().keys().iterator();
+        Iterator<Object> iterator = lib.keys(dictStorage).iterator();
         for (int i = 0; i < args.length; i++) {
             assert iterator.hasNext();
             args[i] = iterator.next();
@@ -172,13 +179,15 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         }
 
         @Specialization
-        static Object[] doDict(PDict starargs) {
-            return ExecutePositionalStarargsNode.doDict(starargs);
+        static Object[] doDict(PDict starargs,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return ExecutePositionalStarargsNode.doDict(starargs, lib);
         }
 
         @Specialization
-        static Object[] doSet(PSet starargs) {
-            return ExecutePositionalStarargsNode.doSet(starargs);
+        static Object[] doSet(PSet starargs,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return ExecutePositionalStarargsNode.doSet(starargs, lib);
         }
 
         @Specialization

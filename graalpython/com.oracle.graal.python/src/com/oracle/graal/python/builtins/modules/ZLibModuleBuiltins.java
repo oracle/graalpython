@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,7 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntegerFromIntNode;
+import com.oracle.graal.python.nodes.util.CoerceToIntegerNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -153,7 +153,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Crc32Node extends PythonBinaryBuiltinNode {
 
-        @Child private CastToIntegerFromIntNode castToIntNode;
+        @Child private CoerceToIntegerNode castToIntNode;
 
         // we can't use jdk Crc32 class, if there is done init value of crc
         private static final int[] CRC32_TABLE = {
@@ -221,10 +221,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private CastToIntegerFromIntNode getCastToIntNode() {
+        private CoerceToIntegerNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }
@@ -279,7 +279,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Adler32Node extends PythonBinaryBuiltinNode {
 
-        @Child private CastToIntegerFromIntNode castToIntNode;
+        @Child private CoerceToIntegerNode castToIntNode;
 
         private static final int DEFER = 3850;
         private static final int BASE = 65521;
@@ -303,10 +303,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        private CastToIntegerFromIntNode getCastToIntNode() {
+        private CoerceToIntegerNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }
@@ -583,7 +583,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DecompressNode extends PythonTernaryBuiltinNode {
 
-        @Child private CastToIntegerFromIntNode castToIntNode;
+        @Child private CoerceToIntegerNode castToIntNode;
         @Child private SequenceStorageNodes.ToByteArrayNode toArrayNode;
 
         private final ConditionProfile bufSizeProfile = ConditionProfile.createBinaryProfile();
@@ -596,10 +596,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return toArrayNode;
         }
 
-        private CastToIntegerFromIntNode getCastToIntNode() {
+        private CoerceToIntegerNode getCastToIntNode() {
             if (castToIntNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIntNode = insert(CastToIntegerFromIntNode.create(val -> {
+                castToIntNode = insert(CoerceToIntegerNode.create(val -> {
                     throw raise(PythonBuiltinClassType.TypeError, "an integer is required (got type %p)", val);
                 }));
             }

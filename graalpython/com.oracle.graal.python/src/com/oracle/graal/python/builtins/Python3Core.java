@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ServiceLoader;
-import java.util.function.Supplier;
+import com.oracle.graal.python.util.Supplier;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LsprofModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.modules.SysConfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
@@ -94,8 +96,8 @@ import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
@@ -183,6 +185,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -196,6 +199,7 @@ import org.graalvm.nativeimage.ImageInfo;
  * types.
  */
 public final class Python3Core implements PythonCore {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
     private static final String[] initializeCoreFiles() {
@@ -252,6 +256,8 @@ public final class Python3Core implements PythonCore {
                         "resource",
                         "_contextvars",
                         "pip_hook",
+                        "_lsprof",
+                        "marshal",
                         "_lzma"));
         // must be last
         coreFiles.add("final_patches");
@@ -259,6 +265,24 @@ public final class Python3Core implements PythonCore {
     }
 
     private final PythonBuiltins[] builtins;
+
+    private static final boolean hasCoverageTool;
+    private static final boolean hasProfilerTool;
+    static {
+        Class<?> c = null;
+        try {
+            c = Class.forName("com.oracle.truffle.tools.coverage.CoverageTracker");
+        } catch (LinkageError | ClassNotFoundException e) {
+        }
+        hasCoverageTool = c != null;
+        c = null;
+        try {
+            c = Class.forName("com.oracle.truffle.tools.profiler.CPUSampler");
+        } catch (LinkageError | ClassNotFoundException e) {
+        }
+        hasProfilerTool = c != null;
+        c = null;
+    }
 
     private static final PythonBuiltins[] initializeBuiltins() {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
@@ -375,6 +399,13 @@ public final class Python3Core implements PythonCore {
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
                         new GraalPythonModuleBuiltins()));
+        if (hasCoverageTool) {
+            builtins.add(new TraceModuleBuiltins());
+        }
+        if (hasProfilerTool) {
+            builtins.add(new LsprofModuleBuiltins());
+            builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
+        }
         if (!TruffleOptions.AOT) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
@@ -515,7 +546,7 @@ public final class Python3Core implements PythonCore {
     private PythonBuiltinClass initializeBuiltinClass(PythonBuiltinClassType type) {
         int index = type.ordinal();
         if (builtinTypes[index] == null) {
-            if (type.getBase() == type) {
+            if (type.getBase() == null) {
                 // object case
                 builtinTypes[index] = new PythonBuiltinClass(type, null);
             } else {
@@ -631,7 +662,7 @@ public final class Python3Core implements PythonCore {
         } catch (SecurityException e) {
             errorMessage = "Startup failed, a security exception occurred while reading from " + file + ". Maybe you need to set python.CoreHome and python.StdLibHome.";
         }
-        PythonLanguage.getLogger().log(Level.SEVERE, errorMessage);
+        LOGGER.log(Level.SEVERE, errorMessage);
         PException e = new PException(null, null);
         e.setMessage(errorMessage);
         throw e;

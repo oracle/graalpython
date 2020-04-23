@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -90,7 +90,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
             callTargets = createYieldTargets(callTarget);
         }
         return factory.createGenerator(getName(), callTargets, frameDescriptor, frame.getArguments(), PArguments.getClosure(frame), cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode);
+                        numOfGeneratorForNode, null);
     }
 
     public static RootCallTarget[] createYieldTargets(RootCallTarget callTarget) {

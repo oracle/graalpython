@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-@__builtin__
+@__graalpython__.builtin
 def reduce(function, iterable, initializer=None):
     it = iter(iterable)
     if initializer is None:
@@ -59,8 +59,8 @@ class partial:
         self.args = args
         self.keywords = keywords
         self.newfunc = newfunc
-    
+
     def __call__(self, *args, **keywords):
         return self.newfunc(*args, **keywords)
-    
+
     # TODO: correctly implement '__reduce__' and '__setstate__'

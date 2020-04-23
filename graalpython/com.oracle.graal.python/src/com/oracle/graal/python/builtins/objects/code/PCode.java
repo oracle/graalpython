@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -55,28 +56,32 @@ import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
-import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.GlobalNode;
-import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
-import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PCode extends PythonBuiltinObject {
     static final String[] EMPTY_STRINGS = new String[0];
-    static final long FLAG_GENERATOR = 32;
-    static final long FLAG_VAR_ARGS = 0x0004;
-    static final long FLAG_VAR_KW_ARGS = 0x0008;
-    static final long FLAG_MODULE = 0x0040; // CO_NOFREE on CPython, we only set it on
-                                            // modules
+    static final long FLAG_VAR_ARGS = 0x4;
+    static final long FLAG_VAR_KW_ARGS = 0x8;
+    static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
+    static final long FLAG_GENERATOR = 0x20;
+    static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
+                                          // redundant anyway
 
     private final RootCallTarget callTarget;
     private final Signature signature;
@@ -95,7 +100,7 @@ public final class PCode extends PythonBuiltinObject {
     private byte[] codestring;
     // tuple of constants used in the bytecode
     private Object[] constants;
-    // tuple containing the literals used by the bytecode
+    // tuple containing the literals (builtins/globals) used by the bytecode
     private Object[] names;
     // is a tuple containing the names of the local variables (starting with the argument names)
     private Object[] varnames;
@@ -111,8 +116,6 @@ public final class PCode extends PythonBuiltinObject {
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
-    // is a tuple containing the names of the global variables accessed from this code object
-    private Object[] globalAndBuiltinVarNames;
 
     public PCode(LazyPythonClass cls, RootCallTarget callTarget) {
         super(cls);
@@ -161,37 +164,25 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static String[] extractFreeVars(RootNode rootNode) {
-        if (rootNode instanceof FunctionRootNode) {
-            return ((FunctionRootNode) rootNode).getFreeVars();
-        } else if (rootNode instanceof GeneratorFunctionRootNode) {
-            return ((GeneratorFunctionRootNode) rootNode).getFreeVars();
-        } else if (rootNode instanceof ModuleRootNode) {
-            return ((ModuleRootNode) rootNode).getFreeVars();
+        if (rootNode instanceof PClosureRootNode) {
+            return ((PClosureRootNode) rootNode).getFreeVars();
         } else {
             return EMPTY_STRINGS;
         }
     }
 
     private static String[] extractCellVars(RootNode rootNode) {
-        if (rootNode instanceof FunctionRootNode) {
-            return ((FunctionRootNode) rootNode).getCellVars();
-        } else if (rootNode instanceof GeneratorFunctionRootNode) {
-            return ((GeneratorFunctionRootNode) rootNode).getCellVars();
+        if (rootNode instanceof PClosureFunctionRootNode) {
+            return ((PClosureFunctionRootNode) rootNode).getCellVars();
         } else {
             return EMPTY_STRINGS;
         }
     }
 
+    @TruffleBoundary
     private static String extractFileName(RootNode rootNode) {
-        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
-        SourceSection src;
-        if (funcRootNode instanceof PRootNode) {
-            src = ((PRootNode) funcRootNode).getSourceSection();
-        } else {
-            // foreign root nodes might consider getting the source section slow-path
-            CompilerDirectives.transferToInterpreter();
-            src = funcRootNode.getSourceSection();
-        }
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        SourceSection src = funcRootNode.getSourceSection();
         if (src != null) {
             if (src.getSource().getPath() == null) {
                 return src.getSource().getName();
@@ -206,7 +197,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
-        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getStartLine();
@@ -214,18 +205,12 @@ public final class PCode extends PythonBuiltinObject {
         return 1;
     }
 
+    @TruffleBoundary
     private static String extractName(RootNode rootNode) {
-        String name;
-        if (rootNode instanceof ModuleRootNode) {
-            name = rootNode.getName();
-        } else if (rootNode instanceof FunctionRootNode) {
-            name = ((FunctionRootNode) rootNode).getName();
-        } else {
-            name = rootNode.getName();
-        }
-        return name;
+        return rootNode.getName();
     }
 
+    @TruffleBoundary
     private static int extractStackSize(RootNode rootNode) {
         return rootNode.getFrameDescriptor().getSize();
     }
@@ -259,22 +244,45 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Object[] extractGlobalAndBuiltinVarnames(RootNode rootNode) {
-        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
-        Set<Object> varNameList = new HashSet<>();
-
-        List<GlobalNode> globalNodes = NodeUtil.findAllNodeInstances(funcRootNode, GlobalNode.class);
-        for (GlobalNode node : globalNodes) {
-            if (node instanceof ReadGlobalOrBuiltinNode) {
-                varNameList.add(((ReadGlobalOrBuiltinNode) node).getAttributeId());
-            } else if (node instanceof WriteGlobalNode) {
-                varNameList.add(((WriteGlobalNode) node).getAttributeId());
-            } else if (node instanceof DeleteGlobalNode) {
-                varNameList.add(((DeleteGlobalNode) node).getAttributeId());
+    private static Object[] extractConstants(RootNode rootNode) {
+        List<Object> constants = new ArrayList<>();
+        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
+            public boolean visit(Node node) {
+                if (node instanceof SimpleLiteralNode) {
+                    constants.add(((SimpleLiteralNode) node).getValue());
+                } else if (node instanceof FunctionDefinitionNode) {
+                    constants.add(new PCode(PythonBuiltinClassType.PCode, ((FunctionDefinitionNode) node).getCallTarget()));
+                } else if (node instanceof GeneratorExpressionNode) {
+                    // TODO: we do it this way here since we cannot deserialize generator
+                    // expressions right now
+                    constants.addAll(Arrays.asList(extractConstants(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
+                }
+                return true;
             }
-        }
+        });
+        return constants.toArray();
+    }
 
-        return varNameList.toArray();
+    @TruffleBoundary
+    private static Object[] extractNames(RootNode rootNode) {
+        List<Object> names = new ArrayList<>();
+        rootNodeForExtraction(rootNode).accept(new NodeVisitor() {
+            public boolean visit(Node node) {
+                if (node instanceof GlobalNode) {
+                    names.add(((GlobalNode) node).getAttributeId());
+                } else if (node instanceof GeneratorExpressionNode) {
+                    // TODO: since we do *not* add GeneratorExpressionNodes in #extractConstants, we
+                    // need to find the names referenced in them here
+                    names.addAll(Arrays.asList(extractNames(((GeneratorExpressionNode) node).getCallTarget().getRootNode())));
+                }
+                return true;
+            }
+        });
+        return names.toArray();
+    }
+
+    private static RootNode rootNodeForExtraction(RootNode rootNode) {
+        return (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
     }
 
     @TruffleBoundary
@@ -297,6 +305,10 @@ public final class PCode extends PythonBuiltinObject {
             // 0x08 - **keywords
             if (NodeUtil.findFirstNodeInstance(funcRootNode, ReadVarKeywordsNode.class) != null) {
                 flags |= FLAG_VAR_KW_ARGS;
+            }
+            // 0x10 - lambda, not on CPython
+            if (funcRootNode instanceof FunctionRootNode && ((FunctionRootNode) funcRootNode).isLambda()) {
+                flags |= FLAG_LAMBDA;
             }
         }
         return flags;
@@ -404,18 +416,17 @@ public final class PCode extends PythonBuiltinObject {
         return codestring;
     }
 
-    public Object[] getGlobalAndBuiltinVarNames() {
-        if (globalAndBuiltinVarNames == null) {
-            this.globalAndBuiltinVarNames = extractGlobalAndBuiltinVarnames(getRootNode());
-        }
-        return globalAndBuiltinVarNames;
-    }
-
     public Object[] getConstants() {
+        if (constants == null) {
+            constants = extractConstants(getRootNode());
+        }
         return constants;
     }
 
     public Object[] getNames() {
+        if (names == null) {
+            names = extractNames(getRootNode());
+        }
         return names;
     }
 
@@ -453,5 +464,25 @@ public final class PCode extends PythonBuiltinObject {
 
     public RootCallTarget getRootCallTarget() {
         return callTarget;
+    }
+
+    @ExportMessage
+    public SourceSection getSourceLocation() throws UnsupportedMessageException {
+        SourceSection result = readSourceLocation();
+        if (result != null) {
+            return result;
+        } else {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @TruffleBoundary
+    private SourceSection readSourceLocation() {
+        return getRootNode().getSourceSection();
+    }
+
+    @ExportMessage
+    public boolean hasSourceLocation() {
+        return readSourceLocation() != null;
     }
 }

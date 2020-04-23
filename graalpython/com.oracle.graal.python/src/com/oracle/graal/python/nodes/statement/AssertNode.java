@@ -66,8 +66,8 @@ public class AssertNode extends StatementNode {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             PythonContext context = getContext();
-            javaExceptionsFailAssertions = PythonOptions.getOption(context, PythonOptions.CatchAllExceptions);
-            assertionsEnabled = !PythonOptions.getOption(context, PythonOptions.PythonOptimizeFlag);
+            javaExceptionsFailAssertions = context.getOption(PythonOptions.CatchAllExceptions);
+            assertionsEnabled = !context.getOption(PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {
@@ -89,7 +89,7 @@ public class AssertNode extends StatementNode {
     }
 
     private PException assertionFailed(VirtualFrame frame) {
-        String assertionMessage = "";
+        String assertionMessage = null;
         if (message != null) {
             try {
                 Object messageObj = message.execute(frame);
@@ -104,7 +104,7 @@ public class AssertNode extends StatementNode {
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
                 PythonContext context = getContext();
-                if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
+                if (context.getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(context, e);
                 }
             }
@@ -112,6 +112,9 @@ public class AssertNode extends StatementNode {
         if (raise == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raise = insert(PRaiseNode.create());
+        }
+        if (assertionMessage == null) {
+            return raise.raise(AssertionError);
         }
         return raise.raise(AssertionError, assertionMessage);
     }

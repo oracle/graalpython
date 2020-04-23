@@ -57,6 +57,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
 @ImportStatic({PythonOptions.class, PGuards.class})
+@ReportPolymorphism
 public abstract class IsSubtypeNode extends PNodeWithContext {
     protected abstract boolean executeInternal(Frame frame, Object derived, Object cls);
 

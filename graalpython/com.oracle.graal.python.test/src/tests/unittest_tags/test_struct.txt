@@ -1,3 +1,10 @@
-test_Struct_reinitialization
-test_calcsize
-test_format_attr
+*StructTest.test_1530559
+*StructTest.test_705836
+*StructTest.test_Struct_reinitialization
+*StructTest.test_bool
+*StructTest.test_boundary_error_message
+*StructTest.test_boundary_error_message_with_large_offset
+*StructTest.test_boundary_error_message_with_negative_offset
+*StructTest.test_calcsize
+*StructTest.test_consistence
+*StructTest.test_format_attr

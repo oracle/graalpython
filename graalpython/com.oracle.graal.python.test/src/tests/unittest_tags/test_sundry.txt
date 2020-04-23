@@ -1,1 +1,1 @@
-test_untested_modules_can_be_imported
+*TestUntestedModules.test_untested_modules_can_be_imported

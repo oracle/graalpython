@@ -5,11 +5,11 @@ ModuleRootNode Name: <module 'set05'> SourceSection: [0,15]`{*{2}, 3, *[4]}`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,15]`{*{2}, 3, *[4]}`
-    SetLiteralNode SourceSection: [0,15]`{*{2}, 3, *[4]}`
+    SetLiteralNodeGen SourceSection: [0,15]`{*{2}, 3, *[4]}`
       PythonObjectFactoryNodeGen SourceSection: None
       StarredExpressionNode SourceSection: None
         CastToListExpressionNodeGen SourceSection: None
-          SetLiteralNode SourceSection: [2,5]`{2}`
+          SetLiteralNodeGen SourceSection: [2,5]`{2}`
             PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [3,4]`2`
               Value: 2

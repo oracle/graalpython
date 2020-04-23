@@ -105,8 +105,7 @@ class EnvBuilder:
         prompt = self.prompt if self.prompt is not None else context.env_name
         context.prompt = '(%s) ' % prompt
         create_if_needed(env_dir)
-        env = os.environ
-        executable = getattr(sys, '_base_executable', sys.executable)
+        executable = sys._base_executable
         dirname, exename = os.path.split(os.path.abspath(executable))
         context.executable = executable
         context.python_dir = dirname
@@ -140,12 +139,12 @@ class EnvBuilder:
                 f.write("#!/bin/sh\n")
             f.write(sys.executable)
             f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'" % (
-                sys.graal_python_core_home,
-                sys.graal_python_stdlib_home,
+                __graalpython__.core_home,
+                __graalpython__.stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
-                sys.graal_python_capi_home,
+                __graalpython__.capi_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")
@@ -157,7 +156,7 @@ class EnvBuilder:
 
         atexit.register(lambda: shutil.rmtree(tempdir, ignore_errors=True))
 
-        dirname = context.python_dir = sys.graal_python_home
+        dirname = context.python_dir = __graalpython__.home
         context.executable = script
 
         if self.symlinks:
@@ -198,6 +197,8 @@ class EnvBuilder:
                 incl = 'false'
             f.write('include-system-site-packages = %s\n' % incl)
             f.write('version = %d.%d.%d\n' % sys.version_info[:3])
+            if self.prompt is not None:
+                f.write(f'prompt = {self.prompt!r}\n')
 
     if os.name != 'nt':
         def symlink_or_copy(self, src, dst, relative_symlinks_ok=False):

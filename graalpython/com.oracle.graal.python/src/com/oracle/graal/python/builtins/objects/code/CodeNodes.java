@@ -81,7 +81,8 @@ public abstract class CodeNodes {
         private static Source emptySource;
 
         @SuppressWarnings("try")
-        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
+        public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount,
+                        int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
@@ -127,6 +128,9 @@ public abstract class CodeNodes {
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
+
+            funcdef.append("outer").append(outerName).append("()");
+            return funcdef.toString();
         }
 
         private ContextReference<PythonContext> getContextRef() {

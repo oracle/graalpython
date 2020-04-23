@@ -40,10 +40,9 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
         WriteNameNodeGen SourceSection: None
           Identifier: _builtin_str
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       WriteNameNodeGen SourceSection: [555,564]`functools`
         Identifier: functools
         ImportExpression SourceSection: None
@@ -259,7 +258,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 Identifier: <return_val>
                                 WriteLocalFrameSlotNodeGen SourceSection: None
                                   Frame: [0,<return_val>,Illegal]
-                                DictLiteralNode SourceSection: [1881,2547]`{'grouping': [127],↵...`
+                                DictLiteralNodeGen SourceSection: [1881,2547]`{'grouping': [127],↵...`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [1882,1892]`'grouping'`
                                   StringLiteralNode SourceSection: [1917,1934]`'currency_symbol'`
@@ -427,7 +426,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
           Identifier: localeconv
       WriteNameNodeGen SourceSection: [3152,3177]`_override_localeconv...`
         Identifier: _override_localeconv
-        DictLiteralNode SourceSection: [3175,3177]`{}`
+        DictLiteralNodeGen SourceSection: [3175,3177]`{}`
           PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3179,3450]`@functools.wraps(_lo...`
         Identifier: localeconv
@@ -5184,7 +5183,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [22737,25081]`locale_encoding_alia...`
         Identifier: locale_encoding_alias
-        DictLiteralNode SourceSection: [22761,25081]`{↵↵    # Mappings fo...`
+        DictLiteralNodeGen SourceSection: [22761,25081]`{↵↵    # Mappings fo...`
           PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [22836,22841]`'437'`
           StringLiteralNode SourceSection: [22877,22880]`'c'`
@@ -5331,7 +5330,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
         BlockNode SourceSection: None
       WriteNameNodeGen SourceSection: [31240,67420]`locale_alias = {↵   ...`
         Identifier: locale_alias
-        DictLiteralNode SourceSection: [31255,67420]`{↵    'a3':         ...`
+        DictLiteralNodeGen SourceSection: [31255,67420]`{↵    'a3':         ...`
           PythonObjectFactoryNodeGen SourceSection: None
           StringLiteralNode SourceSection: [31261,31265]`'a3'`
           StringLiteralNode SourceSection: [31321,31328]`'a3_az'`
@@ -6511,7 +6510,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
           StringLiteralNode SourceSection: [67400,67417]`'zu_ZA.ISO8859-1'`
       WriteNameNodeGen SourceSection: [67894,76053]`windows_locale = {↵ ...`
         Identifier: windows_locale
-        DictLiteralNode SourceSection: [67911,76053]`{↵    0x0436: "af_ZA...`
+        DictLiteralNodeGen SourceSection: [67911,76053]`{↵    0x0436: "af_ZA...`
           PythonObjectFactoryNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [67917,67923]`0x0436`
             Value: 1078
@@ -7166,7 +7165,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Identifier: categories
                       WriteLocalFrameSlotNodeGen SourceSection: None
                         Frame: [0,categories,Illegal]
-                      DictLiteralNode SourceSection: [76125,76127]`{}`
+                      DictLiteralNodeGen SourceSection: [76125,76127]`{}`
                         PythonObjectFactoryNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [76132,76284]`def _init_categories...`
                       Identifier: _init_categories

@@ -1,5 +1,6 @@
-test_basics
-test_global_visibility
-test_local_visibility
-test_scope_isolation
-test_scope_isolation_from_global
+*DictComprehensionTest.test_basics
+*DictComprehensionTest.test_evaluation_order
+*DictComprehensionTest.test_global_visibility
+*DictComprehensionTest.test_local_visibility
+*DictComprehensionTest.test_scope_isolation
+*DictComprehensionTest.test_scope_isolation_from_global

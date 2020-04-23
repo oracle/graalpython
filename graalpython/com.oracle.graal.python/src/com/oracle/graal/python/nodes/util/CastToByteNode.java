@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.function.Function;
+import com.oracle.graal.python.util.Function;
 
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;

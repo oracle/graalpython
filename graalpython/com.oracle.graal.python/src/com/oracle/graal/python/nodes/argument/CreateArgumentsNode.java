@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -491,12 +492,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
                 if (kwIdx != -1) {
                     if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                        if (unusedKeywords != null) {
+                            unusedKeywords[k++] = kwArg;
+                        } else {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got some positional-only arguments passed as keyword arguments: '%s'", CreateArgumentsNode.getName(callee), name);
+                        }
+                    } else {
+                        if (PArguments.getArgument(arguments, kwIdx) != null) {
+                            throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
+                        }
+                        PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
-                    if (PArguments.getArgument(arguments, kwIdx) != null) {
-                        throw raise.raise(PythonBuiltinClassType.TypeError, "%s() got multiple values for argument '%s'", CreateArgumentsNode.getName(callee), name);
-                    }
-                    PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                 } else if (unusedKeywords != null) {
                     unusedKeywords[k++] = kwArg;
                 } else {
@@ -610,7 +616,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                             type,
                             missingCnt == 1 ? "" : "s",
                             missingCnt == 1 ? missingNames[0]
-                                            : String.join("', '", Arrays.copyOf(missingNames, missingCnt - 1)) + (missingCnt == 2 ? "' and '" : "', and '") + missingNames[missingCnt - 1]);
+                                            : joinArgNames(missingNames, missingCnt));
+        }
+
+        @TruffleBoundary
+        private static String joinArgNames(String[] missingNames, int missingCnt) {
+            return String.join("', '", Arrays.copyOf(missingNames, missingCnt - 1)) + (missingCnt == 2 ? "' and '" : "', and '") + missingNames[missingCnt - 1];
         }
 
         protected static boolean checkIterations(int input_argcount, int co_argcount) {
@@ -842,7 +853,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 return getter.fromPFunction((PFunction) function);
             }
         }
-        CompilerDirectives.transferToInterpreter();
+        CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new IllegalStateException("cannot create arguments for non-function-or-method");
     }
 

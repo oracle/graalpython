@@ -30,8 +30,11 @@ import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
-import java.util.Map;
+import java.util.Iterator;
 import java.util.concurrent.Semaphore;
+
+import org.graalvm.collections.EconomicMap;
+import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -39,15 +42,12 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
-import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -149,8 +149,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-import org.tukaani.xz.FinishableOutputStream;
-
 @GenerateUncached
 public abstract class PythonObjectFactory extends Node {
 
@@ -202,10 +200,6 @@ public abstract class PythonObjectFactory extends Node {
      */
     public PythonObject createPythonObject(LazyPythonClass klass, Shape instanceShape) {
         return trace(new PythonObject(klass, instanceShape));
-    }
-
-    public PythonNativeObject createNativeObjectWrapper(TruffleObject obj) {
-        return trace(new PythonAbstractNativeObject(obj));
     }
 
     public PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj) {
@@ -351,10 +345,6 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(metaclass, name, bases));
     }
 
-    public PythonNativeClass createNativeClassWrapper(TruffleObject ptr) {
-        return trace(new PythonAbstractNativeObject(ptr));
-    }
-
     public PMemoryView createMemoryView(LazyPythonClass metaclass, Object value) {
         return trace(new PMemoryView(metaclass, value));
     }
@@ -490,8 +480,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls));
     }
 
-    public PDict createDict(Map<? extends Object, ? extends Object> map) {
-        return createDict(new HashMapStorage(map));
+    public PDict createDict(EconomicMap<? extends Object, Object> map) {
+        return createDict(EconomicMapStorage.create(map));
     }
 
     public PDict createDictLocals(MaterializedFrame frame) {
@@ -503,11 +493,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PDict createDict(DynamicObject dynamicObject) {
-        return createDict(new FastDictStorage(dynamicObject));
+        return createDict(new DynamicObjectStorage(dynamicObject));
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {
-        return createDict(new PythonObjectDictStorage(pythonObject.getStorage()));
+        return createDict(new DynamicObjectStorage(pythonObject.getStorage()));
     }
 
     public PDict createDict(HashingStorage storage) {
@@ -531,9 +521,9 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PGenerator createGenerator(String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, Object iterator) {
         return trace(PGenerator.create(PythonBuiltinClassType.PGenerator, name, callTargets, frameDescriptor, arguments, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode,
-                        numOfGeneratorForNode, this));
+                        numOfGeneratorForNode, this, iterator));
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure, Object[] defaultValues,
@@ -542,7 +532,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, new DynamicObjectStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(HashingStorage storage) {
@@ -550,7 +540,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
+        return trace(new PMappingproxy(cls, new DynamicObjectStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(LazyPythonClass cls, HashingStorage storage) {
@@ -716,20 +706,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PArrayIterator(PythonBuiltinClassType.PArrayIterator, array));
     }
 
-    public PBaseSetIterator createBaseSetIterator(PBaseSet set) {
-        return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, set));
+    public PBaseSetIterator createBaseSetIterator(PBaseSet set, Iterator<Object> iterator) {
+        return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, set, iterator));
     }
 
-    public PDictView.PDictItemsIterator createDictItemsIterator(PHashingCollection dict) {
-        return trace(new PDictView.PDictItemsIterator(PythonBuiltinClassType.PDictItemsIterator, dict));
+    public PDictView.PDictItemsIterator createDictItemsIterator(Iterator<DictEntry> iterator) {
+        return trace(new PDictView.PDictItemsIterator(PythonBuiltinClassType.PDictItemsIterator, iterator));
     }
 
     public PDictView.PDictKeysIterator createDictKeysIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictKeysIterator(PythonBuiltinClassType.PDictKeysIterator, dict));
     }
 
-    public PDictView.PDictValuesIterator createDictValuesIterator(PHashingCollection dict) {
-        return trace(new PDictView.PDictValuesIterator(PythonBuiltinClassType.PDictValuesIterator, dict));
+    public PDictView.PDictValuesIterator createDictValuesIterator(Iterator<Object> iterator) {
+        return trace(new PDictView.PDictValuesIterator(PythonBuiltinClassType.PDictValuesIterator, iterator));
     }
 
     public Object createSentinelIterator(Object callable, Object sentinel) {

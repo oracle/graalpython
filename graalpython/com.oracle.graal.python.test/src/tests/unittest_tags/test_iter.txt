@@ -8,6 +8,7 @@
 *TestCase.test_exception_function
 *TestCase.test_exception_sequence
 *TestCase.test_extending_list_with_iterator_does_not_segfault
+*TestCase.test_in_and_not_in
 *TestCase.test_indexOf
 *TestCase.test_iter_callable
 *TestCase.test_iter_class_for

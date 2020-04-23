@@ -109,11 +109,16 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile nullArgsProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile nullArgsProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile hasMessageFormat) {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(args == null)) {
-                // lazily format the exception message:
-                args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});
+                if (hasMessageFormat.profile(!self.hasMessageFormat())) {
+                    args = factory().createTuple(new Object[0]);
+                } else {
+                    // lazily format the exception message:
+                    args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});
+                }
                 self.setArgs(args);
             }
             return args;

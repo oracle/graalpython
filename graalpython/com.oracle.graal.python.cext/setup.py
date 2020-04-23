@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,22 +41,144 @@
 import sys
 import os
 import shutil
-import site
 import logging
 from distutils.core import setup, Extension
 from distutils.sysconfig import get_config_var, get_config_vars
-
-logger = logging.getLogger(__name__)
+import _sysconfig
 
 __dir__ = __file__.rpartition("/")[0]
 cflags_warnings = ["-Wno-int-to-pointer-cast", "-Wno-int-conversion", "-Wno-incompatible-pointer-types-discards-qualifiers", "-Wno-pointer-type-mismatch"]
 libpython_name = "libpython"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
-darwin_native = sys.platform == "darwin" and sys.graal_python_platform_id == "native"
+darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
 relative_rpath = "@loader_path" if darwin_native else "\$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
+
+# configure logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(format='%(message)s', level=logging.DEBUG if sys.flags.verbose else logging.ERROR)
+
+
+threaded = _sysconfig.get_config_var("WITH_THREAD")
+if threaded:
+    logger.debug("building C API threaded")
+    import threading
+    import queue
+
+    class SimpleThreadPool:
+
+        def __init__(self, n=None):
+            self.n = n if n else os.cpu_count()
+            self.running = False
+            self.started = False
+            self.finished_semaphore = None
+            self.task_queue = queue.SimpleQueue()
+            self.result_queue = queue.SimpleQueue()
+
+        def worker_fun(self, id, fun):
+            while self.running:
+                try:
+                    item = self.task_queue.get()
+                    if item is not None:
+                        result = fun(item)
+                        self.result_queue.put((id, True, item, result))
+                    else:
+                        break
+                except BaseException as e:
+                    self.result_queue.put((id, False, item, e))
+            self.finished_semaphore.release()
+
+        def start_thread_pool(self, fun):
+            if self.running:
+                raise RuntimeException("pool already running")
+
+            logger.debug("Starting thread pool with {} worker threads".format(self.n))
+            self.running = True
+            self.workers = [None] * self.n
+            self.finished_semaphore = threading.Semaphore(0)
+            for i in range(self.n):
+                worker = threading.Thread(target=self.worker_fun, args=(i, fun))
+                worker.daemon = True
+                worker.start()
+                self.workers[i] = worker
+
+        def stop_thread_pool(self):
+            self.running = False
+            # drain queue; remove non-None items
+            try:
+                self.task_queue.get_nowait()
+            except queue.Empty:
+                pass
+
+            # wake up threads by putting None items into the task queue
+            for i in range(self.n):
+                self.task_queue.put(None)
+
+            for worker in self.workers:
+                worker.join()
+
+        def put_job(self, items):
+            for item in items:
+                self.task_queue.put(item)
+            for i in range(self.n):
+                self.task_queue.put(None)
+
+        def wait_until_finished(self):
+            for i in range(self.n):
+                self.finished_semaphore.acquire(True, None)
+
+            results = []
+            try:
+                while not self.result_queue.empty():
+                    id, success, item, result = self.result_queue.get_nowait()
+                    if not success:
+                        raise result
+                    else:
+                        results.append(result)
+            except queue.Empty:
+                # just to be sure
+                pass
+            return results
+
+
+    def pcompiler(self, sources, output_dir=None, macros=None, include_dirs=None, debug=0, extra_preargs=None, extra_postargs=None, depends=None):
+        # taken from distutils.ccompiler.CCompiler
+        macros, objects, extra_postargs, pp_opts, build = self._setup_compile(output_dir, macros, include_dirs, sources, depends, extra_postargs)
+        cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
+
+        def _single_compile(obj):
+            try:
+                src, ext = build[obj]
+            except KeyError:
+                return
+            logger.debug("Compiling {!s}".format(src))
+            self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
+
+        if len(objects) > 1:
+            logger.debug("Compiling {} objects in parallel.".format(len(objects)))
+            pool = SimpleThreadPool()
+            pool.start_thread_pool(_single_compile)
+            pool.put_job(objects)
+            pool.wait_until_finished()
+            pool.stop_thread_pool()
+        else:
+            logger.debug("Compiling 1 object without thread pool.")
+            _single_compile(objects[0])
+        return objects
+
+
+    def build_extensions(self):
+        self.check_extensions_list(self.extensions)
+        if len(self.extensions) > 1:
+            pool = SimpleThreadPool()
+            pool.start_thread_pool(self.build_extension)
+            pool.put_job(self.extensions)
+            pool.wait_until_finished()
+            pool.stop_thread_pool()
+        else:
+            return self.build_extension(self.extensions[0])
 
 
 def system(cmd, msg=""):
@@ -135,7 +257,8 @@ class Bzip2Depedency(CAPIDependency):
             with open(makefile_path, "w") as f:
                 f.write(content)
 
-        system("make -C '%s' -f '%s' CC='%s'" % (lib_src_folder, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
+        parallel_arg =  "-j" + str(os.cpu_count()) if threaded else ""
+        system("make -C '%s' %s -f '%s' CC='%s'" % (lib_src_folder, parallel_arg, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
         return lib_src_folder
 
     def install(self, build_dir=None):
@@ -151,7 +274,7 @@ class Bzip2Depedency(CAPIDependency):
         dest_lib_filename = os.path.join(self.lib_install_dir, self.install_name)
 
         logger.info("Installing dependency %s to %s" % (self.package_name, dest_lib_filename))
-        shutil.move(os.path.join(build_dir, lib_filename), dest_lib_filename)
+        shutil.copy(os.path.join(build_dir, lib_filename), dest_lib_filename)
 
         # also install the include file 'bzlib.h'
         dest_include_filename = os.path.join(self.include_install_dir, self.header_name)
@@ -244,11 +367,13 @@ def build_libpython(capi_home):
         ext_modules=[module],
     )
 
+
 def build_builtin_exts(capi_home):
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
-    for ext in builtin_exts:
-        distutil_ext = ext()
-        res = setup(
+    distutil_exts = [(ext, ext()) for ext in builtin_exts]
+    def build_builtin_ext(item):
+        ext, distutil_ext = item
+        setup(
             script_name='setup_' + ext.name,
             script_args=args,
             name=ext.name,
@@ -258,11 +383,28 @@ def build_builtin_exts(capi_home):
         )
         logger.debug("Successfully built and installed module %s", ext.name)
 
+    for item in distutil_exts:
+        build_builtin_ext(item)
+
 
 def build(capi_home):
     CAPIDependency.set_lib_install_base(capi_home)
-    build_libpython(capi_home)
-    build_builtin_exts(capi_home)
+
+    if threaded:
+        import distutils.ccompiler
+        import distutils.command.build_ext
+        original_compile = distutils.ccompiler.CCompiler.compile
+        original_build_extensions = distutils.command.build_ext.build_ext.build_extensions
+        distutils.ccompiler.CCompiler.compile = pcompiler
+        distutils.command.build_ext.build_ext.build_extensions = build_extensions
+
+    try:
+        build_libpython(capi_home)
+        build_builtin_exts(capi_home)
+    finally:
+        if threaded:
+            distutils.ccompiler.CCompiler.compile = original_compile
+            distutils.command.build_ext.build_ext.build_extensions = original_build_extensions
 
 
 if __name__ == "__main__":

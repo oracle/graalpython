@@ -21,10 +21,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         WriteNameNodeGen SourceSection: None
           Identifier: DynamicClassAttribute
           EmptyNode SourceSection: None
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattribute__
-        LookupAndCallBinaryNodeGen SourceSection: None
-          Op: __getattr__
+        GetAnyAttributeNodeGen SourceSection: None
+          LookupAndCallBinaryNodeGen SourceSection: None
+            Op: __getattribute__
       TryFinallyNode SourceSection: [118,226]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [127,163]`from _collections im...`
@@ -34,10 +33,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             WriteNameNodeGen SourceSection: None
               Identifier: OrderedDict
               EmptyNode SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattr__
+            GetAnyAttributeNodeGen SourceSection: None
+              LookupAndCallBinaryNodeGen SourceSection: None
+                Op: __getattribute__
           ExceptNode SourceSection: None
             ImportFromNode SourceSection: [188,223]`from collections imp...`
               Importee: collections
@@ -46,10 +44,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               WriteNameNodeGen SourceSection: None
                 Identifier: OrderedDict
                 EmptyNode SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattr__
+              GetAnyAttributeNodeGen SourceSection: None
+                LookupAndCallBinaryNodeGen SourceSection: None
+                  Op: __getattribute__
             ReadNameNodeGen SourceSection: [171,182]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
@@ -1679,7 +1676,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5588,5591]`set`
                                             Identifier: set
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        SetLiteralNode SourceSection: [5608,5617]`{'mro', }`
+                                        SetLiteralNodeGen SourceSection: [5608,5617]`{'mro', }`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [5609,5614]`'mro'`
                                     IfNode SourceSection: [5626,5830]`if invalid_names:↵  ...`
@@ -1869,7 +1866,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       ReadLocalVariableNode SourceSection: [6490,6500]`enum_class`
                                         Frame: [15,enum_class,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      DictLiteralNode SourceSection: [6522,6524]`{}`
+                                      DictLiteralNodeGen SourceSection: [6522,6524]`{}`
                                         PythonObjectFactoryNodeGen SourceSection: None
                                     IfNode SourceSection: [7184,7769]`if '__reduce_ex__' n...`
                                       NotNodeGen SourceSection: [7187,7219]`'__reduce_ex__' not ...`
@@ -3693,7 +3690,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       PythonCallNodeGen SourceSection: [15124,15160]`cls.__dict__.get('_m...`
                                         CallNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [15141,15155]`'_member_map_'`
-                                        DictLiteralNode SourceSection: [15157,15159]`{}`
+                                        DictLiteralNodeGen SourceSection: [15157,15159]`{}`
                                           PythonObjectFactoryNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [15124,15136]`cls.__dict__`
@@ -4737,7 +4734,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __contains__
                                                               YesNodeGen SourceSection: None
-                                                              SetLiteralNode SourceSection: [20301,20494]`{↵                  ...`
+                                                              SetLiteralNodeGen SourceSection: [20301,20494]`{↵                  ...`
                                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                                 ObjectLiteralNode SourceSection: [20331,20335]`None`
                                                                 GetAttributeNodeGen SourceSection: [20365,20377]`None.__new__`
@@ -6205,7 +6202,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               CallNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
                                                 KeywordLiteralNode SourceSection: None
-                                                  FunctionDefinitionNode Name: anonymous SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
+                                                  FunctionDefinitionNode Name: <lambda> SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
                                                     Arguments: None
                                                     KwArguments: None
                                                     Documentation: None
@@ -6214,7 +6211,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       FreeVarsSlots: None
                                                       CellVarsSlots: None
                                                     FunctionRootNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
-                                                      Name: anonymous
+                                                      Name: <lambda>
                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                         Param Names: t
                                                       CelVars: None
@@ -6270,7 +6267,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 CallNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
-                                                    FunctionDefinitionNode Name: anonymous SourceSection: [25539,25553]`lambda t: t[0]`
+                                                    FunctionDefinitionNode Name: <lambda> SourceSection: [25539,25553]`lambda t: t[0]`
                                                       Arguments: None
                                                       KwArguments: None
                                                       Documentation: None
@@ -6279,7 +6276,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         FreeVarsSlots: None
                                                         CellVarsSlots: None
                                                       FunctionRootNode SourceSection: [25539,25553]`lambda t: t[0]`
-                                                        Name: anonymous
+                                                        Name: <lambda>
                                                         Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                           Param Names: t
                                                         CelVars: None
@@ -9963,7 +9960,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
                           KeywordLiteralNode SourceSection: None
-                            FunctionDefinitionNode Name: anonymous SourceSection: [34240,34259]`lambda m: m._value_`
+                            FunctionDefinitionNode Name: <lambda> SourceSection: [34240,34259]`lambda m: m._value_`
                               Arguments: None
                               KwArguments: None
                               Documentation: None
@@ -9972,7 +9969,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [34240,34259]`lambda m: m._value_`
-                                Name: anonymous
+                                Name: <lambda>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: m
                                 CelVars: None

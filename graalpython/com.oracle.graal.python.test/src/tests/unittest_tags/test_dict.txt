@@ -2,6 +2,7 @@
 *DictTest.test_bool
 *DictTest.test_clear
 *DictTest.test_constructor
+*DictTest.test_container_iterator
 *DictTest.test_contains
 *DictTest.test_copy
 *DictTest.test_copy_fuzz
@@ -18,15 +19,12 @@
 *DictTest.test_fromkeys_operator_modifying_dict_operand
 *DictTest.test_fromkeys_operator_modifying_set_operand
 *DictTest.test_get
+*DictTest.test_getitem
 *DictTest.test_init_use_after_free
+*DictTest.test_instance_dict_getattr_str_subclass
 *DictTest.test_invalid_keyword_arguments
 *DictTest.test_items
 *DictTest.test_keys
 *DictTest.test_keys_contained
 *DictTest.test_len
 *DictTest.test_literal_constructor
-*BasicTestMappingProtocol.test_bool
-*BasicTestMappingProtocol.test_constructor
-*BasicTestMappingProtocol.test_getitem
-*BasicTestMappingProtocol.test_items
-*BasicTestMappingProtocol.test_len

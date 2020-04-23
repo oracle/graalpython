@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
@@ -37,7 +37,7 @@ public abstract class PBaseSet extends PHashingCollection {
 
     public PBaseSet(LazyPythonClass clazz) {
         super(clazz);
-        this.set = EconomicMapStorage.create(true);
+        this.set = EconomicMapStorage.create();
     }
 
     public PBaseSet(LazyPythonClass clazz, HashingStorage set) {
@@ -45,17 +45,13 @@ public abstract class PBaseSet extends PHashingCollection {
         this.set = set;
     }
 
-    public final boolean contains(Object key, Equivalence eq) {
-        return set.hasKey(key, eq);
-    }
-
-    public final Iterable<Object> values() {
-        return set.keys();
+    public final boolean contains(Object key) {
+        return HashingStorageLibrary.getUncached().hasKey(set, key);
     }
 
     @Override
     public int size() {
-        return set.length();
+        return HashingStorageLibrary.getUncached().length(set);
     }
 
     @Override

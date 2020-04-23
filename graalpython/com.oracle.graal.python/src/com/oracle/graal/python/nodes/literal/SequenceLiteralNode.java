@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import java.lang.reflect.Array;
+
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -60,8 +62,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-
-import java.lang.reflect.Array;
 
 public abstract class SequenceLiteralNode extends LiteralNode {
     @Children protected final ExpressionNode[] values;
@@ -189,6 +189,7 @@ public abstract class SequenceLiteralNode extends LiteralNode {
                         break;
                     }
                     default:
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new RuntimeException("unexpected state");
                 }
             } catch (UnexpectedResultException e) {

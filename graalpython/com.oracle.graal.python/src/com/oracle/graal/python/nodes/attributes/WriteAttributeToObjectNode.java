@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,11 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeMemberNames;
+import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -73,7 +73,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ImportStatic({PythonOptions.class, NativeMemberNames.class})
+@ImportStatic(PythonOptions.class)
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
@@ -126,12 +126,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached HashingStorageNodes.SetItemNode setItemNode,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
         handlePythonClass(isClassProfile, object, key);
         PHashingCollection dict = lib.getDict(object);
         HashingStorage dictStorage = getDictStorage.execute(dict);
-        HashingStorage hashingStorage = setItemNode.execute(null, dictStorage, key, value);
+        HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
             updateStorage.enter();
             dict.setDictStorage(hashingStorage);
@@ -227,7 +227,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Cached GetTypeMemberNode getNativeDict,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached PRaiseNode raiseNode) {
-            return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMemberNames.TP_DICT), setItemNode, raiseNode);
+            return writeNativeGeneric(object, key, value, getNativeDict.execute(object, NativeMember.TP_DICT), setItemNode, raiseNode);
         }
     }
 

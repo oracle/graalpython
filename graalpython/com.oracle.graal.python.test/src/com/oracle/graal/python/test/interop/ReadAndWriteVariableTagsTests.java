@@ -40,7 +40,14 @@
  */
 package com.oracle.graal.python.test.interop;
 
+import static org.junit.Assert.assertTrue;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.EventContext;
@@ -50,21 +57,18 @@ import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
-import java.util.HashMap;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Instrument;
 import org.graalvm.polyglot.Source;
-import static org.junit.Assert.assertTrue;
-import com.oracle.graal.python.nodes.instrumentation.NodeObjectDescriptor;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.Test;
 
+@SuppressWarnings("all")
 public class ReadAndWriteVariableTagsTests extends PythonTests {
 
     static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();

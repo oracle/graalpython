@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -24,9 +24,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.oracle.graal.python.nodes.statement;
-
-import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
-import static com.oracle.graal.python.runtime.PythonOptions.EmulateJython;
 
 import java.util.ArrayList;
 
@@ -130,7 +127,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         } catch (Exception e) {
             if (shouldCatchJavaExceptions == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchJavaExceptions = PythonOptions.getOption(getContext(), EmulateJython);
+                shouldCatchJavaExceptions = getContext().getOption(PythonOptions.EmulateJython);
             }
             if (shouldCatchJavaExceptions && getContext().getEnv().isHostException(e)) {
                 if (catchException(frame, (TruffleException) e, exceptionState)) {
@@ -139,7 +136,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
             if (shouldCatchAll == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                shouldCatchAll = PythonOptions.getOption(getContext(), CatchAllExceptions);
+                shouldCatchAll = getContext().getOption(PythonOptions.CatchAllExceptions);
             }
             if (shouldCatchAll) {
                 if (e instanceof ControlFlowException) {
@@ -265,6 +262,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     RootCallTarget callTarget = ((PBuiltinFunction) ((PBuiltinMethod) isinstanceFunc).getFunction()).getCallTarget();
                     catchesFunction = new CatchesFunction(callTarget, caughtClasses);
                 } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("isinstance was redefined, cannot check exceptions");
                 }
             }
