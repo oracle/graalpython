@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -80,18 +81,34 @@ public class ClassmethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
+    @ReportPolymorphism
     abstract static class GetNode extends PythonBuiltinNode {
         @Child MakeMethodNode makeMethod = MakeMethodNode.create();
 
-        @Specialization(guards = {"isNoValue(type)"})
+        @Specialization(guards = {"isNoValue(type)", "cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
+        protected Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
+                        @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
+                        @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable,
+                        @Cached GetClassNode getClass) {
+            return makeMethod.execute(getClass.execute(obj), cachedCallable.get());
+        }
+
+        @Specialization(guards = "isNoValue(type)", replaces = "getCached")
         protected Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") GetClassNode getClass,
-                        @Cached("create()") BranchProfile uninitialized) {
+                        @Cached GetClassNode getClass,
+                        @Cached BranchProfile uninitialized) {
             return doGet(self, getClass.execute(obj), uninitialized);
         }
 
-        @Specialization(guards = "!isNoValue(type)")
-        protected Object doIt(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+        @Specialization(guards = {"!isNoValue(type)", "cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
+        protected Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
+                        @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
+                        @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable) {
+            return makeMethod.execute(type, cachedCallable.get());
+        }
+
+        @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
+        protected Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
                         @Cached("create()") BranchProfile uninitialized) {
             return doGet(self, type, uninitialized);
         }

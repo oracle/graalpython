@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,51 +38,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.method;
+package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.builtins.BoundBuiltinCallable;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import java.lang.ref.WeakReference;
 
-/**
- * Storage for both classmethods and staticmethods
- */
-public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuiltinCallable<Object> {
-    private Object callable;
-
-    public PDecoratedMethod(LazyPythonClass cls) {
-        super(cls);
+public final class WeakASTReference extends WeakReference<Object> {
+    public WeakASTReference(Object referent) {
+        super(referent);
     }
 
-    public PDecoratedMethod(LazyPythonClass cls, Object callable) {
-        this(cls);
-        this.callable = callable;
+    public boolean is(Object obj) {
+        return get() != null && get() == obj;
     }
 
-    public Object getCallable() {
-        return callable;
+    public boolean isNot(Object obj) {
+        return get() != null && get() != obj;
     }
 
-    public void setCallable(Object callable) {
-        assert this.callable == null;
-        this.callable = callable;
-    }
-
-    public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
-        return this;
-    }
-
-    public String getName() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
-    }
-
-    public Signature getSignature() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
+    public boolean notNull() {
+        return get() != null;
     }
 }

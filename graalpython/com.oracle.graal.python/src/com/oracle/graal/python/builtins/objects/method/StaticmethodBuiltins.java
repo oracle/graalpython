@@ -50,9 +50,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -66,8 +68,16 @@ public class StaticmethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
+    @ReportPolymorphism
     abstract static class GetNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(guards = {"cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
+        protected Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
+                        @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
+                        @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable) {
+            return cachedCallable.get();
+        }
+
+        @Specialization(replaces = "getCached")
         protected Object get(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
                         @Cached("create()") BranchProfile uninitialized) {
             Object callable = self.getCallable();
