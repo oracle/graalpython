@@ -54,8 +54,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -110,21 +111,21 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIterators().length == 1")
         Object doOne(VirtualFrame frame, PMap self,
-                        @Cached CallNode callNode,
+                        @Cached CallVarargsMethodNode callNode,
                         @Cached GetNextNode next) {
-            return callNode.execute(self.getFunction(), next.execute(frame, self.getIterators()[0]));
+            return callNode.execute(frame, self.getFunction(), new Object[]{next.execute(frame, self.getIterators()[0])}, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
-                        @Cached CallNode callNode,
+                        @Cached CallVarargsMethodNode callNode,
                         @Cached("create()") GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
                 arguments[i] = next.execute(frame, iterators[i]);
             }
-            return callNode.execute(self.getFunction(), arguments);
+            return callNode.execute(frame, self.getFunction(), arguments, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
