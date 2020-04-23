@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,44 +41,24 @@
 package com.oracle.graal.python.builtins.objects.code;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
-import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 public abstract class CodeNodes {
@@ -97,181 +77,56 @@ public abstract class CodeNodes {
             return dontNeedExceptionState;
         }
 
-        @Child private HashingStorageNodes.GetItemNode getItemNode;
         @CompilationFinal private ContextReference<PythonContext> contextRef;
+        private static Source emptySource;
 
         @SuppressWarnings("try")
         public PCode execute(VirtualFrame frame, LazyPythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        byte[] codestring, Object[] constants, Object[] names,
+                        byte[] codedata, Object[] constants, Object[] names,
                         Object[] varnames, Object[] freevars, Object[] cellvars,
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
+
             try {
-                return createCode(cls, argcount, kwonlyargcount, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+                Supplier<CallTarget> createCode = () -> {
+                    RootNode rootNode = context.getCore().getSerializer().deserialize(getEmptySource(), codedata, toStringArray(cellvars), toStringArray(freevars));
+                    return Truffle.getRuntime().createCallTarget(rootNode);
+                };
+
+                RootCallTarget ct = (RootCallTarget) createCode.get();
+                PythonObjectFactory factory = PythonObjectFactory.getUncached();
+                return factory.createCode(ct, codedata, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
-        @TruffleBoundary
-        private PCode createCode(LazyPythonClass cls, int argcount, int kwonlyargcount,
-                        int nlocals, int stacksize, int flags,
-                        byte[] codestring, Object[] constants, Object[] names,
-                        Object[] varnames, Object[] freevars, Object[] cellvars,
-                        String filename, String name, int firstlineno,
-                        byte[] lnotab) {
+        public PCode execute(VirtualFrame frame, LazyPythonClass cls, String sourceCode, int flags, byte[] codedata, String filenamePath, String name,
+                        int firstlineno, byte[] lnotab) {
+            PythonContext context = getContextRef().get();
+            Object state = IndirectCallContext.enter(frame, context, this);
+            Source source = (flags & PCode.FLAG_MODULE) == 0 ? PythonLanguage.newSource(context, sourceCode, filenamePath, false) : PythonLanguage.newSource(context, sourceCode, filenamePath, true);
+            try {
+                Supplier<CallTarget> createCode = () -> {
+                    RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata);
+                    return Truffle.getRuntime().createCallTarget(rootNode);
+                };
 
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            RootCallTarget callTarget = null;
-
-            // Derive a new call target from the code string, if we can
-            RootNode rootNode = null;
-            if (codestring.length > 0) {
-                PythonCore core = PythonLanguage.getCore();
-                if ((flags & PCode.FLAG_MODULE) == 0) {
-                    // we're looking for the function, not the module
-                    String funcdef;
-                    funcdef = createFuncdef(codestring, freevars, name);
-                    rootNode = (RootNode) core.getParser().parse(ParserMode.File, core, Source.newBuilder(PythonLanguage.ID, funcdef, name).build(), null);
-                    Object[] args = PArguments.create();
-                    PDict globals = factory.createDict();
-                    PArguments.setGlobals(args, globals);
-                    InvokeNode.invokeUncached(Truffle.getRuntime().createCallTarget(rootNode), args);
-                    Object function = ensureGetItemNode().execute(null, globals.getDictStorage(), name);
-                    if (function instanceof PFunction) {
-                        rootNode = ((PFunction) function).getFunctionRootNode();
-                    } else {
-                        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError, "got an invalid codestring trying to create a function code object");
-                    }
-                    callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+                RootCallTarget ct;
+                if (context.getCore().isInitialized()) {
+                    ct = (RootCallTarget) createCode.get();
                 } else {
-                    MaterializedFrame frame = null;
-                    if (freevars.length > 0) {
-                        FrameDescriptor frameDescriptor = new FrameDescriptor();
-                        frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], frameDescriptor);
-                        for (int i = 0; i < freevars.length; i++) {
-                            Object ident = freevars[i];
-                            FrameSlot slot = frameDescriptor.addFrameSlot(ident);
-                            frameDescriptor.setFrameSlotKind(slot, FrameSlotKind.Object);
-                            frame.setObject(slot, new PCell(Truffle.getRuntime().createAssumption("cell is effectively final")));
-                        }
-                    }
-
-                    Supplier<CallTarget> createCode = () -> {
-                        Source source = null;
-                        if (filename != null && !filename.isEmpty()) {
-                            PythonContext context = getContextRef().get();
-                            TruffleFile tFile = context.getEnv().getInternalTruffleFile(filename);
-                            try {
-                                if (tFile.exists()) {
-                                    return Truffle.getRuntime().createCallTarget(core.getSerializer().deserialize(tFile, codestring));
-                                }
-                            } catch (SecurityException e) {
-                                // just ignore
-                            }
-                        }
-                        if (source == null) {
-                            source = Source.newBuilder(PythonLanguage.ID, new String(codestring), name).build();
-                        }
-                        return Truffle.getRuntime().createCallTarget((RootNode) core.getParser().parse(ParserMode.File, core, source, null));
-                    };
-
-                    if (core.isInitialized()) {
-                        callTarget = (RootCallTarget) createCode.get();
-                    } else {
-                        callTarget = (RootCallTarget) core.getLanguage().cacheCode(filename, createCode);
-                    }
+                    ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filenamePath, createCode);
                 }
-
-            } else {
-                callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(PythonLanguage.getCurrent()) {
-                    @Override
-                    public Object execute(VirtualFrame frame) {
-                        return PNone.NONE;
-                    }
-
-                    @Override
-                    public Signature getSignature() {
-                        return Signature.EMPTY;
-                    }
-
-                    @Override
-                    public boolean isPythonInternal() {
-                        return false;
-                    }
-                });
+                PythonObjectFactory factory = PythonObjectFactory.getUncached();
+                return factory.createCode(ct, codedata, firstlineno, lnotab);
+            } finally {
+                IndirectCallContext.exit(frame, context, state);
             }
-
-            Signature signature = createSignature(flags, argcount, kwonlyargcount, varnames);
-
-            return factory.createCode(cls, callTarget, signature, nlocals, stacksize, flags, codestring, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
-        }
-
-        private static String createFuncdef(byte[] codestring, Object[] freevars, String name) {
-            CompilerAsserts.neverPartOfCompilation();
-            if (freevars.length > 0) {
-                // we build an outer function to provide the initial scoping
-                String outernme = "_____" + System.nanoTime();
-                StringBuilder sb = new StringBuilder();
-                sb.append("def ").append(outernme).append("():\n");
-                for (Object freevar : freevars) {
-                    String v;
-                    if (freevar instanceof PString) {
-                        v = ((PString) freevar).getValue();
-                    } else if (freevar instanceof String) {
-                        v = (String) freevar;
-                    } else {
-                        continue;
-                    }
-                    sb.append(" ").append(v).append(" = None\n");
-                }
-                sb.append(" global ").append(name).append("\n");
-                sb.append(" ").append(new String(codestring));
-                sb.append("\n\n").append(outernme).append("()");
-                return sb.toString();
-            } else {
-                return new String(codestring);
-            }
-        }
-
-        private static Signature createSignature(int flags, int argcount, int kwonlyargcount, Object[] varnames) {
-            CompilerAsserts.neverPartOfCompilation();
-            char paramNom = 'A';
-            String[] paramNames = new String[argcount];
-            for (int i = 0; i < paramNames.length; i++) {
-                if (varnames.length > i) {
-                    Object varname = varnames[i];
-                    if (varname instanceof String) {
-                        paramNames[i] = (String) varname;
-                        continue;
-                    }
-                }
-                paramNames[i] = Character.toString(paramNom++);
-            }
-            String[] kwNames = new String[kwonlyargcount];
-            for (int i = 0; i < kwNames.length; i++) {
-                if (varnames.length > i + argcount) {
-                    Object varname = varnames[i + argcount];
-                    if (varname instanceof String) {
-                        kwNames[i] = (String) varname;
-                        continue;
-                    }
-                }
-                kwNames[i] = Character.toString(paramNom++);
-            }
-            return new Signature(PCode.takesVarKeywordArgs(flags), PCode.takesVarArgs(flags) ? argcount : -1, !PCode.takesVarArgs(flags) && kwonlyargcount > 0, paramNames, kwNames);
-        }
-
-        private HashingStorageNodes.GetItemNode ensureGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
-            }
-            return getItemNode;
         }
 
         private ContextReference<PythonContext> getContextRef() {
@@ -280,6 +135,24 @@ public abstract class CodeNodes {
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
             return contextRef;
+        }
+
+        private Source getEmptySource() {
+            if (emptySource == null) {
+                emptySource = PythonLanguage.newSource(getContextRef().get(), "", "unavailable", false);
+            }
+            return emptySource;
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private String[] toStringArray(Object[] array) {
+            List<String> list = new ArrayList<>(array.length);
+            for (Object item : array) {
+                if (item instanceof String) {
+                    list.add((String) item);
+                }
+            }
+            return list.toArray(new String[list.size()]);
         }
 
         public static CreateCodeNode create() {

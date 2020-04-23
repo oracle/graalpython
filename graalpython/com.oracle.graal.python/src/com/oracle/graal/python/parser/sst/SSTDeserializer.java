@@ -53,14 +53,16 @@ public class SSTDeserializer {
 
     private final DataInputStream stream;
     private final Source source;
+    private final int offsetDelta;
     private int startIndex;
     private int endIndex;
     private ScopeInfo currentScope;
 
-    public SSTDeserializer(DataInputStream read, ScopeInfo globalScope, Source source) {
+    public SSTDeserializer(DataInputStream read, ScopeInfo globalScope, Source source, int offsetDelta) {
         this.stream = read;
         this.source = source;
         currentScope = globalScope;
+        this.offsetDelta = offsetDelta;
     }
 
     public SSTNode readNode() throws IOException {
@@ -199,6 +201,10 @@ public class SSTDeserializer {
                 // source section are two numbers
                 startIndex = readInt(kind);
                 endIndex = readInt(stream.readByte());
+                if (offsetDelta > 0) {
+                    startIndex -= offsetDelta;
+                    endIndex -= offsetDelta;
+                }
         }
     }
 
@@ -512,7 +518,9 @@ public class SSTDeserializer {
         byte start = stream.readByte();
         byte base = stream.readByte();
         boolean negativ = stream.readBoolean();
-        String value = source.getCharacters().subSequence(negativ ? startOffset + 1 : startOffset, endOffset).toString();
+        // String value = source.getCharacters().subSequence(negativ ? startOffset + 1 :
+        // startOffset, endOffset).toString();
+        String value = readString();
         char c = value.charAt(0);
         if (c == '(') {
             value = value.substring(1);
@@ -672,7 +680,8 @@ public class SSTDeserializer {
         readPosition();
         int startOffset = startIndex;
         int endOffset = endIndex;
-        String name = source.getCharacters().subSequence(startOffset, endOffset).toString();
+        // String name = source.getCharacters().subSequence(startOffset, endOffset).toString();
+        String name = readString();
         return new VarLookupSSTNode(name, startOffset, endOffset);
     }
 

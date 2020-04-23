@@ -89,6 +89,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -429,19 +430,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         void handlePCode(VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
-            writeInt(c.getArgcount(), version, buffer);
-            writeInt(c.getKwonlyargcount(), version, buffer);
-            writeInt(c.getNlocals(), version, buffer);
-            writeInt(c.getStacksize(), version, buffer);
+            SourceSection sourceSection = c.getRootNode().getSourceSection();
+            writeString(sourceSection.getCharacters().toString(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
-            writeBytes(c.getCodestring() == null ? new byte[0] : c.getCodestring(), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getConstants() == null ? new Object[0] : c.getConstants()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getNames() == null ? new Object[0] : c.getNames()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getVarnames() == null ? new Object[0] : c.getVarnames()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getFreeVars() == null ? new Object[0] : c.getFreeVars()), version, buffer);
-            getRecursiveNode().execute(frame, factory().createTuple(c.getCellVars() == null ? new Object[0] : c.getCellVars()), version, buffer);
-            getRecursiveNode().execute(frame, c.getFilename(), version, buffer);
-            getRecursiveNode().execute(frame, c.getName(), version, buffer);
+            byte[] code = c.getCodestring();
+            writeBytes(code == null ? new byte[0] : code, version, buffer);
+            writeString(c.getFilename(), version, buffer);
+            writeString(c.getName(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
         }
@@ -583,25 +578,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode(int depth) {
-            int argcount = readInt();
-            int kwonlyargcount = readInt();
-            int nlocals = readInt();
-            int stacksize = readInt();
+            String codetext = readString();
             int flags = readInt();
-            byte[] codestring = readBytes();
-            Object[] constants = getArray((PTuple) readObject(depth + 1));
-            Object[] names = getArray((PTuple) readObject(depth + 1));
-            Object[] varnames = getArray((PTuple) readObject(depth + 1));
-            Object[] freevars = getArray((PTuple) readObject(depth + 1));
-            Object[] cellvars = getArray((PTuple) readObject(depth + 1));
-            String filename = ((String) readObject(depth + 1));
-            String name = ((String) readObject(depth + 1));
+            byte[] serializationData = readBytes();
+            String filename = readString();
+            String name = readString();
             int firstlineno = readInt();
             byte[] lnotab = readBytes();
-
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, argcount, kwonlyargcount,
-                            nlocals, stacksize, flags, codestring, constants, names,
-                            varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, codetext, flags, serializationData, filename, name, firstlineno, lnotab);
         }
 
         private PDict readDict(int depth) {

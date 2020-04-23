@@ -204,7 +204,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
-import java.util.ArrayList;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -753,15 +752,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
-            final List<byte[]> binarySource = new ArrayList<>(1);
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, expression, filename, mayBeFromFile);
                 RootNode rootNode = (RootNode) getCore().getParser().parse(pm, getCore(), source, null);
-                if (source.getPath() != null) {
-                    binarySource.add(getCore().getSerializer().serialize(source));
-                } else {
-                    binarySource.add(null);
-                }
                 return Truffle.getRuntime().createCallTarget(rootNode);
             };
             RootCallTarget ct;
@@ -770,7 +763,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 ct = (RootCallTarget) getCore().getLanguage().cacheCode(filename, createCode);
             }
-            return factory().createCode(ct, binarySource.get(0));
+            return factory().createCode(ct);
         }
 
         @SuppressWarnings("unused")

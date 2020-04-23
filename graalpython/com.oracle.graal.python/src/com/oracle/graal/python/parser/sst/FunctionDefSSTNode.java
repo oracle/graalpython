@@ -43,20 +43,18 @@ package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.parser.ScopeInfo;
 
-public class FunctionDefSSTNode extends SSTNode {
+public class FunctionDefSSTNode extends SSTNodeWithScope {
     protected final String name;
     protected final String enclosingClassName;
     protected final ArgDefListBuilder argBuilder;
     protected final SSTNode body;
-    protected final ScopeInfo functionScope;
 
     public FunctionDefSSTNode(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+        super(startOffset, endOffset, functionScope);
         this.name = name;
         this.enclosingClassName = enclosingClassName;
         this.argBuilder = argBuilder;
         this.body = body;
-        this.functionScope = functionScope;
     }
 
     @Override

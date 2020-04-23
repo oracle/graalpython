@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -237,6 +238,18 @@ public final class ScopeInfo {
         }
     }
 
+    public void setCellVars(String[] identifiers) {
+        if (cellVars == null) {
+            cellVars = new TreeSet<>();
+        } else {
+            cellVars.clear();
+        }
+        for (String identifier : identifiers) {
+            cellVars.add(identifier);
+            createSlotIfNotPresent(identifier);
+        }
+    }
+
     public void addFreeVar(String identifier, boolean createFrameSlot) {
         if (freeVars == null) {
             freeVars = new TreeSet<>();
@@ -244,6 +257,18 @@ public final class ScopeInfo {
         freeVars.add(identifier);
         if (createFrameSlot) {
             this.createSlotIfNotPresent(identifier);
+        }
+    }
+
+    public void setFreeVars(String[] identifiers) {
+        if (freeVars == null) {
+            freeVars = new TreeSet<>();
+        } else {
+            freeVars.clear();
+        }
+        for (String identifier : identifiers) {
+            freeVars.add(identifier);
+            createSlotIfNotPresent(identifier);
         }
     }
 
@@ -400,11 +425,18 @@ public final class ScopeInfo {
         out.writeBoolean(scope.hasAnnotations());
         // for recreating frame descriptor
         Set<Object> identifiers = scope.getFrameDescriptor().getIdentifiers();
-        out.writeInt(identifiers.size());
+        List<String> names = new ArrayList<>();
         for (Object identifier : identifiers) {
             if (identifier instanceof String) {
-                out.writeUTF((String) identifier);
+                String name = (String) identifier;
+                if (!name.startsWith(FrameSlotIDs.TEMP_LOCAL_PREFIX) && !name.startsWith(FrameSlotIDs.RETURN_SLOT_ID)) {
+                    names.add((String) identifier);
+                }
             }
+        }
+        out.writeInt(names.size());
+        for (String name : names) {
+            out.writeUTF(name);
         }
 
         if (scope.explicitGlobalVariables == null) {

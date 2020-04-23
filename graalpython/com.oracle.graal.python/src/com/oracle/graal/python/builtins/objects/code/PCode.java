@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -122,9 +124,11 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring) {
+    public PCode(LazyPythonClass cls, RootCallTarget callTarget, byte[] codestring, int firstlineno, byte[] lnotab) {
         this(cls, callTarget);
         this.codestring = codestring;
+        this.firstlineno = firstlineno;
+        this.lnotab = lnotab;
     }
 
     public PCode(LazyPythonClass cls, RootCallTarget callTarget, Signature signature,
@@ -301,13 +305,11 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static byte[] extractCodeString(RootNode rootNode) {
         RootNode funcRootNode = rootNode;
-        if (rootNode instanceof GeneratorFunctionRootNode) {
-            funcRootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
+        if (rootNode instanceof GeneratorFunctionRootNode || funcRootNode instanceof PClosureRootNode) {
+            PythonCodeSerializer serializer = PythonLanguage.getCore().getSerializer();
+            return serializer.serialize(rootNode);
         }
-        SourceSection sourceSection = funcRootNode.getSourceSection();
-        if (sourceSection != null) {
-            return sourceSection.getCharacters().toString().getBytes();
-        }
+        // no code for non-user functions
         return new byte[0];
     }
 

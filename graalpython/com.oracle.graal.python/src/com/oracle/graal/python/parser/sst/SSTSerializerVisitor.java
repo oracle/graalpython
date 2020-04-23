@@ -321,7 +321,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
             } else {
                 out.writeByte(0);
             }
-            out.writeInt(node.classScope.getSerializetionId());
+            out.writeInt(node.scope.getSerializetionId());
             node.body.accept(this);
         } catch (IOException e) {
             handleIOExceptin(e);
@@ -482,7 +482,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         try {
             out.writeByte(SerializationUtils.getSSTNodeTypeId(SSTId.FunctionDefID));
             writePosition(node);
-            out.writeInt(node.functionScope.getSerializetionId());
+            out.writeInt(node.scope.getSerializetionId());
             out.writeUTF(node.name);
             writeStringOrNull(node.enclosingClassName);
             writeArguments(node.argBuilder);
@@ -562,7 +562,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         try {
             out.writeByte(SerializationUtils.getSSTNodeTypeId(SSTId.LambdaID));
             writePosition(node);
-            out.writeInt(node.functionScope.getSerializetionId());
+            out.writeInt(node.scope.getSerializetionId());
             if (node.args != null) {
                 out.writeByte(1);
                 writeArguments(node.args);
@@ -596,6 +596,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
             out.writeByte(node.start);
             out.writeByte(node.base);
             out.writeBoolean(node.negative);
+            writeString(node.value);
         } catch (IOException e) {
             handleIOExceptin(e);
         }
@@ -762,6 +763,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
         try {
             out.writeByte(SerializationUtils.getSSTNodeTypeId(SSTId.VarLookupID));
             writePosition(node);
+            writeString(node.name);
         } catch (IOException e) {
             handleIOExceptin(e);
         }

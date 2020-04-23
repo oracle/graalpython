@@ -43,16 +43,14 @@ package com.oracle.graal.python.parser.sst;
 
 import com.oracle.graal.python.parser.ScopeInfo;
 
-public class LambdaSSTNode extends SSTNode {
+public class LambdaSSTNode extends SSTNodeWithScope {
     protected final ArgDefListBuilder args;
     protected final SSTNode body;
-    protected final ScopeInfo functionScope;
 
     public LambdaSSTNode(ScopeInfo functionScope, ArgDefListBuilder args, SSTNode body, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
+        super(startOffset, endOffset, functionScope);
         this.args = args;
         this.body = body;
-        this.functionScope = functionScope;
     }
 
     @Override

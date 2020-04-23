@@ -29,14 +29,20 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.sst.BlockSSTNode;
 import com.oracle.graal.python.parser.sst.SSTDeserializer;
 import com.oracle.graal.python.parser.sst.SSTNode;
+import com.oracle.graal.python.parser.sst.SSTNodeWithScope;
+import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
 import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.parser.sst.StringUtils;
@@ -47,7 +53,6 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleException;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -97,23 +102,32 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public byte[] serialize(Source source) {
-        // System.out.println("serialize: " + source.getPath() + " is the last parsing source: " +
-        // source.equals(lastParsing.source));
+    @TruffleBoundary
+    public byte[] serialize(RootNode rootNode) {
+        Source source = rootNode.getSourceSection().getSource();
+        assert source != null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream(source.getLength() * 2);
         DataOutputStream dos = new DataOutputStream(baos);
         if (!source.equals(lastParsing.source)) {
-            // we need to parse the source again, but this should not happened in current
-            // implementation
+            // we need to parse the source again
             parseN(ParserMode.File, PythonLanguage.getCore(), source, null);
         }
         try {
             dos.writeByte(SerializationUtils.VERSION);
-            byte[] bytes = source.getCharacters().toString().getBytes();
-            dos.writeInt(bytes.length);
-            dos.write(bytes);
-            dos.write(lastParsing.serializedGlobalScope);
-            lastParsing.antlrResult.accept(new SSTSerializerVisitor(dos));
+            if (rootNode instanceof ModuleRootNode) {
+                // serialize whole module
+                ScopeInfo.write(dos, lastParsing.globalScope);
+                dos.writeInt(0);
+                lastParsing.antlrResult.accept(new SSTSerializerVisitor(dos));
+            } else {
+                // serialize just the part
+                SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
+                SSTNodeWithScope rootSST = lastParsing.antlrResult.accept(finder);
+                // store with parent scope
+                ScopeInfo.write(dos, rootSST.getScope().getParent());
+                dos.writeInt(rootSST.getStartOffset());
+                rootSST.accept(new SSTSerializerVisitor(dos));
+            }
             dos.close();
         } catch (IOException e) {
             throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
@@ -123,36 +137,57 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public RootNode deserialize(TruffleFile tFile, byte[] data) {
+    public RootNode deserialize(Source source, byte[] data) {
+        return deserialize(source, data, null, null);
+    }
+
+    @Override
+    @TruffleBoundary
+    public RootNode deserialize(Source source, byte[] data, String[] cellvars, String[] freevars) {
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
         DataInputStream dis = new DataInputStream(bais);
-        String code = null;
         ScopeInfo globalScope = null;
         SSTNode sstNode = null;
-        Source source = null;
         try {
+            // Just to be sure that the serialization version is ok.
             byte version = dis.readByte();
             if (version != SerializationUtils.VERSION) {
                 assert true : "It looks like that there is used old version of data serialization in .pyc files. It can happen, if you use developement vertsion of GraalPython. Remove them.";
                 throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
             }
-            int len = dis.readInt();
-            byte[] bytes = new byte[len];
-            int readedLen = dis.read(bytes);
-            code = new String(bytes);
             globalScope = ScopeInfo.read(dis, null);
-            source = tFile == null
-                            ? Source.newBuilder(PythonLanguage.ID, code, "<expression>").build()
-                            : Source.newBuilder(PythonLanguage.ID, tFile).content(code).build();
-            sstNode = new SSTDeserializer(dis, globalScope, source).readNode();
+            int offset = dis.readInt();
+            sstNode = new SSTDeserializer(dis, globalScope, source, offset).readNode();
+            if (cellvars != null || freevars != null) {
+                ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
+                rootScope.setCellVars(cellvars);
+                rootScope.setFreeVars(freevars);
+            }
         } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + tFile.getPath());
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
         }
         PythonCore core = PythonLanguage.getCore();
         PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source);
         sstFactory.getScopeEnvironment().setGlobalScope(globalScope);
+        ParserMode mode = sstNode instanceof BlockSSTNode ? ParserMode.File : ParserMode.Deserialization;
         try {
-            return (RootNode) sstFactory.createParserResult(sstNode, ParserMode.File, null);
+            Node result = sstFactory.createParserResult(sstNode, mode, null);
+            if (mode == ParserMode.Deserialization) {
+                // find function RootNode
+                final Node[] fromVisitor = new Node[1];
+                result.accept((Node node) -> {
+                    if (node instanceof FunctionDefinitionNode) {
+                        fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();
+                        return false;
+                    } else if (node instanceof GeneratorFunctionRootNode) {
+                        fromVisitor[0] = ((GeneratorFunctionRootNode) node).getFunctionRootNode();
+                        return false;
+                    }
+                    return true;
+                });
+                result = fromVisitor[0];
+            }
+            return (RootNode) result;
         } catch (Exception e) {
             throw handleParserError(core, source, e, true);
         }
@@ -165,7 +200,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             ScopeInfo.write(dos, scope);
             dos.close();
         } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save datad during serialization.");
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
         }
         return baos.toByteArray();
     }
