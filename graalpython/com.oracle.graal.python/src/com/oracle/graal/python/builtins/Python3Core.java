@@ -263,7 +263,7 @@ public final class Python3Core implements PythonCore {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (annotation.pythonFile().isEmpty()) {
+                if (!annotation.pythonFile().isEmpty()) {
                     coreFiles.add(annotation.pythonFile());
                 }
             }
