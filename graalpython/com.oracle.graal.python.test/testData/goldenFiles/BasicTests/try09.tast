@@ -16,7 +16,6 @@ ModuleRootNode Name: <module 'try09'> SourceSection: [0,68]`try:↵   raise Keyb
                 Identifier: KeyboardInterrupt
               NoValueNode SourceSection: None
             BlockNode SourceSection: None
-            SaveExceptionStateNodeGen SourceSection: None
           ExpressionStatementNode SourceSection: [44,68]`print('Goodbye, worl...`
             PythonCallNodeGen SourceSection: [44,68]`print('Goodbye, worl...`
               CallNodeGen SourceSection: None

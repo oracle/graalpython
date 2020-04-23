@@ -35,7 +35,6 @@ ModuleRootNode Name: <module 'try06'> SourceSection: [0,124]`for cls in (B, C, D
                     ReadNameNodeGen SourceSection: [109,110]`B`
                       Identifier: B
                   BlockNode SourceSection: None
-                  SaveExceptionStateNodeGen SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [11,20]`(B, C, D)`
               GetIteratorNodeGen SourceSection: None
               TupleLiteralNode SourceSection: [11,20]`(B, C, D)`

@@ -133,7 +133,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: OSError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [3660,3693]`return dir, os.path....`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -266,7 +265,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                  SaveExceptionStateNodeGen SourceSection: None
                               TryFinallyNode SourceSection: [4195,4329]`try:↵            m._...`
                                 TryExceptNode SourceSection: None
                                   SetAttributeNodeGen SourceSection: [4212,4256]`m.__cached__ = os.pa...`
@@ -308,7 +306,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                  SaveExceptionStateNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3806,3831]`set(sys.modules.valu...`
                           GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [3806,3831]`set(sys.modules.valu...`
@@ -594,7 +591,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Identifier: TypeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
-                                SaveExceptionStateNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [5137,5145]`sys.path`
                           GetIteratorNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [5137,5145]`sys.path`
@@ -733,7 +729,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: OSError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     WithNode SourceSection: [5848,6809]`with f:↵        for ...`
                       BreakTargetNode SourceSection: [5864,6809]`for n, line in enume...`
                         ForNode SourceSection: None
@@ -1038,7 +1033,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Identifier: Exception
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
-                                    SaveExceptionStateNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [5879,5891]`enumerate(f)`
                             GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [5879,5891]`enumerate(f)`
@@ -1065,7 +1059,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       CallNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                       GetClassNodeGen SourceSection: None
-                      SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [6809,6850]`if reset:↵        kn...`
                       YesNodeGen SourceSection: None
                         ReadLocalVariableNode SourceSection: [6812,6817]`reset`
@@ -1247,7 +1240,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: OSError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [7395,7452]`names = [name for na...`
                       Identifier: names
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2918,7 +2910,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           Identifier: ImportError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
-                                      SaveExceptionStateNodeGen SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [14340,14387]`readline_doc = getat...`
                                     Identifier: readline_doc
                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2983,7 +2974,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           Identifier: OSError
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
-                                      SaveExceptionStateNodeGen SourceSection: None
                                   IfNode SourceSection: [14962,15630]`if readline.get_curr...`
                                     YesNodeGen SourceSection: None
                                       BinaryComparisonNodeGen SourceSection: [14965,15007]`readline.get_current...`
@@ -3045,7 +3035,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Identifier: OSError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                          SaveExceptionStateNodeGen SourceSection: None
                                       ExpressionStatementNode SourceSection: [15571,15624]`atexit.register(read...`
                                         PythonCallNodeGen SourceSection: [15571,15624]`atexit.register(read...`
                                           CallNodeGen SourceSection: None
@@ -3544,7 +3533,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                           GetClassNodeGen SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                         BlockNode SourceSection: [16967,17009]`sys.prefix = sys.exe...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <>temp19
@@ -3706,7 +3694,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Identifier: ImportError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                            SaveExceptionStateNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           IfNode SourceSection: [17790,18055]`if sys.flags.verbose...`
                             YesNodeGen SourceSection: None
@@ -3780,7 +3767,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: Exception
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3848,7 +3834,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Identifier: ImportError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                            SaveExceptionStateNodeGen SourceSection: None
                         ExceptNode SourceSection: None
                           IfNode SourceSection: [18367,18632]`if sys.flags.verbose...`
                             YesNodeGen SourceSection: None
@@ -3922,7 +3907,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: Exception
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [3,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None

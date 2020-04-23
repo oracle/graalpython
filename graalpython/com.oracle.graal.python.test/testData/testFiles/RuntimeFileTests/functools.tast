@@ -41,7 +41,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
             ReadNameNodeGen SourceSection: [695,706]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       ImportFromNode SourceSection: [717,748]`from abc import get_...`
         Importee: abc
         Level: 0
@@ -200,7 +199,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2211,2218]`setattr`
                                     Identifier: setattr
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              SaveExceptionStateNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2071,2079]`assigned`
                           GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2071,2079]`assigned`
@@ -2399,7 +2397,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
             ReadNameNodeGen SourceSection: [8775,8786]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [9042,11795]`class partial:↵    "...`
         Identifier: partial
         PythonCallNodeGen SourceSection: [9042,11795]`class partial:↵    "...`
@@ -3611,7 +3608,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
             ReadNameNodeGen SourceSection: [11842,11853]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11886,15107]`class partialmethod(...`
         Identifier: partialmethod
         PythonCallNodeGen SourceSection: [11886,15107]`class partialmethod(...`
@@ -4471,7 +4467,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                     Identifier: AttributeError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
-                                                SaveExceptionStateNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [14573,14779]`if result is None:↵ ...`
@@ -6171,7 +6166,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         CallNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
                                         GetClassNodeGen SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: [20634,20671]`result = user_functi...`
                                         Identifier: result
                                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6484,7 +6478,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                         CallNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
                                         GetClassNodeGen SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [22691,22704]`return result`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -6575,7 +6568,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     CallNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
                                     GetClassNodeGen SourceSection: None
-                                    SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [6,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -6690,7 +6682,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                     CallNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
                                     GetClassNodeGen SourceSection: None
-                                    SaveExceptionStateNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [7,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -6739,7 +6730,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
             ReadNameNodeGen SourceSection: [23262,23273]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [23515,24428]`def _c3_merge(sequen...`
         Identifier: _c3_merge
         FunctionDefinitionNode Name: _c3_merge SourceSection: None
@@ -8767,7 +8757,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                                       Identifier: KeyError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
                                               SetItemNodeGen SourceSection: [30621,30647]`dispatch_cache[cls] ...`
                                                 ReadLocalCellNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: None
@@ -8784,7 +8773,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32198]`"""functools.
                                               Identifier: KeyError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                          SaveExceptionStateNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [30656,30667]`return impl`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>

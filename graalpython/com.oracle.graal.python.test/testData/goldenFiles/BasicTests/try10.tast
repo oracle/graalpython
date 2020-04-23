@@ -85,7 +85,6 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               ReadGlobalOrBuiltinNodeGen SourceSection: [133,138]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [181,214]`print("executing fin...`
                           PythonCallNodeGen SourceSection: [181,214]`print("executing fin...`
                             CallNodeGen SourceSection: None

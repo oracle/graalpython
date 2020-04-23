@@ -30,4 +30,3 @@ ModuleRootNode Name: <module 'try07'> SourceSection: [0,91]`try:↵    pass↵ex
                 NoValueNode SourceSection: None
                 NoValueNode SourceSection: None
             BlockNode SourceSection: None
-            SaveExceptionStateNodeGen SourceSection: None

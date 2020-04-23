@@ -1301,7 +1301,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NoValueNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2227,7 +2226,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NoValueNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -3478,7 +3476,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Identifier: RuntimeError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NoValueNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -6618,7 +6615,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: StopIteration
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [15953,15972]`self.discard(value)`
                                       PythonCallNodeGen SourceSection: [15953,15972]`self.discard(value)`
                                         CallNodeGen SourceSection: None
@@ -6697,7 +6693,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7308,7 +7303,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7381,7 +7375,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [3,<return_val>,Illegal]
                                             BooleanLiteralNode SourceSection: [17677,17681]`True`
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8377,7 +8370,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [3,value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               YesNodeGen SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [8,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9065,7 +9057,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ReadLocalVariableNode SourceSection: [20634,20639]`value`
                                                 Frame: [3,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9133,7 +9124,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: StopIteration
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [20933,20950]`value = self[key]`
                                       Identifier: value
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -9225,7 +9215,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9619,7 +9608,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [22565,22579]`return default`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -9847,12 +9835,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                         GeneratorAccessNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
-                                        RestoreExceptionStateNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
-                                      SaveExceptionStateNodeGen SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
@@ -10261,7 +10245,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Identifier: IndexError
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
-                                                SaveExceptionStateNodeGen SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [24068,24074]`i += 1`
                                               Identifier: i
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -10909,7 +10892,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

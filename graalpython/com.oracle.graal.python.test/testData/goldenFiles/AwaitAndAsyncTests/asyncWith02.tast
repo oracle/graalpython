@@ -57,7 +57,6 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                           CallNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                           GetClassNodeGen SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: b
                           WriteLocalFrameSlotNodeGen SourceSection: None
@@ -77,7 +76,6 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                         CallNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [2,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

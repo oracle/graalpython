@@ -516,7 +516,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
             ReadNameNodeGen SourceSection: [1189,1198]`TypeError`
               Identifier: TypeError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1365,1415]`GetSetDescriptorType...`
         Identifier: GetSetDescriptorType
         PythonCallNodeGen SourceSection: [1388,1415]`type(FunctionType.__...`

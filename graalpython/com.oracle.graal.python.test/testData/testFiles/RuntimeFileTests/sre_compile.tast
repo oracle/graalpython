@@ -3516,7 +3516,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     BreakNode SourceSection: [12005,12010]`break`
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [9935,9942]`charset`

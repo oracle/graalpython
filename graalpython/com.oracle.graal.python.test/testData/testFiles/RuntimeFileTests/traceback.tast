@@ -954,7 +954,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                       Identifier: type
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [1,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1604,7 +1603,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     Identifier: RuntimeError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
-                                SaveExceptionStateNodeGen SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [8022,8037]`tb = tb.tb_next`
                               Identifier: tb
                               WriteLocalFrameSlotNodeGen SourceSection: None

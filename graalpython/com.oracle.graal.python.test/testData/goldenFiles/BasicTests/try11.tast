@@ -56,7 +56,6 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                               Identifier: Exception
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

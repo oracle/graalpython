@@ -3213,7 +3213,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             Identifier: IndexError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     IfNode SourceSection: [7612,7891]`if char == "\\":↵   ...`
                                       YesNodeGen SourceSection: None
                                         BinaryComparisonNodeGen SourceSection: [7615,7627]`char == "\\"`
@@ -3295,7 +3294,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Identifier: IndexError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                            SaveExceptionStateNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     SetAttributeNodeGen SourceSection: [7891,7913]`self.index = index +...`
                                       Attribute: index
@@ -4729,7 +4727,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     RaiseNodeGen SourceSection: [11158,11215]`raise source.error("...`
                       PythonCallNodeGen SourceSection: [11164,11215]`source.error("bad es...`
                         CallNodeGen SourceSection: None
@@ -5631,7 +5628,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     RaiseNodeGen SourceSection: [13991,14048]`raise source.error("...`
                       PythonCallNodeGen SourceSection: [13997,14048]`source.error("bad es...`
                         CallNodeGen SourceSection: None
@@ -9119,7 +9115,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                         Identifier: ValueError
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                     BlockNode SourceSection: None
-                                                                    SaveExceptionStateNodeGen SourceSection: None
                                                                 IfNode SourceSection: [28109,28284]`if not condgroup:↵  ...`
                                                                   NotNodeGen SourceSection: [28112,28125]`not condgroup`
                                                                     ReadLocalVariableNode SourceSection: [28116,28125]`condgroup`
@@ -9638,7 +9633,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       Identifier: error
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [30605,30730]`sub_verbose = ((verb...`
                                               Identifier: sub_verbose
@@ -11034,7 +11028,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             Identifier: Verbose
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     SetAttributeNodeGen SourceSection: [35406,35455]`p.pattern.flags = fi...`
                       Attribute: flags
                       GetAttributeNodeGen SourceSection: [35406,35415]`p.pattern`
@@ -11544,7 +11537,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               Identifier: KeyError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
-                                          SaveExceptionStateNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         TryFinallyNode SourceSection: [36845,37176]`try:↵               ...`
                                           TryExceptNode SourceSection: None
@@ -11612,7 +11604,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Identifier: ValueError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                            SaveExceptionStateNodeGen SourceSection: None
                                         IfNode SourceSection: [37176,37344]`if index >= MAXGROUP...`
                                           YesNodeGen SourceSection: None
                                             BinaryComparisonNodeGen SourceSection: [37179,37197]`index >= MAXGROUPS`
@@ -12081,7 +12072,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Identifier: KeyError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BlockNode SourceSection: None
-                                            SaveExceptionStateNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [38561,38574]`lappend(this)`
                                           PythonCallNodeGen SourceSection: [38561,38574]`lappend(this)`
                                             CallNodeGen SourceSection: None
@@ -12426,7 +12416,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 Identifier: IndexError
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                            SaveExceptionStateNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [39277,39304]`return empty.join(li...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>

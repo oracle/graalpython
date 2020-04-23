@@ -241,7 +241,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Identifier: KeyError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
-                                              SaveExceptionStateNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1043,1052]`self.maps`
                                           GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [1043,1052]`self.maps`
@@ -1265,7 +1264,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1338,7 +1336,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1440,7 +1437,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -2390,7 +2386,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   Frame: [1,copy,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [5757,5773]`self.data = data`
                                         Attribute: data
                                         ReadLocalVariableNode SourceSection: [5757,5761]`self`

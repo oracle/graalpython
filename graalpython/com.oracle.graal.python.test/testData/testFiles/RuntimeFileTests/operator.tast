@@ -2232,7 +2232,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     TryFinallyNode SourceSection: [4356,4457]`try:↵        hint = ...`
                       TryExceptNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [4369,4401]`hint = type(obj).__l...`
@@ -2265,7 +2264,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             Identifier: AttributeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     TryFinallyNode SourceSection: [4457,4535]`try:↵        val = h...`
                       TryExceptNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [4470,4485]`val = hint(obj)`
@@ -2293,7 +2291,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             Identifier: TypeError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     IfNode SourceSection: [4535,4588]`if val is NotImpleme...`
                       YesNodeGen SourceSection: None
                         IsExpressionNodeGen SourceSection: [4538,4559]`val is NotImplemente...`
@@ -5187,7 +5184,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             GetAnyAttributeNodeGen SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10090,10101]`__lt__ = lt`
         Identifier: __lt__
         ReadNameNodeGen SourceSection: [10099,10101]`lt`

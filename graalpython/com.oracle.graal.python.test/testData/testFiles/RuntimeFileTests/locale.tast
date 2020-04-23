@@ -387,7 +387,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             ReadNameNodeGen SourceSection: [1486,1497]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       IfNode SourceSection: [2901,2955]`if 'strxfrm' not in ...`
         NotNodeGen SourceSection: [2904,2930]`'strxfrm' not in glo...`
           ContainsNodeGen SourceSection: None
@@ -4287,7 +4286,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [5,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4449,7 +4447,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [3,encoding,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [18510,18512]`os`
                       Identifier: os
                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -5138,7 +5135,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Identifier: Error
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
-                                  SaveExceptionStateNodeGen SourceSection: None
                             BlockNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [22028,22076]`result = _bootlocale...`
                             Identifier: result
@@ -5180,7 +5176,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Return Expresssion: ReadLocalVariableNode SourceSection: None
                         Frame: [4,<return_val>,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
-            SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [22737,25081]`locale_encoding_alia...`
         Identifier: locale_encoding_alias
         DictLiteralNodeGen SourceSection: [22761,25081]`{↵↵    # Mappings fo...`
@@ -7803,7 +7798,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       Frame: [0,categories,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
-                        SaveExceptionStateNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                   Frame: [20,<return_val>,Illegal]
                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7824,7 +7818,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
               GetCallAttributeNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [77841,77848]`__all__`
                   Identifier: __all__
-          SaveExceptionStateNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

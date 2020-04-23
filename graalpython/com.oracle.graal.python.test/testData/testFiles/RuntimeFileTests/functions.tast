@@ -1081,7 +1081,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               Identifier: AttributeError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

@@ -125,7 +125,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       Op: __getattribute__
                   ReadNameNodeGen SourceSection: [1394,1410]`_collections_abc`
                     Identifier: _collections_abc
-          SaveExceptionStateNodeGen SourceSection: None
       TryFinallyNode SourceSection: [1444,1521]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [1453,1489]`from _collections im...`
@@ -144,7 +143,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             ReadNameNodeGen SourceSection: [1497,1508]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1521,2419]`def __getattr__(name...`
         Identifier: __getattr__
         FunctionDefinitionNode Name: __getattr__ SourceSection: None
@@ -985,7 +983,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     ExpressionStatementNode SourceSection: [4545,4573]`self.__update(*args,...`
                                       PythonCallNodeGen SourceSection: [4545,4573]`self.__update(*args,...`
                                         CallNodeGen SourceSection: None
@@ -3348,7 +3345,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             ReadNameNodeGen SourceSection: [10873,10884]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [11121,11141]`_nt_itemgetters = {}...`
         Identifier: _nt_itemgetters
         DictLiteralNodeGen SourceSection: [11139,11141]`{}`
@@ -4713,7 +4709,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Identifier: KeyError
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
-                                SaveExceptionStateNodeGen SourceSection: None
                             SetItemNodeGen SourceSection: [16848,16908]`class_namespace[name...`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [24,class_namespace,Illegal]
@@ -4813,7 +4808,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
                           BlockNode SourceSection: None
-                          SaveExceptionStateNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [17502,17565]`if module is not Non...`
                       NotNodeGen SourceSection: [17505,17523]`module is not None`
@@ -4951,7 +4945,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             ReadNameNodeGen SourceSection: [18057,18068]`ImportError`
               Identifier: ImportError
           BlockNode SourceSection: None
-          SaveExceptionStateNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [18080,32191]`class Counter(dict):...`
         Identifier: Counter
         PythonCallNodeGen SourceSection: [18080,32191]`class Counter(dict):...`
@@ -6366,7 +6359,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8373,7 +8365,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   Identifier: KeyError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
-                                              SaveExceptionStateNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [33073,33082]`self.maps`
                                           GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [33073,33082]`self.maps`
@@ -9397,7 +9388,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9470,7 +9460,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9572,7 +9561,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             Identifier: KeyError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -10522,7 +10510,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   Frame: [1,copy,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                       SetAttributeNodeGen SourceSection: [37787,37803]`self.data = data`
                                         Attribute: data
                                         ReadLocalVariableNode SourceSection: [37787,37791]`self`

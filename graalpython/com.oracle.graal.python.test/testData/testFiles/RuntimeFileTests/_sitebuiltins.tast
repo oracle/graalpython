@@ -245,7 +245,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           ExpressionStatementNode SourceSection: [735,739]`pass`
                                             EmptyNode SourceSection: [735,739]`pass`
                                         BlockNode SourceSection: None
-                                        SaveExceptionStateNodeGen SourceSection: None
                                     RaiseNodeGen SourceSection: [748,770]`raise SystemExit(cod...`
                                       PythonCallNodeGen SourceSection: [754,770]`SystemExit(code)`
                                         CallNodeGen SourceSection: None
@@ -618,7 +617,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   CallNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
                                                   GetClassNodeGen SourceSection: None
-                                                  SaveExceptionStateNodeGen SourceSection: None
                                                 BreakNode SourceSection: [1492,1497]`break`
                                               ExceptNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [1542,1546]`pass`
@@ -627,7 +625,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   Identifier: OSError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
-                                              SaveExceptionStateNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1356,1372]`self.__filenames`
                                           GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [1356,1372]`self.__filenames`
@@ -994,7 +991,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       StringLiteralNode SourceSection: [2505,2508]`'q'`
                                                   BreakNode SourceSection: [2530,2535]`break`
                                                   BlockNode SourceSection: None
-                                              SaveExceptionStateNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [6,<return_val>,Illegal]
