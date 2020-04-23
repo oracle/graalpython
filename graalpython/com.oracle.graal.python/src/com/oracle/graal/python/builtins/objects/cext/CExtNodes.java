@@ -2989,7 +2989,7 @@ public abstract class CExtNodes {
         static void doPrimitiveNativeWrapper(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
-                assert !CApiGuards.isSmallLong(nativeWrapper.getLong()) : "clearing primitive native wrapper for small integer";
+                assert !CApiGuards.isSmallIntegerWrapper(nativeWrapper) : "clearing primitive native wrapper for small integer";
                 delegate.clearNativeWrapper();
             }
         }
