@@ -669,6 +669,7 @@ public abstract class CExtNodes {
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+            wrapper.increaseRefCount();
             return wrapper;
         }
 
