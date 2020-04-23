@@ -258,6 +258,16 @@ public final class Python3Core implements PythonCore {
                         "_lsprof",
                         "marshal",
                         "_lzma"));
+        // add service loader defined python file extensions
+        if (!ImageInfo.inImageRuntimeCode()) {
+            ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+            for (PythonBuiltins builtin : providers) {
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.pythonFile().isEmpty()) {
+                    coreFiles.add(annotation.pythonFile());
+                }
+            }
+        }
         // must be last
         coreFiles.add("final_patches");
         return coreFiles.toArray(new String[coreFiles.size()]);
@@ -405,7 +415,7 @@ public final class Python3Core implements PythonCore {
             builtins.add(new LsprofModuleBuiltins());
             builtins.add(LsprofModuleBuiltins.newProfilerBuiltins());
         }
-        if (!TruffleOptions.AOT) {
+        if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
             for (PythonBuiltins builtin : providers) {
                 builtins.add(builtin);
