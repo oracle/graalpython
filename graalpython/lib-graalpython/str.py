@@ -255,7 +255,7 @@ class TemplateFormatter(object):
                 if obj is not None:
                     obj = obj[item]
                 else:
-                    self.parser_list.append((False, w_item))
+                    self.parser_list.append((False, item))
             else:
                 raise ValueError("Only '[' and '.' may follow ']'")
         return obj
