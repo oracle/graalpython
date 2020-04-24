@@ -64,7 +64,8 @@ public final class PGenerator extends PythonBuiltinObject {
     private final boolean isPRangeIterator;
 
     public static PGenerator create(LazyPythonClass clazz, String name, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
-                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, PythonObjectFactory factory, Object iterator) {
+                    ExecutionCellSlots cellSlots, int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode, int numOfGeneratorTryNode, PythonObjectFactory factory,
+                    Object iterator) {
         /*
          * Setting up the persistent frame in {@link #arguments}.
          */

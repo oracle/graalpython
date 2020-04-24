@@ -115,7 +115,8 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 next = getTracebackNode.execute(tb.getNextChain());
             }
             TruffleStackTraceElement nextElement = null;
-            // The logic of skipping and cutting off frames here and in GetTracebackNode must be the same
+            // The logic of skipping and cutting off frames here and in GetTracebackNode must be the
+            // same
             boolean skipFirst = tb.getException().shouldHideLocation();
             for (TruffleStackTraceElement element : tb.getException().getTruffleStackTrace()) {
                 if (tb.getException().shouldCutOffTraceback(element)) {

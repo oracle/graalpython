@@ -296,7 +296,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return os;
     }
 
-    @Builtin(name = "exc_info")
+    @Builtin(name = "exc_info", needsFrame = true)
     @GenerateNodeFactory
     public abstract static class ExcInfoNode extends PythonBuiltinNode {
 
