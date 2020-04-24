@@ -273,7 +273,6 @@ public abstract class ExternalFunctionNodes {
         MethodDescriptorRoot(PythonLanguage language, RootCallTarget callTarget) {
             super(language);
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
-            assert callTarget.getRootNode() instanceof ExternalFunctionNode;
             this.invokeNode = FunctionInvokeNode.createBuiltinFunction(callTarget);
         }
 

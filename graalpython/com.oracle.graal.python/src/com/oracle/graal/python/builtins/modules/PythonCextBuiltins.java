@@ -177,6 +177,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -216,6 +217,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -473,8 +475,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return nativeWrapperLibrary.getDelegate(callable);
         }
 
-        @Specialization(guards = "isDecoratedManagedFunction(callable)")
-        static Object doDecoratedManaged(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, @SuppressWarnings("unused") Object wrapper,
+        @Specialization(guards = {"isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"})
+        static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") LazyPythonClass type,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -483,6 +485,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
             return nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
+        }
+
+        @Specialization(guards = "isDecoratedManagedFunction(callable)")
+        Object doDecoratedManaged(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, PExternalFunctionWrapper wrapper,
+                                         @SuppressWarnings("unused") LazyPythonClass type,
+                                         @Shared("lang") @CachedLanguage PythonLanguage lang,
+                                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
+            // This can happen if a native type inherits slots from a managed type. Therefore,
+            // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
+            // case, we assume that the object is already callable.
+            // Note, that this will also drop the 'native-to-java' conversion which is usually done
+            // by 'callable.getFun1()'.
+            Object managedCallable = nativeWrapperLibrary.getDelegate((PythonNativeWrapper) callable.getNativeFunction());
+            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, getCallTarget(managedCallable));
+            return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
         }
 
         @Specialization(guards = "!isNativeWrapper(callable)")
@@ -514,6 +531,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang);
+        }
+
+        private static RootCallTarget getCallTarget(Object callable) {
+            if (callable instanceof PBuiltinFunction) {
+                return ((PBuiltinFunction) callable).getCallTarget();
+            } else if (callable instanceof PFunction) {
+                return ((PFunction) callable).getCallTarget();
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("unsupported callable");
         }
 
         static boolean isNativeWrapper(Object obj) {
