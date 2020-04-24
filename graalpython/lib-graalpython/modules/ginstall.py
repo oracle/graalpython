@@ -317,9 +317,7 @@ def known_packages():
         numpy(**kwargs)
 
         # download pandas-0.25.0
-        # workaround until Sulong toolchain fixes this
-        cflags = "-stdlib=libc++ -lm -lc" if sys.implementation.name == "graalpython" else ""
-        install_from_pypi("pandas==0.25.0", add_cflags=cflags, **kwargs)
+        install_from_pypi("pandas==0.25.0", **kwargs)
 
     @pip_package()
     def scipy(**kwargs):
