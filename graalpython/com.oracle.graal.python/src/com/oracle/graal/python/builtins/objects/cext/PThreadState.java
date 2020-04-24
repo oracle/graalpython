@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -57,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -150,10 +150,10 @@ public class PThreadState extends PythonNativeWrapper {
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
-            ExceptionInfo currentException = context.getCurrentException();
+            PException currentException = context.getCurrentException();
             Object result = null;
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.exception;
+                PBaseException exceptionObject = currentException.getReifiedException();
                 result = getClassNode.execute(exceptionObject);
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
@@ -163,10 +163,10 @@ public class PThreadState extends PythonNativeWrapper {
         Object doCurExcValue(@SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            ExceptionInfo currentException = context.getCurrentException();
+            PException currentException = context.getCurrentException();
             Object result = null;
             if (currentException != null) {
-                result = currentException.exception;
+                result = currentException.getReifiedException();
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -176,10 +176,10 @@ public class PThreadState extends PythonNativeWrapper {
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            ExceptionInfo currentException = context.getCurrentException();
+            PException currentException = context.getCurrentException();
             PTraceback result = null;
             if (currentException != null) {
-                result = getTracebackNode.execute(currentException.traceback);
+                result = getTracebackNode.execute(currentException.getTraceback());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -189,10 +189,10 @@ public class PThreadState extends PythonNativeWrapper {
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("getClassNode") @Cached GetClassNode getClassNode) {
-            ExceptionInfo currentException = context.getCaughtException();
+            PException currentException = context.getCaughtException();
             Object result = null;
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.exception;
+                PBaseException exceptionObject = currentException.getReifiedException();
                 result = getClassNode.execute(exceptionObject);
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
@@ -202,10 +202,10 @@ public class PThreadState extends PythonNativeWrapper {
         Object doExcValue(@SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            ExceptionInfo currentException = context.getCaughtException();
+            PException currentException = context.getCaughtException();
             Object result = null;
             if (currentException != null) {
-                result = currentException.exception;
+                result = currentException.getReifiedException();
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -215,10 +215,10 @@ public class PThreadState extends PythonNativeWrapper {
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getTraceback") @Cached GetTracebackNode getTracebackNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            ExceptionInfo currentException = context.getCaughtException();
+            PException currentException = context.getCaughtException();
             PTraceback result = null;
             if (currentException != null) {
-                result = getTracebackNode.execute(currentException.traceback);
+                result = getTracebackNode.execute(currentException.getTraceback());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -337,7 +337,7 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "isCaughtExceptionMember(key)")
         PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            context.setCaughtException(ExceptionInfo.NO_EXCEPTION);
+            context.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
 
@@ -359,12 +359,11 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
         PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            ExceptionInfo e = context.getCurrentException();
-            PBaseException exception = null;
-            if (e != null) {
-                exception = e.exception;
+            PException e = context.getCurrentException();
+            if (e == null) {
+                e = new PException(null, null);
             }
-            context.setCurrentException(new ExceptionInfo(exception, new LazyTraceback(value)));
+            e.setTraceback(new LazyTraceback(value));
             return value;
         }
 
@@ -386,12 +385,11 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
         PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            ExceptionInfo e = context.getCaughtException();
-            PBaseException exception = null;
-            if (e != null) {
-                exception = e.exception;
+            PException e = context.getCaughtException();
+            if (e == null) {
+                e = new PException(null, null);
             }
-            context.setCaughtException(new ExceptionInfo(exception, new LazyTraceback(value)));
+            e.setTraceback(new LazyTraceback(value));
             return value;
         }
 
@@ -410,21 +408,21 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         private static void setCurrentException(PythonContext context, PBaseException exceptionObject) {
-            ExceptionInfo e = context.getCurrentException();
-            LazyTraceback currentTraceback = null;
-            if (e != null) {
-                currentTraceback = e.traceback;
+            PException newException = new PException(exceptionObject, null);
+            PException currentException = context.getCurrentException();
+            if (currentException != null) {
+                newException.setTraceback(currentException.getTraceback());
             }
-            context.setCurrentException(new ExceptionInfo(exceptionObject, currentTraceback));
+            context.setCurrentException(newException);
         }
 
         private static void setCaughtException(PythonContext context, PBaseException exceptionObject) {
-            ExceptionInfo e = context.getCaughtException();
-            LazyTraceback currentTraceback = null;
-            if (e != null) {
-                currentTraceback = e.traceback;
+            PException newException = new PException(exceptionObject, null);
+            PException currentException = context.getCaughtException();
+            if (currentException != null) {
+                newException.setTraceback(currentException.getTraceback());
             }
-            context.setCaughtException(new ExceptionInfo(exceptionObject, currentTraceback));
+            context.setCaughtException(newException);
         }
 
         @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})

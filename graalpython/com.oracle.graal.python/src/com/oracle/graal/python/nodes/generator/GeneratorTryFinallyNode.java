@@ -40,16 +40,12 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
@@ -68,42 +64,42 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     @Override
     public void executeVoid(VirtualFrame frame) {
         ExceptionState savedExceptionState = null;
-        ExceptionInfo exceptionInfo = null;
+        PException activeException = null;
         if (gen.isActive(frame, finallyFlag)) {
-            exceptionInfo = gen.getActiveException(frame, activeExceptionIndex).exc;
+            activeException = gen.getActiveException(frame, activeExceptionIndex);
         } else {
             try {
                 getBody().executeVoid(frame);
             } catch (PException e) {
                 // any thrown Python exception is visible in the finally block
                 exceptionProfile.enter();
-                PBaseException caughtException = e.reifyAndGetPythonException(frame);
-                LazyTraceback caughtTraceback = caughtException.getTraceback();
-                tryChainPreexistingException(frame, caughtException);
-                exceptionInfo = new ExceptionInfo(caughtException, caughtTraceback);
-                gen.setActiveException(frame, activeExceptionIndex, new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR));
+                activeException = e;
+                e.reify(frame);
+                e.markFrameEscaped();
+                tryChainPreexistingException(frame, e);
+                gen.setActiveException(frame, activeExceptionIndex, e);
             }
             gen.setActive(frame, finallyFlag, true);
         }
-        if (exceptionInfo != null) {
+        if (activeException != null) {
             savedExceptionState = saveExceptionState(frame);
-            SetCaughtExceptionNode.execute(frame, exceptionInfo);
+            SetCaughtExceptionNode.execute(frame, activeException);
         }
         try {
             executeFinalBody(frame);
         } catch (PException handlerException) {
-            if (exceptionInfo != null) {
-                chainExceptions(handlerException.getExceptionObject(), exceptionInfo.exception);
+            if (activeException != null) {
+                tryChainExceptionFromHandler(handlerException, activeException);
             }
             throw handlerException;
         } finally {
-            if (exceptionInfo != null) {
+            if (activeException != null) {
                 restoreExceptionState(frame, savedExceptionState);
             }
         }
         reset(frame);
-        if (exceptionInfo != null) {
-            throw exceptionInfo.exception.getExceptionForReraise(exceptionInfo.traceback);
+        if (activeException != null) {
+            throw activeException.getExceptionForReraise();
         }
     }
 

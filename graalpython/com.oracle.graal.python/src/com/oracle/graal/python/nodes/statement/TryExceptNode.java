@@ -41,6 +41,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -168,6 +169,11 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 if (everMatched.profile(exceptNode.matchesException(frame, exception))) {
                     tryChainPreexistingException(frame, exception);
                     ExceptionState exceptionState = saveExceptionState(frame);
+                    if (exception instanceof PException) {
+                        PException pException = (PException) exception;
+                        pException.reify(frame);
+                        SetCaughtExceptionNode.execute(frame, pException);
+                    }
                     try {
                         exceptNode.executeExcept(frame, exception);
                     } finally {
@@ -178,7 +184,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         } catch (ExceptionHandledException eh) {
             return true;
         } catch (PException handlerException) {
-            tryChainExceptionFromHandler(exception, handlerException);
+            tryChainExceptionFromHandler(handlerException, exception);
             throw handlerException;
         }
         return false;

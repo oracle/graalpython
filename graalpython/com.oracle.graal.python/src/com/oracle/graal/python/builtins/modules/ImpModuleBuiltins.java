@@ -320,7 +320,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             StringBuilder sb = new StringBuilder();
             PBaseException pythonCause = null;
             if (e instanceof PException) {
-                PBaseException excObj = ((PException) e).reifyAndGetPythonException((PFrame.Reference) null, false, false);
+                PBaseException excObj = ((PException) e).getReifiedException();
                 pythonCause = excObj;
                 sb.append(callReprNode.executeObject(null, excObj));
             } else {
@@ -330,7 +330,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Throwable cause = e;
             while ((cause = cause.getCause()) != null) {
                 if (e instanceof PException) {
-                    PBaseException pythonException = ((PException) e).reifyAndGetPythonException((PFrame.Reference) null, false, false);
+                    PBaseException pythonException = ((PException) e).getReifiedException();
                     if (pythonCause != null) {
                         pythonCause.setCause(pythonException);
                     }

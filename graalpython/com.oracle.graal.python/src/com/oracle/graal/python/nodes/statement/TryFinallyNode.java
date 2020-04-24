@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -56,20 +53,19 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
             } catch (PException handledException) {
                 exceptionProfile.enter();
                 // any thrown Python exception is visible in the finally block
-                PBaseException caughtException = handledException.reifyAndGetPythonException(frame, false);
-                LazyTraceback caughtTraceback = caughtException.getTraceback();
-                tryChainPreexistingException(frame, caughtException);
+                handledException.reify(frame);
+                tryChainPreexistingException(frame, handledException);
                 ExceptionState exceptionState = saveExceptionState(frame);
-                SetCaughtExceptionNode.execute(frame, new ExceptionInfo(caughtException, caughtException.getTraceback()));
+                SetCaughtExceptionNode.execute(frame, handledException);
                 try {
                     finalbody.executeVoid(frame);
                 } catch (PException handlerException) {
-                    chainExceptions(handlerException.getExceptionObject(), caughtException);
+                    tryChainExceptionFromHandler(handlerException, handledException);
                     throw handlerException;
                 } finally {
                     restoreExceptionState(frame, exceptionState);
                 }
-                throw caughtException.getExceptionForReraise(caughtTraceback);
+                throw handledException.getExceptionForReraise();
             } catch (ControlFlowException e) {
                 finalbody.executeVoid(frame);
                 throw e;

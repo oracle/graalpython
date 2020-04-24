@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -44,7 +43,6 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -166,7 +164,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
         PBaseException caughtException = pException.reifyAndGetPythonException(frame);
         tryChainPreexistingException(frame, caughtException);
         ExceptionState savedExceptionState = saveExceptionState(frame);
-        SetCaughtExceptionNode.execute(frame, new ExceptionInfo(caughtException, caughtException.getTraceback()));
+        SetCaughtExceptionNode.execute(frame, pException);
         PythonAbstractClass type = getClassNode.execute(caughtException);
         LazyTraceback caughtTraceback = caughtException.getTraceback();
         PTraceback tb = getTraceback(caughtTraceback);
@@ -177,7 +175,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
                             new Object[]{withObject, type, caughtException, tb != null ? tb : PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
             handled = toBooleanNode.executeBoolean(frame, returnValue);
         } catch (PException handlerException) {
-            chainExceptions(handlerException.getExceptionObject(), caughtException);
+            tryChainExceptionFromHandler(handlerException, pException);
             throw handlerException;
         } finally {
             restoreExceptionState(frame, savedExceptionState);

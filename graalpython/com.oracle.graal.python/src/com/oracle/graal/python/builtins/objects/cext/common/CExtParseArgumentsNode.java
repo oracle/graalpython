@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1147,7 +1146,7 @@ public abstract class CExtParseArgumentsNode {
         static void doError(@SuppressWarnings("unused") int statusCode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PRaiseNativeNode raiseNode) throws ParseArgumentsException {
-            ExceptionInfo currentException = context.getCurrentException();
+            PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
             if (!errOccurred) {
                 // converter should have set exception

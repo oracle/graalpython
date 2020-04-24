@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -52,6 +51,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -129,20 +129,20 @@ public abstract class ExecutionContext {
                     neededExceptionState = true;
                     reportPolymorphicSpecialize();
                 }
-                ExceptionInfo curExc = null;
+                PException curExc = null;
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
                     if (curExc == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        ExceptionInfo fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                        curExc = fromStackWalk != null ? fromStackWalk : ExceptionInfo.NO_EXCEPTION;
+                        PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                        curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
                         // now, set in our args, such that we won't do this again
                         PArguments.setException(frame, curExc);
                     }
                 } else {
                     // If we're here, it can only be because some top-level call
                     // inside Python led us here
-                    curExc = ExceptionInfo.NO_EXCEPTION;
+                    curExc = PException.NO_EXCEPTION;
                 }
                 PArguments.setException(callArguments, curExc);
             }
@@ -276,9 +276,9 @@ public abstract class ExecutionContext {
     @ValueType
     private static final class IndirectCallState {
         private final PFrame.Reference info;
-        private final ExceptionInfo curExc;
+        private final PException curExc;
 
-        private IndirectCallState(PFrame.Reference info, ExceptionInfo curExc) {
+        private IndirectCallState(PFrame.Reference info, PException curExc) {
             this.info = info;
             this.curExc = curExc;
         }
@@ -335,9 +335,9 @@ public abstract class ExecutionContext {
                 info.setCallNode((Node) callNode);
                 context.setTopFrameInfo(info);
             }
-            ExceptionInfo curExc = null;
+            PException curExc = null;
             if (callNode.calleeNeedsExceptionState()) {
-                ExceptionInfo exceptionState = PArguments.getException(frame);
+                PException exceptionState = PArguments.getException(frame);
                 curExc = context.getCaughtException();
                 context.setCaughtException(exceptionState);
             }
@@ -431,11 +431,11 @@ public abstract class ExecutionContext {
 
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             if (calleeRootNode.needsExceptionState()) {
-                ExceptionInfo curExc = context.getCaughtException();
+                PException curExc = context.getCaughtException();
                 if (curExc == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    ExceptionInfo fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    curExc = fromStackWalk != null ? fromStackWalk : ExceptionInfo.NO_EXCEPTION;
+                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
+                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
                     // now, set in our args, such that we won't do this again
                     context.setCaughtException(curExc);
                 }

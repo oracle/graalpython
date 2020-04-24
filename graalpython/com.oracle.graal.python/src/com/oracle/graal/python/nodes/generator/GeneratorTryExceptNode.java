@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
@@ -111,12 +109,11 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 ExceptNode exceptNode = exceptNodes[i];
                 gen.setIndex(frame, exceptIndex, i + 1);
                 if (exceptNode.matchesException(frame, exception)) {
-                    PBaseException exceptionObject = exception.reifyAndGetPythonException(frame);
-                    tryChainPreexistingException(frame, exceptionObject);
-                    ExceptionInfo exceptionInfo = new ExceptionInfo(exceptionObject, exceptionObject.getTraceback());
-                    ExceptionState exceptionState = new ExceptionState(exceptionInfo, ExceptionState.SOURCE_GENERATOR);
-                    gen.setActiveException(frame, activeExceptionIndex, exceptionState);
-                    runExceptionHandler(frame, exception, exceptNode, exceptionInfo);
+                    exception.reify(frame);
+                    exception.markFrameEscaped();
+                    tryChainPreexistingException(frame, exception);
+                    gen.setActiveException(frame, activeExceptionIndex, exception);
+                    runExceptionHandler(frame, exception, exceptNode);
                     wasHandled = true;
                 }
             }
@@ -131,7 +128,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     private void catchExceptionInGeneratorCached(VirtualFrame frame) {
         ExceptNode[] exceptNodes = getExceptNodes();
         CompilerAsserts.compilationConstant(exceptNodes);
-        ExceptionState exceptionState = gen.getActiveException(frame, activeExceptionIndex);
+        PException exception = gen.getActiveException(frame, activeExceptionIndex);
         final int matchingExceptNodeIndex = gen.getIndex(frame, exceptIndex);
         assert matchingExceptNodeIndex <= exceptNodes.length;
         boolean wasHandled = false;
@@ -139,22 +136,22 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we want a constant loop iteration count for ExplodeLoop to work,
             // so we always run through all except handlers
             if (i == matchingExceptNodeIndex - 1) {
-                runExceptionHandler(frame, exceptionState.exc.exception.getException(), exceptNodes[i], exceptionState.exc);
+                runExceptionHandler(frame, exception, exceptNodes[i]);
                 wasHandled = true;
             }
         }
         assert wasHandled : "cached exception handler does not handle exception";
     }
 
-    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, ExceptionInfo exceptionInfo) {
+    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode) {
         ExceptionState savedExceptionState = saveExceptionState(frame);
-        SetCaughtExceptionNode.execute(frame, exceptionInfo);
+        SetCaughtExceptionNode.execute(frame, exception);
         try {
-            exceptNode.executeExcept(frame, exception, false);
+            exceptNode.executeExcept(frame, exception);
         } catch (ExceptionHandledException e) {
             return;
         } catch (PException handlerException) {
-            tryChainExceptionFromHandler(exception, handlerException);
+            tryChainExceptionFromHandler(handlerException, exception);
             throw handlerException;
         } finally {
             restoreExceptionState(frame, savedExceptionState);

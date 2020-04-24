@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -242,15 +241,15 @@ public final class PArguments {
         arguments[INDEX_CURRENT_FRAME_INFO] = info;
     }
 
-    public static ExceptionInfo getException(Frame frame) {
-        return (ExceptionInfo) frame.getArguments()[INDEX_CURRENT_EXCEPTION];
+    public static PException getException(Frame frame) {
+        return (PException) frame.getArguments()[INDEX_CURRENT_EXCEPTION];
     }
 
-    public static void setException(Frame frame, ExceptionInfo exc) {
+    public static void setException(Frame frame, PException exc) {
         setException(frame.getArguments(), exc);
     }
 
-    public static void setException(Object[] arguments, ExceptionInfo exc) {
+    public static void setException(Object[] arguments, PException exc) {
         arguments[INDEX_CURRENT_EXCEPTION] = exc;
     }
 
@@ -370,9 +369,9 @@ public final class PArguments {
     @ValueType
     public static final class ThreadState {
         private final PFrame.Reference info;
-        private final ExceptionInfo exc;
+        private final PException exc;
 
-        private ThreadState(PFrame.Reference info, ExceptionInfo exc) {
+        private ThreadState(PFrame.Reference info, PException exc) {
             this.info = info;
             this.exc = exc;
         }

@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
@@ -151,7 +150,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getContextRef().get();
     }
 
-    protected final ExceptionInfo passException(VirtualFrame frame) {
+    protected final PException passException(VirtualFrame frame) {
         if (passExceptionNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             passExceptionNode = insert(PassCaughtExceptionNode.create());

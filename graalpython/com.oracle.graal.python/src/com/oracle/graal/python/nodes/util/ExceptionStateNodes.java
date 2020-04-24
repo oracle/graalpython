@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -80,7 +79,7 @@ public abstract class ExceptionStateNodes {
      */
     public static final class SetCaughtExceptionNode extends ExceptionStateBaseNode {
 
-        public static void execute(VirtualFrame frame, ExceptionInfo e) {
+        public static void execute(VirtualFrame frame, PException e) {
             PArguments.setException(frame, e);
         }
 
@@ -102,15 +101,15 @@ public abstract class ExceptionStateNodes {
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-        public ExceptionInfo execute(VirtualFrame frame) {
+        public PException execute(VirtualFrame frame) {
             if (nullFrameProfile.profile(frame == null)) {
                 return getFromContext();
             }
-            ExceptionInfo e = PArguments.getException(frame);
+            PException e = PArguments.getException(frame);
             if (e == null) {
                 e = fromStackWalk();
                 if (e == null) {
-                    e = ExceptionInfo.NO_EXCEPTION;
+                    e = PException.NO_EXCEPTION;
                 }
                 // Set into frame to avoid doing the stack walk again
                 PArguments.setException(frame, e);
@@ -118,24 +117,24 @@ public abstract class ExceptionStateNodes {
             return ensure(e);
         }
 
-        private ExceptionInfo getFromContext() {
+        private PException getFromContext() {
             // contextRef acts as a branch profile
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
             PythonContext ctx = contextRef.get();
-            ExceptionInfo fromContext = ctx.getCaughtException();
+            PException fromContext = ctx.getCaughtException();
             if (fromContext == null) {
                 fromContext = fromStackWalk();
 
                 // important: set into context to avoid stack walk next time
-                ctx.setCaughtException(fromContext != null ? fromContext : ExceptionInfo.NO_EXCEPTION);
+                ctx.setCaughtException(fromContext != null ? fromContext : PException.NO_EXCEPTION);
             }
             return ensure(fromContext);
         }
 
-        private static ExceptionInfo fromStackWalk() {
+        private static PException fromStackWalk() {
             // The very-slow path: This is the first time we want to fetch the exception state
             // from the context. The caller didn't know that it is necessary to provide the
             // exception in the context. So, we do a full stack walk until the first frame
@@ -149,10 +148,10 @@ public abstract class ExceptionStateNodes {
         }
 
         @TruffleBoundary
-        public static ExceptionInfo fullStackWalk() {
+        public static PException fullStackWalk() {
 
-            return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<ExceptionInfo>() {
-                public ExceptionInfo visitFrame(FrameInstance frameInstance) {
+            return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<PException>() {
+                public PException visitFrame(FrameInstance frameInstance) {
                     RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
                     RootNode rootNode = target.getRootNode();
                     Node callNode = frameInstance.getCallNode();
@@ -161,11 +160,7 @@ public abstract class ExceptionStateNodes {
                         PRootNode pRootNode = (PRootNode) rootNode;
                         pRootNode.setNeedsExceptionState();
                         Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
-                        ExceptionInfo exception = PArguments.getException(frame);
-                        if (exception != null && exception.exception != null) {
-                            exception.exception.markAsEscaped();
-                        }
-                        return exception;
+                        return PArguments.getException(frame);
                     }
                     return null;
                 }
@@ -173,11 +168,10 @@ public abstract class ExceptionStateNodes {
 
         }
 
-        private ExceptionInfo ensure(ExceptionInfo e) {
-            if (hasExceptionProfile.profile(e == ExceptionInfo.NO_EXCEPTION)) {
+        private PException ensure(PException e) {
+            if (hasExceptionProfile.profile(e == PException.NO_EXCEPTION)) {
                 return null;
             } else {
-                e.exception.markAsEscaped();
                 return e;
             }
         }
@@ -196,7 +190,7 @@ public abstract class ExceptionStateNodes {
 
         private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
-        public ExceptionInfo execute(VirtualFrame frame) {
+        public PException execute(VirtualFrame frame) {
             if (profile.profile(frame == null)) {
                 return null;
             }
@@ -304,10 +298,10 @@ public abstract class ExceptionStateNodes {
         public static final int SOURCE_GENERATOR = 2;
         public static final int SOURCE_CALLER = 3;
 
-        public final ExceptionInfo exc;
+        public final PException exc;
         public final int source;
 
-        public ExceptionState(ExceptionInfo exc, int source) {
+        public ExceptionState(PException exc, int source) {
             this.exc = exc;
             this.source = source;
         }

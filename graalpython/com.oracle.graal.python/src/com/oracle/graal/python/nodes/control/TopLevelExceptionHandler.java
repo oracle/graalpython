@@ -48,7 +48,6 @@ import java.io.IOException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -116,7 +115,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         if (exception != null) {
-            printExc(frame, exception.reifyAndGetPythonException((PFrame.Reference) null, false, false));
+            printExc(frame, exception.getReifiedException());
             return null;
         } else {
             assert getContext().getCurrentException() == null;
@@ -124,7 +123,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 return run(frame);
             } catch (PException e) {
                 assert !PArguments.isPythonFrame(frame);
-                PBaseException pythonException = e.reifyAndGetPythonException((PFrame.Reference) null, false, false);
+                PBaseException pythonException = e.getReifiedException();
                 printExc(frame, pythonException);
                 if (getContext().getOption(PythonOptions.WithJavaStacktrace)) {
                     printStackTrace(e);
@@ -258,7 +257,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PHashingCollection mainDict = PythonObjectLibrary.getUncached().getDict(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setCustomLocals(arguments, mainDict);
-            PArguments.setException(arguments, ExceptionInfo.NO_EXCEPTION);
+            PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
         PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, innerCallTarget);
         try {

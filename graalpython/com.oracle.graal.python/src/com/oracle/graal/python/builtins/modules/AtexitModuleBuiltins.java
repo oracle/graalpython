@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -97,7 +96,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             public Object execute(VirtualFrame frame) {
                 PythonContext context = contextRef.get();
                 context.setTopFrameInfo(PFrame.Reference.EMPTY);
-                context.setCaughtException(ExceptionInfo.NO_EXCEPTION);
+                context.setCaughtException(PException.NO_EXCEPTION);
 
                 // We deliberately pass 'null' frame here, the execution state will then be taken
                 // from the context.

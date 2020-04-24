@@ -30,7 +30,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -103,11 +102,11 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
-        ExceptionInfo exceptionInfo = getCaughtExceptionNode.execute(frame);
-        if (hasCurrentException.profile(exceptionInfo == null)) {
+        PException caughtException = getCaughtExceptionNode.execute(frame);
+        if (hasCurrentException.profile(caughtException == null)) {
             throw raise.raise(RuntimeError, "No active exception to reraise");
         }
-        throw exceptionInfo.exception.getExceptionForReraise(exceptionInfo.traceback);
+        throw caughtException.getExceptionForReraise();
     }
 
     // raise <exception>

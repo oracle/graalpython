@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -2659,11 +2658,12 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static void doWithFrame(Frame frame, PException e,
+        static void setCurrentException(Frame frame, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PBaseException pythonException = e.reifyAndGetPythonException(getCurrentFrameRef.execute(frame), true, false);
-            context.setCurrentException(new ExceptionInfo(pythonException, pythonException.getTraceback()));
+            // TODO connect f_back
+            getCurrentFrameRef.execute(frame).markAsEscaped();
+            context.setCurrentException(e);
         }
     }
 

@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -306,13 +305,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetTracebackNode getTracebackNode) {
-            ExceptionInfo currentException = getCaughtExceptionNode.execute(frame);
-            assert currentException != ExceptionInfo.NO_EXCEPTION;
+            PException currentException = getCaughtExceptionNode.execute(frame);
+            assert currentException != PException.NO_EXCEPTION;
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
-                PBaseException exception = currentException.exception;
-                PTraceback traceback = getTracebackNode.execute(currentException.traceback);
+                PBaseException exception = currentException.getReifiedException();
+                PTraceback traceback = getTracebackNode.execute(currentException.getTraceback());
                 return factory().createTuple(new Object[]{getClassNode.execute(exception), exception, traceback == null ? PNone.NONE : traceback});
             }
         }

@@ -1,6 +1,5 @@
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
@@ -14,12 +13,10 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private ExceptionStateNodes.RestoreExceptionStateNode restoreExceptionStateNode;
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
 
-    protected void tryChainExceptionFromHandler(TruffleException handledException, PException handlerException) {
+    protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
         if (handledException != handlerException && handledException instanceof PException) {
-            // It had to be reified by the handler already
-            PBaseException handledExceptionObject = ((PException) handledException).getExceptionObject();
-            chainExceptions(handlerException.getExceptionObject(), handledExceptionObject);
+            chainExceptions(handlerException.getExceptionObject(), ((PException) handledException).getReifiedException());
         }
     }
 
@@ -27,21 +24,17 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         // Chain a preexisting (before the try started) exception to the handled exception
         if (handledException instanceof PException) {
             PException pException = (PException) handledException;
-            ExceptionInfo preexisting = getExceptionForChaining(frame);
-            if (preexisting != null) {
-                if (pException.getExceptionObject().getContext() == null) {
-                    chainExceptions(pException.getExceptionObject(), preexisting.exception);
-                }
+            PException preexisting = getExceptionForChaining(frame);
+            if (preexisting != null && pException.getExceptionObject().getContext() == null) {
+                chainExceptions(pException.getExceptionObject(), preexisting.getReifiedException());
             }
         }
     }
 
     protected void tryChainPreexistingException(VirtualFrame frame, PBaseException handledException) {
-        if (handledException.getContext() == null) {
-            ExceptionInfo preexisting = getExceptionForChaining(frame);
-            if (preexisting != null) {
-                chainExceptions(handledException, preexisting.exception);
-            }
+        PException preexisting = getExceptionForChaining(frame);
+        if (preexisting != null && handledException.getContext() == null) {
+            chainExceptions(handledException, preexisting.getReifiedException());
         }
     }
 
@@ -79,7 +72,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return saveExceptionStateNode.execute(frame);
     }
 
-    private ExceptionInfo getExceptionForChaining(VirtualFrame frame) {
+    private PException getExceptionForChaining(VirtualFrame frame) {
         if (getCaughtExceptionNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());

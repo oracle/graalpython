@@ -30,6 +30,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -136,11 +137,11 @@ final class GeneratorAccessNode extends Node {
         getControlData(frame).setIteratorAt(iteratorSlot, value);
     }
 
-    public ExceptionState getActiveException(VirtualFrame frame, int slot) {
+    public PException getActiveException(VirtualFrame frame, int slot) {
         return getControlData(frame).getActiveException(slot);
     }
 
-    public void setActiveException(VirtualFrame frame, int slot, ExceptionState ex) {
+    public void setActiveException(VirtualFrame frame, int slot, PException ex) {
         getControlData(frame).setActiveException(slot, ex);
     }
 

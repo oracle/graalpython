@@ -29,8 +29,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -40,7 +38,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetLazyClassNode;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -82,21 +79,12 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
     }
 
     public void executeExcept(VirtualFrame frame, TruffleException e) {
-        executeExcept(frame, e, true);
-    }
-
-    public void executeExcept(VirtualFrame frame, TruffleException e, boolean reify) {
-        if (e instanceof PException) {
-            PException pE = (PException) e;
-            if (reify) {
-                PBaseException exceptionObject = pE.reifyAndGetPythonException(frame, exceptName != null);
-                SetCaughtExceptionNode.execute(frame, new ExceptionInfo(exceptionObject, exceptionObject.getTraceback()));
+        if (exceptName != null) {
+            if (e instanceof PException) {
+                exceptName.doWrite(frame, ((PException) e).getReifiedException());
+            } else {
+                exceptName.doWrite(frame, getExceptionObject(e));
             }
-            if (exceptName != null) {
-                exceptName.doWrite(frame, e.getExceptionObject());
-            }
-        } else if (exceptName != null) {
-            exceptName.doWrite(frame, getExceptionObject(e));
         }
         body.executeVoid(frame);
         if (exceptName != null) {

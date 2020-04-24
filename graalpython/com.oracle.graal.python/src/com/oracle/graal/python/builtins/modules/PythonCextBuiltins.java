@@ -166,7 +166,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionInfo;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -542,13 +541,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, @SuppressWarnings("unused") PNone tb) {
-            getContext().setCurrentException(new ExceptionInfo(val, (LazyTraceback) null));
+            getContext().setCurrentException(new PException(val, null));
             return PNone.NONE;
         }
 
         @Specialization
         Object run(@SuppressWarnings("unused") LazyPythonClass typ, PBaseException val, PTraceback tb) {
-            getContext().setCurrentException(new ExceptionInfo(val, tb));
+            PException e = new PException(val, null);
+            e.setTraceback(new LazyTraceback(tb));
+            getContext().setCurrentException(e);
             return PNone.NONE;
         }
     }
@@ -562,15 +563,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Exclusive @Cached GetTracebackNode getTracebackNode,
                         @Exclusive @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             PythonContext context = getContext();
-            ExceptionInfo currentException = context.getCurrentException();
+            PException currentException = context.getCurrentException();
             Object result;
             if (currentException == null) {
                 result = getNativeNullNode.execute(module);
             } else {
-                PBaseException exception = currentException.exception;
+                PBaseException exception = currentException.getReifiedException();
                 Object traceback = null;
-                if (currentException.traceback != null) {
-                    traceback = getTracebackNode.execute(currentException.traceback);
+                if (currentException.getTraceback() != null) {
+                    traceback = getTracebackNode.execute(currentException.getTraceback());
                 }
                 if (traceback == null) {
                     traceback = getNativeNullNode.execute(module);
@@ -588,9 +589,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object run(Object errorMarker,
                         @Cached GetClassNode getClass) {
-            ExceptionInfo currentException = getContext().getCurrentException();
+            PException currentException = getContext().getCurrentException();
             if (currentException != null) {
-                PBaseException exceptionObject = currentException.exception;
+                PBaseException exceptionObject = currentException.getReifiedException();
                 return getClass.execute(exceptionObject);
             }
             return errorMarker;
@@ -603,13 +604,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object doClear(PNone typ, PNone val, PNone tb) {
-            getContext().setCaughtException(ExceptionInfo.NO_EXCEPTION);
+            getContext().setCaughtException(PException.NO_EXCEPTION);
             return PNone.NONE;
         }
 
         @Specialization
         Object doFull(@SuppressWarnings("unused") Object typ, PBaseException val, PTraceback tb) {
-            getContext().setCaughtException(new ExceptionInfo(val, tb));
+            PException e = new PException(val, null);
+            e.setTraceback(new LazyTraceback(tb));
+            getContext().setCaughtException(e);
             return PNone.NONE;
         }
 
@@ -839,7 +842,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonContext context, PRaiseNode raise, PythonObjectFactory factory) {
-            ExceptionInfo currentException = context.getCurrentException();
+            PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
             if (indicatesError) {
                 // consume exception
@@ -851,7 +854,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         throw raise.raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                     }
                 } else {
-                    throw currentException.exception.getExceptionForReraise(currentException.traceback);
+                    throw currentException.getExceptionForReraise();
                 }
             } else if (errOccurred) {
                 // consume exception
@@ -859,7 +862,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, "%s returned a result with an error set", new Object[]{name});
                 // the exception here must have already been reified, because we
                 // got it from the context
-                sysExc.setCause(currentException.exception);
+                sysExc.setCause(currentException.getReifiedException());
                 throw PException.fromObject(sysExc, this);
             }
         }
